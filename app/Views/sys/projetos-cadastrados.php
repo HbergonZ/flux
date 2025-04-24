@@ -7,7 +7,7 @@
     </div>
 
     <!-- Filtros -->
-    <div class="card mb-4">
+    <div class="card mb-4 mx-md-5 mx-3">
         <div class="card-body">
             <div class="row">
                 <div class="col-md-3">
@@ -44,13 +44,19 @@
     </div>
 
     <!-- DataTales Example -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
+    <div class="card shadow mb-4 mx-md-5 mx-3">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Lista de Projetos</h6>
+            <a href="#" class="btn btn-primary btn-icon-split btn-sm" data-toggle="modal" data-target="#addProjectModal">
+                <span class="icon text-white-50">
+                    <i class="fas fa-plus"></i>
+                </span>
+                <span class="text">Incluir Projeto</span>
+            </a>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered align-middle" id="dataTable" width="100%" cellspacing="0">
+                <table class="table table-bordered align-middle" id="dataTable" cellspacing="0">
                     <thead>
                         <tr class="text-center">
                             <th>ID do Projeto</th>
@@ -144,6 +150,7 @@
                     "previous": "Anterior"
                 }
             },
+            "searching": false,
             "columnDefs": [{
                     "width": "10%",
                     "targets": 0
