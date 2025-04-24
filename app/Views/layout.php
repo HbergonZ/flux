@@ -11,12 +11,12 @@
     <title>Projeta</title>
 
     <!-- Custom fonts for this template-->
-    <link href="/projeta/public/template/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="/projeta/app/ThirdParty/template/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
     <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
 
     <!-- Custom styles for this template-->
-    <link href="/projeta/public/template/css/sb-admin-2.min.css" rel="stylesheet">
-    <link href="/projeta/public/template/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+    <link href="/projeta/app/ThirdParty/template/css/sb-admin-2.min.css" rel="stylesheet">
+    <link href="/projeta/app/ThirdParty/template/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
 </head>
 
 <body id="page-top">
@@ -38,45 +38,51 @@
             <!-- Divider -->
             <hr class="sidebar-divider">
 
-            <!-- Heading -->
+            <!-- Área Gerencial -->
             <div class="sidebar-heading">
                 Área Gerencial
             </div>
 
-            <!-- Nav Item - Charts -->
+            <!-- Projetos Cadastrados-->
             <li class="nav-item">
-                <a class="nav-link" href="charts.html">
-                    <i class="fas fa-fw fa-chart-area"></i>
+                <a class="nav-link" href="<?php echo base_url('/projetos-cadastrados'); ?>">
+                    <i class=" fas fa-fw fa-project-diagram"></i>
                     <span>Projetos Cadastrados</span></a>
             </li>
 
-            <!-- Nav Item - Tables -->
+            <!-- Solicitações de Alterações -->
             <li class="nav-item">
                 <a class="nav-link" href="tables.html">
-                    <i class="fas fa-fw fa-table"></i>
+                    <i class="fas fa-fw fa-exchange-alt"></i>
                     <span>Solicitações de Alterações</span></a>
             </li>
-
 
             <!-- Divider -->
             <hr class="sidebar-divider d-none d-md-block">
 
-            <!-- Heading -->
+            <!-- Área do Usuário -->
             <div class="sidebar-heading">
                 Área do Usuário
             </div>
 
-            <!-- Nav Item - Charts -->
+            <!-- Meus Projetos -->
             <li class="nav-item">
                 <a class="nav-link" href="charts.html">
-                    <i class="fas fa-fw fa-chart-area"></i>
+                    <i class="fas fa-fw fa-folder-open"></i>
                     <span>Meus Projetos</span></a>
             </li>
 
-            <!-- Nav Item - Tables -->
+            <!-- Minhas Solicitações -->
             <li class="nav-item">
                 <a class="nav-link" href="tables.html">
-                    <i class="fas fa-fw fa-table"></i>
+                    <i class="fas fa-fw fa-tasks"></i>
+                    <span>Minhas Solicitações</span></a>
+            </li>
+
+            <!-- Convites -->
+            <li class="nav-item">
+                <a class="nav-link" href="tables.html">
+                    <i class="fas fa-fw fa-envelope"></i>
                     <span>Convites</span></a>
             </li>
 
@@ -199,7 +205,7 @@
                                 </h6>
                                 <a class="dropdown-item d-flex align-items-center" href="#">
                                     <div class="dropdown-list-image mr-3">
-                                        <img class="rounded-circle" src="/projeta/public/template/img/undraw_profile_1.svg"
+                                        <img class="rounded-circle" src="/projeta/app/ThirdParty/template/img/undraw_profile_1.svg"
                                             alt="...">
                                         <div class="status-indicator bg-success"></div>
                                     </div>
@@ -211,7 +217,7 @@
                                 </a>
                                 <a class="dropdown-item d-flex align-items-center" href="#">
                                     <div class="dropdown-list-image mr-3">
-                                        <img class="rounded-circle" src="/projeta/public/template/img/undraw_profile_2.svg"
+                                        <img class="rounded-circle" src="/projeta/app/ThirdParty/template/img/undraw_profile_2.svg"
                                             alt="...">
                                         <div class="status-indicator"></div>
                                     </div>
@@ -223,7 +229,7 @@
                                 </a>
                                 <a class="dropdown-item d-flex align-items-center" href="#">
                                     <div class="dropdown-list-image mr-3">
-                                        <img class="rounded-circle" src="/projeta/public/template/img/undraw_profile_3.svg"
+                                        <img class="rounded-circle" src="/projeta/app/ThirdParty/template/img/undraw_profile_3.svg"
                                             alt="...">
                                         <div class="status-indicator bg-warning"></div>
                                     </div>
@@ -260,7 +266,7 @@
                                     <small class="text-muted">Gerente</small>
                                 </span>
                                 <img class="img-profile rounded-circle"
-                                    src="/projeta/public/template/img/undraw_profile.svg">
+                                    src="/projeta/app/ThirdParty/template/img/undraw_profile.svg">
                             </a>
                             <!-- Dropdown - User Information -->
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
@@ -290,145 +296,12 @@
                 </nav>
                 <!-- End of Topbar -->
 
-
                 <!-- Begin Page Content -->
-                <div class="container-fluid">
-
-                    <div class="card-body">
-                        <!-- Filtros -->
-                        <div class="row mb-4">
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <label for="filterName">Nome</label>
-                                    <input type="text" class="form-control" id="filterName" placeholder="Filtrar por nome">
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <label for="filterPosition">Cargo</label>
-                                    <input type="text" class="form-control" id="filterPosition" placeholder="Filtrar por cargo">
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <label for="filterOffice">Escritório</label>
-                                    <select class="form-control" id="filterOffice">
-                                        <option value="">Todos</option>
-                                        <option value="Edinburgh">Edinburgh</option>
-                                        <option value="London">London</option>
-                                        <option value="New York">New York</option>
-                                        <option value="San Francisco">San Francisco</option>
-                                        <option value="Tokyo">Tokyo</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <label for="filterAge">Idade</label>
-                                    <select class="form-control" id="filterAge">
-                                        <option value="">Todas</option>
-                                        <option value="20-30">20-30 anos</option>
-                                        <option value="31-40">31-40 anos</option>
-                                        <option value="41-50">41-50 anos</option>
-                                        <option value="51+">51+ anos</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-
-                    </div>
-
-
-                    <!-- DataTales Example -->
-                    <div class="card shadow mb-4">
-                        <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">Projetos Cadastrados</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                                    <thead>
-                                        <tr>
-                                            <th>ID do Projeto</th>
-                                            <th>Nome</th>
-                                            <th>Office</th>
-                                            <th>Age</th>
-                                            <th>Start date</th>
-                                            <th>Salary</th>
-                                            <th>Ações</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php
-                                        // Dados de exemplo
-                                        $employees = [
-                                            [
-                                                'name' => '',
-                                                'position' => '',
-                                                'office' => '',
-                                                'age' => 1,
-                                                'start_date' => '-',
-                                                'salary' => '$-'
-                                            ]
-                                        ];
-
-                                        // Repetir os dados 10 vezes
-                                        for ($i = 0; $i < 10; $i++) {
-                                            foreach ($employees as $employee) {
-                                                $id = $i . '-' . str_replace(' ', '-', strtolower($employee['name']));
-                                                echo '<tr>';
-                                                echo '<td>' . $employee['name'] . '</td>';
-                                                echo '<td>' . $employee['position'] . '</td>';
-                                                echo '<td>' . $employee['office'] . '</td>';
-                                                echo '<td>' . $employee['age'] . '</td>';
-                                                echo '<td>' . $employee['start_date'] . '</td>';
-                                                echo '<td>' . $employee['salary'] . '</td>';
-                                                echo '<td class="text-center">';
-                                                echo '<div class="d-inline-flex">';
-
-                                                // Botão Visualizar
-                                                echo '<button type="button" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" data-id="' . $id . '" title="Visualizar">';
-                                                echo '<i class="fas fa-eye"></i>';
-                                                echo '</button>';
-
-                                                // Botão Editar
-                                                echo '<button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="' . $id . '" title="Editar">';
-                                                echo '<i class="fas fa-edit"></i>';
-                                                echo '</button>';
-
-                                                // Botão Excluir
-                                                echo '<button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="' . $id . '" title="Excluir">';
-                                                echo '<i class="fas fa-trash-alt"></i>';
-                                                echo '</button>';
-
-                                                echo '</div>';
-                                                echo '</td>';
-                                                echo '</tr>';
-                                            }
-                                        }
-                                        ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
+                <?php echo $content; ?>
                 <!-- /.container-fluid -->
 
             </div>
             <!-- End of Main Content -->
-
-            <!-- Footer -->
-            <footer class="sticky-footer bg-white">
-                <div class="container my-auto">
-                    <div class="copyright text-center my-auto">
-                        <span>Copyright &copy; Your Website 2021</span>
-                    </div>
-                </div>
-            </footer>
-            <!-- End of Footer -->
 
         </div>
         <!-- End of Content Wrapper -->
@@ -462,21 +335,18 @@
     </div>
 
     <!-- Bootstrap core JavaScript-->
-    <script src="/projeta/public/template/vendor/jquery/jquery.min.js"></script>
-    <script src="/projeta/public/template/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/projeta/app/ThirdParty/template/vendor/jquery/jquery.min.js"></script>
+    <script src="/projeta/app/ThirdParty/template/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 
     <!-- Core plugin JavaScript-->
-    <script src="/projeta/public/template/vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="/projeta/app/ThirdParty/template/vendor/jquery-easing/jquery.easing.min.js"></script>
 
     <!-- Custom scripts for all pages-->
-    <script src="/projeta/public/template/js/sb-admin-2.min.js"></script>
+    <script src="/projeta/app/ThirdParty/template/js/sb-admin-2.min.js"></script>
 
     <!-- Page level plugins -->
-    <script src="/projeta/public/template/vendor/datatables/jquery.dataTables.min.js"></script>
-    <script src="/projeta/public/template/vendor/datatables/dataTables.bootstrap4.min.js"></script>
-
-    <!-- Page level custom scripts -->
-    <script src="/projeta/public/template/js/demo/datatables-demo.js"></script>
+    <script src="/projeta/app/ThirdParty/template/vendor/datatables/jquery.dataTables.min.js"></script>
+    <script src="/projeta/app/ThirdParty/template/vendor/datatables/dataTables.bootstrap4.min.js"></script>
 
 </body>
 
