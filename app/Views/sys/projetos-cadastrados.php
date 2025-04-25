@@ -1,3 +1,9 @@
+<!-- Importação de Modais -->
+<?php echo view('components/projetos/modal-editar-projeto.php'); ?>
+<?php echo view('components/projetos/modal-confirmar-exclusao.php'); ?>
+<?php echo view('components/projetos/modal-adicionar-projeto.php'); ?>
+
+
 <!-- Begin Page Content -->
 <div class="container-fluid">
 
@@ -126,152 +132,6 @@
 </div>
 <!-- /.container-fluid -->
 
-<!-- Modal para Adicionar Projeto -->
-<div class="modal fade" id="addProjectModal" tabindex="-1" role="dialog" aria-labelledby="addProjectModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addProjectModalLabel">Incluir Novo Projeto</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <form id="formAddProject" action="<?= site_url('projetos-cadastrados/cadastrar') ?>" method="post">
-                <!-- Token CSRF -->
-                <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
 
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="projectName">Nome do Projeto*</label>
-                        <input type="text" class="form-control" id="projectName" name="nome" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="projectDescription">Descrição*</label>
-                        <textarea class="form-control" id="projectDescription" name="descricao" rows="3" required></textarea>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="projectStatus">Status*</label>
-                                <select class="form-control" id="projectStatus" name="status" required>
-                                    <option value="">Selecione...</option>
-                                    <option value="Em andamento">Em andamento</option>
-                                    <option value="Não iniciado">Não iniciado</option>
-                                    <option value="Finalizado">Finalizado</option>
-                                    <option value="Paralisado">Paralisado</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="projectPublicationDate">Data de Publicação*</label>
-                                <input type="date" class="form-control" id="projectPublicationDate" name="data_publicacao" required>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar Projeto</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<!-- CSS do DataTables -->
-<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap4.min.css" />
-
-<!-- Scripts do DataTables -->
-<script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap4.min.js"></script>
-
-<script>
-    $(document).ready(function() {
-        $('#dataTable').DataTable({
-            "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-            "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.20/i18n/Portuguese-Brasil.json",
-                "lengthMenu": "Mostrar _MENU_ registros por página",
-                "zeroRecords": "Nenhum registro encontrado",
-                "info": "Mostrando página _PAGE_ de _PAGES_",
-                "infoEmpty": "Nenhum registro disponível",
-                "infoFiltered": "(filtrado de _MAX_ registros totais)",
-                "search": "Pesquisar:",
-                "paginate": {
-                    "first": "Primeira",
-                    "last": "Última",
-                    "next": "Próxima",
-                    "previous": "Anterior"
-                }
-            },
-            "searching": false,
-            "columnDefs": [{
-                    "width": "10%",
-                    "targets": 0
-                }, // ID do Projeto
-                {
-                    "width": "20%",
-                    "targets": 1
-                }, // Nome
-                {
-                    "width": "30%",
-                    "targets": 2
-                }, // Descrição
-                {
-                    "width": "15%",
-                    "targets": 3
-                }, // Status
-                {
-                    "width": "15%",
-                    "targets": 4
-                }, // Data
-                {
-                    "width": "10%",
-                    "targets": 5
-                } // Ações
-            ],
-            "responsive": true,
-            "autoWidth": false,
-            "lengthMenu": [5, 10, 25, 50, 100],
-            "pageLength": 10
-        });
-    });
-</script>
-<script>
-    $(document).ready(function() {
-        $.ajaxSetup({
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
-            }
-        });
-
-        $('#formAddProject').submit(function(e) {
-            e.preventDefault();
-
-            $.ajax({
-                type: "POST",
-                url: $(this).attr('action'),
-                data: $(this).serialize(),
-                dataType: "json",
-                success: function(response) {
-                    if (response.success) {
-                        $('#addProjectModal').modal('hide');
-                        // Recarrega a página ou atualiza a tabela
-                        location.reload();
-                    } else {
-                        alert('Erro: ' + response.message);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    alert('Erro na requisição: ' + error);
-                }
-            });
-        });
-    });
-</script>
+<!-- Scripts da página -->
+<?php echo view('scripts/projetos.php'); ?>
