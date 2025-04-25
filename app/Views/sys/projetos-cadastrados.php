@@ -15,37 +15,58 @@
     <!-- Filtros -->
     <div class="card mb-4 mx-md-5 mx-3">
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label for="filterName">Nome</label>
-                        <input type="text" class="form-control" id="filterName" placeholder="Filtrar por nome">
+            <form id="formFiltros">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="filterName">Nome</label>
+                            <input type="text" class="form-control" id="filterName" name="nome" placeholder="Filtrar por nome">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="filterStatus">Status</label>
+                            <select class="form-control" id="filterStatus" name="status">
+                                <option value="">Todos</option>
+                                <option value="Em andamento">Em andamento</option>
+                                <option value="Finalizado">Finalizado</option>
+                                <option value="Paralisado">Paralisado</option>
+                                <option value="Não iniciado">Não iniciado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="filterStartDate">Data Inicial</label>
+                            <input type="date" class="form-control" id="filterStartDate" name="data_inicio">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="filterEndDate">Data Final</label>
+                            <input type="date" class="form-control" id="filterEndDate" name="data_fim">
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label for="filterOffice">Status</label>
-                        <select class="form-control" id="filterOffice">
-                            <option value="">Todos</option>
-                            <option value="Em andamento">Em andamento</option>
-                            <option value="Finalizado">Finalizado</option>
-                            <option value="New York">Paralisado</option>
-                        </select>
+
+                <!-- Linha dos botões alinhados à direita -->
+                <div class="row mt-3">
+                    <div class="col-md-12 text-right">
+                        <button type="button" id="btnLimparFiltros" class="btn btn-secondary btn-icon-split btn-sm">
+                            <span class="icon text-white-50">
+                                <i class="fas fa-broom"></i>
+                            </span>
+                            <span class="text">Limpar</span>
+                        </button>
+                        <button type="submit" class="btn btn-primary btn-icon-split btn-sm mr-2">
+                            <span class="icon text-white-50">
+                                <i class="fas fa-filter"></i>
+                            </span>
+                            <span class="text">Filtrar</span>
+                        </button>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label for="filterStartDate">Data Inicial</label>
-                        <input type="date" class="form-control" id="filterStartDate">
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label for="filterEndDate">Data Final</label>
-                        <input type="date" class="form-control" id="filterEndDate">
-                    </div>
-                </div>
-            </div>
+            </form>
         </div>
     </div>
 

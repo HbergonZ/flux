@@ -7,6 +7,15 @@
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap4.min.js"></script>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- CSS do DataTables -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap4.min.css" />
+
+<!-- Scripts do DataTables -->
+<script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap4.min.js"></script>
+
 <script>
     $(document).ready(function() {
         $('#dataTable').DataTable({
@@ -166,5 +175,103 @@
                 alert('Erro na requisição: ' + error);
             }
         });
+    });
+    // Função para aplicar filtros
+    $('#formFiltros').submit(function(e) {
+        e.preventDefault();
+
+        $.ajax({
+            type: "POST",
+            url: '<?= site_url('projetos-cadastrados/filtrar') ?>',
+            data: $(this).serialize(),
+            dataType: "json",
+            success: function(response) {
+                if (response.success) {
+                    // Limpa a tabela
+                    $('#dataTable tbody').empty();
+
+                    // Adiciona os novos registros filtrados
+                    $.each(response.data, function(index, projeto) {
+                        var id = projeto.id + '-' + projeto.nome.toLowerCase().replace(/\s+/g, '-');
+                        var badge_class = '';
+
+                        switch (projeto.status) {
+                            case 'Em andamento':
+                                badge_class = 'badge-primary';
+                                break;
+                            case 'Não iniciado':
+                                badge_class = 'badge-secondary';
+                                break;
+                            case 'Finalizado':
+                                badge_class = 'badge-success';
+                                break;
+                            case 'Paralisado':
+                                badge_class = 'badge-warning';
+                                break;
+                            default:
+                                badge_class = 'badge-light';
+                        }
+
+                        var row = '<tr>' +
+                            '<td class="text-center">' + projeto.id + '</td>' +
+                            '<td class="text-wrap">' + projeto.nome + '</td>' +
+                            '<td class="text-wrap">' + projeto.descricao + '</td>' +
+                            '<td class="text-center"><span class="badge ' + badge_class + '">' + projeto.status + '</span></td>' +
+                            '<td class="text-center">' + new Date(projeto.data_publicacao).toLocaleDateString('pt-BR') + '</td>' +
+                            '<td class="text-center">' +
+                            '<div class="d-inline-flex">' +
+                            '<a href="<?= site_url('visao-projeto/') ?>' + projeto.id + '" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar">' +
+                            '<i class="fas fa-eye"></i>' +
+                            '</a>' +
+                            '<button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="' + id + '" title="Editar">' +
+                            '<i class="fas fa-edit"></i>' +
+                            '</button>' +
+                            '<button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="' + id + '" title="Excluir">' +
+                            '<i class="fas fa-trash-alt"></i>' +
+                            '</button>' +
+                            '</div>' +
+                            '</td>' +
+                            '</tr>';
+
+                        $('#dataTable tbody').append(row);
+                    });
+
+                    // Reaplica os eventos de edição/exclusão
+                    aplicarEventosBotoes();
+                } else {
+                    alert('Erro ao filtrar projetos');
+                }
+            },
+            error: function(xhr, status, error) {
+                alert('Erro na requisição: ' + error);
+            }
+        });
+    });
+
+    // Função para reaplicar eventos após filtragem
+    function aplicarEventosBotoes() {
+        // Remove eventos antigos para evitar duplicação
+        $('.btn-primary[title="Editar"]').off('click');
+        $('.btn-danger[title="Excluir"]').off('click');
+
+        // Aplica os eventos novamente
+        $(document).on('click', '.btn-primary[title="Editar"]', function() {
+            var projectId = $(this).data('id').split('-')[0];
+            // ... (código existente de edição)
+        });
+
+        $(document).on('click', '.btn-danger[title="Excluir"]', function() {
+            var projectId = $(this).data('id').split('-')[0];
+            // ... (código existente de exclusão)
+        });
+    }
+
+    // Limpar filtros - MODIFICAÇÃO AQUI
+    $('#btnLimparFiltros').click(function() {
+        // Limpa o formulário
+        $('#formFiltros')[0].reset();
+
+        // Dispara o evento submit do formulário para recarregar os dados
+        $('#formFiltros').submit();
     });
 </script>

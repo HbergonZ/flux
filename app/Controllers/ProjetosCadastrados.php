@@ -146,4 +146,44 @@ class ProjetosCadastrados extends BaseController
 
         return $this->response->setJSON($response);
     }
+    public function filtrar()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->to('/projetos-cadastrados');
+        }
+
+        // Recebe os parâmetros de filtro
+        $filtros = [
+            'nome' => $this->request->getPost('nome'),
+            'status' => $this->request->getPost('status'),
+            'data_inicio' => $this->request->getPost('data_inicio'),
+            'data_fim' => $this->request->getPost('data_fim')
+        ];
+
+        // Aplica os filtros
+        $this->projetoModel->select('*');
+
+        if (!empty($filtros['nome'])) {
+            $this->projetoModel->like('nome', $filtros['nome']);
+        }
+
+        if (!empty($filtros['status'])) {
+            $this->projetoModel->where('status', $filtros['status']);
+        }
+
+        if (!empty($filtros['data_inicio'])) {
+            $this->projetoModel->where('data_publicacao >=', $filtros['data_inicio']);
+        }
+
+        if (!empty($filtros['data_fim'])) {
+            $this->projetoModel->where('data_publicacao <=', $filtros['data_fim']);
+        }
+
+        $projetos = $this->projetoModel->findAll();
+
+        return $this->response->setJSON([
+            'success' => true,
+            'data' => $projetos
+        ]);
+    }
 }
