@@ -68,51 +68,55 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <?php
-                        // Dados de exemplo - agora com 10 entradas distintas
-                        $employees = [];
-                        for ($i = 1; $i <= 10; $i++) {
-                            $employees[] = [
-                                'id' => $i,
-                                'nome' => 'Projeto ' . $i,
-                                'descricao' => 'Descrição do projeto ' . $i,
-                                'status' => 'Em andamento',
-                                'data' => date('d/m/Y'),
-                                'actions' => '-',
-                            ];
-                        }
+                        <?php foreach ($projetos as $projeto) :
+                            $id = $projeto['id'] . '-' . str_replace(' ', '-', strtolower($projeto['nome'])); ?>
+                            <tr>
+                                <td class="text-center"><?= $projeto['id'] ?></td>
+                                <td class="text-wrap"><?= $projeto['nome'] ?></td>
+                                <td class="text-wrap"><?= $projeto['descricao'] ?></td>
+                                <td class="text-center">
+                                    <?php
+                                    $badge_class = '';
+                                    switch ($projeto['status']) {
+                                        case 'Em andamento':
+                                            $badge_class = 'badge-primary'; // Azul
+                                            break;
+                                        case 'Não iniciado':
+                                            $badge_class = 'badge-secondary'; // Cinza claro
+                                            break;
+                                        case 'Finalizado':
+                                            $badge_class = 'badge-success'; // Verde
+                                            break;
+                                        case 'Paralisado':
+                                            $badge_class = 'badge-warning'; // Amarelo
+                                            break;
+                                        default:
+                                            $badge_class = 'badge-light'; // Padrão
+                                    }
+                                    ?>
+                                    <span class="badge <?= $badge_class ?>"><?= $projeto['status'] ?></span>
+                                </td>
+                                <td class="text-center"><?= date('d/m/Y', strtotime($projeto['data_publicacao'])) ?></td>
+                                <td class="text-center">
+                                    <div class="d-inline-flex">
+                                        <!-- Botão Visualizar -->
+                                        <a href="<?= site_url('visao-projeto/' . $projeto['id']) ?>" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
 
-                        foreach ($employees as $employee) {
-                            $id = $employee['id'] . '-' . str_replace(' ', '-', strtolower($employee['nome']));
-                            echo '<tr>';
-                            echo '<td class= "text-center">' . $employee['id'] . '</td>';
-                            echo '<td class= "text-wrap">' . $employee['nome'] . '</td>';
-                            echo '<td class= "text-wrap">' . $employee['descricao'] . '</td>';
-                            echo '<td class= "text-center">' . $employee['status'] . '</td>';
-                            echo '<td class= "text-center">' . $employee['data'] . '</td>';
-                            echo '<td class="text-center">';
-                            echo '<div class="d-inline-flex">';
+                                        <!-- Botão Editar -->
+                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
 
-                            // Botão Visualizar
-                            echo '<button type="button" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" data-id="' . $id . '" title="Visualizar">';
-                            echo '<i class="fas fa-eye"></i>';
-                            echo '</button>';
-
-                            // Botão Editar
-                            echo '<button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="' . $id . '" title="Editar">';
-                            echo '<i class="fas fa-edit"></i>';
-                            echo '</button>';
-
-                            // Botão Excluir
-                            echo '<button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="' . $id . '" title="Excluir">';
-                            echo '<i class="fas fa-trash-alt"></i>';
-                            echo '</button>';
-
-                            echo '</div>';
-                            echo '</td>';
-                            echo '</tr>';
-                        }
-                        ?>
+                                        <!-- Botão Excluir -->
+                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Excluir">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>
@@ -121,6 +125,61 @@
 
 </div>
 <!-- /.container-fluid -->
+
+<!-- Modal para Adicionar Projeto -->
+<div class="modal fade" id="addProjectModal" tabindex="-1" role="dialog" aria-labelledby="addProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addProjectModalLabel">Incluir Novo Projeto</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="formAddProject" action="<?= site_url('projetos-cadastrados/cadastrar') ?>" method="post">
+                <!-- Token CSRF -->
+                <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
+
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="projectName">Nome do Projeto*</label>
+                        <input type="text" class="form-control" id="projectName" name="nome" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="projectDescription">Descrição*</label>
+                        <textarea class="form-control" id="projectDescription" name="descricao" rows="3" required></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="projectStatus">Status*</label>
+                                <select class="form-control" id="projectStatus" name="status" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="Em andamento">Em andamento</option>
+                                    <option value="Não iniciado">Não iniciado</option>
+                                    <option value="Finalizado">Finalizado</option>
+                                    <option value="Paralisado">Paralisado</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="projectPublicationDate">Data de Publicação*</label>
+                                <input type="date" class="form-control" id="projectPublicationDate" name="data_publicacao" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Projeto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
@@ -180,6 +239,39 @@
             "autoWidth": false,
             "lengthMenu": [5, 10, 25, 50, 100],
             "pageLength": 10
+        });
+    });
+</script>
+<script>
+    $(document).ready(function() {
+        $.ajaxSetup({
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
+            }
+        });
+
+        $('#formAddProject').submit(function(e) {
+            e.preventDefault();
+
+            $.ajax({
+                type: "POST",
+                url: $(this).attr('action'),
+                data: $(this).serialize(),
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        $('#addProjectModal').modal('hide');
+                        // Recarrega a página ou atualiza a tabela
+                        location.reload();
+                    } else {
+                        alert('Erro: ' + response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    alert('Erro na requisição: ' + error);
+                }
+            });
         });
     });
 </script>

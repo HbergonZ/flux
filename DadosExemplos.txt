@@ -1,0 +1,67 @@
+-- Criação do banco de dados (caso não exista)
+CREATE DATABASE IF NOT EXISTS projeta;
+USE projeta;
+
+-- Tabela de projetos
+CREATE TABLE IF NOT EXISTS projetos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(500) NOT NULL,
+    descricao TEXT,
+    status ENUM('Em andamento', 'Finalizado', 'Paralisado', 'Não iniciado') NOT NULL,
+    data_publicacao DATE,
+    data_criacao TIMESTAMP,
+    data_atualizacao TIMESTAMP
+);
+
+-- Tabela de etapas dos projetos
+CREATE TABLE IF NOT EXISTS etapas (
+    id_etapa INT AUTO_INCREMENT PRIMARY KEY,
+    etapa VARCHAR(255) NOT NULL,
+    id_acao INT NOT NULL,
+    acao VARCHAR(255) NOT NULL,
+    id_projeto INT NOT NULL,
+    coordenacao VARCHAR(255) NOT NULL,
+    responsavel VARCHAR(255) NOT NULL,
+    tempo_estimado_dias INT,
+    data_inicio DATE,
+    data_fim DATE,
+    status ENUM('Em andamento', 'Finalizado', 'Paralisado', 'Não iniciado') NOT NULL,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    FOREIGN KEY (id_projeto) REFERENCES projetos(id)
+);
+
+-- Inserindo projetos na tabela projetos
+INSERT INTO projetos (nome, descricao, status, data_publicacao, data_criacao, data_atualizacao) VALUES
+('Sistema de Gestão Escolar', 'Desenvolvimento de um sistema completo para administração de instituições de ensino', 'Em andamento', '2023-01-15', NOW(), NOW()),
+('Portal E-commerce', 'Criação de plataforma de vendas online para loja de eletrônicos', 'Finalizado', '2022-11-10', NOW(), NOW()),
+('Aplicativo de Delivery', 'App para entrega de alimentos com rastreamento em tempo real', 'Paralisado', '2023-03-20', NOW(), NOW()),
+('Redesign Website Corporativo', 'Atualização do design e funcionalidades do site institucional', 'Não iniciado', '2023-05-01', NOW(), NOW()),
+('ERP para Pequenas Empresas', 'Sistema de gestão integrada para PMEs', 'Em andamento', '2023-02-28', NOW(), NOW());
+
+-- Inserindo etapas para o Projeto 1 (Sistema de Gestão Escolar)
+INSERT INTO etapas (etapa, id_acao, acao, id_projeto, coordenacao, responsavel, tempo_estimado_dias, data_inicio, data_fim, status, created_at, updated_at) VALUES
+('Planejamento', 1, 'Definição de requisitos', 1, 'TI', 'João Silva', 15, '2023-01-20', '2023-02-04', 'Finalizado', NOW(), NOW()),
+('Desenvolvimento', 2, 'Módulo de Matrículas', 1, 'TI', 'Maria Oliveira', 30, '2023-02-05', NULL, 'Em andamento', NOW(), NOW()),
+('Desenvolvimento', 3, 'Módulo Financeiro', 1, 'TI', 'Carlos Souza', 45, NULL, NULL, 'Não iniciado', NOW(), NOW()),
+('Testes', 4, 'Testes de integração', 1, 'Qualidade', 'Ana Costa', 20, NULL, NULL, 'Não iniciado', NOW(), NOW());
+
+-- Inserindo etapas para o Projeto 2 (Portal E-commerce)
+INSERT INTO etapas (etapa, id_acao, acao, id_projeto, coordenacao, responsavel, tempo_estimado_dias, data_inicio, data_fim, status, created_at, updated_at) VALUES
+('Planejamento', 1, 'Levantamento de requisitos', 2, 'TI', 'Pedro Rocha', 10, '2022-11-15', '2022-11-25', 'Finalizado', NOW(), NOW()),
+('Desenvolvimento', 2, 'Carrinho de compras', 2, 'TI', 'Fernanda Lima', 25, '2022-11-26', '2022-12-21', 'Finalizado', NOW(), NOW()),
+('Desenvolvimento', 3, 'Integração com pagamentos', 2, 'TI', 'Ricardo Alves', 20, '2022-12-22', '2023-01-11', 'Finalizado', NOW(), NOW()),
+('Testes', 4, 'Testes de usabilidade', 2, 'Qualidade', 'Juliana Santos', 15, '2023-01-12', '2023-01-27', 'Finalizado', NOW(), NOW()),
+('Implementação', 5, 'Deploy em produção', 2, 'TI', 'Pedro Rocha', 5, '2023-01-28', '2023-02-02', 'Finalizado', NOW(), NOW());
+
+-- Inserindo etapas para o Projeto 3 (Aplicativo de Delivery)
+INSERT INTO etapas (etapa, id_acao, acao, id_projeto, coordenacao, responsavel, tempo_estimado_dias, data_inicio, data_fim, status, created_at, updated_at) VALUES
+('Planejamento', 1, 'Definição de escopo', 3, 'TI', 'Lucas Mendes', 20, '2023-03-25', '2023-04-14', 'Finalizado', NOW(), NOW()),
+('Design', 2, 'Prototipação de telas', 3, 'UX', 'Camila Dias', 30, '2023-04-15', NULL, 'Paralisado', NOW(), NOW()),
+('Desenvolvimento', 3, 'API de geolocalização', 3, 'TI', 'Gustavo Nunes', 40, NULL, NULL, 'Não iniciado', NOW(), NOW());
+
+-- Inserindo etapas para o Projeto 5 (ERP para Pequenas Empresas)
+INSERT INTO etapas (etapa, id_acao, acao, id_projeto, coordenacao, responsavel, tempo_estimado_dias, data_inicio, data_fim, status, created_at, updated_at) VALUES
+('Planejamento', 1, 'Análise de mercado', 5, 'Negócios', 'Patricia Freitas', 25, '2023-03-01', '2023-03-26', 'Finalizado', NOW(), NOW()),
+('Desenvolvimento', 2, 'Módulo Contábil', 5, 'TI', 'Roberto Castro', 60, '2023-03-27', NULL, 'Em andamento', NOW(), NOW()),
+('Desenvolvimento', 3, 'Módulo Fiscal', 5, 'TI', 'Roberto Castro', 45, NULL, NULL, 'Não iniciado', NOW(), NOW());

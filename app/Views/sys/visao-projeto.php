@@ -1,9 +1,17 @@
 <!-- Begin Page Content -->
 <div class="container-fluid">
 
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="<?= site_url('projetos-cadastrados') ?>">Projetos</a></li>
+            <li class="breadcrumb-item active" aria-current="page"><?= $projeto['nome'] ?></li>
+        </ol>
+    </nav>
+
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Etapas e Ações Cadastradas</h1>
+        <h1 class="h3 mb-0 text-gray-800">Etapas e Ações do Projeto: <?= $projeto['nome'] ?></h1>
     </div>
 
     <!-- Filtros -->
@@ -94,44 +102,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <?php
-                        // Dados de exemplo
-                        $stages = [];
-                        for ($i = 1; $i <= 20; $i++) {
-                            $stages[] = [
-                                'id_etapa' => 'ETP-' . $i,
-                                'etapa' => 'Etapa ' . $i,
-                                'id_acao' => 'ACT-' . $i,
-                                'acao' => 'Ação ' . $i,
-                                'coordenacao' => 'Coordenação ' . ($i % 3 + 1),
-                                'responsavel' => 'Responsável ' . $i,
-                                'tempo_estimado' => rand(5, 30),
-                                'inicio' => date('d/m/Y', strtotime('-' . rand(0, 30) . ' days')),
-                                'fim' => date('d/m/Y', strtotime('+' . rand(10, 60) . ' days')),
-                                'status' => ['Em andamento', 'Finalizado', 'Paralisado', 'Não iniciado'][rand(0, 3)],
-                                'observacoes' => 'Observações sobre a etapa ' . $i,
-                                'detalhe_status' => 'Detalhes do status ' . $i,
-                                'evidencia' => 'Evidência ' . $i
-                            ];
-                        }
-
-                        foreach ($stages as $stage) {
-                            $id = $stage['id_etapa'] . '-' . $stage['id_acao'];
-                            echo '<tr>';
-                            echo '<td class="text-center">' . $stage['id_etapa'] . '</td>';
-                            echo '<td class="text-wrap">' . $stage['etapa'] . '</td>';
-                            echo '<td class="text-center">' . $stage['id_acao'] . '</td>';
-                            echo '<td class="text-wrap">' . $stage['acao'] . '</td>';
-                            echo '<td class="text-center">' . $stage['coordenacao'] . '</td>';
-                            echo '<td class="text-center">' . $stage['responsavel'] . '</td>';
-                            echo '<td class="text-center">' . $stage['tempo_estimado'] . '</td>';
-                            echo '<td class="text-center">' . $stage['inicio'] . '</td>';
-                            echo '<td class="text-center">' . $stage['fim'] . '</td>';
-                            echo '<td class="text-center">';
-
-                            // Adicionando badge colorido conforme o status
-                            $badge_class = '';
-                            switch ($stage['status']) {
+                        <?php foreach ($etapas as $etapa):
+                            $id = $etapa['id_etapa'] . '-' . $etapa['id_acao'];
+                            // Determina a classe do badge conforme o status
+                            switch ($etapa['status']) {
                                 case 'Em andamento':
                                     $badge_class = 'badge-primary';
                                     break;
@@ -147,32 +121,40 @@
                                 default:
                                     $badge_class = 'badge-light';
                             }
-                            echo '<span class="badge ' . $badge_class . '">' . $stage['status'] . '</span>';
-
-                            echo '</td>';
-                            echo '<td class="text-center">';
-                            echo '<div class="d-inline-flex">';
-
-                            // Botão Visualizar (agora com ícone de informações)
-                            echo '<button type="button" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" data-id="' . $id . '" title="Detalhes">';
-                            echo '<i class="fas fa-info-circle"></i>';
-                            echo '</button>';
-
-                            // Botão Editar
-                            echo '<button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="' . $id . '" title="Editar">';
-                            echo '<i class="fas fa-edit"></i>';
-                            echo '</button>';
-
-                            // Botão Excluir
-                            echo '<button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="' . $id . '" title="Excluir">';
-                            echo '<i class="fas fa-trash-alt"></i>';
-                            echo '</button>';
-
-                            echo '</div>';
-                            echo '</td>';
-                            echo '</tr>';
-                        }
                         ?>
+                            <tr>
+                                <td class="text-center">ETP-<?= $etapa['id_etapa'] ?></td>
+                                <td class="text-wrap"><?= $etapa['etapa'] ?></td>
+                                <td class="text-center">ACT-<?= $etapa['id_acao'] ?></td>
+                                <td class="text-wrap"><?= $etapa['acao'] ?></td>
+                                <td class="text-center"><?= $etapa['coordenacao'] ?></td>
+                                <td class="text-center"><?= $etapa['responsavel'] ?></td>
+                                <td class="text-center"><?= $etapa['tempo_estimado_dias'] ?> dias</td>
+                                <td class="text-center"><?= date('d/m/Y', strtotime($etapa['data_inicio'])) ?></td>
+                                <td class="text-center"><?= date('d/m/Y', strtotime($etapa['data_fim'])) ?></td>
+                                <td class="text-center">
+                                    <span class="badge <?= $badge_class ?>"><?= $etapa['status'] ?></span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="d-inline-flex">
+                                        <!-- Botão Detalhes -->
+                                        <button type="button" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Detalhes">
+                                            <i class="fas fa-info-circle"></i>
+                                        </button>
+
+                                        <!-- Botão Editar -->
+                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+
+                                        <!-- Botão Excluir -->
+                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Excluir">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>
