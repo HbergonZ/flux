@@ -1,24 +1,12 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<!-- CSS do DataTables -->
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap4.min.css" />
-
-<!-- Scripts do DataTables -->
-<script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap4.min.js"></script>
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<!-- CSS do DataTables -->
-<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap4.min.css" />
-
-<!-- Scripts do DataTables -->
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap4.min.js"></script>
 
 <script>
     $(document).ready(function() {
-        $('#dataTable').DataTable({
+        // Inicializa o DataTable
+        var dataTable = $('#dataTable').DataTable({
             "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             "language": {
                 "url": "//cdn.datatables.net/plug-ins/1.10.20/i18n/Portuguese-Brasil.json",
@@ -37,39 +25,31 @@
             },
             "searching": false,
             "columnDefs": [{
-                    "width": "10%",
-                    "targets": 0
-                }, // ID do Projeto
-                {
-                    "width": "20%",
-                    "targets": 1
-                }, // Nome
-                {
-                    "width": "30%",
-                    "targets": 2
-                }, // Descrição
-                {
-                    "width": "15%",
-                    "targets": 3
-                }, // Status
-                {
-                    "width": "15%",
-                    "targets": 4
-                }, // Data
-                {
-                    "width": "10%",
-                    "targets": 5
-                } // Ações
-            ],
+                "width": "10%",
+                "targets": 0
+            }, {
+                "width": "20%",
+                "targets": 1
+            }, {
+                "width": "30%",
+                "targets": 2
+            }, {
+                "width": "15%",
+                "targets": 3
+            }, {
+                "width": "15%",
+                "targets": 4
+            }, {
+                "width": "10%",
+                "targets": 5
+            }],
             "responsive": true,
             "autoWidth": false,
             "lengthMenu": [5, 10, 25, 50, 100],
             "pageLength": 10
         });
-    });
-</script>
-<script>
-    $(document).ready(function() {
+
+        // Configuração do AJAX
         $.ajaxSetup({
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
@@ -77,6 +57,7 @@
             }
         });
 
+        // Cadastrar novo projeto
         $('#formAddProject').submit(function(e) {
             e.preventDefault();
 
@@ -88,7 +69,6 @@
                 success: function(response) {
                     if (response.success) {
                         $('#addProjectModal').modal('hide');
-                        // Recarrega a página ou atualiza a tabela
                         location.reload();
                     } else {
                         alert('Erro: ' + response.message);
@@ -99,179 +79,267 @@
                 }
             });
         });
-    });
-    // Função para editar projeto
-    $(document).on('click', '.btn-primary[title="Editar"]', function() {
-        var projectId = $(this).data('id').split('-')[0]; // Pega apenas o ID numérico
 
-        $.get('<?= site_url('projetos-cadastrados/editar/') ?>' + projectId, function(response) {
-            if (response.success) {
-                $('#editProjectId').val(response.data.id);
-                $('#editProjectName').val(response.data.nome);
-                $('#editProjectDescription').val(response.data.descricao);
-                $('#editProjectStatus').val(response.data.status);
-                $('#editProjectPublicationDate').val(response.data.data_publicacao);
-
-                $('#editProjectModal').modal('show');
-            } else {
-                alert(response.message);
-            }
-        }).fail(function() {
-            alert('Erro ao carregar dados do projeto');
-        });
-    });
-
-    // Submit do formulário de edição
-    $('#formEditProject').submit(function(e) {
-        e.preventDefault();
-
-        $.ajax({
-            type: "POST",
-            url: '<?= site_url('projetos-cadastrados/atualizar') ?>',
-            data: $(this).serialize(),
-            dataType: "json",
-            success: function(response) {
-                if (response.success) {
-                    $('#editProjectModal').modal('hide');
-                    location.reload();
-                } else {
-                    alert('Erro: ' + response.message);
-                }
-            },
-            error: function(xhr, status, error) {
-                alert('Erro na requisição: ' + error);
-            }
-        });
-    });
-
-    // Função para excluir projeto
-    $(document).on('click', '.btn-danger[title="Excluir"]', function() {
-        var projectId = $(this).data('id').split('-')[0]; // Pega apenas o ID numérico
-        var projectName = $(this).closest('tr').find('td:nth-child(2)').text();
-
-        $('#deleteProjectId').val(projectId);
-        $('#projectNameToDelete').text(projectName);
-        $('#deleteProjectModal').modal('show');
-    });
-
-    // Submit do formulário de exclusão
-    $('#formDeleteProject').submit(function(e) {
-        e.preventDefault();
-
-        $.ajax({
-            type: "POST",
-            url: '<?= site_url('projetos-cadastrados/excluir') ?>',
-            data: $(this).serialize(),
-            dataType: "json",
-            success: function(response) {
-                if (response.success) {
-                    $('#deleteProjectModal').modal('hide');
-                    location.reload();
-                } else {
-                    alert('Erro: ' + response.message);
-                }
-            },
-            error: function(xhr, status, error) {
-                alert('Erro na requisição: ' + error);
-            }
-        });
-    });
-    // Função para aplicar filtros
-    $('#formFiltros').submit(function(e) {
-        e.preventDefault();
-
-        $.ajax({
-            type: "POST",
-            url: '<?= site_url('projetos-cadastrados/filtrar') ?>',
-            data: $(this).serialize(),
-            dataType: "json",
-            success: function(response) {
-                if (response.success) {
-                    // Limpa a tabela
-                    $('#dataTable tbody').empty();
-
-                    // Adiciona os novos registros filtrados
-                    $.each(response.data, function(index, projeto) {
-                        var id = projeto.id + '-' + projeto.nome.toLowerCase().replace(/\s+/g, '-');
-                        var badge_class = '';
-
-                        switch (projeto.status) {
-                            case 'Em andamento':
-                                badge_class = 'badge-primary';
-                                break;
-                            case 'Não iniciado':
-                                badge_class = 'badge-secondary';
-                                break;
-                            case 'Finalizado':
-                                badge_class = 'badge-success';
-                                break;
-                            case 'Paralisado':
-                                badge_class = 'badge-warning';
-                                break;
-                            default:
-                                badge_class = 'badge-light';
-                        }
-
-                        var row = '<tr>' +
-                            '<td class="text-center">' + projeto.id + '</td>' +
-                            '<td class="text-wrap">' + projeto.nome + '</td>' +
-                            '<td class="text-wrap">' + projeto.descricao + '</td>' +
-                            '<td class="text-center"><span class="badge ' + badge_class + '">' + projeto.status + '</span></td>' +
-                            '<td class="text-center">' + new Date(projeto.data_publicacao).toLocaleDateString('pt-BR') + '</td>' +
-                            '<td class="text-center">' +
-                            '<div class="d-inline-flex">' +
-                            '<a href="<?= site_url('visao-projeto/') ?>' + projeto.id + '" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar">' +
-                            '<i class="fas fa-eye"></i>' +
-                            '</a>' +
-                            '<button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="' + id + '" title="Editar">' +
-                            '<i class="fas fa-edit"></i>' +
-                            '</button>' +
-                            '<button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="' + id + '" title="Excluir">' +
-                            '<i class="fas fa-trash-alt"></i>' +
-                            '</button>' +
-                            '</div>' +
-                            '</td>' +
-                            '</tr>';
-
-                        $('#dataTable tbody').append(row);
-                    });
-
-                    // Reaplica os eventos de edição/exclusão
-                    aplicarEventosBotoes();
-                } else {
-                    alert('Erro ao filtrar projetos');
-                }
-            },
-            error: function(xhr, status, error) {
-                alert('Erro na requisição: ' + error);
-            }
-        });
-    });
-
-    // Função para reaplicar eventos após filtragem
-    function aplicarEventosBotoes() {
-        // Remove eventos antigos para evitar duplicação
-        $('.btn-primary[title="Editar"]').off('click');
-        $('.btn-danger[title="Excluir"]').off('click');
-
-        // Aplica os eventos novamente
+        // Editar projeto
         $(document).on('click', '.btn-primary[title="Editar"]', function() {
             var projectId = $(this).data('id').split('-')[0];
-            // ... (código existente de edição)
+
+            $.get('<?= site_url('projetos-cadastrados/editar/') ?>' + projectId, function(response) {
+                if (response.success) {
+                    $('#editProjectId').val(response.data.id);
+                    $('#editProjectName').val(response.data.nome);
+                    $('#editProjectDescription').val(response.data.descricao);
+                    $('#editProjectStatus').val(response.data.status);
+                    $('#editProjectPublicationDate').val(response.data.data_publicacao.split(' ')[0]); // Pega apenas a data
+
+                    $('#editProjectModal').modal('show');
+                } else {
+                    alert(response.message);
+                }
+            }).fail(function() {
+                alert('Erro ao carregar dados do projeto');
+            });
         });
 
+        // Atualizar projeto
+        $('#formEditProject').submit(function(e) {
+            e.preventDefault();
+
+            $.ajax({
+                type: "POST",
+                url: '<?= site_url('projetos-cadastrados/atualizar') ?>',
+                data: $(this).serialize(),
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        $('#editProjectModal').modal('hide');
+                        location.reload();
+                    } else {
+                        alert('Erro: ' + response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    alert('Erro na requisição: ' + error);
+                }
+            });
+        });
+
+        // Excluir projeto
         $(document).on('click', '.btn-danger[title="Excluir"]', function() {
             var projectId = $(this).data('id').split('-')[0];
-            // ... (código existente de exclusão)
+            var projectName = $(this).closest('tr').find('td:nth-child(2)').text();
+
+            $('#deleteProjectId').val(projectId);
+            $('#projectNameToDelete').text(projectName);
+            $('#deleteProjectModal').modal('show');
         });
-    }
 
-    // Limpar filtros - MODIFICAÇÃO AQUI
-    $('#btnLimparFiltros').click(function() {
-        // Limpa o formulário
-        $('#formFiltros')[0].reset();
+        // Confirmar exclusão
+        $('#formDeleteProject').submit(function(e) {
+            e.preventDefault();
 
-        // Dispara o evento submit do formulário para recarregar os dados
-        $('#formFiltros').submit();
+            $.ajax({
+                type: "POST",
+                url: '<?= site_url('projetos-cadastrados/excluir') ?>',
+                data: $(this).serialize(),
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        $('#deleteProjectModal').modal('hide');
+                        location.reload();
+                    } else {
+                        alert('Erro: ' + response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    alert('Erro na requisição: ' + error);
+                }
+            });
+        });
+
+        // Aplicar filtros
+        $('#formFiltros').submit(function(e) {
+            e.preventDefault();
+
+            // Verifica se há filtros aplicados
+            var hasFilters = false;
+            $(this).find('input, select').each(function() {
+                if ($(this).val() !== '' && $(this).val() !== null) {
+                    hasFilters = true;
+                    return false;
+                }
+            });
+
+            // Se não houver filtros, apenas recarrega a página
+            if (!hasFilters) {
+                location.reload();
+                return;
+            }
+
+            // Mostra loading
+            /* $('#dataTable').closest('.card-body').append('<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>'); */
+
+            $.ajax({
+                type: "POST",
+                url: '<?= site_url('projetos-cadastrados/filtrar') ?>',
+                data: $(this).serialize(),
+                dataType: "json",
+                success: function(response) {
+                    // Remove loading
+                    $('.overlay').remove();
+
+                    if (response.success) {
+                        // Destroi a tabela atual
+                        dataTable.destroy();
+
+                        // Limpa o corpo da tabela
+                        $('#dataTable tbody').empty();
+
+                        // Adiciona os novos registros filtrados
+                        $.each(response.data, function(index, projeto) {
+                            var id = projeto.id + '-' + projeto.nome.toLowerCase().replace(/\s+/g, '-');
+                            var badge_class = '';
+
+                            switch (projeto.status) {
+                                case 'Em andamento':
+                                    badge_class = 'badge-primary';
+                                    break;
+                                case 'Não iniciado':
+                                    badge_class = 'badge-secondary';
+                                    break;
+                                case 'Finalizado':
+                                    badge_class = 'badge-success';
+                                    break;
+                                case 'Paralisado':
+                                    badge_class = 'badge-warning';
+                                    break;
+                                default:
+                                    badge_class = 'badge-light';
+                            }
+
+                            // Formata a data corretamente
+                            var dataFormatada = projeto.data_formatada || formatDate(projeto.data_publicacao);
+
+                            var row = '<tr>' +
+                                '<td class="text-center">' + projeto.id + '</td>' +
+                                '<td class="text-wrap">' + projeto.nome + '</td>' +
+                                '<td class="text-wrap">' + projeto.descricao + '</td>' +
+                                '<td class="text-center"><span class="badge ' + badge_class + '">' + projeto.status + '</span></td>' +
+                                '<td class="text-center">' + dataFormatada + '</td>' +
+                                '<td class="text-center">' +
+                                '<div class="d-inline-flex">' +
+                                '<a href="<?= site_url('visao-projeto/') ?>' + projeto.id + '" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar">' +
+                                '<i class="fas fa-eye"></i>' +
+                                '</a>' +
+                                '<button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="' + id + '" title="Editar">' +
+                                '<i class="fas fa-edit"></i>' +
+                                '</button>' +
+                                '<button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="' + id + '" title="Excluir">' +
+                                '<i class="fas fa-trash-alt"></i>' +
+                                '</button>' +
+                                '</div>' +
+                                '</td>' +
+                                '</tr>';
+
+                            $('#dataTable tbody').append(row);
+                        });
+
+                        // Re-inicializa o DataTable
+                        dataTable = $('#dataTable').DataTable({
+                            "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                            "language": {
+                                "url": "//cdn.datatables.net/plug-ins/1.10.20/i18n/Portuguese-Brasil.json",
+                                "lengthMenu": "Mostrar _MENU_ registros por página",
+                                "zeroRecords": "Nenhum registro encontrado",
+                                "info": "Mostrando página _PAGE_ de _PAGES_",
+                                "infoEmpty": "Nenhum registro disponível",
+                                "infoFiltered": "(filtrado de _MAX_ registros totais)",
+                                "search": "Pesquisar:",
+                                "paginate": {
+                                    "first": "Primeira",
+                                    "last": "Última",
+                                    "next": "Próxima",
+                                    "previous": "Anterior"
+                                }
+                            },
+                            "searching": false,
+                            "columnDefs": [{
+                                "width": "10%",
+                                "targets": 0
+                            }, {
+                                "width": "20%",
+                                "targets": 1
+                            }, {
+                                "width": "30%",
+                                "targets": 2
+                            }, {
+                                "width": "15%",
+                                "targets": 3
+                            }, {
+                                "width": "15%",
+                                "targets": 4
+                            }, {
+                                "width": "10%",
+                                "targets": 5
+                            }],
+                            "responsive": true,
+                            "autoWidth": false,
+                            "lengthMenu": [5, 10, 25, 50, 100],
+                            "pageLength": 10
+                        });
+                    } else {
+                        alert('Erro ao filtrar projetos: ' + response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('.overlay').remove();
+                    alert('Erro na requisição: ' + error);
+                }
+            });
+        });
+
+        // Limpar filtros
+        $('#btnLimparFiltros').click(function() {
+            $('#formFiltros')[0].reset();
+            $('#formFiltros').submit();
+        });
+
+        // Função para formatar data corretamente (sem alterar o valor)
+        function formatDate(dateString) {
+            if (!dateString) return '';
+
+            // Se já estiver no formato dd/mm/yyyy, retorna como está
+            if (dateString.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                return dateString;
+            }
+
+            // Se for uma data ISO (yyyy-mm-dd)
+            if (dateString.match(/^\d{4}-\d{2}-\d{2}(?:T|$)/)) {
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) {
+                    return dateString;
+                }
+
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                return `${day}/${month}/${year}`;
+            }
+
+            // Para outros formatos, tenta converter
+            try {
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) {
+                    return dateString;
+                }
+
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                return `${day}/${month}/${year}`;
+            } catch (e) {
+                return dateString;
+            }
+        }
     });
 </script>

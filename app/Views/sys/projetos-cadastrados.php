@@ -95,55 +95,61 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($projetos as $projeto) :
-                            $id = $projeto['id'] . '-' . str_replace(' ', '-', strtolower($projeto['nome'])); ?>
+                        <?php if (isset($projetos) && !empty($projetos)) : ?>
+                            <?php foreach ($projetos as $projeto) :
+                                $id = $projeto['id'] . '-' . str_replace(' ', '-', strtolower($projeto['nome'])); ?>
+                                <tr>
+                                    <td class="text-center"><?= $projeto['id'] ?></td>
+                                    <td class="text-wrap"><?= $projeto['nome'] ?></td>
+                                    <td class="text-wrap"><?= $projeto['descricao'] ?></td>
+                                    <td class="text-center">
+                                        <?php
+                                        $badge_class = '';
+                                        switch ($projeto['status']) {
+                                            case 'Em andamento':
+                                                $badge_class = 'badge-primary'; // Azul
+                                                break;
+                                            case 'Não iniciado':
+                                                $badge_class = 'badge-secondary'; // Cinza claro
+                                                break;
+                                            case 'Finalizado':
+                                                $badge_class = 'badge-success'; // Verde
+                                                break;
+                                            case 'Paralisado':
+                                                $badge_class = 'badge-warning'; // Amarelo
+                                                break;
+                                            default:
+                                                $badge_class = 'badge-light'; // Padrão
+                                        }
+                                        ?>
+                                        <span class="badge <?= $badge_class ?>"><?= $projeto['status'] ?></span>
+                                    </td>
+                                    <td class="text-center"><?= date('d/m/Y', strtotime($projeto['data_publicacao'])) ?></td>
+                                    <td class="text-center">
+                                        <div class="d-inline-flex">
+                                            <!-- Botão Visualizar -->
+                                            <a href="<?= site_url('visao-projeto/' . $projeto['id']) ?>" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+
+                                            <!-- Botão Editar -->
+                                            <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+
+                                            <!-- Botão Excluir -->
+                                            <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Excluir">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else : ?>
                             <tr>
-                                <td class="text-center"><?= $projeto['id'] ?></td>
-                                <td class="text-wrap"><?= $projeto['nome'] ?></td>
-                                <td class="text-wrap"><?= $projeto['descricao'] ?></td>
-                                <td class="text-center">
-                                    <?php
-                                    $badge_class = '';
-                                    switch ($projeto['status']) {
-                                        case 'Em andamento':
-                                            $badge_class = 'badge-primary'; // Azul
-                                            break;
-                                        case 'Não iniciado':
-                                            $badge_class = 'badge-secondary'; // Cinza claro
-                                            break;
-                                        case 'Finalizado':
-                                            $badge_class = 'badge-success'; // Verde
-                                            break;
-                                        case 'Paralisado':
-                                            $badge_class = 'badge-warning'; // Amarelo
-                                            break;
-                                        default:
-                                            $badge_class = 'badge-light'; // Padrão
-                                    }
-                                    ?>
-                                    <span class="badge <?= $badge_class ?>"><?= $projeto['status'] ?></span>
-                                </td>
-                                <td class="text-center"><?= date('d/m/Y', strtotime($projeto['data_publicacao'])) ?></td>
-                                <td class="text-center">
-                                    <div class="d-inline-flex">
-                                        <!-- Botão Visualizar -->
-                                        <a href="<?= site_url('visao-projeto/' . $projeto['id']) ?>" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-
-                                        <!-- Botão Editar -->
-                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Editar">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-
-                                        <!-- Botão Excluir -->
-                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Excluir">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </div>
-                                </td>
+                                <td colspan="6" class="text-center">Nenhum projeto encontrado</td>
                             </tr>
-                        <?php endforeach; ?>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>

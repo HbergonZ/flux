@@ -160,26 +160,40 @@ class ProjetosCadastrados extends BaseController
             'data_fim' => $this->request->getPost('data_fim')
         ];
 
+        // Se todos os filtros estiverem vazios, retorna todos os projetos
+        if (empty(array_filter($filtros))) {
+            $projetos = $this->projetoModel->findAll();
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $projetos
+            ]);
+        }
+
         // Aplica os filtros
-        $this->projetoModel->select('*');
+        $builder = $this->projetoModel->builder();
 
         if (!empty($filtros['nome'])) {
-            $this->projetoModel->like('nome', $filtros['nome']);
+            $builder->like('nome', $filtros['nome']);
         }
 
         if (!empty($filtros['status'])) {
-            $this->projetoModel->where('status', $filtros['status']);
+            $builder->where('status', $filtros['status']);
         }
 
         if (!empty($filtros['data_inicio'])) {
-            $this->projetoModel->where('data_publicacao >=', $filtros['data_inicio']);
+            $builder->where('data_publicacao >=', $filtros['data_inicio']);
         }
 
         if (!empty($filtros['data_fim'])) {
-            $this->projetoModel->where('data_publicacao <=', $filtros['data_fim']);
+            $builder->where('data_publicacao <=', $filtros['data_fim']);
         }
 
-        $projetos = $this->projetoModel->findAll();
+        $projetos = $builder->get()->getResultArray();
+
+        // Formata as datas antes de enviar
+        foreach ($projetos as &$projeto) {
+            $projeto['data_formatada'] = date('d/m/Y', strtotime($projeto['data_publicacao']));
+        }
 
         return $this->response->setJSON([
             'success' => true,

@@ -1,3 +1,7 @@
+<!-- Importação de Modais -->
+
+
+
 <!-- Begin Page Content -->
 <div class="container-fluid">
 
@@ -17,58 +21,75 @@
     <!-- Filtros -->
     <div class="card mb-4 mx-md-5 mx-3">
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label for="filterStage">Etapa</label>
-                        <input type="text" class="form-control" id="filterStage" placeholder="Filtrar por etapa">
+            <form id="formFiltros">
+                <input type="hidden" name="id_projeto" value="<?= $projeto['id'] ?>">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="filterStage">Etapa</label>
+                            <input type="text" class="form-control" id="filterStage" name="etapa" placeholder="Filtrar por etapa">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="filterAction">Ação</label>
+                            <input type="text" class="form-control" id="filterAction" name="acao" placeholder="Filtrar por ação">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="filterStatus">Status</label>
+                            <select class="form-control" id="filterStatus" name="status">
+                                <option value="">Todos</option>
+                                <option value="Em andamento">Em andamento</option>
+                                <option value="Finalizado">Finalizado</option>
+                                <option value="Paralisado">Paralisado</option>
+                                <option value="Não iniciado">Não iniciado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="filterResponsible">Responsável</label>
+                            <input type="text" class="form-control" id="filterResponsible" name="responsavel" placeholder="Filtrar por responsável">
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label for="filterAction">Ação</label>
-                        <input type="text" class="form-control" id="filterAction" placeholder="Filtrar por ação">
+                <div class="row mt-3">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="filterStartDate">Data Início</label>
+                            <input type="date" class="form-control" id="filterStartDate" name="data_inicio">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="filterEndDate">Data Fim</label>
+                            <input type="date" class="form-control" id="filterEndDate" name="data_fim">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="filterCoordination">Coordenação</label>
+                            <input type="text" class="form-control" id="filterCoordination" name="coordenacao" placeholder="Filtrar por coordenação">
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-right align-self-end">
+                        <button type="button" id="btnLimparFiltros" class="btn btn-secondary btn-icon-split btn-sm">
+                            <span class="icon text-white-50">
+                                <i class="fas fa-broom"></i>
+                            </span>
+                            <span class="text">Limpar</span>
+                        </button>
+                        <button type="submit" class="btn btn-primary btn-icon-split btn-sm">
+                            <span class="icon text-white-50">
+                                <i class="fas fa-filter"></i>
+                            </span>
+                            <span class="text">Filtrar</span>
+                        </button>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label for="filterStatus">Status</label>
-                        <select class="form-control" id="filterStatus">
-                            <option value="">Todos</option>
-                            <option value="Em andamento">Em andamento</option>
-                            <option value="Finalizado">Finalizado</option>
-                            <option value="Paralisado">Paralisado</option>
-                            <option value="Não iniciado">Não iniciado</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label for="filterResponsible">Responsável</label>
-                        <input type="text" class="form-control" id="filterResponsible" placeholder="Filtrar por responsável">
-                    </div>
-                </div>
-            </div>
-            <div class="row mt-3">
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label for="filterStartDate">Data Início</label>
-                        <input type="date" class="form-control" id="filterStartDate">
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label for="filterEndDate">Data Fim</label>
-                        <input type="date" class="form-control" id="filterEndDate">
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label for="filterCoordination">Coordenação</label>
-                        <input type="text" class="form-control" id="filterCoordination" placeholder="Filtrar por coordenação">
-                    </div>
-                </div>
-            </div>
+            </form>
         </div>
     </div>
 
@@ -164,70 +185,8 @@
 </div>
 <!-- /.container-fluid -->
 
-<!-- Adicione estas bibliotecas no cabeçalho ou antes do fechamento do body -->
+<!-- CSS do DataTables -->
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap4.min.css" />
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap4.min.css" />
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap4.min.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.2.9/js/responsive.bootstrap4.min.js"></script>
-
-<script>
-    $(document).ready(function() {
-        $('#dataTable').DataTable({
-            "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-            "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.20/i18n/Portuguese-Brasil.json",
-                "lengthMenu": "Mostrar _MENU_ registros por página",
-                "zeroRecords": "Nenhum registro encontrado",
-                "info": "Mostrando página _PAGE_ de _PAGES_",
-                "infoEmpty": "Nenhum registro disponível",
-                "infoFiltered": "(filtrado de _MAX_ registros totais)",
-                "search": "Pesquisar:",
-                "paginate": {
-                    "first": "Primeira",
-                    "last": "Última",
-                    "next": "Próxima",
-                    "previous": "Anterior"
-                }
-            },
-            "responsive": {
-                details: {
-                    type: 'column',
-                    target: 'tr'
-                }
-            },
-            "columnDefs": [{
-                    className: 'control',
-                    orderable: false,
-                    targets: -1
-                },
-                {
-                    responsivePriority: 1,
-                    targets: 0
-                }, // ID Etapa
-                {
-                    responsivePriority: 2,
-                    targets: 1
-                }, // Etapa
-                {
-                    responsivePriority: 3,
-                    targets: 3
-                }, // Ação
-                {
-                    responsivePriority: 4,
-                    targets: 9
-                }, // Status
-                {
-                    responsivePriority: 5,
-                    targets: 10
-                } // Ações
-            ],
-            "autoWidth": false,
-            "lengthMenu": [5, 10, 25, 50, 100],
-            "pageLength": 10
-        });
-    });
-</script>
+<!-- Scripts da página -->
+<?php echo view('scripts/etapas.php'); ?>
