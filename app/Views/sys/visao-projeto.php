@@ -77,7 +77,7 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered align-middle" id="dataTable" cellspacing="0">
+                <table class="table table-bordered align-middle" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr class="text-center">
                             <th>ID Etapa</th>
@@ -86,7 +86,7 @@
                             <th>Ação</th>
                             <th>Coordenação</th>
                             <th>Responsável</th>
-                            <th>Tempo Estimado (dias)</th>
+                            <th>Tempo Estimado</th>
                             <th>Início</th>
                             <th>Fim</th>
                             <th>Status</th>
@@ -182,14 +182,15 @@
 </div>
 <!-- /.container-fluid -->
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<!-- CSS do DataTables -->
+<!-- Adicione estas bibliotecas no cabeçalho ou antes do fechamento do body -->
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap4.min.css" />
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap4.min.css" />
 
-<!-- Scripts do DataTables -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap4.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.2.9/js/responsive.bootstrap4.min.js"></script>
 
 <script>
     $(document).ready(function() {
@@ -210,57 +211,41 @@
                     "previous": "Anterior"
                 }
             },
-            "searching": false,
+            "responsive": {
+                details: {
+                    type: 'column',
+                    target: 'tr'
+                }
+            },
             "columnDefs": [{
-                    "width": "5%",
-                    "targets": 0
+                    className: 'control',
+                    orderable: false,
+                    targets: -1
+                },
+                {
+                    responsivePriority: 1,
+                    targets: 0
                 }, // ID Etapa
                 {
-                    "width": "10%",
-                    "targets": 1
+                    responsivePriority: 2,
+                    targets: 1
                 }, // Etapa
                 {
-                    "width": "5%",
-                    "targets": 2
-                }, // ID Ação
-                {
-                    "width": "15%",
-                    "targets": 3
+                    responsivePriority: 3,
+                    targets: 3
                 }, // Ação
                 {
-                    "width": "10%",
-                    "targets": 4
-                }, // Coordenação
-                {
-                    "width": "10%",
-                    "targets": 5
-                }, // Responsável
-                {
-                    "width": "5%",
-                    "targets": 6
-                }, // Tempo Estimado
-                {
-                    "width": "7%",
-                    "targets": 7
-                }, // Início
-                {
-                    "width": "7%",
-                    "targets": 8
-                }, // Fim
-                {
-                    "width": "8%",
-                    "targets": 9
+                    responsivePriority: 4,
+                    targets: 9
                 }, // Status
                 {
-                    "width": "8%",
-                    "targets": 10
+                    responsivePriority: 5,
+                    targets: 10
                 } // Ações
             ],
-            "responsive": true,
             "autoWidth": false,
             "lengthMenu": [5, 10, 25, 50, 100],
-            "pageLength": 10,
-            "scrollX": true
+            "pageLength": 10
         });
     });
 </script>
