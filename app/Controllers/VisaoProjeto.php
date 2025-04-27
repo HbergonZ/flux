@@ -100,4 +100,78 @@ class VisaoProjeto extends BaseController
             'data' => $etapas
         ]);
     }
+    public function dadosEtapa($idEtapa, $idAcao)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $etapa = $this->etapaModel
+            ->where('id_etapa', $idEtapa)
+            ->where('id_acao', $idAcao)
+            ->first();
+
+        if (!$etapa) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Etapa/Ação não encontrada'
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'data' => $etapa
+        ]);
+    }
+
+    public function solicitarEdicao()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        // Validação dos dados
+        $validation = \Config\Services::validation();
+        $validation->setRules([
+            'id_etapa' => 'required|numeric',
+            'id_acao' => 'required|numeric',
+            'id_projeto' => 'required|numeric',
+            'dados_atuais' => 'required',
+            'dados_alterados' => 'required',
+            'justificativa' => 'required|min_length[10]'
+        ]);
+
+        if (!$validation->withRequest($this->request)->run()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => implode('<br>', $validation->getErrors())
+            ]);
+        }
+
+        // Insere a solicitação no banco de dados
+        $db = \Config\Database::connect();
+        $builder = $db->table('solicitacoes_edicao');
+
+        try {
+            $builder->insert([
+                'id_etapa' => $this->request->getPost('id_etapa'),
+                'id_acao' => $this->request->getPost('id_acao'),
+                'id_projeto' => $this->request->getPost('id_projeto'),
+                'dados_atuais' => $this->request->getPost('dados_atuais'),
+                'dados_alterados' => $this->request->getPost('dados_alterados'),
+                'justificativa' => $this->request->getPost('justificativa'),
+                'status' => 'pendente'
+            ]);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Solicitação de edição registrada com sucesso!'
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Erro ao registrar solicitação: ' . $e->getMessage()
+            ]);
+        }
+    }
 }

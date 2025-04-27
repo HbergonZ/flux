@@ -1,5 +1,100 @@
 <!-- Importação de Modais -->
+<!-- Modal de Solicitação de Edição -->
+<div class="modal fade" id="solicitarEdicaoModal" tabindex="-1" role="dialog" aria-labelledby="solicitarEdicaoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="solicitarEdicaoModalLabel">Solicitar Edição</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="formSolicitarEdicao">
+                <div class="modal-body">
+                    <input type="hidden" name="id_etapa" id="edit_id_etapa">
+                    <input type="hidden" name="id_acao" id="edit_id_acao">
+                    <input type="hidden" name="id_projeto" id="edit_id_projeto" value="<?= $projeto['id'] ?>">
 
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="edit_etapa">Etapa</label>
+                                <input type="text" class="form-control" id="edit_etapa" name="etapa" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="edit_acao">Ação</label>
+                                <input type="text" class="form-control" id="edit_acao" name="acao" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="edit_coordenacao">Coordenação</label>
+                                <input type="text" class="form-control" id="edit_coordenacao" name="coordenacao">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="edit_responsavel">Responsável</label>
+                                <input type="text" class="form-control" id="edit_responsavel" name="responsavel">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="edit_status">Status</label>
+                                <select class="form-control" id="edit_status" name="status">
+                                    <option value="Em andamento">Em andamento</option>
+                                    <option value="Finalizado">Finalizado</option>
+                                    <option value="Paralisado">Paralisado</option>
+                                    <option value="Não iniciado">Não iniciado</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="edit_tempo_estimado">Tempo Estimado (dias)</label>
+                                <input type="number" class="form-control" id="edit_tempo_estimado" name="tempo_estimado_dias" min="1">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="edit_data_inicio">Data Início</label>
+                                <input type="date" class="form-control" id="edit_data_inicio" name="data_inicio">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="edit_data_fim">Data Fim</label>
+                                <input type="date" class="form-control" id="edit_data_fim" name="data_fim">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit_justificativa">Justificativa para as alterações <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="edit_justificativa" name="justificativa" rows="3" required placeholder="Descreva detalhadamente o motivo das alterações propostas"></textarea>
+                        <small class="form-text text-muted">Mínimo 10 caracteres</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times mr-1"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="btnSubmitSolicitacao">
+                        <i class="fas fa-paper-plane mr-1"></i> Enviar Solicitação
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 
 <!-- Begin Page Content -->
@@ -164,7 +259,7 @@
                                         </button>
 
                                         <!-- Botão Editar -->
-                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Editar">
+                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Edição">
                                             <i class="fas fa-edit"></i>
                                         </button>
 
