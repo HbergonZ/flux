@@ -253,19 +253,9 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="d-inline-flex">
-                                        <!-- Botão Detalhes -->
-                                        <button type="button" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Detalhes">
-                                            <i class="fas fa-info-circle"></i>
-                                        </button>
-
-                                        <!-- Botão Editar -->
+                                        <!-- Mantém apenas o botão de Solicitar Edição -->
                                         <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Edição">
                                             <i class="fas fa-edit"></i>
-                                        </button>
-
-                                        <!-- Botão Excluir -->
-                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Excluir">
-                                            <i class="fas fa-trash-alt"></i>
                                         </button>
                                     </div>
                                 </td>

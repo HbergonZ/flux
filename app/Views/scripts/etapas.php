@@ -179,22 +179,16 @@
             }
         }
 
-        // Função auxiliar para gerar botões de ação
+        // Função auxiliar para gerar botões de ação (modificada para mostrar apenas o botão de edição)
         function getActionButtons(id) {
             return '<div class="d-flex justify-content-center">' +
-                '<button type="button" class="btn btn-info btn-sm mx-1 btn-detalhes" style="width: 32px; height: 32px;" data-id="' + id + '" title="Detalhes">' +
-                '<i class="fas fa-info-circle"></i>' +
-                '</button>' +
                 '<button type="button" class="btn btn-primary btn-sm mx-1 btn-editar" style="width: 32px; height: 32px;" data-id="' + id + '" title="Solicitar Edição">' +
                 '<i class="fas fa-edit"></i>' +
-                '</button>' +
-                '<button type="button" class="btn btn-danger btn-sm mx-1 btn-excluir" style="width: 32px; height: 32px;" data-id="' + id + '" title="Excluir">' +
-                '<i class="fas fa-trash-alt"></i>' +
                 '</button>' +
                 '</div>';
         }
 
-        // Evento delegado para funcionar em qualquer situação
+        // Evento para abrir o modal de solicitação de edição
         $(document).on('click', '.btn-primary[title="Solicitar Edição"], .btn-editar', function() {
             var $btn = $(this);
             var ids = $btn.data('id').split('-');
@@ -204,13 +198,13 @@
             // Mostra loading no modal
             var $modal = $('#solicitarEdicaoModal');
             $modal.find('.modal-body').html(`
-        <div class="text-center py-4">
-            <div class="spinner-border text-primary" role="status">
-                <span class="sr-only">Carregando...</span>
-            </div>
-            <p class="mt-2">Carregando dados da etapa...</p>
-        </div>
-    `);
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Carregando...</span>
+                    </div>
+                    <p class="mt-2">Carregando dados da etapa...</p>
+                </div>
+            `);
             $modal.modal('show');
 
             console.log('Acessando endpoint:', '<?= site_url('visao-projeto/dados-etapa/') ?>' + idEtapa + '/' + idAcao);
@@ -227,79 +221,78 @@
 
                         // Preenche o modal com os dados atuais
                         $modal.find('.modal-body').html(`
-                    <input type="hidden" name="id_etapa" id="edit_id_etapa" value="${etapa.id_etapa}">
-                    <input type="hidden" name="id_acao" id="edit_id_acao" value="${etapa.id_acao}">
-                    <input type="hidden" name="id_projeto" id="edit_id_projeto" value="${etapa.id_projeto}">
+                            <input type="hidden" name="id_etapa" id="edit_id_etapa" value="${etapa.id_etapa}">
+                            <input type="hidden" name="id_acao" id="edit_id_acao" value="${etapa.id_acao}">
+                            <input type="hidden" name="id_projeto" id="edit_id_projeto" value="${etapa.id_projeto}">
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="edit_etapa">Etapa</label>
-                                <input type="text" class="form-control" id="edit_etapa" name="etapa" value="${etapa.etapa || ''}" readonly>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="edit_etapa">Etapa</label>
+                                        <input type="text" class="form-control" id="edit_etapa" name="etapa" value="${etapa.etapa || ''}" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="edit_acao">Ação</label>
+                                        <input type="text" class="form-control" id="edit_acao" name="acao" value="${etapa.acao || ''}" readonly>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="edit_acao">Ação</label>
-                                <input type="text" class="form-control" id="edit_acao" name="acao" value="${etapa.acao || ''}" readonly>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Restante do formulário -->
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="edit_coordenacao">Coordenação</label>
-                                <input type="text" class="form-control" id="edit_coordenacao" name="coordenacao" value="${etapa.coordenacao || ''}">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="edit_coordenacao">Coordenação</label>
+                                        <input type="text" class="form-control" id="edit_coordenacao" name="coordenacao" value="${etapa.coordenacao || ''}">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="edit_responsavel">Responsável</label>
+                                        <input type="text" class="form-control" id="edit_responsavel" name="responsavel" value="${etapa.responsavel || ''}">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="edit_status">Status</label>
+                                        <select class="form-control" id="edit_status" name="status">
+                                            <option value="Em andamento" ${etapa.status === 'Em andamento' ? 'selected' : ''}>Em andamento</option>
+                                            <option value="Finalizado" ${etapa.status === 'Finalizado' ? 'selected' : ''}>Finalizado</option>
+                                            <option value="Paralisado" ${etapa.status === 'Paralisado' ? 'selected' : ''}>Paralisado</option>
+                                            <option value="Não iniciado" ${etapa.status === 'Não iniciado' ? 'selected' : ''}>Não iniciado</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="edit_responsavel">Responsável</label>
-                                <input type="text" class="form-control" id="edit_responsavel" name="responsavel" value="${etapa.responsavel || ''}">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="edit_status">Status</label>
-                                <select class="form-control" id="edit_status" name="status">
-                                    <option value="Em andamento" ${etapa.status === 'Em andamento' ? 'selected' : ''}>Em andamento</option>
-                                    <option value="Finalizado" ${etapa.status === 'Finalizado' ? 'selected' : ''}>Finalizado</option>
-                                    <option value="Paralisado" ${etapa.status === 'Paralisado' ? 'selected' : ''}>Paralisado</option>
-                                    <option value="Não iniciado" ${etapa.status === 'Não iniciado' ? 'selected' : ''}>Não iniciado</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="edit_tempo_estimado">Tempo Estimado (dias)</label>
-                                <input type="number" class="form-control" id="edit_tempo_estimado" name="tempo_estimado_dias" value="${etapa.tempo_estimado_dias || ''}" min="1">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="edit_tempo_estimado">Tempo Estimado (dias)</label>
+                                        <input type="number" class="form-control" id="edit_tempo_estimado" name="tempo_estimado_dias" value="${etapa.tempo_estimado_dias || ''}" min="1">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="edit_data_inicio">Data Início</label>
+                                        <input type="date" class="form-control" id="edit_data_inicio" name="data_inicio" value="${etapa.data_inicio ? etapa.data_inicio.split(' ')[0] : ''}">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="edit_data_fim">Data Fim</label>
+                                        <input type="date" class="form-control" id="edit_data_fim" name="data_fim" value="${etapa.data_fim ? etapa.data_fim.split(' ')[0] : ''}">
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="edit_data_inicio">Data Início</label>
-                                <input type="date" class="form-control" id="edit_data_inicio" name="data_inicio" value="${etapa.data_inicio ? etapa.data_inicio.split(' ')[0] : ''}">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="edit_data_fim">Data Fim</label>
-                                <input type="date" class="form-control" id="edit_data_fim" name="data_fim" value="${etapa.data_fim ? etapa.data_fim.split(' ')[0] : ''}">
-                            </div>
-                        </div>
-                    </div>
 
-                    <div class="form-group">
-                        <label for="edit_justificativa">Justificativa para as alterações <span class="text-danger">*</span></label>
-                        <textarea class="form-control" id="edit_justificativa" name="justificativa" rows="3" required placeholder="Descreva detalhadamente o motivo das alterações propostas"></textarea>
-                        <small class="form-text text-muted">Mínimo 10 caracteres</small>
-                    </div>
-                `);
+                            <div class="form-group">
+                                <label for="edit_justificativa">Justificativa para as alterações <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="edit_justificativa" name="justificativa" rows="3" required placeholder="Descreva detalhadamente o motivo das alterações propostas"></textarea>
+                                <small class="form-text text-muted">Mínimo 10 caracteres</small>
+                            </div>
+                        `);
                     } else {
                         $modal.modal('hide');
                         Swal.fire('Erro', response.message || 'Erro ao carregar dados da etapa', 'error');
