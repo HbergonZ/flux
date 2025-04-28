@@ -26,3 +26,8 @@ $routes->group('', function ($routes) {
     $routes->get('solicitacoes-edicao/detalhes/(:num)', 'SolicitacoesEdicao::detalhes/$1');
     $routes->post('solicitacoes-edicao/processar/(:num)', 'SolicitacoesEdicao::processar/$1');
 });
+
+$routes->group('historico-solicitacoes', function ($routes) {
+    $routes->get('/', 'HistoricoSolicitacoes::index');
+    $routes->get('detalhes/(:num)', 'HistoricoSolicitacoes::detalhes/$1');
+});

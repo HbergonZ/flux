@@ -7,6 +7,16 @@
 <!-- jQuery (já está no seu código) -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.2.9/js/responsive.bootstrap5.min.js"></script>
+
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap5.min.css">
+
 <!-- Modal de Visualização e Aprovação -->
 <div class="modal fade" id="visualizarSolicitacaoModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -59,34 +69,34 @@
             <div class="table-responsive">
                 <table class="table table-bordered" id="dataTableSolicitacoes" width="100%" cellspacing="0">
                     <thead>
-                        <tr>
+                        <tr class="text-center">
                             <th>ID</th>
                             <th>Projeto</th>
-                            <th>Etapa</th>
                             <th>Ação</th>
+                            <th>Etapa</th>
                             <th>Solicitante</th>
                             <th>Data</th>
                             <th>Status</th>
-                            <th>Ações</th>
+                            <th>Alterações Solicitadas</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($solicitacoes as $solicitacao): ?>
                             <tr>
-                                <td><?= $solicitacao['id'] ?></td>
+                                <td class="text-center"><?= $solicitacao['id'] ?></td>
                                 <td><?= $solicitacao['nome_projeto'] ?></td>
-                                <td><?= $solicitacao['etapa'] ?></td>
                                 <td><?= $solicitacao['acao'] ?></td>
-                                <td><?= $solicitacao['solicitante'] ?></td>
-                                <td><?= date('d/m/Y H:i', strtotime($solicitacao['data_solicitacao'])) ?></td>
-                                <td>
+                                <td><?= $solicitacao['etapa'] ?></td>
+                                <td class="text-center"><?= $solicitacao['solicitante'] ?></td>
+                                <td class="text-center"><?= date('d/m/Y H:i', strtotime($solicitacao['data_solicitacao'])) ?></td>
+                                <td class="text-center">
                                     <span class="badge badge-<?=
                                                                 $solicitacao['status'] == 'pendente' ? 'warning' : ($solicitacao['status'] == 'aprovada' ? 'success' : 'danger')
                                                                 ?>">
                                         <?= ucfirst($solicitacao['status']) ?>
                                     </span>
                                 </td>
-                                <td>
+                                <td class="text-center">
                                     <button class="btn btn-sm btn-info btn-ver-solicitacao" data-id="<?= $solicitacao['id'] ?>">
                                         <i class="fas fa-eye"></i> Ver
                                     </button>
@@ -127,6 +137,25 @@
 
         function initSolicitacoes() {
             $(document).ready(function() {
+                // Inicialização do DataTables
+                var table = $('#dataTableSolicitacoes').DataTable({
+                    language: {
+                        url: 'https://cdn.datatables.net/plug-ins/1.11.5/i18n/pt-BR.json'
+                    },
+                    responsive: true,
+                    lengthMenu: [10, 25, 50, 100], // Opções de itens por página
+                    pageLength: 10, // Itens por página padrão
+                    order: [
+                        [0, 'desc']
+                    ], // Ordenação inicial (coluna ID, decrescente)
+                    dom: '<"top"lf>rt<"bottom"ip>', // Layout dos controles
+                    initComplete: function() {
+                        // Adiciona classe aos inputs de busca
+                        $('.dataTables_filter input').addClass('form-control form-control-sm');
+                        $('.dataTables_length select').addClass('form-control form-control-sm');
+                    }
+                });
+
                 // Variáveis globais
                 var solicitacaoAtualId = null;
                 var visualizarModal = new bootstrap.Modal(document.getElementById('visualizarSolicitacaoModal'));
@@ -136,19 +165,19 @@
                     return $('meta[name="X-CSRF-TOKEN"]').attr('content') || '<?= csrf_hash() ?>';
                 }
 
-                // Evento para abrir o modal
-                $(document).on('click', '.btn-ver-solicitacao', function() {
+                // Evento para abrir o modal (usando delegação para funcionar com paginação)
+                $('#dataTableSolicitacoes tbody').on('click', '.btn-ver-solicitacao', function() {
                     solicitacaoAtualId = $(this).data('id');
 
                     // Mostrar loading
                     $('#detalhesSolicitacao').html(`
-                    <div class="text-center py-4">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="sr-only">Carregando...</span>
-                        </div>
-                        <p>Carregando detalhes...</p>
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Carregando...</span>
                     </div>
-                `);
+                    <p>Carregando detalhes...</p>
+                </div>
+            `);
 
                     // Carregar detalhes via AJAX
                     $.ajax({

@@ -3,32 +3,28 @@
 namespace App\Controllers;
 
 use App\Models\SolicitacaoEdicaoModel;
-use App\Models\EtapaModel;
 use CodeIgniter\API\ResponseTrait;
 
-class SolicitacoesEdicao extends BaseController
+class HistoricoSolicitacoes extends BaseController
 {
     use ResponseTrait;
 
     protected $solicitacaoModel;
-    protected $etapaModel;
 
     public function __construct()
     {
         $this->solicitacaoModel = new SolicitacaoEdicaoModel();
-        $this->etapaModel = new EtapaModel();
     }
 
     public function index()
     {
-
         $db = \Config\Database::connect();
         $builder = $db->table('solicitacoes_edicao se');
         $builder->select('se.*, p.nome as nome_projeto, e.etapa, e.acao');
         $builder->join('projetos p', 'p.id = se.id_projeto');
         $builder->join('etapas e', 'e.id_etapa = se.id_etapa AND e.id_acao = se.id_acao');
-        $builder->where('se.status', 'pendente');
-        $builder->orderBy('se.data_solicitacao', 'DESC');
+        $builder->whereIn('se.status', ['aprovada', 'rejeitada']);
+        $builder->orderBy('se.data_avaliacao', 'DESC');
 
         $solicitacoes = $builder->get()->getResultArray();
 
@@ -36,15 +32,19 @@ class SolicitacoesEdicao extends BaseController
             if (empty($solicitacao['solicitante'])) {
                 $solicitacao['solicitante'] = 'Anônimo';
             }
+            $solicitacao['processado_por_nome'] = 'Sistema';
             $solicitacao['data_formatada'] = date('d/m/Y H:i', strtotime($solicitacao['data_solicitacao']));
+            $solicitacao['data_processamento_formatada'] = isset($solicitacao['data_avaliacao'])
+                ? date('d/m/Y H:i', strtotime($solicitacao['data_avaliacao']))
+                : 'Não avaliada';
         }
 
         $data = [
             'solicitacoes' => $solicitacoes,
-            'tituloPagina' => 'Solicitações de Edição Pendentes'
+            'tituloPagina' => 'Histórico de Solicitações de Edição'
         ];
 
-        $this->content_data['content'] = view('sys/solicitacoes-edicao', $data);
+        $this->content_data['content'] = view('sys/historico-solicitacoes', $data);
         return view('layout', $this->content_data);
     }
 
@@ -55,11 +55,11 @@ class SolicitacoesEdicao extends BaseController
         }
 
         try {
-            // Busca a solicitação com JOIN para pegar o nome do projeto
             $db = \Config\Database::connect();
             $builder = $db->table('solicitacoes_edicao se');
-            $builder->select('se.*, p.nome as nome_projeto');
+            $builder->select('se.*, p.nome as nome_projeto, e.etapa, e.acao');
             $builder->join('projetos p', 'p.id = se.id_projeto');
+            $builder->join('etapas e', 'e.id_etapa = se.id_etapa AND e.id_acao = se.id_acao');
             $builder->where('se.id', $id);
             $solicitacao = $builder->get()->getRowArray();
 
@@ -67,16 +67,20 @@ class SolicitacoesEdicao extends BaseController
                 return $this->failNotFound('Solicitação não encontrada');
             }
 
-            $etapaAtual = $this->etapaModel
+            // Define o nome de quem processou como "Sistema"
+            $solicitacao['processado_por_nome'] = 'Sistema';
+
+            $etapaAtual = $db->table('etapas')
                 ->where('id_etapa', $solicitacao['id_etapa'])
                 ->where('id_acao', $solicitacao['id_acao'])
-                ->first();
+                ->get()
+                ->getRowArray();
 
             if (!$etapaAtual) {
                 return $this->failNotFound('Dados da etapa não encontrados');
             }
 
-            // Dados para comparação (formato do banco)
+            // Dados para comparação
             $dadosAtuaisParaComparacao = [
                 'etapa' => $etapaAtual['etapa'] ?? null,
                 'acao' => $etapaAtual['acao'] ?? null,
@@ -88,7 +92,7 @@ class SolicitacoesEdicao extends BaseController
                 'data_fim' => $etapaAtual['data_fim'] ?? null
             ];
 
-            // Dados para exibição (formatados)
+            // Dados para exibição
             $dadosAtuaisParaExibicao = [
                 'etapa' => $dadosAtuaisParaComparacao['etapa'] ?? 'N/A',
                 'acao' => $dadosAtuaisParaComparacao['acao'] ?? 'N/A',
@@ -104,7 +108,7 @@ class SolicitacoesEdicao extends BaseController
                     : 'N/A'
             ];
 
-            // Filtra apenas campos alterados
+            // Filtra campos alterados
             $dadosAlteradosOrig = json_decode($solicitacao['dados_alterados'], true) ?? [];
             $dadosAlteradosFiltrados = [];
 
@@ -129,58 +133,7 @@ class SolicitacoesEdicao extends BaseController
 
             return $this->response->setContentType('text/html')->setBody($html);
         } catch (\Exception $e) {
-            log_message('error', 'Erro em SolicitacoesEdicao::detalhes: ' . $e->getMessage());
-            return $this->failServerError('Erro ao processar a solicitação');
-        }
-    }
-
-    public function processar($id)
-    {
-        if (!$this->request->isAJAX()) {
-            return $this->failForbidden('Acesso permitido apenas via AJAX');
-        }
-
-        try {
-            $acao = $this->request->getPost('acao');
-
-            if (!in_array($acao, ['aprovada', 'rejeitada'])) {
-                return $this->fail('Ação inválida', 400);
-            }
-
-            $solicitacao = $this->solicitacaoModel->find($id);
-            if (!$solicitacao) {
-                return $this->failNotFound('Solicitação não encontrada');
-            }
-
-            if ($acao === 'aprovada') {
-                $dadosAlterados = json_decode($solicitacao['dados_alterados'], true) ?? [];
-
-                $etapaExistente = $this->etapaModel
-                    ->where('id_etapa', $solicitacao['id_etapa'])
-                    ->where('id_acao', $solicitacao['id_acao'])
-                    ->first();
-
-                if (!$etapaExistente) {
-                    return $this->failNotFound('Etapa/Ação não encontrada');
-                }
-
-                $this->etapaModel
-                    ->where('id_etapa', $solicitacao['id_etapa'])
-                    ->where('id_acao', $solicitacao['id_acao'])
-                    ->set($dadosAlterados)
-                    ->update();
-            }
-
-            $this->solicitacaoModel->protect(false)->update($id, [
-                'status' => $acao,
-            ]);
-
-            return $this->respond([
-                'success' => true,
-                'message' => 'Solicitação processada com sucesso'
-            ]);
-        } catch (\Exception $e) {
-            log_message('error', 'Erro em SolicitacoesEdicao::processar: ' . $e->getMessage());
+            log_message('error', 'Erro em HistoricoSolicitacoes::detalhes: ' . $e->getMessage());
             return $this->failServerError('Erro ao processar a solicitação');
         }
     }
@@ -220,10 +173,11 @@ class SolicitacoesEdicao extends BaseController
         </div>
         <div class="col-md-6 text-end">
             <p><strong>Data da Solicitação:</strong> ' . date('d/m/Y H:i', strtotime($solicitacao['data_solicitacao'])) . '</p>
+            <p><strong>Data de Processamento:</strong> ' . (isset($solicitacao['data_avaliacao']) ? date('d/m/Y H:i', strtotime($solicitacao['data_avaliacao'])) : 'N/A') . '</p>
         </div>
     </div>';
 
-        // Mapeamento dos nomes dos campos para exibição
+        // Mapeamento dos nomes dos campos
         $nomesCampos = [
             'etapa' => 'Etapa',
             'acao' => 'Ação',
@@ -258,8 +212,8 @@ class SolicitacoesEdicao extends BaseController
 
         $html .= '<div class="col-md-6">
             <div class="card shadow mb-4">
-                <div class="card-header ' . ($solicitacao['status'] == 'pendente' ? 'bg-warning' : 'bg-success') . ' text-white">
-                    <h6 class="m-0 font-weight-bold">Alterações Propostas</h6>
+                <div class="card-header ' . ($solicitacao['status'] == 'aprovada' ? 'bg-success' : 'bg-danger') . ' text-white">
+                    <h6 class="m-0 font-weight-bold">Alterações ' . ($solicitacao['status'] == 'aprovada' ? 'Aplicadas' : 'Rejeitadas') . '</h6>
                 </div>
                 <div class="card-body">';
 
@@ -267,7 +221,7 @@ class SolicitacoesEdicao extends BaseController
             $html .= '<div class="alert alert-info">Nenhuma alteração foi proposta</div>';
         } else {
             $html .= '<table class="table table-bordered table-sm">
-                    <tbody>';
+                <tbody>';
 
             foreach ($dadosAlterados as $campo => $valor) {
                 $valorAtual = $dadosAtuais[$campo] ?? 'N/A';
@@ -282,11 +236,17 @@ class SolicitacoesEdicao extends BaseController
 
                 $html .= '<tr>
                 <th class="w-50">' . $nomeCampo . '</th>
-                <td>
-                    <div class="text-danger"><del>' . htmlspecialchars($valorAtual) . '</del></div>
-                    <div class="text-success">' . htmlspecialchars($valorExibicao ?? 'N/A') . '</div>
-                </td>
-            </tr>';
+                <td>';
+
+                if ($solicitacao['status'] == 'aprovada') {
+                    $html .= '<div class="text-danger"><del>' . htmlspecialchars($valorAtual) . '</del></div>
+                      <div class="text-success">' . htmlspecialchars($valorExibicao ?? 'N/A') . '</div>';
+                } else {
+                    $html .= '<div class="text-muted">' . htmlspecialchars($valorExibicao ?? 'N/A') . '</div>
+                      <small class="text-danger">(Não aplicado)</small>';
+                }
+
+                $html .= '</td></tr>';
             }
 
             $html .= '</tbody></table>';
@@ -304,6 +264,17 @@ class SolicitacoesEdicao extends BaseController
                 <div class="card-body">
                     <div class="bg-light p-3 rounded">' . nl2br(htmlspecialchars($solicitacao['justificativa'] ?? 'Nenhuma justificativa fornecida')) . '</div>
                 </div>
+            </div>
+        </div>
+    </div>';
+
+        // Informações de processamento
+        $html .= '<div class="row mt-4">
+        <div class="col-md-12">
+            <div class="alert alert-' . ($solicitacao['status'] == 'aprovada' ? 'success' : 'danger') . '">
+                <h5 class="alert-heading">Status: ' . ucfirst($solicitacao['status']) . '</h5>
+                <p><strong>Processado por:</strong> ' . htmlspecialchars($solicitacao['processado_por_nome'] ?? 'Sistema') . '</p>
+                <p><strong>Data de processamento:</strong> ' . (isset($solicitacao['data_avaliacao']) ? date('d/m/Y H:i', strtotime($solicitacao['data_avaliacao'])) : 'N/A') . '</p>
             </div>
         </div>
     </div>';
