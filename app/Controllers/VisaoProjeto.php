@@ -91,8 +91,8 @@ class VisaoProjeto extends BaseController
 
         // Formata as datas antes de enviar para o cliente
         foreach ($etapas as &$etapa) {
-            $etapa['data_inicio_formatada'] = date('d/m/Y', strtotime($etapa['data_inicio']));
-            $etapa['data_fim_formatada'] = date('d/m/Y', strtotime($etapa['data_fim']));
+            $etapa['data_inicio_formatada'] = !empty($etapa['data_inicio']) ? date('d/m/Y', strtotime($etapa['data_inicio'])) : '';
+            $etapa['data_fim_formatada'] = !empty($etapa['data_fim']) ? date('d/m/Y', strtotime($etapa['data_fim'])) : '';
         }
 
         return $this->response->setJSON([

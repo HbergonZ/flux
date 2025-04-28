@@ -61,7 +61,7 @@
     </div>
 
     <!-- DataTales Example -->
-    <div class="card shadow mb-4">
+    <div class="card shadow mb-4 mx-md-5 mx-3">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Lista de Solicitações</h6>
         </div>

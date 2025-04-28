@@ -40,27 +40,23 @@
                 },
                 {
                     responsivePriority: 1,
-                    targets: 0
+                    targets: 0 // Agora é a coluna Etapa
                 },
                 {
                     responsivePriority: 2,
-                    targets: 1
+                    targets: 1 // Agora é a coluna Ação
                 },
                 {
                     responsivePriority: 3,
-                    targets: 3
+                    targets: 7 // Agora é a coluna Status (antes era 9)
                 },
                 {
                     responsivePriority: 4,
-                    targets: 9
-                },
-                {
-                    responsivePriority: 5,
-                    targets: 10
+                    targets: 8 // Agora é a coluna Ações (antes era 10)
                 },
                 {
                     className: 'text-center',
-                    targets: [0, 2, 4, 5, 6, 7, 8, 9, 10]
+                    targets: [2, 3, 4, 5, 6, 7, 8] // Ajuste os índices para as colunas que devem ser centralizadas
                 }
             ],
             "autoWidth": false,
@@ -79,17 +75,44 @@
 
         // Função para formatar datas corretamente
         function formatarData(dataString) {
-            if (!dataString) return '';
+            // Verifica se o valor é nulo, undefined, string vazia, inválido ou data zero
+            if (!dataString ||
+                dataString === 'null' ||
+                dataString === '0000-00-00' ||
+                dataString === '0000-00-00 00:00:00' ||
+                dataString === '01/01/1970') { // Adicionei esta verificação
+                return '';
+            }
+
+            // Remove espaços em branco
+            dataString = dataString.toString().trim();
+
             // Se já estiver no formato dd/mm/yyyy, retorna sem alteração
             if (dataString.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
                 return dataString;
             }
-            // Converte de yyyy-mm-dd para dd/mm/yyyy
-            var parts = dataString.split(' ')[0].split('-');
-            if (parts.length === 3) {
-                return parts[2] + '/' + parts[1] + '/' + parts[0];
+
+            // Tenta converter de yyyy-mm-dd para dd/mm/yyyy
+            try {
+                // Remove a parte do tempo se existir
+                var datePart = dataString.split(' ')[0];
+                var parts = datePart.split('-');
+
+                // Verifica se tem formato yyyy-mm-dd
+                if (parts.length === 3 && parts[0].length === 4) {
+                    // Verifica se não é uma data zerada
+                    if (parts[0] === '0000' || parts[1] === '00' || parts[2] === '00') {
+                        return '';
+                    }
+
+                    // Formata para dd/mm/yyyy
+                    return parts[2] + '/' + parts[1] + '/' + parts[0];
+                }
+            } catch (e) {
+                console.error('Erro ao formatar data:', e);
             }
-            return dataString;
+
+            return ''; // Retorna vazio para qualquer formato inválido
         }
 
         // Função para aplicar filtros
@@ -133,13 +156,11 @@
                             var dataFim = formatarData(etapa.data_fim_formatada || etapa.data_fim);
 
                             dataTable.row.add([
-                                'ETP-' + etapa.id_etapa,
                                 etapa.etapa,
-                                'ACT-' + etapa.id_acao,
                                 etapa.acao,
                                 etapa.coordenacao,
                                 etapa.responsavel,
-                                etapa.tempo_estimado_dias + ' dias',
+                                etapa.tempo_estimado_dias ? etapa.tempo_estimado_dias + ' dias' : '',
                                 dataInicio,
                                 dataFim,
                                 '<span class="badge ' + badge_class + '">' + etapa.status + '</span>',
@@ -188,6 +209,9 @@
                 '</div>';
         }
 
+        // Variável para armazenar os dados originais
+        var dadosOriginais = null;
+
         // Evento para abrir o modal de solicitação de edição
         $(document).on('click', '.btn-primary[title="Solicitar Edição"], .btn-editar', function() {
             var $btn = $(this);
@@ -198,28 +222,36 @@
             // Mostra loading no modal
             var $modal = $('#solicitarEdicaoModal');
             $modal.find('.modal-body').html(`
-                <div class="text-center py-4">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="sr-only">Carregando...</span>
-                    </div>
-                    <p class="mt-2">Carregando dados da etapa...</p>
-                </div>
-            `);
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="sr-only">Carregando...</span>
+            </div>
+            <p class="mt-2">Carregando dados da etapa...</p>
+        </div>
+    `);
             $modal.modal('show');
-
-            console.log('Acessando endpoint:', '<?= site_url('visao-projeto/dados-etapa/') ?>' + idEtapa + '/' + idAcao);
 
             $.ajax({
                 type: "GET",
                 url: '<?= site_url('visao-projeto/dados-etapa/') ?>' + idEtapa + '/' + idAcao,
                 dataType: "json",
                 success: function(response) {
-                    console.log('Resposta recebida:', response);
-
                     if (response.success) {
                         var etapa = response.data;
 
-                        // Preenche o modal com os dados atuais
+                        // Armazena os dados originais
+                        dadosOriginais = {
+                            etapa: etapa.etapa,
+                            acao: etapa.acao,
+                            coordenacao: etapa.coordenacao,
+                            responsavel: etapa.responsavel,
+                            status: etapa.status,
+                            tempo_estimado_dias: etapa.tempo_estimado_dias,
+                            data_inicio: etapa.data_inicio ? etapa.data_inicio.split(' ')[0] : '',
+                            data_fim: etapa.data_fim ? etapa.data_fim.split(' ')[0] : ''
+                        };
+
+                        // Preenche o modal (código existente)
                         $modal.find('.modal-body').html(`
                             <input type="hidden" name="id_etapa" id="edit_id_etapa" value="${etapa.id_etapa}">
                             <input type="hidden" name="id_acao" id="edit_id_acao" value="${etapa.id_acao}">
@@ -301,16 +333,11 @@
                 error: function(xhr, status, error) {
                     $modal.modal('hide');
                     Swal.fire('Erro', 'Erro ao carregar dados: ' + error, 'error');
-                    console.error('Detalhes do erro:', {
-                        status: status,
-                        error: error,
-                        response: xhr.responseText
-                    });
                 }
             });
         });
 
-        // Envio do formulário de solicitação de edição
+        // Envio do formulário de solicitação de edição (MODIFICADO)
         $(document).on('submit', '#formSolicitarEdicao', function(e) {
             e.preventDefault();
 
@@ -323,28 +350,30 @@
             var $btn = $('#btnSubmitSolicitacao');
             $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Enviando...');
 
+            // Captura os valores modificados
+            var dadosModificados = {
+                coordenacao: $('#edit_coordenacao').val(),
+                responsavel: $('#edit_responsavel').val(),
+                status: $('#edit_status').val(),
+                tempo_estimado_dias: $('#edit_tempo_estimado').val(),
+                data_inicio: $('#edit_data_inicio').val(),
+                data_fim: $('#edit_data_fim').val()
+            };
+
+            // Filtra apenas os campos que foram alterados
+            var alteracoes = {};
+            Object.keys(dadosModificados).forEach(function(key) {
+                if (String(dadosModificados[key]) !== String(dadosOriginais[key])) {
+                    alteracoes[key] = dadosModificados[key];
+                }
+            });
+
             var dados = {
                 id_etapa: $('#edit_id_etapa').val(),
                 id_acao: $('#edit_id_acao').val(),
                 id_projeto: $('#edit_id_projeto').val(),
-                dados_atuais: JSON.stringify({
-                    etapa: $('#edit_etapa').val(),
-                    acao: $('#edit_acao').val(),
-                    coordenacao: $('#edit_coordenacao').val(),
-                    responsavel: $('#edit_responsavel').val(),
-                    status: $('#edit_status').val(),
-                    tempo_estimado_dias: $('#edit_tempo_estimado').val(),
-                    data_inicio: $('#edit_data_inicio').val(),
-                    data_fim: $('#edit_data_fim').val()
-                }),
-                dados_alterados: JSON.stringify({
-                    coordenacao: $('#edit_coordenacao').val(),
-                    responsavel: $('#edit_responsavel').val(),
-                    status: $('#edit_status').val(),
-                    tempo_estimado_dias: $('#edit_tempo_estimado').val(),
-                    data_inicio: $('#edit_data_inicio').val(),
-                    data_fim: $('#edit_data_fim').val()
-                }),
+                dados_atuais: JSON.stringify(dadosOriginais), // Valores ORIGINAIS
+                dados_alterados: JSON.stringify(alteracoes), // Apenas campos MODIFICADOS
                 justificativa: justificativa,
                 <?= csrf_token() ?>: '<?= csrf_hash() ?>'
             };
@@ -356,14 +385,8 @@
                 dataType: "json",
                 success: function(response) {
                     $btn.prop('disabled', false).html('<i class="fas fa-paper-plane mr-1"></i> Enviar Solicitação');
-
                     if (response.success) {
-                        Swal.fire({
-                            title: 'Sucesso!',
-                            text: 'Solicitação enviada para aprovação',
-                            icon: 'success',
-                            confirmButtonText: 'OK'
-                        });
+                        Swal.fire('Sucesso!', 'Solicitação enviada para aprovação', 'success');
                         $('#solicitarEdicaoModal').modal('hide');
                     } else {
                         Swal.fire('Erro', response.message || 'Erro ao enviar solicitação', 'error');
@@ -372,7 +395,6 @@
                 error: function(xhr, status, error) {
                     $btn.prop('disabled', false).html('<i class="fas fa-paper-plane mr-1"></i> Enviar Solicitação');
                     Swal.fire('Erro', 'Erro na comunicação com o servidor', 'error');
-                    console.error('Detalhes do erro:', xhr.responseText);
                 }
             });
         });

@@ -19,8 +19,18 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="editProjectDescription">Descrição*</label>
-                        <textarea class="form-control" id="editProjectDescription" name="descricao" rows="3" required></textarea>
+                        <label for="editProjectObjective">Objetivo*</label>
+                        <textarea class="form-control" id="editProjectObjective" name="objetivo" rows="3" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editProjectPerspective">Perspectiva Estratégica</label>
+                        <textarea class="form-control" id="editProjectPerspective" name="perspectiva_estrategica" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editProjectStakeholders">Interessados</label>
+                        <textarea class="form-control" id="editProjectStakeholders" name="interessados" rows="2"></textarea>
                     </div>
 
                     <div class="row">
@@ -37,7 +47,7 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="editProjectPublicationDate">Data de Publicação*</label>
+                                <label for="editProjectPublicationDate">Data de Início*</label>
                                 <input type="date" class="form-control" id="editProjectPublicationDate" name="data_publicacao" required>
                             </div>
                         </div>

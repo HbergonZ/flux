@@ -16,8 +16,8 @@ class SolicitacaoEdicaoModel extends Model
         'dados_alterados',
         'justificativa',
         'status',
-        'data_avaliacao',  // Adicione esta linha
-        'id_avaliador'     // Adicione se for usar este campo
+        'data_avaliacao',
+        'id_avaliador'
     ];
     protected $returnType = 'array';
     protected $useTimestamps = false;

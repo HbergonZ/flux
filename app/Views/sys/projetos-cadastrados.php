@@ -86,11 +86,12 @@
                 <table class="table table-bordered align-middle" id="dataTable" cellspacing="0">
                     <thead>
                         <tr class="text-center">
-                            <th>ID do Projeto</th>
                             <th>Nome</th>
-                            <th>Descrição</th>
+                            <th>Objetivo</th>
+                            <th>Perspectiva Estratégica</th>
+                            <th>Interessados</th>
                             <th>Status</th>
-                            <th>Data de Publicação</th>
+                            <th>Data de Início</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
@@ -99,32 +100,33 @@
                             <?php foreach ($projetos as $projeto) :
                                 $id = $projeto['id'] . '-' . str_replace(' ', '-', strtolower($projeto['nome'])); ?>
                                 <tr>
-                                    <td class="text-center"><?= $projeto['id'] ?></td>
                                     <td class="text-wrap"><?= $projeto['nome'] ?></td>
-                                    <td class="text-wrap"><?= $projeto['descricao'] ?></td>
+                                    <td class="text-wrap"><?= $projeto['objetivo'] ?></td>
+                                    <td class="text-wrap"><?= $projeto['perspectiva_estrategica'] ?></td>
+                                    <td class="text-wrap"><?= $projeto['interessados'] ?></td>
                                     <td class="text-center">
                                         <?php
                                         $badge_class = '';
                                         switch ($projeto['status']) {
                                             case 'Em andamento':
-                                                $badge_class = 'badge-primary'; // Azul
+                                                $badge_class = 'badge-primary';
                                                 break;
                                             case 'Não iniciado':
-                                                $badge_class = 'badge-secondary'; // Cinza claro
+                                                $badge_class = 'badge-secondary';
                                                 break;
                                             case 'Finalizado':
-                                                $badge_class = 'badge-success'; // Verde
+                                                $badge_class = 'badge-success';
                                                 break;
                                             case 'Paralisado':
-                                                $badge_class = 'badge-warning'; // Amarelo
+                                                $badge_class = 'badge-warning';
                                                 break;
                                             default:
-                                                $badge_class = 'badge-light'; // Padrão
+                                                $badge_class = 'badge-light';
                                         }
                                         ?>
                                         <span class="badge <?= $badge_class ?>"><?= $projeto['status'] ?></span>
                                     </td>
-                                    <td class="text-center"><?= date('d/m/Y', strtotime($projeto['data_publicacao'])) ?></td>
+                                    <td class="text-center"><?= !empty($projeto['data_publicacao']) ? date('d/m/Y', strtotime($projeto['data_publicacao'])) : '' ?></td>
                                     <td class="text-center">
                                         <div class="d-inline-flex">
                                             <!-- Botão Visualizar -->
@@ -147,7 +149,7 @@
                             <?php endforeach; ?>
                         <?php else : ?>
                             <tr>
-                                <td colspan="6" class="text-center">Nenhum projeto encontrado</td>
+                                <td colspan="7" class="text-center">Nenhum projeto encontrado</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>

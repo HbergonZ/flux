@@ -14,7 +14,9 @@
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title">Detalhes da Solicitação Processada</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
             <div class="modal-body" id="detalhesSolicitacao">
                 <!-- Conteúdo será carregado via AJAX -->
@@ -43,7 +45,7 @@
     </div>
 
     <!-- DataTales Example -->
-    <div class="card shadow mb-4">
+    <div class="card shadow mb-4 mx-md-5 mx-3">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Lista de Solicitações Processadas</h6>
         </div>
@@ -113,7 +115,7 @@
             },
             responsive: true,
             lengthMenu: [10, 25, 50, 100],
-            pageLength: 25,
+            pageLength: 10,
             order: [
                 [6, 'desc']
             ], // Ordena por data de processamento decrescente

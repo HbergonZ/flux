@@ -57,6 +57,13 @@
                     <span>Solicitações de Alterações</span></a>
             </li>
 
+            <!-- Histórico de Solicitações -->
+            <li class="nav-item">
+                <a class="nav-link" href="<?php echo base_url('/historico-solicitacoes'); ?>">
+                    <i class="fas fa-fw fa-history"></i>
+                    <span>Histórico de Solicitações</span></a>
+            </li>
+
             <!-- Divider -->
             <hr class="sidebar-divider d-none d-md-block">
 
@@ -77,13 +84,6 @@
                 <a class="nav-link" href="tables.html">
                     <i class="fas fa-fw fa-tasks"></i>
                     <span>Minhas Solicitações</span></a>
-            </li>
-
-            <!-- Convites -->
-            <li class="nav-item">
-                <a class="nav-link" href="tables.html">
-                    <i class="fas fa-fw fa-envelope"></i>
-                    <span>Convites</span></a>
             </li>
 
             <!-- Divider -->

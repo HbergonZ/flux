@@ -40,7 +40,9 @@ class ProjetosCadastrados extends BaseController
         // Valida os dados
         $rules = [
             'nome' => 'required|min_length[3]|max_length[500]',
-            'descricao' => 'required',
+            'objetivo' => 'required',
+            'perspectiva_estrategica' => 'permit_empty',
+            'interessados' => 'permit_empty',
             'status' => 'required|in_list[Em andamento,Não iniciado,Finalizado,Paralisado]',
             'data_publicacao' => 'required|valid_date'
         ];
@@ -49,7 +51,9 @@ class ProjetosCadastrados extends BaseController
             try {
                 $data = [
                     'nome' => $this->request->getPost('nome'),
-                    'descricao' => $this->request->getPost('descricao'),
+                    'objetivo' => $this->request->getPost('objetivo'),
+                    'perspectiva_estrategica' => $this->request->getPost('perspectiva_estrategica'),
+                    'interessados' => $this->request->getPost('interessados'),
                     'status' => $this->request->getPost('status'),
                     'data_publicacao' => $this->request->getPost('data_publicacao')
                 ];
@@ -97,9 +101,10 @@ class ProjetosCadastrados extends BaseController
         $response = ['success' => false, 'message' => ''];
 
         $rules = [
-            'id' => 'required|numeric',
             'nome' => 'required|min_length[3]|max_length[500]',
-            'descricao' => 'required',
+            'objetivo' => 'required',
+            'perspectiva_estrategica' => 'permit_empty',
+            'interessados' => 'permit_empty',
             'status' => 'required|in_list[Em andamento,Não iniciado,Finalizado,Paralisado]',
             'data_publicacao' => 'required|valid_date'
         ];
@@ -107,9 +112,10 @@ class ProjetosCadastrados extends BaseController
         if ($this->validate($rules)) {
             try {
                 $data = [
-                    'id' => $this->request->getPost('id'),
                     'nome' => $this->request->getPost('nome'),
-                    'descricao' => $this->request->getPost('descricao'),
+                    'objetivo' => $this->request->getPost('objetivo'),
+                    'perspectiva_estrategica' => $this->request->getPost('perspectiva_estrategica'),
+                    'interessados' => $this->request->getPost('interessados'),
                     'status' => $this->request->getPost('status'),
                     'data_publicacao' => $this->request->getPost('data_publicacao')
                 ];
@@ -192,12 +198,17 @@ class ProjetosCadastrados extends BaseController
 
         // Formata as datas antes de enviar
         foreach ($projetos as &$projeto) {
-            $projeto['data_formatada'] = date('d/m/Y', strtotime($projeto['data_publicacao']));
+            if (!empty($projeto['data_publicacao'])) {
+                $projeto['data_formatada'] = date('d/m/Y', strtotime($projeto['data_publicacao']));
+            } else {
+                $projeto['data_formatada'] = null;
+            }
         }
+        unset($projeto);
 
         return $this->response->setJSON([
             'success' => true,
-            'data' => $projetos
+            'data' => $projetos,
         ]);
     }
 }

@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS solicitacoes_edicao (
     dados_alterados TEXT,
     status ENUM('pendente','aprovada','rejeitada') DEFAULT 'pendente',
     data_solicitacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    data_avaliacao TIMESTAMP NULL DEFAULT NULL,
+    data_avaliacao TIMESTAMP DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     id_avaliador INT,
     justificativa TEXT,
     solicitante VARCHAR(255),

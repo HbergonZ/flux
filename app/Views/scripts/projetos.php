@@ -24,25 +24,6 @@
                 }
             },
             "searching": false,
-            "columnDefs": [{
-                "width": "10%",
-                "targets": 0
-            }, {
-                "width": "20%",
-                "targets": 1
-            }, {
-                "width": "30%",
-                "targets": 2
-            }, {
-                "width": "15%",
-                "targets": 3
-            }, {
-                "width": "15%",
-                "targets": 4
-            }, {
-                "width": "10%",
-                "targets": 5
-            }],
             "responsive": true,
             "autoWidth": false,
             "lengthMenu": [5, 10, 25, 50, 100],
@@ -221,9 +202,10 @@
                             var dataFormatada = projeto.data_formatada || formatDate(projeto.data_publicacao);
 
                             var row = '<tr>' +
-                                '<td class="text-center">' + projeto.id + '</td>' +
                                 '<td class="text-wrap">' + projeto.nome + '</td>' +
-                                '<td class="text-wrap">' + projeto.descricao + '</td>' +
+                                '<td class="text-wrap">' + projeto.objetivo + '</td>' +
+                                '<td class="text-wrap">' + (projeto.perspectiva_estrategica || '') + '</td>' +
+                                '<td class="text-wrap">' + (projeto.interessados || '') + '</td>' +
                                 '<td class="text-center"><span class="badge ' + badge_class + '">' + projeto.status + '</span></td>' +
                                 '<td class="text-center">' + dataFormatada + '</td>' +
                                 '<td class="text-center">' +
@@ -264,23 +246,26 @@
                             },
                             "searching": false,
                             "columnDefs": [{
-                                "width": "10%",
+                                "width": "15%",
                                 "targets": 0
                             }, {
                                 "width": "20%",
                                 "targets": 1
                             }, {
-                                "width": "30%",
+                                "width": "15%",
                                 "targets": 2
                             }, {
                                 "width": "15%",
                                 "targets": 3
                             }, {
-                                "width": "15%",
+                                "width": "10%",
                                 "targets": 4
                             }, {
                                 "width": "10%",
                                 "targets": 5
+                            }, {
+                                "width": "15%",
+                                "targets": 6
                             }],
                             "responsive": true,
                             "autoWidth": false,

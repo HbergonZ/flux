@@ -57,7 +57,7 @@ class HistoricoSolicitacoes extends BaseController
         try {
             $db = \Config\Database::connect();
             $builder = $db->table('solicitacoes_edicao se');
-            $builder->select('se.*, p.nome as nome_projeto, e.etapa, e.acao');
+            $builder->select('se.*, p.nome as nome_projeto, e.etapa as nome_etapa, e.acao as nome_acao');
             $builder->join('projetos p', 'p.id = se.id_projeto');
             $builder->join('etapas e', 'e.id_etapa = se.id_etapa AND e.id_acao = se.id_acao');
             $builder->where('se.id', $id);
@@ -67,67 +67,58 @@ class HistoricoSolicitacoes extends BaseController
                 return $this->failNotFound('Solicitação não encontrada');
             }
 
-            // Define o nome de quem processou como "Sistema"
-            $solicitacao['processado_por_nome'] = 'Sistema';
+            // Dados originais (antes da solicitação)
+            $dadosOriginais = json_decode($solicitacao['dados_atuais'], true) ?? [];
 
-            $etapaAtual = $db->table('etapas')
-                ->where('id_etapa', $solicitacao['id_etapa'])
-                ->where('id_acao', $solicitacao['id_acao'])
-                ->get()
-                ->getRowArray();
-
-            if (!$etapaAtual) {
-                return $this->failNotFound('Dados da etapa não encontrados');
-            }
-
-            // Dados para comparação
-            $dadosAtuaisParaComparacao = [
-                'etapa' => $etapaAtual['etapa'] ?? null,
-                'acao' => $etapaAtual['acao'] ?? null,
-                'coordenacao' => $etapaAtual['coordenacao'] ?? null,
-                'responsavel' => $etapaAtual['responsavel'] ?? null,
-                'status' => $etapaAtual['status'] ?? null,
-                'tempo_estimado_dias' => $etapaAtual['tempo_estimado_dias'] ?? null,
-                'data_inicio' => $etapaAtual['data_inicio'] ?? null,
-                'data_fim' => $etapaAtual['data_fim'] ?? null
-            ];
-
-            // Dados para exibição
-            $dadosAtuaisParaExibicao = [
-                'etapa' => $dadosAtuaisParaComparacao['etapa'] ?? 'N/A',
-                'acao' => $dadosAtuaisParaComparacao['acao'] ?? 'N/A',
-                'coordenacao' => $dadosAtuaisParaComparacao['coordenacao'] ?? 'N/A',
-                'responsavel' => $dadosAtuaisParaComparacao['responsavel'] ?? 'N/A',
-                'status' => $dadosAtuaisParaComparacao['status'] ?? 'N/A',
-                'tempo_estimado_dias' => $dadosAtuaisParaComparacao['tempo_estimado_dias'] ?? 'N/A',
-                'data_inicio' => $dadosAtuaisParaComparacao['data_inicio']
-                    ? date('d/m/Y', strtotime($dadosAtuaisParaComparacao['data_inicio']))
+            // Dados para exibição (formatados)
+            $dadosOriginaisParaExibicao = [
+                'etapa' => $solicitacao['nome_etapa'] ?? 'N/A',
+                'acao' => $solicitacao['nome_acao'] ?? 'N/A',
+                'coordenacao' => $dadosOriginais['coordenacao'] ?? 'N/A',
+                'responsavel' => $dadosOriginais['responsavel'] ?? 'N/A',
+                'status' => $dadosOriginais['status'] ?? 'N/A',
+                'tempo_estimado_dias' => $dadosOriginais['tempo_estimado_dias'] ?? 'N/A',
+                'data_inicio' => isset($dadosOriginais['data_inicio']) && !empty($dadosOriginais['data_inicio'])
+                    ? (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dadosOriginais['data_inicio'])
+                        ? date('d/m/Y', strtotime($dadosOriginais['data_inicio']))
+                        : $dadosOriginais['data_inicio'])
                     : 'N/A',
-                'data_fim' => $dadosAtuaisParaComparacao['data_fim']
-                    ? date('d/m/Y', strtotime($dadosAtuaisParaComparacao['data_fim']))
+                'data_fim' => isset($dadosOriginais['data_fim']) && !empty($dadosOriginais['data_fim'])
+                    ? (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dadosOriginais['data_fim'])
+                        ? date('d/m/Y', strtotime($dadosOriginais['data_fim']))
+                        : $dadosOriginais['data_fim'])
                     : 'N/A'
             ];
 
-            // Filtra campos alterados
+            // Filtra apenas campos alterados
             $dadosAlteradosOrig = json_decode($solicitacao['dados_alterados'], true) ?? [];
             $dadosAlteradosFiltrados = [];
 
             foreach ($dadosAlteradosOrig as $campo => $valorProposto) {
-                $valorAtual = $dadosAtuaisParaComparacao[$campo] ?? null;
+                $valorOriginal = $dadosOriginais[$campo] ?? null;
 
                 if (in_array($campo, ['data_inicio', 'data_fim'])) {
                     $valorProposto = $this->normalizarDataParaComparacao($valorProposto);
-                    $valorAtual = $this->normalizarDataParaComparacao($valorAtual);
+                    $valorOriginal = $this->normalizarDataParaComparacao($valorOriginal);
                 }
 
-                if ($this->valoresDiferentes($valorAtual, $valorProposto)) {
+                if ($this->valoresDiferentes($valorOriginal, $valorProposto)) {
                     $dadosAlteradosFiltrados[$campo] = $dadosAlteradosOrig[$campo];
+                }
+            }
+
+            // Formatar datas para exibição nos dados alterados
+            foreach ($dadosAlteradosFiltrados as $campo => &$valor) {
+                if (in_array($campo, ['data_inicio', 'data_fim']) && !empty($valor)) {
+                    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $valor)) {
+                        $valor = date('d/m/Y', strtotime($valor));
+                    }
                 }
             }
 
             $html = $this->gerarHtmlDetalhes(
                 $solicitacao,
-                $dadosAtuaisParaExibicao,
+                $dadosOriginaisParaExibicao,
                 $dadosAlteradosFiltrados
             );
 
@@ -161,7 +152,7 @@ class HistoricoSolicitacoes extends BaseController
         return (string)$valor1 !== (string)$valor2;
     }
 
-    protected function gerarHtmlDetalhes($solicitacao, $dadosAtuais, $dadosAlterados)
+    protected function gerarHtmlDetalhes($solicitacao, $dadosOriginais, $dadosAlterados)
     {
         $html = '<div class="container-fluid">';
 
@@ -194,13 +185,13 @@ class HistoricoSolicitacoes extends BaseController
         <div class="col-md-6">
             <div class="card shadow mb-4">
                 <div class="card-header bg-primary text-white">
-                    <h6 class="m-0 font-weight-bold">Dados Atuais</h6>
+                    <h6 class="m-0 font-weight-bold">Dados Originais</h6>
                 </div>
                 <div class="card-body">
                     <table class="table table-bordered table-sm">
                         <tbody>';
 
-        foreach ($dadosAtuais as $campo => $valor) {
+        foreach ($dadosOriginais as $campo => $valor) {
             $nomeCampo = $nomesCampos[$campo] ?? ucfirst(str_replace('_', ' ', $campo));
             $html .= '<tr>
             <th class="w-50">' . $nomeCampo . '</th>
@@ -213,7 +204,7 @@ class HistoricoSolicitacoes extends BaseController
         $html .= '<div class="col-md-6">
             <div class="card shadow mb-4">
                 <div class="card-header ' . ($solicitacao['status'] == 'aprovada' ? 'bg-success' : 'bg-danger') . ' text-white">
-                    <h6 class="m-0 font-weight-bold">Alterações ' . ($solicitacao['status'] == 'aprovada' ? 'Aplicadas' : 'Rejeitadas') . '</h6>
+                    <h6 class="m-0 font-weight-bold">Alterações Propostas</h6>
                 </div>
                 <div class="card-body">';
 
@@ -221,32 +212,19 @@ class HistoricoSolicitacoes extends BaseController
             $html .= '<div class="alert alert-info">Nenhuma alteração foi proposta</div>';
         } else {
             $html .= '<table class="table table-bordered table-sm">
-                <tbody>';
+            <tbody>';
 
             foreach ($dadosAlterados as $campo => $valor) {
-                $valorAtual = $dadosAtuais[$campo] ?? 'N/A';
-                $valorExibicao = $valor;
+                $valorOriginal = $dadosOriginais[$campo] ?? 'N/A';
                 $nomeCampo = $nomesCampos[$campo] ?? ucfirst(str_replace('_', ' ', $campo));
-
-                if (in_array($campo, ['data_inicio', 'data_fim']) && !empty($valor)) {
-                    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $valor)) {
-                        $valorExibicao = date('d/m/Y', strtotime($valor));
-                    }
-                }
 
                 $html .= '<tr>
                 <th class="w-50">' . $nomeCampo . '</th>
-                <td>';
-
-                if ($solicitacao['status'] == 'aprovada') {
-                    $html .= '<div class="text-danger"><del>' . htmlspecialchars($valorAtual) . '</del></div>
-                      <div class="text-success">' . htmlspecialchars($valorExibicao ?? 'N/A') . '</div>';
-                } else {
-                    $html .= '<div class="text-muted">' . htmlspecialchars($valorExibicao ?? 'N/A') . '</div>
-                      <small class="text-danger">(Não aplicado)</small>';
-                }
-
-                $html .= '</td></tr>';
+                <td>
+                    <div class="text-danger"><del>' . htmlspecialchars($valorOriginal) . '</del></div>
+                    <div class="text-success">' . htmlspecialchars($valor ?? 'N/A') . '</div>
+                </td>
+            </tr>';
             }
 
             $html .= '</tbody></table>';

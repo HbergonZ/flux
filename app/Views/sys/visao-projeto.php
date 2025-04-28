@@ -110,7 +110,7 @@
 
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Etapas e Ações do Projeto: <?= $projeto['nome'] ?></h1>
+        <h1 class="h3 mb-0 text-gray-800">Projeto: <?= $projeto['nome'] ?></h1>
     </div>
 
     <!-- Filtros -->
@@ -204,9 +204,7 @@
                 <table class="table table-bordered align-middle" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr class="text-center">
-                            <th>ID Etapa</th>
                             <th>Etapa</th>
-                            <th>ID Ação</th>
                             <th>Ação</th>
                             <th>Coordenação</th>
                             <th>Responsável</th>
@@ -239,15 +237,14 @@
                             }
                         ?>
                             <tr>
-                                <td class="text-center">ETP-<?= $etapa['id_etapa'] ?></td>
                                 <td class="text-wrap"><?= $etapa['etapa'] ?></td>
-                                <td class="text-center">ACT-<?= $etapa['id_acao'] ?></td>
                                 <td class="text-wrap"><?= $etapa['acao'] ?></td>
                                 <td class="text-center"><?= $etapa['coordenacao'] ?></td>
                                 <td class="text-center"><?= $etapa['responsavel'] ?></td>
-                                <td class="text-center"><?= $etapa['tempo_estimado_dias'] ?> dias</td>
-                                <td class="text-center"><?= date('d/m/Y', strtotime($etapa['data_inicio'])) ?></td>
-                                <td class="text-center"><?= date('d/m/Y', strtotime($etapa['data_fim'])) ?></td>
+                                <td class="text-center"><?= !empty($etapa['tempo_estimado_dias']) ? $etapa['tempo_estimado_dias'] . ' dias' : '' ?></td>
+
+                                <td class="text-center"><?= !empty($etapa['data_inicio']) ? date('d/m/Y', strtotime($etapa['data_inicio'])) : '' ?></td>
+                                <td class="text-center"><?= !empty($etapa['data_fim']) ? date('d/m/Y', strtotime($etapa['data_fim'])) : '' ?></td>
                                 <td class="text-center">
                                     <span class="badge <?= $badge_class ?>"><?= $etapa['status'] ?></span>
                                 </td>
