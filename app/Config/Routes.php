@@ -37,3 +37,19 @@ $routes->get('minhas-solicitacoes/detalhes/(:num)', 'MinhasSolicitacoes::detalhe
 
 $routes->get('meus-projetos', 'MeusProjetos::index');
 $routes->post('meus-projetos/filtrar', 'MeusProjetos::filtrar');
+
+
+$routes->get('planos', 'Planos::index');
+$routes->post('planos/cadastrar', 'Planos::cadastrar');
+$routes->get('planos/editar/(:num)', 'Planos::editar/$1');
+$routes->post('planos/atualizar', 'Planos::atualizar');
+$routes->post('planos/excluir', 'Planos::excluir');
+$routes->post('planos/filtrar', 'Planos::filtrar');
+
+
+$routes->get('acoes/(:num)', 'Acoes::index/$1');
+$routes->post('acoes/cadastrar/(:num)', 'Acoes::cadastrar/$1');
+$routes->get('acoes/editar/(:num)', 'Acoes::editar/$1');
+$routes->post('acoes/atualizar/(:num)', 'Acoes::atualizar/$1');
+$routes->post('acoes/excluir/(:num)', 'Acoes::excluir/$1');
+$routes->post('acoes/filtrar/(:num)', 'Acoes::filtrar/$1');

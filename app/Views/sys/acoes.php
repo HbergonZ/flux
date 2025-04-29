@@ -1,0 +1,125 @@
+<!-- Importação de Modais -->
+<?php echo view('components/acoes/modal-editar-acao.php'); ?>
+<?php echo view('components/acoes/modal-confirmar-exclusao.php'); ?>
+<?php echo view('components/acoes/modal-adicionar-acao.php'); ?>
+
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Ações do Plano: <?= $plano['nome'] ?></h1>
+        <a href="<?= site_url('planos') ?>" class="btn btn-secondary btn-icon-split btn-sm">
+            <span class="icon text-white-50">
+                <i class="fas fa-arrow-left"></i>
+            </span>
+            <span class="text">Voltar para Planos</span>
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4 mx-md-5 mx-3">
+        <div class="card-body">
+            <form id="formFiltros">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="filterIdentificador">Identificador</label>
+                            <input type="text" class="form-control" id="filterIdentificador" name="identificador" placeholder="Filtrar por identificador">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="filterAcao">Ação</label>
+                            <input type="text" class="form-control" id="filterAcao" name="acao" placeholder="Filtrar por ação">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="filterProjetoVinculado">Projeto Vinculado</label>
+                            <input type="text" class="form-control" id="filterProjetoVinculado" name="projeto_vinculado" placeholder="Filtrar por projeto vinculado">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-12 text-right">
+                        <button type="button" id="btnLimparFiltros" class="btn btn-secondary btn-icon-split btn-sm">
+                            <span class="icon text-white-50">
+                                <i class="fas fa-broom"></i>
+                            </span>
+                            <span class="text">Limpar</span>
+                        </button>
+                        <button type="submit" class="btn btn-primary btn-icon-split btn-sm mr-2">
+                            <span class="icon text-white-50">
+                                <i class="fas fa-filter"></i>
+                            </span>
+                            <span class="text">Filtrar</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- DataTales Example -->
+    <div class="card shadow mb-4 mx-md-5 mx-3">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Lista de Ações</h6>
+            <a href="#" class="btn btn-primary btn-icon-split btn-sm" data-toggle="modal" data-target="#addAcaoModal">
+                <span class="icon text-white-50">
+                    <i class="fas fa-plus"></i>
+                </span>
+                <span class="text">Incluir Ação</span>
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle" id="dataTable" cellspacing="0">
+                    <thead>
+                        <tr class="text-center">
+                            <th>Identificador</th>
+                            <th>Ação</th>
+                            <th>Descrição</th>
+                            <th>Projeto Vinculado</th>
+                            <th>Responsáveis</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (isset($acoes) && !empty($acoes)) : ?>
+                            <?php foreach ($acoes as $acao) :
+                                $id = $acao['id'] . '-' . str_replace(' ', '-', strtolower($acao['acao'])); ?>
+                                <tr>
+                                    <td class="text-center"><?= $acao['identificador'] ?></td>
+                                    <td class="text-wrap"><?= $acao['acao'] ?></td>
+                                    <td class="text-wrap"><?= $acao['descricao'] ?></td>
+                                    <td class="text-wrap"><?= $acao['projeto_vinculado'] ?></td>
+                                    <td class="text-wrap"><?= $acao['responsaveis'] ?></td>
+                                    <td class="text-center">
+                                        <div class="d-inline-flex">
+                                            <!-- Botão Editar -->
+                                            <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+
+                                            <!-- Botão Excluir -->
+                                            <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Excluir">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else : ?>
+                            <tr>
+                                <td colspan="6" class="text-center">Nenhuma ação encontrada</td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts da página -->
+<?php echo view('scripts/acoes.php'); ?>
