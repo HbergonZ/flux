@@ -23,15 +23,13 @@
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title">Detalhes da Solicitação</h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="detalhesSolicitacao">
                 <!-- Conteúdo será carregado via AJAX -->
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="fas fa-times mr-1"></i> Cancelar
                 </button>
                 <button type="button" class="btn btn-danger btn-rejeitar">
@@ -183,16 +181,22 @@
                     $.ajax({
                         url: '<?= site_url('solicitacoes-edicao/detalhes/') ?>' + solicitacaoAtualId,
                         method: 'GET',
-                        dataType: 'html',
-                        success: function(response) {
-                            $('#detalhesSolicitacao').html(response);
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            '<?= csrf_header() ?>': getCsrfToken()
                         },
-                        error: function() {
-                            if (typeof Swal !== 'undefined') {
-                                Swal.fire('Erro', 'Falha ao carregar detalhes', 'error');
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.status === 'success') {
+                                $('#detalhesSolicitacao').html(response.html);
                             } else {
-                                alert('Erro: Falha ao carregar detalhes');
+                                Swal.fire('Erro', response.message || 'Erro ao carregar detalhes', 'error');
+                                visualizarModal.hide();
                             }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Erro completo:', xhr.responseText, status, error);
+                            Swal.fire('Erro', 'Falha na comunicação com o servidor', 'error');
                             visualizarModal.hide();
                         }
                     });

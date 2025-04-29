@@ -18,12 +18,12 @@ $routes->group('', function ($routes) {
     $routes->post('visao-projeto/filtrar/(:num)', 'VisaoProjeto::filtrar/$1');
 
     // Novas rotas para solicitação de edição
-    $routes->get('visao-projeto/dados-etapa/(:num)/(:num)', 'VisaoProjeto::dadosEtapa/$1/$2');
+    $routes->get('visao-projeto/dados-etapa/(:num)/(:any)', 'VisaoProjeto::dadosEtapa/$1/$2');
     $routes->post('visao-projeto/solicitar-edicao', 'VisaoProjeto::solicitarEdicao');
 
     // Rotas para gerenciamento de solicitações
     $routes->get('solicitacoes-edicao', 'SolicitacoesEdicao::index');
-    $routes->get('solicitacoes-edicao/detalhes/(:num)', 'SolicitacoesEdicao::detalhes/$1');
+    $routes->get('solicitacoes-edicao/detalhes/(:num)', 'SolicitacoesEdicao::detalhes/$1', ['as' => 'detalhes_solicitacao']);
     $routes->post('solicitacoes-edicao/processar/(:num)', 'SolicitacoesEdicao::processar/$1');
 });
 
@@ -31,3 +31,9 @@ $routes->group('historico-solicitacoes', function ($routes) {
     $routes->get('/', 'HistoricoSolicitacoes::index');
     $routes->get('detalhes/(:num)', 'HistoricoSolicitacoes::detalhes/$1');
 });
+
+$routes->get('minhas-solicitacoes', 'MinhasSolicitacoes::index');
+$routes->get('minhas-solicitacoes/detalhes/(:num)', 'MinhasSolicitacoes::detalhes/$1');
+
+$routes->get('meus-projetos', 'MeusProjetos::index');
+$routes->post('meus-projetos/filtrar', 'MeusProjetos::filtrar');

@@ -51,7 +51,7 @@ class SolicitacoesEdicao extends BaseController
     public function detalhes($id)
     {
         if (!$this->request->isAJAX()) {
-            return $this->failForbidden('Acesso permitido apenas via AJAX', 403);
+            return $this->failForbidden('Acesso permitido apenas via AJAX');
         }
 
         try {
@@ -64,29 +64,14 @@ class SolicitacoesEdicao extends BaseController
             $solicitacao = $builder->get()->getRowArray();
 
             if (!$solicitacao) {
-                return $this->failNotFound('Solicitação não encontrada');
+                return $this->respond([
+                    'status' => 'error',
+                    'message' => 'Solicitação não encontrada'
+                ]);
             }
 
-            $etapaAtual = $this->etapaModel
-                ->where('id_etapa', $solicitacao['id_etapa'])
-                ->where('id_acao', $solicitacao['id_acao'])
-                ->first();
-
-            if (!$etapaAtual) {
-                return $this->failNotFound('Dados da etapa não encontrados');
-            }
-
-            // Dados para comparação (formato do banco)
-            $dadosAtuaisParaComparacao = [
-                'etapa' => $etapaAtual['etapa'] ?? null,
-                'acao' => $etapaAtual['acao'] ?? null,
-                'coordenacao' => $etapaAtual['coordenacao'] ?? null,
-                'responsavel' => $etapaAtual['responsavel'] ?? null,
-                'status' => $etapaAtual['status'] ?? null,
-                'tempo_estimado_dias' => $etapaAtual['tempo_estimado_dias'] ?? null,
-                'data_inicio' => $etapaAtual['data_inicio'] ?? null,
-                'data_fim' => $etapaAtual['data_fim'] ?? null
-            ];
+            // Decodifica os dados atuais diretamente da solicitação
+            $dadosAtuaisParaComparacao = json_decode($solicitacao['dados_atuais'], true) ?? [];
 
             // Dados para exibição (formatados)
             $dadosAtuaisParaExibicao = [
@@ -96,15 +81,15 @@ class SolicitacoesEdicao extends BaseController
                 'responsavel' => $dadosAtuaisParaComparacao['responsavel'] ?? 'N/A',
                 'status' => $dadosAtuaisParaComparacao['status'] ?? 'N/A',
                 'tempo_estimado_dias' => $dadosAtuaisParaComparacao['tempo_estimado_dias'] ?? 'N/A',
-                'data_inicio' => $dadosAtuaisParaComparacao['data_inicio']
+                'data_inicio' => isset($dadosAtuaisParaComparacao['data_inicio']) && !empty($dadosAtuaisParaComparacao['data_inicio'])
                     ? date('d/m/Y', strtotime($dadosAtuaisParaComparacao['data_inicio']))
                     : 'N/A',
-                'data_fim' => $dadosAtuaisParaComparacao['data_fim']
+                'data_fim' => isset($dadosAtuaisParaComparacao['data_fim']) && !empty($dadosAtuaisParaComparacao['data_fim'])
                     ? date('d/m/Y', strtotime($dadosAtuaisParaComparacao['data_fim']))
                     : 'N/A'
             ];
 
-            // Filtra apenas campos alterados
+            // Decodifica os dados alterados
             $dadosAlteradosOrig = json_decode($solicitacao['dados_alterados'], true) ?? [];
             $dadosAlteradosFiltrados = [];
 
@@ -127,10 +112,16 @@ class SolicitacoesEdicao extends BaseController
                 $dadosAlteradosFiltrados
             );
 
-            return $this->response->setContentType('text/html')->setBody($html);
+            return $this->respond([
+                'status' => 'success',
+                'html' => $html
+            ]);
         } catch (\Exception $e) {
             log_message('error', 'Erro em SolicitacoesEdicao::detalhes: ' . $e->getMessage());
-            return $this->failServerError('Erro ao processar a solicitação');
+            return $this->respond([
+                'status' => 'error',
+                'message' => 'Erro ao processar a solicitação'
+            ]);
         }
     }
 
@@ -211,6 +202,7 @@ class SolicitacoesEdicao extends BaseController
     protected function gerarHtmlDetalhes($solicitacao, $dadosAtuais, $dadosAlterados)
     {
         $html = '<div class="container-fluid">';
+        log_message('debug', 'HTML gerado: ' . substr($html, 0, 200) . '...');
 
         // Cabeçalho
         $html .= '<div class="row mb-4">

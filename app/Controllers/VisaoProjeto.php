@@ -19,113 +19,79 @@ class VisaoProjeto extends BaseController
     public function index($id = null)
     {
         if (empty($id)) {
+            log_message('error', 'Tentativa de acesso sem ID');
             return redirect()->to('/projetos-cadastrados');
         }
 
+        log_message('info', 'Acessando projeto ID: ' . $id);
         $projeto = $this->projetoModel->find($id);
 
         if (!$projeto) {
+            log_message('error', 'Projeto não encontrado: ' . $id);
             return redirect()->to('/projetos-cadastrados')->with('error', 'Projeto não encontrado');
         }
 
-        // Busca as etapas relacionadas a este projeto (sem filtros inicialmente)
         $etapas = $this->etapaModel->where('id_projeto', $id)->findAll();
+        log_message('debug', 'Número de etapas encontradas: ' . count($etapas));
 
         $data['projeto'] = $projeto;
         $data['etapas'] = $etapas;
 
-        $this->content_data['content'] = view('sys/visao-projeto', $data);
-        return view('layout', $this->content_data);
+        return view('layout', ['content' => view('sys/visao-projeto', $data)]);
     }
 
-    public function filtrar($idProjeto)
-    {
-        if (!$this->request->isAJAX()) {
-            return redirect()->to("/visao-projeto/{$idProjeto}");
-        }
-
-        // Recebe os parâmetros de filtro
-        $filtros = [
-            'etapa' => $this->request->getPost('etapa'),
-            'acao' => $this->request->getPost('acao'),
-            'status' => $this->request->getPost('status'),
-            'responsavel' => $this->request->getPost('responsavel'),
-            'coordenacao' => $this->request->getPost('coordenacao'),
-            'data_inicio' => $this->request->getPost('data_inicio'),
-            'data_fim' => $this->request->getPost('data_fim')
-        ];
-
-        // Aplica os filtros
-        $builder = $this->etapaModel->builder();
-        $builder->where('id_projeto', $idProjeto);
-
-        if (!empty($filtros['etapa'])) {
-            $builder->like('etapa', $filtros['etapa']);
-        }
-
-        if (!empty($filtros['acao'])) {
-            $builder->like('acao', $filtros['acao']);
-        }
-
-        if (!empty($filtros['status'])) {
-            $builder->where('status', $filtros['status']);
-        }
-
-        if (!empty($filtros['responsavel'])) {
-            $builder->like('responsavel', $filtros['responsavel']);
-        }
-
-        if (!empty($filtros['coordenacao'])) {
-            $builder->like('coordenacao', $filtros['coordenacao']);
-        }
-
-        if (!empty($filtros['data_inicio'])) {
-            $builder->where('data_inicio >=', $filtros['data_inicio']);
-        }
-
-        if (!empty($filtros['data_fim'])) {
-            $builder->where('data_fim <=', $filtros['data_fim']);
-        }
-
-        $etapas = $builder->get()->getResultArray();
-
-        // Formata as datas antes de enviar para o cliente
-        foreach ($etapas as &$etapa) {
-            $etapa['data_inicio_formatada'] = !empty($etapa['data_inicio']) ? date('d/m/Y', strtotime($etapa['data_inicio'])) : '';
-            $etapa['data_fim_formatada'] = !empty($etapa['data_fim']) ? date('d/m/Y', strtotime($etapa['data_fim'])) : '';
-        }
-
-        return $this->response->setJSON([
-            'success' => true,
-            'data' => $etapas
-        ]);
-    }
     public function dadosEtapa($idEtapa, $idAcao)
     {
+        log_message('debug', 'Iniciando dadosEtapa - ID Etapa: ' . $idEtapa . ', ID Ação: ' . $idAcao);
+
         if (!$this->request->isAJAX()) {
-            return redirect()->back();
-        }
-
-        $etapa = $this->etapaModel
-            ->where('id_etapa', $idEtapa)
-            ->where('id_acao', $idAcao)
-            ->first();
-
-        if (!$etapa) {
+            log_message('error', 'Tentativa de acesso não AJAX');
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Etapa/Ação não encontrada'
-            ]);
+                'message' => 'Acesso não autorizado'
+            ])->setStatusCode(403);
         }
 
-        return $this->response->setJSON([
-            'success' => true,
-            'data' => $etapa
-        ]);
+        try {
+            $etapa = $this->etapaModel
+                ->where('id_etapa', $idEtapa)
+                ->where('id_acao', $idAcao)
+                ->first();
+
+            if (!$etapa) {
+                log_message('error', 'Etapa não encontrada - ID Etapa: ' . $idEtapa . ', ID Ação: ' . $idAcao);
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Etapa/Ação não encontrada'
+                ])->setStatusCode(404);
+            }
+
+            log_message('debug', 'Dados encontrados: ' . print_r($etapa, true));
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $etapa
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Erro em dadosEtapa: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Erro interno no servidor'
+            ])->setStatusCode(500);
+        }
     }
 
     public function solicitarEdicao()
     {
+        log_message('debug', 'Iniciando solicitarEdicao');
+
+        if (!$this->request->isAJAX()) {
+            log_message('error', 'Tentativa de acesso não AJAX');
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Acesso não autorizado'
+            ])->setStatusCode(403);
+        }
+
         if (!$this->request->isAJAX()) {
             return redirect()->back();
         }
@@ -134,7 +100,7 @@ class VisaoProjeto extends BaseController
         $validation = \Config\Services::validation();
         $validation->setRules([
             'id_etapa' => 'required|numeric',
-            'id_acao' => 'required|numeric',
+            'id_acao' => 'required',
             'id_projeto' => 'required|numeric',
             'dados_atuais' => 'required',
             'dados_alterados' => 'required',

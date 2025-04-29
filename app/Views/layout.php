@@ -74,14 +74,14 @@
 
             <!-- Meus Projetos -->
             <li class="nav-item">
-                <a class="nav-link" href="charts.html">
+                <a class="nav-link" href="<?php echo base_url('/meus-projetos'); ?>">
                     <i class="fas fa-fw fa-folder-open"></i>
                     <span>Meus Projetos</span></a>
             </li>
 
             <!-- Minhas Solicitações -->
             <li class="nav-item">
-                <a class="nav-link" href="tables.html">
+                <a class="nav-link" href="<?php echo base_url('/minhas-solicitacoes'); ?>">
                     <i class="fas fa-fw fa-tasks"></i>
                     <span>Minhas Solicitações</span></a>
             </li>
