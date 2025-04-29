@@ -75,18 +75,18 @@ class SolicitacoesEdicao extends BaseController
 
             // Dados para exibição (formatados)
             $dadosAtuaisParaExibicao = [
-                'etapa' => $dadosAtuaisParaComparacao['etapa'] ?? 'N/A',
-                'acao' => $dadosAtuaisParaComparacao['acao'] ?? 'N/A',
-                'coordenacao' => $dadosAtuaisParaComparacao['coordenacao'] ?? 'N/A',
-                'responsavel' => $dadosAtuaisParaComparacao['responsavel'] ?? 'N/A',
-                'status' => $dadosAtuaisParaComparacao['status'] ?? 'N/A',
-                'tempo_estimado_dias' => $dadosAtuaisParaComparacao['tempo_estimado_dias'] ?? 'N/A',
+                'etapa' => $dadosAtuaisParaComparacao['etapa'] ?? '',
+                'acao' => $dadosAtuaisParaComparacao['acao'] ?? '',
+                'coordenacao' => $dadosAtuaisParaComparacao['coordenacao'] ?? '',
+                'responsavel' => $dadosAtuaisParaComparacao['responsavel'] ?? '',
+                'status' => $dadosAtuaisParaComparacao['status'] ?? '',
+                'tempo_estimado_dias' => $dadosAtuaisParaComparacao['tempo_estimado_dias'] ?? '',
                 'data_inicio' => isset($dadosAtuaisParaComparacao['data_inicio']) && !empty($dadosAtuaisParaComparacao['data_inicio'])
                     ? date('d/m/Y', strtotime($dadosAtuaisParaComparacao['data_inicio']))
-                    : 'N/A',
+                    : '',
                 'data_fim' => isset($dadosAtuaisParaComparacao['data_fim']) && !empty($dadosAtuaisParaComparacao['data_fim'])
                     ? date('d/m/Y', strtotime($dadosAtuaisParaComparacao['data_fim']))
-                    : 'N/A'
+                    : ''
             ];
 
             // Decodifica os dados alterados
@@ -146,33 +146,47 @@ class SolicitacoesEdicao extends BaseController
             if ($acao === 'aprovada') {
                 $dadosAlterados = json_decode($solicitacao['dados_alterados'], true) ?? [];
 
-                $etapaExistente = $this->etapaModel
-                    ->where('id_etapa', $solicitacao['id_etapa'])
-                    ->where('id_acao', $solicitacao['id_acao'])
-                    ->first();
-
-                if (!$etapaExistente) {
-                    return $this->failNotFound('Etapa/Ação não encontrada');
+                // Verifica se existem dados para atualizar
+                if (empty($dadosAlterados)) {
+                    return $this->fail('Nenhum dado para atualizar', 400);
                 }
 
-                $this->etapaModel
+                // Debug: Log dos dados que serão atualizados
+                log_message('debug', 'Dados a serem atualizados: ' . print_r($dadosAlterados, true));
+
+                // Atualiza a etapa
+                $updateResult = $this->etapaModel
                     ->where('id_etapa', $solicitacao['id_etapa'])
-                    ->where('id_acao', $solicitacao['id_acao'])
+                    ->where('id_acao', $solicitacao['id_acao'])  // Observe o tipo de dado aqui
                     ->set($dadosAlterados)
                     ->update();
+
+                // Verifica se a atualização foi bem-sucedida
+                if (!$updateResult) {
+                    $error = $this->etapaModel->errors();
+                    log_message('error', 'Erro ao atualizar etapa: ' . print_r($error, true));
+                    return $this->fail('Falha ao atualizar a etapa', 500);
+                }
             }
 
+            // Atualiza o status da solicitação
             $this->solicitacaoModel->protect(false)->update($id, [
                 'status' => $acao,
+                'data_avaliacao' => date('Y-m-d H:i:s')
             ]);
 
             return $this->respond([
                 'success' => true,
-                'message' => 'Solicitação processada com sucesso'
+                'message' => 'Solicitação processada com sucesso',
+                'data' => [
+                    'id_etapa' => $solicitacao['id_etapa'],
+                    'id_acao' => $solicitacao['id_acao'],
+                    'dados_alterados' => $dadosAlterados ?? null
+                ]
             ]);
         } catch (\Exception $e) {
             log_message('error', 'Erro em SolicitacoesEdicao::processar: ' . $e->getMessage());
-            return $this->failServerError('Erro ao processar a solicitação');
+            return $this->failServerError('Erro ao processar a solicitação: ' . $e->getMessage());
         }
     }
 
@@ -207,7 +221,7 @@ class SolicitacoesEdicao extends BaseController
         // Cabeçalho
         $html .= '<div class="row mb-4">
         <div class="col-md-6">
-            <h5><strong>Projeto:</strong> ' . htmlspecialchars($solicitacao['nome_projeto'] ?? 'N/A') . '</h5>
+            <h5><strong>Projeto:</strong> ' . htmlspecialchars($solicitacao['nome_projeto'] ?? '') . '</h5>
             <p><strong>Solicitante:</strong> ' . htmlspecialchars($solicitacao['solicitante'] ?? 'Anônimo') . '</p>
         </div>
         <div class="col-md-6 text-end">
@@ -262,7 +276,7 @@ class SolicitacoesEdicao extends BaseController
                     <tbody>';
 
             foreach ($dadosAlterados as $campo => $valor) {
-                $valorAtual = $dadosAtuais[$campo] ?? 'N/A';
+                $valorAtual = $dadosAtuais[$campo] ?? '';
                 $valorExibicao = $valor;
                 $nomeCampo = $nomesCampos[$campo] ?? ucfirst(str_replace('_', ' ', $campo));
 
@@ -276,7 +290,7 @@ class SolicitacoesEdicao extends BaseController
                 <th class="w-50">' . $nomeCampo . '</th>
                 <td>
                     <div class="text-danger"><del>' . htmlspecialchars($valorAtual) . '</del></div>
-                    <div class="text-success">' . htmlspecialchars($valorExibicao ?? 'N/A') . '</div>
+                    <div class="text-success">' . htmlspecialchars($valorExibicao ?? '') . '</div>
                 </td>
             </tr>';
             }

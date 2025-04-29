@@ -23,7 +23,9 @@
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title">Detalhes da Solicitação</h5>
-                <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
             <div class="modal-body" id="detalhesSolicitacao">
                 <!-- Conteúdo será carregado via AJAX -->
@@ -243,31 +245,23 @@
 
                 // Função principal de processamento
                 function processarSolicitacao(acao) {
-                    // Configuração dos botões
                     const $btnAprovar = $('.btn-aprovar');
                     const $btnRejeitar = $('.btn-rejeitar');
 
                     $btnAprovar.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
                     $btnRejeitar.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
 
-                    // Dados da requisição
-                    const requestData = {
-                        acao: acao,
-                        <?= csrf_token() ?>: getCsrfToken()
-                    };
-
-                    // Headers adicionais
-                    const requestHeaders = {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        '<?= csrf_header() ?>': getCsrfToken()
-                    };
-
-                    // Enviar requisição
                     $.ajax({
                         url: '<?= site_url('solicitacoes-edicao/processar/') ?>' + solicitacaoAtualId,
                         method: 'POST',
-                        data: requestData,
-                        headers: requestHeaders,
+                        data: {
+                            acao: acao,
+                            <?= csrf_token() ?>: getCsrfToken()
+                        },
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            '<?= csrf_header() ?>': getCsrfToken()
+                        },
                         dataType: 'json',
                         success: function(response) {
                             if (response.success) {
@@ -275,7 +269,7 @@
                                 Swal.fire({
                                     icon: 'success',
                                     title: 'Sucesso!',
-                                    text: response.message || 'Ação realizada com sucesso',
+                                    text: response.message,
                                     timer: 1500,
                                     showConfirmButton: false
                                 }).then(() => {
@@ -283,20 +277,21 @@
                                 });
                             } else {
                                 Swal.fire('Erro', response.message || 'Falha ao processar', 'error');
-                                resetButtons();
                             }
                         },
                         error: function(xhr) {
+                            let errorMsg = 'Falha na comunicação com o servidor';
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMsg = xhr.responseJSON.message;
+                            }
+                            Swal.fire('Erro', errorMsg, 'error');
                             console.error('Erro completo:', xhr);
-                            Swal.fire('Erro', 'Falha na comunicação com o servidor', 'error');
-                            resetButtons();
+                        },
+                        complete: function() {
+                            $btnAprovar.prop('disabled', false).html('<i class="fas fa-check"></i> Aceitar');
+                            $btnRejeitar.prop('disabled', false).html('<i class="fas fa-times"></i> Recusar');
                         }
                     });
-
-                    function resetButtons() {
-                        $btnAprovar.prop('disabled', false).html('<i class="fas fa-check"></i> Aceitar');
-                        $btnRejeitar.prop('disabled', false).html('<i class="fas fa-times"></i> Recusar');
-                    }
                 }
 
                 // Resetar botões ao fechar modal

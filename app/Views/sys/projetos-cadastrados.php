@@ -91,7 +91,7 @@
                             <th>Perspectiva Estratégica</th>
                             <th>Interessados</th>
                             <th>Status</th>
-                            <th>Data de Início</th>
+                            <th>Início</th>
                             <th>Ações</th>
                         </tr>
                     </thead>

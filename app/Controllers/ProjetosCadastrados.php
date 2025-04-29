@@ -73,6 +73,7 @@ class ProjetosCadastrados extends BaseController
 
     public function editar($id = null)
     {
+        // Verifica se é AJAX
         if (!$this->request->isAJAX()) {
             return redirect()->to('/projetos-cadastrados');
         }
@@ -84,7 +85,15 @@ class ProjetosCadastrados extends BaseController
 
         if ($projeto) {
             $response['success'] = true;
-            $response['data'] = $projeto;
+            $response['data'] = [
+                'id' => $projeto['id'],
+                'nome' => $projeto['nome'],
+                'objetivo' => $projeto['objetivo'],
+                'perspectiva_estrategica' => $projeto['perspectiva_estrategica'],
+                'interessados' => $projeto['interessados'],
+                'status' => $projeto['status'],
+                'data_publicacao' => $projeto['data_publicacao']
+            ];
         } else {
             $response['message'] = 'Projeto não encontrado';
         }

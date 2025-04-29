@@ -72,22 +72,22 @@ class HistoricoSolicitacoes extends BaseController
 
             // Dados para exibição (formatados)
             $dadosOriginaisParaExibicao = [
-                'etapa' => $solicitacao['nome_etapa'] ?? 'N/A',
-                'acao' => $solicitacao['nome_acao'] ?? 'N/A',
-                'coordenacao' => $dadosOriginais['coordenacao'] ?? 'N/A',
-                'responsavel' => $dadosOriginais['responsavel'] ?? 'N/A',
-                'status' => $dadosOriginais['status'] ?? 'N/A',
-                'tempo_estimado_dias' => $dadosOriginais['tempo_estimado_dias'] ?? 'N/A',
+                'etapa' => $solicitacao['nome_etapa'] ?? '',
+                'acao' => $solicitacao['nome_acao'] ?? '',
+                'coordenacao' => $dadosOriginais['coordenacao'] ?? '',
+                'responsavel' => $dadosOriginais['responsavel'] ?? '',
+                'status' => $dadosOriginais['status'] ?? '',
+                'tempo_estimado_dias' => $dadosOriginais['tempo_estimado_dias'] ?? '',
                 'data_inicio' => isset($dadosOriginais['data_inicio']) && !empty($dadosOriginais['data_inicio'])
                     ? (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dadosOriginais['data_inicio'])
                         ? date('d/m/Y', strtotime($dadosOriginais['data_inicio']))
                         : $dadosOriginais['data_inicio'])
-                    : 'N/A',
+                    : '',
                 'data_fim' => isset($dadosOriginais['data_fim']) && !empty($dadosOriginais['data_fim'])
                     ? (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dadosOriginais['data_fim'])
                         ? date('d/m/Y', strtotime($dadosOriginais['data_fim']))
                         : $dadosOriginais['data_fim'])
-                    : 'N/A'
+                    : ''
             ];
 
             // Filtra apenas campos alterados
@@ -159,12 +159,12 @@ class HistoricoSolicitacoes extends BaseController
         // Cabeçalho
         $html .= '<div class="row mb-4">
         <div class="col-md-6">
-            <h5><strong>Projeto:</strong> ' . htmlspecialchars($solicitacao['nome_projeto'] ?? 'N/A') . '</h5>
+            <h5><strong>Projeto:</strong> ' . htmlspecialchars($solicitacao['nome_projeto'] ?? '') . '</h5>
             <p><strong>Solicitante:</strong> ' . htmlspecialchars($solicitacao['solicitante'] ?? 'Anônimo') . '</p>
         </div>
         <div class="col-md-6 text-end">
             <p><strong>Data da Solicitação:</strong> ' . date('d/m/Y H:i', strtotime($solicitacao['data_solicitacao'])) . '</p>
-            <p><strong>Data de Processamento:</strong> ' . (isset($solicitacao['data_avaliacao']) ? date('d/m/Y H:i', strtotime($solicitacao['data_avaliacao'])) : 'N/A') . '</p>
+            <p><strong>Data de Processamento:</strong> ' . (isset($solicitacao['data_avaliacao']) ? date('d/m/Y H:i', strtotime($solicitacao['data_avaliacao'])) : '') . '</p>
         </div>
     </div>';
 
@@ -215,14 +215,14 @@ class HistoricoSolicitacoes extends BaseController
             <tbody>';
 
             foreach ($dadosAlterados as $campo => $valor) {
-                $valorOriginal = $dadosOriginais[$campo] ?? 'N/A';
+                $valorOriginal = $dadosOriginais[$campo] ?? '';
                 $nomeCampo = $nomesCampos[$campo] ?? ucfirst(str_replace('_', ' ', $campo));
 
                 $html .= '<tr>
                 <th class="w-50">' . $nomeCampo . '</th>
                 <td>
                     <div class="text-danger"><del>' . htmlspecialchars($valorOriginal) . '</del></div>
-                    <div class="text-success">' . htmlspecialchars($valor ?? 'N/A') . '</div>
+                    <div class="text-success">' . htmlspecialchars($valor ?? '') . '</div>
                 </td>
             </tr>';
             }
@@ -252,7 +252,7 @@ class HistoricoSolicitacoes extends BaseController
             <div class="alert alert-' . ($solicitacao['status'] == 'aprovada' ? 'success' : 'danger') . '">
                 <h5 class="alert-heading">Status: ' . ucfirst($solicitacao['status']) . '</h5>
                 <p><strong>Processado por:</strong> ' . htmlspecialchars($solicitacao['processado_por_nome'] ?? 'Sistema') . '</p>
-                <p><strong>Data de processamento:</strong> ' . (isset($solicitacao['data_avaliacao']) ? date('d/m/Y H:i', strtotime($solicitacao['data_avaliacao'])) : 'N/A') . '</p>
+                <p><strong>Data de processamento:</strong> ' . (isset($solicitacao['data_avaliacao']) ? date('d/m/Y H:i', strtotime($solicitacao['data_avaliacao'])) : '') . '</p>
             </div>
         </div>
     </div>';

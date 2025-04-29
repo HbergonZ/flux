@@ -51,13 +51,12 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered display nowrap" id="dataTableHistorico" width="100%" cellspacing="0">
+                <table class="table table-bordered" id="dataTableHistorico" width="100%" cellspacing="0">
                     <thead>
                         <tr class="text-center">
-                            <th>ID</th>
-                            <th>Projeto</th>
+                            <th class="col-projeto">Projeto</th>
                             <th>Ação</th>
-                            <th>Etapa</th>
+                            <th class="col-etapa">Etapa</th>
                             <th>Solicitante</th>
                             <th>Data Solicitação</th>
                             <th>Data Processamento</th>
@@ -68,10 +67,9 @@
                     <tbody>
                         <?php foreach ($solicitacoes as $solicitacao): ?>
                             <tr>
-                                <td class="text-center"><?= $solicitacao['id'] ?></td>
-                                <td><?= $solicitacao['nome_projeto'] ?></td>
+                                <td class="text-wrap"><?= $solicitacao['nome_projeto'] ?></td>
                                 <td><?= $solicitacao['acao'] ?></td>
-                                <td><?= $solicitacao['etapa'] ?></td>
+                                <td class="text-wrap"><?= $solicitacao['etapa'] ?></td>
                                 <td class="text-center"><?= $solicitacao['solicitante'] ?></td>
                                 <td class="text-center"><?= $solicitacao['data_formatada'] ?></td>
                                 <td class="text-center"><?= $solicitacao['data_processamento_formatada'] ?></td>
@@ -94,7 +92,7 @@
     </div>
 </div>
 
-<!-- jQuery (já está no seu código) -->
+<!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <!-- DataTables JS -->
@@ -113,16 +111,46 @@
             language: {
                 url: 'https://cdn.datatables.net/plug-ins/1.11.5/i18n/pt-BR.json'
             },
-            responsive: true,
+            responsive: {
+                details: {
+                    type: 'column',
+                    target: -1
+                }
+            },
+            columnDefs: [{
+                    targets: [0, 2], // Colunas Projeto (0) e Etapa (2)
+                    className: 'text-wrap',
+                    width: '20%'
+                },
+                {
+                    targets: '_all',
+                    className: 'align-middle'
+                },
+                {
+                    responsivePriority: 1,
+                    targets: [4, 5] // Colunas de data
+                },
+                {
+                    targets: -1, // Última coluna
+                    orderable: false,
+                    searchable: false
+                }
+            ],
+            autoWidth: false,
+            scrollX: false,
             lengthMenu: [10, 25, 50, 100],
             pageLength: 10,
             order: [
-                [6, 'desc']
-            ], // Ordena por data de processamento decrescente
+                [4, 'desc']
+            ], // Ordena por Data de Solicitação
             dom: '<"top"lf>rt<"bottom"ip>',
             initComplete: function() {
                 $('.dataTables_filter input').addClass('form-control form-control-sm');
                 $('.dataTables_length select').addClass('form-control form-control-sm');
+            },
+            createdRow: function(row, data, dataIndex) {
+                // Garante quebra de texto nas colunas específicas
+                $('td:eq(0), td:eq(2)', row).css('white-space', 'normal');
             }
         });
 
@@ -141,23 +169,28 @@
 
             // Mostrar loading
             $('#detalhesSolicitacao').html(`
-            <div class="text-center py-4">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="sr-only">Carregando...</span>
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Carregando...</span>
+                    </div>
+                    <p>Carregando detalhes...</p>
                 </div>
-                <p>Carregando detalhes...</p>
-            </div>
-        `);
+            `);
 
             // Carregar detalhes via AJAX
             $.ajax({
                 url: '<?= site_url('historico-solicitacoes/detalhes/') ?>' + solicitacaoAtualId,
                 method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    '<?= csrf_header() ?>': getCsrfToken()
+                },
                 dataType: 'html',
                 success: function(response) {
                     $('#detalhesSolicitacao').html(response);
                 },
-                error: function() {
+                error: function(xhr, status, error) {
+                    console.error('Erro:', error);
                     Swal.fire('Erro', 'Falha ao carregar detalhes', 'error');
                     visualizarModal.hide();
                 }

@@ -63,22 +63,55 @@
 
         // Editar projeto
         $(document).on('click', '.btn-primary[title="Editar"]', function() {
+            // Extrai o ID do projeto (formato: "1-nome-projeto")
             var projectId = $(this).data('id').split('-')[0];
 
-            $.get('<?= site_url('projetos-cadastrados/editar/') ?>' + projectId, function(response) {
-                if (response.success) {
-                    $('#editProjectId').val(response.data.id);
-                    $('#editProjectName').val(response.data.nome);
-                    $('#editProjectDescription').val(response.data.descricao);
-                    $('#editProjectStatus').val(response.data.status);
-                    $('#editProjectPublicationDate').val(response.data.data_publicacao.split(' ')[0]); // Pega apenas a data
+            // Configuração do AJAX com CSRF
+            $.ajax({
+                url: '<?= site_url('projetos-cadastrados/editar/') ?>' + projectId,
+                type: 'GET',
+                dataType: 'json',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
+                },
+                beforeSend: function() {
+                    // Opcional: Mostrar loader
+                    console.log("Carregando dados do projeto...");
+                },
+                success: function(response) {
+                    console.log("Resposta:", response);
 
-                    $('#editProjectModal').modal('show');
-                } else {
-                    alert(response.message);
+                    if (response.success && response.data) {
+                        // Preenche o formulário do modal
+                        $('#editProjectId').val(response.data.id);
+                        $('#editProjectName').val(response.data.nome);
+                        $('#editProjectObjective').val(response.data.objetivo);
+                        $('#editProjectPerspective').val(response.data.perspectiva_estrategica);
+                        $('#editProjectStakeholders').val(response.data.interessados);
+                        $('#editProjectStatus').val(response.data.status);
+
+                        // Formata a data (YYYY-MM-DD para o input date)
+                        if (response.data.data_publicacao) {
+                            var dataParts = response.data.data_publicacao.split(' ')[0].split('-');
+                            var formattedDate = dataParts[0] + '-' + dataParts[1] + '-' + dataParts[2];
+                            $('#editProjectPublicationDate').val(formattedDate);
+                        }
+
+                        // Abre o modal
+                        $('#editProjectModal').modal('show');
+                    } else {
+                        alert(response.message || "Erro ao carregar projeto");
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Erro AJAX:", {
+                        Status: xhr.status,
+                        StatusText: xhr.statusText,
+                        Response: xhr.responseText
+                    });
+                    alert("Falha na comunicação com o servidor. Verifique o console.");
                 }
-            }).fail(function() {
-                alert('Erro ao carregar dados do projeto');
             });
         });
 
@@ -246,25 +279,18 @@
                             },
                             "searching": false,
                             "columnDefs": [{
-                                "width": "15%",
                                 "targets": 0
                             }, {
-                                "width": "20%",
                                 "targets": 1
                             }, {
-                                "width": "15%",
                                 "targets": 2
                             }, {
-                                "width": "15%",
                                 "targets": 3
                             }, {
-                                "width": "10%",
                                 "targets": 4
                             }, {
-                                "width": "10%",
                                 "targets": 5
                             }, {
-                                "width": "15%",
                                 "targets": 6
                             }],
                             "responsive": true,
