@@ -1,68 +1,92 @@
-# CodeIgniter 4 Application Starter
+# PROJETA
 
-## What is CodeIgniter?
+**Sistema de Gerenciamento de Projetos e Iniciativas**
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+## ✨ Sobre o PROJETA
 
-This repository holds a composer-installable app starter.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+O **PROJETA** é um sistema desenvolvido para facilitar o acompanhamento, a atualização e o gerenciamento de projetos e suas iniciativas.
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+Criado para atender inicialmente às demandas do Núcleo de Monitoramento e da Gerência de Transformação Digital da Coordenadoria de Gestão Estratégica da SETIC de Rondônia, o sistema busca eliminar a necessidade de planilhas compartilhadas, proporcionando uma plataforma mais segura, eficiente e confiável.
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+## 🎯 Objetivo
 
-## Installation & updates
+- Facilitar o gerenciamento de projetos pelas equipes gestoras.
+- Permitir que usuários atualizem o status e datas das etapas dos projetos de forma prática.
+- Padronizar informações e evitar perda de dados.
+- Apoiar a geração de relatórios estratégicos.
 
-`composer create-project codeigniter4/appstarter` then `composer update` whenever
-there is a new release of the framework.
+## 🚀 Visão de Futuro
 
-When updating, check the release notes to see if there are any changes you might need to apply
-to your `app` folder. The affected files can be copied or merged from
-`vendor/codeigniter4/framework/app`.
+O PROJETA será evoluído para oferecer:
 
-## Setup
+- Mais dinamismo na configuração de projetos.
+- Expansão para novos escopos.
+- Mantendo sempre a **simplicidade e facilidade de uso** como prioridade.
 
-Copy `env` to `.env` and tailor for your app, specifically the baseURL
-and any database settings.
+## 🛠️ Tecnologias Utilizadas
 
-## Important Change with index.php
+- **Backend:** PHP (CodeIgniter 4)
+- **Frontend:** HTML5, CSS3, JavaScript
+- **Banco de Dados:** MySQL
+- **Hospedagem Inicial:** Ambiente local (localhost)
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+## ⚙️ Configuração Inicial
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+Para rodar o projeto localmente, siga os passos abaixo:
 
-**Please** read the user guide for a better explanation of how CI4 works!
+1. Clone o repositório do projeto.
 
-## Repository Management
+2. Instale as dependências do CodeIgniter:
 
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
+   ```bash
+   composer install
+   ```
 
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
+3. Copie o arquivo `env` para `.env`:
 
-## Server Requirements
+   ```bash
+   cp env .env
+   ```
 
-PHP version 8.1 or higher is required, with the following extensions installed:
+   > Personalize o `.env` conforme necessário:
+   >
+   > - Defina o `baseURL` do seu projeto.
+   > - Configure as credenciais de conexão com o banco de dados.
 
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
+4. Certifique-se de que o servidor web (Apache, Nginx, etc.) esteja apontando para a **pasta `public/`**, não para a raiz do projeto.
 
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - If you are still using PHP 7.4 or 8.0, you should upgrade immediately.
-> - The end of life date for PHP 8.1 will be December 31, 2025.
+5. Atualize sempre que necessário:
 
-Additionally, make sure that the following extensions are enabled in your PHP:
+   ```bash
+   composer update
+   ```
 
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+6. Acesse o sistema através do seu navegador, utilizando a URL configurada no `baseURL`.
+
+## 📋 Requisitos do Servidor
+
+- PHP 8.1 ou superior
+- Extensões PHP necessárias:
+  - intl
+  - mbstring
+  - json (habilitado por padrão)
+  - mysqlnd (se for utilizar MySQL)
+  - libcurl (se for utilizar requisições HTTP via CURL)
+
+> ⚠️ Atenção: PHP 7.4 e 8.0 já atingiram o fim de vida útil (EOL). Recomenda-se utilizar PHP 8.1 ou superior.
+
+## 📈 Benefícios do Sistema
+
+- ✅ Redução de retrabalho
+- ✅ Acompanhamento em tempo real do progresso
+- ✅ Padronização de dados
+- ✅ Geração facilitada de relatórios
+- ✅ Experiência amigável para usuários e gestores
+
+## 📌 Status do Projeto
+
+> **Em desenvolvimento** — Versão inicial para implantação local.
+
+## 💡 Como Contribuir
+
+Caso tenha sugestões, identifique algum problema ou deseje contribuir com melhorias para o PROJETA, entre em contato ou abra uma issue.
