@@ -15,7 +15,7 @@ class AcoesModel extends Model
         'descricao',
         'projeto_vinculado',
         'id_eixo',
-        'id_projeto',
+        'id_plano',
         'responsaveis'
     ];
 
@@ -27,6 +27,6 @@ class AcoesModel extends Model
 
     public function getAcoesByPlano($idPlano)
     {
-        return $this->where('id_projeto', $idPlano)->findAll();
+        return $this->where('id_plano', $idPlano)->findAll();
     }
 }

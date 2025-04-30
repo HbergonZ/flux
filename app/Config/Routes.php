@@ -53,3 +53,29 @@ $routes->get('acoes/editar/(:num)', 'Acoes::editar/$1');
 $routes->post('acoes/atualizar/(:num)', 'Acoes::atualizar/$1');
 $routes->post('acoes/excluir/(:num)', 'Acoes::excluir/$1');
 $routes->post('acoes/filtrar/(:num)', 'Acoes::filtrar/$1');
+
+$routes->get('metas/(:num)', 'Metas::index/$1');
+$routes->post('metas/cadastrar/(:num)', 'Metas::cadastrar/$1');
+$routes->get('metas/editar/(:num)', 'Metas::editar/$1');
+$routes->post('metas/atualizar/(:num)', 'Metas::atualizar/$1');
+$routes->post('metas/excluir/(:num)', 'Metas::excluir/$1');
+$routes->post('metas/filtrar/(:num)', 'Metas::filtrar/$1');
+
+// Para acessar via ações
+$routes->get('etapas/(:num)', 'Etapas::index/$1');
+$routes->post('etapas/cadastrar/acao/(:num)', 'Etapas::cadastrar/acao/$1');
+$routes->get('etapas/editar/(:num)', 'Etapas::editar/$1');
+$routes->post('etapas/atualizar/acao/(:num)', 'Etapas::atualizar/acao/$1');
+$routes->post('etapas/excluir/acao/(:num)', 'Etapas::excluir/acao/$1');
+$routes->post('etapas/filtrar/acao/(:num)', 'Etapas::filtrar/acao/$1');
+
+// Para acessar via metas
+$routes->get('etapas/meta/(:num)', 'Etapas::meta/$1');
+$routes->post('etapas/cadastrar/meta/(:num)', 'Etapas::cadastrar/meta/$1');
+$routes->post('etapas/atualizar/meta/(:num)', 'Etapas::atualizar/meta/$1');
+$routes->post('etapas/excluir/meta/(:num)', 'Etapas::excluir/meta/$1');
+$routes->post('etapas/filtrar/meta/(:num)', 'Etapas::filtrar/meta/$1');
+
+
+$routes->get('visao-geral', 'VisaoGeral::index');
+$routes->post('visao-geral/filtrar', 'VisaoGeral::filtrar');

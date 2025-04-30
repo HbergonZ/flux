@@ -9,25 +9,18 @@
         var dataTable = $('#dataTable').DataTable({
             "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json",
-                "emptyTable": "Nenhum dado disponível na tabela",
-                "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
-                "infoEmpty": "Mostrando 0 a 0 de 0 registros",
-                "infoFiltered": "(filtrado de _MAX_ registros no total)",
+                "url": "//cdn.datatables.net/plug-ins/1.10.20/i18n/Portuguese-Brasil.json",
                 "lengthMenu": "Mostrar _MENU_ registros por página",
-                "loadingRecords": "Carregando...",
-                "processing": "Processando...",
+                "zeroRecords": "Nenhum registro encontrado",
+                "info": "Mostrando página _PAGE_ de _PAGES_",
+                "infoEmpty": "Nenhum registro disponível",
+                "infoFiltered": "(filtrado de _MAX_ registros totais)",
                 "search": "Pesquisar:",
-                "zeroRecords": "Nenhum registro correspondente encontrado",
                 "paginate": {
                     "first": "Primeira",
                     "last": "Última",
                     "next": "Próxima",
                     "previous": "Anterior"
-                },
-                "aria": {
-                    "sortAscending": ": ativar para ordenar coluna ascendente",
-                    "sortDescending": ": ativar para ordenar coluna descendente"
                 }
             },
             "searching": false,
@@ -45,8 +38,8 @@
             }
         });
 
-        // Cadastrar nova etapa
-        $('#formAddEtapa').submit(function(e) {
+        // Cadastrar nova meta
+        $('#formAddMeta').submit(function(e) {
             e.preventDefault();
 
             $.ajax({
@@ -56,7 +49,7 @@
                 dataType: "json",
                 success: function(response) {
                     if (response.success) {
-                        $('#addEtapaModal').modal('hide');
+                        $('#addMetaModal').modal('hide');
                         location.reload();
                     } else {
                         alert('Erro: ' + response.message);
@@ -68,12 +61,12 @@
             });
         });
 
-        // Editar etapa
+        // Editar meta
         $(document).on('click', '.btn-primary[title="Editar"]', function() {
-            var etapaId = $(this).data('id').split('-')[0];
+            var metaId = $(this).data('id').split('-')[0];
 
             $.ajax({
-                url: '<?= site_url('etapas/editar/') ?>' + etapaId,
+                url: '<?= site_url('metas/editar/') ?>' + metaId,
                 type: 'GET',
                 dataType: 'json',
                 headers: {
@@ -82,18 +75,11 @@
                 },
                 success: function(response) {
                     if (response.success && response.data) {
-                        $('#editEtapaId').val(response.data.id_etapa);
-                        $('#editEtapaNome').val(response.data.etapa);
-                        $('#editEtapaAcao').val(response.data.acao);
-                        $('#editEtapaCoordenacao').val(response.data.coordenacao);
-                        $('#editEtapaResponsavel').val(response.data.responsavel);
-                        $('#editEtapaTempoEstimado').val(response.data.tempo_estimado_dias);
-                        $('#editEtapaDataInicio').val(response.data.data_inicio);
-                        $('#editEtapaDataFim').val(response.data.data_fim);
-                        $('#editEtapaStatus').val(response.data.status);
-                        $('#editEtapaModal').modal('show');
+                        $('#editMetaId').val(response.data.id);
+                        $('#editMetaNome').val(response.data.nome);
+                        $('#editMetaModal').modal('show');
                     } else {
-                        alert(response.message || "Erro ao carregar etapa");
+                        alert(response.message || "Erro ao carregar meta");
                     }
                 },
                 error: function(xhr, status, error) {
@@ -102,8 +88,8 @@
             });
         });
 
-        // Atualizar etapa
-        $('#formEditEtapa').submit(function(e) {
+        // Atualizar meta
+        $('#formEditMeta').submit(function(e) {
             e.preventDefault();
 
             $.ajax({
@@ -113,7 +99,7 @@
                 dataType: "json",
                 success: function(response) {
                     if (response.success) {
-                        $('#editEtapaModal').modal('hide');
+                        $('#editMetaModal').modal('hide');
                         location.reload();
                     } else {
                         alert('Erro: ' + response.message);
@@ -125,18 +111,18 @@
             });
         });
 
-        // Excluir etapa
+        // Excluir meta
         $(document).on('click', '.btn-danger[title="Excluir"]', function() {
-            var etapaId = $(this).data('id').split('-')[0];
-            var etapaName = $(this).closest('tr').find('td:first').text();
+            var metaId = $(this).data('id').split('-')[0];
+            var metaName = $(this).closest('tr').find('td:first').text();
 
-            $('#deleteEtapaId').val(etapaId);
-            $('#etapaNameToDelete').text(etapaName);
-            $('#deleteEtapaModal').modal('show');
+            $('#deleteMetaId').val(metaId);
+            $('#metaNameToDelete').text(metaName);
+            $('#deleteMetaModal').modal('show');
         });
 
         // Confirmar exclusão
-        $('#formDeleteEtapa').submit(function(e) {
+        $('#formDeleteMeta').submit(function(e) {
             e.preventDefault();
 
             $.ajax({
@@ -146,7 +132,7 @@
                 dataType: "json",
                 success: function(response) {
                     if (response.success) {
-                        $('#deleteEtapaModal').modal('hide');
+                        $('#deleteMetaModal').modal('hide');
                         location.reload();
                     } else {
                         alert('Erro: ' + response.message);
@@ -163,7 +149,7 @@
             e.preventDefault();
 
             var hasFilters = false;
-            $(this).find('input, select').each(function() {
+            $(this).find('input').each(function() {
                 if ($(this).val() !== '' && $(this).val() !== null) {
                     hasFilters = true;
                     return false;
@@ -177,7 +163,7 @@
 
             $.ajax({
                 type: "POST",
-                url: '<?= site_url("etapas/filtrar/$tipo/$idVinculo") ?>',
+                url: '<?= site_url("metas/filtrar/$idAcao") ?>',
                 data: $(this).serialize(),
                 dataType: "json",
                 success: function(response) {
@@ -185,34 +171,11 @@
                         dataTable.destroy();
                         $('#dataTable tbody').empty();
 
-                        $.each(response.data, function(index, etapa) {
-                            var id = etapa.id_etapa + '-' + etapa.etapa.toLowerCase().replace(/\s+/g, '-');
-
-                            var badge_class = '';
-                            switch (etapa.status) {
-                                case 'Em andamento':
-                                    badge_class = 'badge-primary';
-                                    break;
-                                case 'Finalizado':
-                                    badge_class = 'badge-success';
-                                    break;
-                                case 'Paralisado':
-                                    badge_class = 'badge-warning';
-                                    break;
-                                case 'Não iniciado':
-                                    badge_class = 'badge-secondary';
-                                    break;
-                            }
+                        $.each(response.data, function(index, meta) {
+                            var id = meta.id + '-' + meta.nome.toLowerCase().replace(/\s+/g, '-');
 
                             var row = '<tr>' +
-                                '<td class="text-wrap">' + etapa.etapa + '</td>' +
-                                '<td class="text-wrap">' + etapa.acao + '</td>' +
-                                '<td class="text-wrap">' + etapa.coordenacao + '</td>' +
-                                '<td class="text-wrap">' + etapa.responsavel + '</td>' +
-                                '<td class="text-center">' + etapa.tempo_estimado_dias + ' dias</td>' +
-                                '<td class="text-center">' + formatDate(etapa.data_inicio) + '</td>' +
-                                '<td class="text-center">' + formatDate(etapa.data_fim) + '</td>' +
-                                '<td class="text-center"><span class="badge ' + badge_class + '">' + etapa.status + '</span></td>' +
+                                '<td class="text-wrap">' + meta.nome + '</td>' +
                                 '<td class="text-center">' +
                                 '<div class="d-inline-flex">' +
                                 '<button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="' + id + '" title="Editar">' +
@@ -231,25 +194,18 @@
                         dataTable = $('#dataTable').DataTable({
                             "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
                             "language": {
-                                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json",
-                                "emptyTable": "Nenhum dado disponível na tabela",
-                                "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
-                                "infoEmpty": "Mostrando 0 a 0 de 0 registros",
-                                "infoFiltered": "(filtrado de _MAX_ registros no total)",
+                                "url": "//cdn.datatables.net/plug-ins/1.10.20/i18n/Portuguese-Brasil.json",
                                 "lengthMenu": "Mostrar _MENU_ registros por página",
-                                "loadingRecords": "Carregando...",
-                                "processing": "Processando...",
+                                "zeroRecords": "Nenhum registro encontrado",
+                                "info": "Mostrando página _PAGE_ de _PAGES_",
+                                "infoEmpty": "Nenhum registro disponível",
+                                "infoFiltered": "(filtrado de _MAX_ registros totais)",
                                 "search": "Pesquisar:",
-                                "zeroRecords": "Nenhum registro correspondente encontrado",
                                 "paginate": {
                                     "first": "Primeira",
                                     "last": "Última",
                                     "next": "Próxima",
                                     "previous": "Anterior"
-                                },
-                                "aria": {
-                                    "sortAscending": ": ativar para ordenar coluna ascendente",
-                                    "sortDescending": ": ativar para ordenar coluna descendente"
                                 }
                             },
                             "searching": false,
@@ -259,7 +215,7 @@
                             "pageLength": 10
                         });
                     } else {
-                        alert('Erro ao filtrar etapas: ' + response.message);
+                        alert('Erro ao filtrar metas: ' + response.message);
                     }
                 },
                 error: function(xhr, status, error) {
@@ -273,15 +229,5 @@
             $('#formFiltros')[0].reset();
             $('#formFiltros').submit();
         });
-
-        // Função para formatar data
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
-            return `${day}/${month}/${year}`;
-        }
     });
 </script>

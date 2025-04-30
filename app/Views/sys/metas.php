@@ -1,17 +1,17 @@
 <!-- Importação de Modais -->
-<?php echo view('components/acoes/modal-editar-acao.php'); ?>
-<?php echo view('components/acoes/modal-confirmar-exclusao.php'); ?>
-<?php echo view('components/acoes/modal-adicionar-acao.php'); ?>
+<?php echo view('components/metas/modal-editar-meta.php'); ?>
+<?php echo view('components/metas/modal-confirmar-exclusao.php'); ?>
+<?php echo view('components/metas/modal-adicionar-meta.php'); ?>
 
 <div class="container-fluid">
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Ações do Plano: <?= $plano['nome'] ?></h1>
-        <a href="<?= site_url('planos') ?>" class="btn btn-secondary btn-icon-split btn-sm">
+        <h1 class="h3 mb-0 text-gray-800">Metas da Ação: <?= $acao['acao'] ?></h1>
+        <a href="<?= site_url("acoes/{$acao['id_plano']}") ?>" class="btn btn-secondary btn-icon-split btn-sm">
             <span class="icon text-white-50">
                 <i class="fas fa-arrow-left"></i>
             </span>
-            <span class="text">Voltar para Planos</span>
+            <span class="text">Voltar para Ações</span>
         </a>
     </div>
 
@@ -20,22 +20,10 @@
         <div class="card-body">
             <form id="formFiltros">
                 <div class="row">
-                    <div class="col-md-4">
+                    <div class="col-md-12">
                         <div class="form-group">
-                            <label for="filterIdentificador">Identificador</label>
-                            <input type="text" class="form-control" id="filterIdentificador" name="identificador" placeholder="Filtrar por identificador">
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label for="filterAcao">Ação</label>
-                            <input type="text" class="form-control" id="filterAcao" name="acao" placeholder="Filtrar por ação">
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label for="filterProjetoVinculado">Projeto Vinculado</label>
-                            <input type="text" class="form-control" id="filterProjetoVinculado" name="projeto_vinculado" placeholder="Filtrar por projeto vinculado">
+                            <label for="filterNome">Nome</label>
+                            <input type="text" class="form-control" id="filterNome" name="nome" placeholder="Filtrar por nome">
                         </div>
                     </div>
                 </div>
@@ -63,12 +51,12 @@
     <!-- DataTales Example -->
     <div class="card shadow mb-4 mx-md-5 mx-3">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">Lista de Ações</h6>
-            <a href="#" class="btn btn-primary btn-icon-split btn-sm" data-toggle="modal" data-target="#addAcaoModal">
+            <h6 class="m-0 font-weight-bold text-primary">Lista de Metas</h6>
+            <a href="#" class="btn btn-primary btn-icon-split btn-sm" data-toggle="modal" data-target="#addMetaModal">
                 <span class="icon text-white-50">
                     <i class="fas fa-plus"></i>
                 </span>
-                <span class="text">Incluir Ação</span>
+                <span class="text">Incluir Meta</span>
             </a>
         </div>
         <div class="card-body">
@@ -76,33 +64,21 @@
                 <table class="table table-bordered align-middle" id="dataTable" cellspacing="0">
                     <thead>
                         <tr class="text-center">
-                            <th>Identificador</th>
-                            <th>Ação</th>
-                            <th>Descrição</th>
-                            <th>Projeto Vinculado</th>
-                            <th>Responsáveis</th>
+                            <th>Nome</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if (isset($acoes) && !empty($acoes)) : ?>
-                            <?php foreach ($acoes as $acao) :
-                                $id = $acao['id'] . '-' . str_replace(' ', '-', strtolower($acao['acao'])); ?>
+                        <?php if (isset($metas) && !empty($metas)) : ?>
+                            <?php foreach ($metas as $meta) :
+                                $id = $meta['id'] . '-' . str_replace(' ', '-', strtolower($meta['nome'])); ?>
                                 <tr>
-                                    <td class="text-center"><?= $acao['identificador'] ?></td>
-                                    <td class="text-wrap"><?= $acao['acao'] ?></td>
-                                    <td class="text-wrap"><?= $acao['descricao'] ?></td>
-                                    <td class="text-wrap"><?= $acao['projeto_vinculado'] ?></td>
-                                    <td class="text-wrap"><?= $acao['responsaveis'] ?></td>
+                                    <td class="text-wrap"><?= $meta['nome'] ?></td>
+                                    <!-- Na coluna de ações, substitua o conteúdo atual por: -->
                                     <td class="text-center">
                                         <div class="d-inline-flex">
-                                            <!-- Botão Visualizar Metas -->
-                                            <a href="<?= site_url('metas/' . $acao['id']) ?>" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Metas">
-                                                <i class="fas fa-bullseye"></i>
-                                            </a>
-
                                             <!-- Botão Visualizar Etapas -->
-                                            <a href="<?= site_url('etapas/' . $acao['id']) ?>" class="btn btn-secondary btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Etapas">
+                                            <a href="<?= site_url('etapas/meta/' . $meta['id']) ?>" class="btn btn-secondary btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Etapas">
                                                 <i class="fas fa-tasks"></i>
                                             </a>
 
@@ -121,7 +97,7 @@
                             <?php endforeach; ?>
                         <?php else : ?>
                             <tr>
-                                <td colspan="6" class="text-center">Nenhuma ação encontrada</td>
+                                <td colspan="2" class="text-center">Nenhuma meta encontrada</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
@@ -132,4 +108,4 @@
 </div>
 
 <!-- Scripts da página -->
-<?php echo view('scripts/acoes.php'); ?>
+<?php echo view('scripts/metas.php'); ?>
