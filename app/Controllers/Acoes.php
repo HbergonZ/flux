@@ -4,16 +4,19 @@ namespace App\Controllers;
 
 use App\Models\AcoesModel;
 use App\Models\PlanosModel;
+use App\Models\EixosModel;
 
 class Acoes extends BaseController
 {
     protected $acoesModel;
     protected $planosModel;
+    protected $eixosModel;
 
     public function __construct()
     {
         $this->acoesModel = new AcoesModel();
         $this->planosModel = new PlanosModel();
+        $this->eixosModel = new EixosModel();
     }
 
     public function index($idPlano = null)
@@ -31,9 +34,13 @@ class Acoes extends BaseController
         // Busca as ações vinculadas ao plano
         $acoes = $this->acoesModel->getAcoesByPlano($idPlano);
 
+        // Busca os eixos para os selects
+        $eixos = $this->eixosModel->findAll();
+
         $data = [
             'plano' => $plano,
             'acoes' => $acoes,
+            'eixos' => $eixos,
             'idPlano' => $idPlano
         ];
 
@@ -50,7 +57,6 @@ class Acoes extends BaseController
         $response = ['success' => false, 'message' => ''];
 
         $rules = [
-            'identificador' => 'required|max_length[10]',
             'acao' => 'required|max_length[255]',
             'descricao' => 'permit_empty',
             'projeto_vinculado' => 'permit_empty|max_length[255]',
@@ -61,12 +67,11 @@ class Acoes extends BaseController
         if ($this->validate($rules)) {
             try {
                 $data = [
-                    'identificador' => $this->request->getPost('identificador'),
                     'acao' => $this->request->getPost('acao'),
                     'descricao' => $this->request->getPost('descricao'),
                     'projeto_vinculado' => $this->request->getPost('projeto_vinculado'),
                     'id_eixo' => $this->request->getPost('id_eixo'),
-                    'id_projeto' => $idPlano,
+                    'id_plano' => $idPlano,
                     'responsaveis' => $this->request->getPost('responsaveis')
                 ];
 
@@ -112,7 +117,6 @@ class Acoes extends BaseController
 
         $rules = [
             'id' => 'required',
-            'identificador' => 'required|max_length[10]',
             'acao' => 'required|max_length[255]',
             'descricao' => 'permit_empty',
             'projeto_vinculado' => 'permit_empty|max_length[255]',
@@ -124,7 +128,6 @@ class Acoes extends BaseController
             try {
                 $data = [
                     'id' => $this->request->getPost('id'),
-                    'identificador' => $this->request->getPost('identificador'),
                     'acao' => $this->request->getPost('acao'),
                     'descricao' => $this->request->getPost('descricao'),
                     'projeto_vinculado' => $this->request->getPost('projeto_vinculado'),
@@ -171,16 +174,12 @@ class Acoes extends BaseController
         }
 
         $filtros = [
-            'identificador' => $this->request->getPost('identificador'),
             'acao' => $this->request->getPost('acao'),
-            'projeto_vinculado' => $this->request->getPost('projeto_vinculado')
+            'projeto_vinculado' => $this->request->getPost('projeto_vinculado'),
+            'id_eixo' => $this->request->getPost('id_eixo')
         ];
 
-        $builder = $this->acoesModel->where('id_projeto', $idPlano);
-
-        if (!empty($filtros['identificador'])) {
-            $builder->like('identificador', $filtros['identificador']);
-        }
+        $builder = $this->acoesModel->where('id_plano', $idPlano);
 
         if (!empty($filtros['acao'])) {
             $builder->like('acao', $filtros['acao']);
@@ -188,6 +187,10 @@ class Acoes extends BaseController
 
         if (!empty($filtros['projeto_vinculado'])) {
             $builder->like('projeto_vinculado', $filtros['projeto_vinculado']);
+        }
+
+        if (!empty($filtros['id_eixo'])) {
+            $builder->where('id_eixo', $filtros['id_eixo']);
         }
 
         $acoes = $builder->findAll();

@@ -88,11 +88,11 @@
                 Área do Usuário
             </div>
 
-            <!-- Meus Projetos -->
+            <!-- Minhas atividades -->
             <li class="nav-item">
                 <a class="nav-link" href="<?php echo base_url('/meus-projetos'); ?>">
                     <i class="fas fa-fw fa-folder-open"></i>
-                    <span>Meus Projetos</span></a>
+                    <span>Minhas Atividades</span></a>
             </li>
 
             <!-- Minhas Solicitações -->

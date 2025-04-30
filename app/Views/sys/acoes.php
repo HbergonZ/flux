@@ -22,20 +22,37 @@
                 <div class="row">
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label for="filterIdentificador">Identificador</label>
-                            <input type="text" class="form-control" id="filterIdentificador" name="identificador" placeholder="Filtrar por identificador">
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group">
                             <label for="filterAcao">Ação</label>
-                            <input type="text" class="form-control" id="filterAcao" name="acao" placeholder="Filtrar por ação">
+                            <select class="form-control" id="filterAcao" name="acao">
+                                <option value="">Todas as ações</option>
+                                <?php foreach ($acoes as $acao): ?>
+                                    <option value="<?= $acao['acao'] ?>"><?= $acao['acao'] ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="form-group">
                             <label for="filterProjetoVinculado">Projeto Vinculado</label>
-                            <input type="text" class="form-control" id="filterProjetoVinculado" name="projeto_vinculado" placeholder="Filtrar por projeto vinculado">
+                            <select class="form-control" id="filterProjetoVinculado" name="projeto_vinculado">
+                                <option value="">Todos os projetos</option>
+                                <?php foreach ($acoes as $acao): ?>
+                                    <?php if (!empty($acao['projeto_vinculado'])): ?>
+                                        <option value="<?= $acao['projeto_vinculado'] ?>"><?= $acao['projeto_vinculado'] ?></option>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="filterEixo">Eixo</label>
+                            <select class="form-control" id="filterEixo" name="id_eixo">
+                                <option value="">Todos os eixos</option>
+                                <?php foreach ($eixos as $eixo): ?>
+                                    <option value="<?= $eixo['id'] ?>"><?= $eixo['nome'] ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -76,7 +93,6 @@
                 <table class="table table-bordered align-middle" id="dataTable" cellspacing="0">
                     <thead>
                         <tr class="text-center">
-                            <th>Identificador</th>
                             <th>Ação</th>
                             <th>Descrição</th>
                             <th>Projeto Vinculado</th>
@@ -89,7 +105,6 @@
                             <?php foreach ($acoes as $acao) :
                                 $id = $acao['id'] . '-' . str_replace(' ', '-', strtolower($acao['acao'])); ?>
                                 <tr>
-                                    <td class="text-center align-middle"><?= $acao['identificador'] ?></td>
                                     <td class="text-wrap align-middle"><?= $acao['acao'] ?></td>
                                     <td class="text-wrap align-middle"><?= $acao['descricao'] ?></td>
                                     <td class="text-wrap align-middle"><?= $acao['projeto_vinculado'] ?></td>
@@ -121,7 +136,7 @@
                             <?php endforeach; ?>
                         <?php else : ?>
                             <tr>
-                                <td colspan="6" class="text-center">Nenhuma ação encontrada</td>
+                                <td colspan="5" class="text-center">Nenhuma ação encontrada</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>

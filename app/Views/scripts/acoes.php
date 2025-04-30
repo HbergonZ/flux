@@ -76,7 +76,6 @@
                 success: function(response) {
                     if (response.success && response.data) {
                         $('#editAcaoId').val(response.data.id);
-                        $('#editAcaoIdentificador').val(response.data.identificador);
                         $('#editAcaoNome').val(response.data.acao);
                         $('#editAcaoDescricao').val(response.data.descricao);
                         $('#editAcaoProjetoVinculado').val(response.data.projeto_vinculado);
@@ -119,7 +118,7 @@
         // Excluir ação
         $(document).on('click', '.btn-danger[title="Excluir"]', function() {
             var acaoId = $(this).data('id').split('-')[0];
-            var acaoName = $(this).closest('tr').find('td:nth-child(2)').text();
+            var acaoName = $(this).closest('tr').find('td:nth-child(1)').text();
 
             $('#deleteAcaoId').val(acaoId);
             $('#acaoNameToDelete').text(acaoName);
@@ -154,7 +153,7 @@
             e.preventDefault();
 
             var hasFilters = false;
-            $(this).find('input').each(function() {
+            $(this).find('select').each(function() {
                 if ($(this).val() !== '' && $(this).val() !== null) {
                     hasFilters = true;
                     return false;
@@ -180,7 +179,6 @@
                             var id = acao.id + '-' + acao.acao.toLowerCase().replace(/\s+/g, '-');
 
                             var row = '<tr>' +
-                                '<td class="text-center">' + acao.identificador + '</td>' +
                                 '<td class="text-wrap">' + acao.acao + '</td>' +
                                 '<td class="text-wrap">' + (acao.descricao || '') + '</td>' +
                                 '<td class="text-wrap">' + (acao.projeto_vinculado || '') + '</td>' +

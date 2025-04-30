@@ -11,19 +11,9 @@
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
 
                 <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="acaoIdentificador">Identificador*</label>
-                                <input type="text" class="form-control" id="acaoIdentificador" name="identificador" required maxlength="10">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="acaoNome">Ação*</label>
-                                <input type="text" class="form-control" id="acaoNome" name="acao" required maxlength="255">
-                            </div>
-                        </div>
+                    <div class="form-group">
+                        <label for="acaoNome">Ação*</label>
+                        <input type="text" class="form-control" id="acaoNome" name="acao" required maxlength="255">
                     </div>
 
                     <div class="form-group">
@@ -40,8 +30,13 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="acaoEixo">ID Eixo</label>
-                                <input type="number" class="form-control" id="acaoEixo" name="id_eixo">
+                                <label for="acaoEixo">Eixo</label>
+                                <select class="form-control" id="acaoEixo" name="id_eixo">
+                                    <option value="">Selecione um eixo</option>
+                                    <?php foreach ($eixos as $eixo): ?>
+                                        <option value="<?= $eixo['id'] ?>"><?= $eixo['nome'] ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                         </div>
                     </div>

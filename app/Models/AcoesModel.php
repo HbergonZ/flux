@@ -10,7 +10,6 @@ class AcoesModel extends Model
     protected $primaryKey = 'id';
 
     protected $allowedFields = [
-        'identificador',
         'acao',
         'descricao',
         'projeto_vinculado',

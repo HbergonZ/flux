@@ -12,19 +12,9 @@
                 <input type="hidden" name="id" id="editAcaoId">
 
                 <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="editAcaoIdentificador">Identificador*</label>
-                                <input type="text" class="form-control" id="editAcaoIdentificador" name="identificador" required maxlength="10">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="editAcaoNome">Ação*</label>
-                                <input type="text" class="form-control" id="editAcaoNome" name="acao" required maxlength="255">
-                            </div>
-                        </div>
+                    <div class="form-group">
+                        <label for="editAcaoNome">Ação*</label>
+                        <input type="text" class="form-control" id="editAcaoNome" name="acao" required maxlength="255">
                     </div>
 
                     <div class="form-group">
@@ -41,8 +31,13 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="editAcaoEixo">ID Eixo</label>
-                                <input type="number" class="form-control" id="editAcaoEixo" name="id_eixo">
+                                <label for="editAcaoEixo">Eixo</label>
+                                <select class="form-control" id="editAcaoEixo" name="id_eixo">
+                                    <option value="">Selecione um eixo</option>
+                                    <?php foreach ($eixos as $eixo): ?>
+                                        <option value="<?= $eixo['id'] ?>"><?= $eixo['nome'] ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                         </div>
                     </div>
