@@ -14,19 +14,34 @@
                     <div class="col-md-3">
                         <div class="form-group">
                             <label for="filterPlano">Plano</label>
-                            <input type="text" class="form-control" id="filterPlano" name="plano" placeholder="Filtrar por plano">
+                            <select class="form-control" id="filterPlano" name="plano">
+                                <option value="">Todos</option>
+                                <?php foreach ($filtros['planos'] as $plano) : ?>
+                                    <option value="<?= esc($plano['plano']) ?>"><?= esc($plano['plano']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
                             <label for="filterAcao">Ação</label>
-                            <input type="text" class="form-control" id="filterAcao" name="acao" placeholder="Filtrar por ação">
+                            <select class="form-control" id="filterAcao" name="acao">
+                                <option value="">Todos</option>
+                                <?php foreach ($filtros['acoes'] as $acao) : ?>
+                                    <option value="<?= esc($acao['acao']) ?>"><?= esc($acao['acao']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
                             <label for="filterMeta">Meta</label>
-                            <input type="text" class="form-control" id="filterMeta" name="meta" placeholder="Filtrar por meta">
+                            <select class="form-control" id="filterMeta" name="meta">
+                                <option value="">Todos</option>
+                                <?php foreach ($filtros['metas'] as $meta) : ?>
+                                    <option value="<?= esc($meta['meta']) ?>"><?= esc($meta['meta']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -34,10 +49,9 @@
                             <label for="filterStatus">Status</label>
                             <select class="form-control" id="filterStatus" name="status">
                                 <option value="">Todos</option>
-                                <option value="Em andamento">Em andamento</option>
-                                <option value="Finalizado">Finalizado</option>
-                                <option value="Paralisado">Paralisado</option>
-                                <option value="Não iniciado">Não iniciado</option>
+                                <?php foreach ($filtros['status'] as $status) : ?>
+                                    <option value="<?= esc($status['status']) ?>"><?= esc($status['status']) ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                     </div>
@@ -46,25 +60,38 @@
                     <div class="col-md-3">
                         <div class="form-group">
                             <label for="filterEtapa">Etapa</label>
-                            <input type="text" class="form-control" id="filterEtapa" name="etapa" placeholder="Filtrar por etapa">
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="filterCoordenacao">Coordenação</label>
-                            <input type="text" class="form-control" id="filterCoordenacao" name="coordenacao" placeholder="Filtrar por coordenação">
+                            <select class="form-control" id="filterEtapa" name="etapa">
+                                <option value="">Todos</option>
+                                <?php foreach ($filtros['etapas'] as $etapa) : ?>
+                                    <option value="<?= esc($etapa['etapa']) ?>"><?= esc($etapa['etapa']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
                             <label for="filterResponsavel">Responsável</label>
-                            <input type="text" class="form-control" id="filterResponsavel" name="responsavel" placeholder="Filtrar por responsável">
+                            <select class="form-control" id="filterResponsavel" name="responsavel">
+                                <option value="">Todos</option>
+                                <?php foreach ($filtros['responsavel'] as $responsavel) : ?>
+                                    <option value="<?= esc($responsavel['responsavel']) ?>"><?= esc($responsavel['responsavel']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="filterStartDate">Data Inicial</label>
-                            <input type="date" class="form-control" id="filterStartDate" name="data_inicio">
+                            <label for="filterEquipe">Equipe</label>
+                            <input type="text" class="form-control" id="filterEquipe" name="equipe" placeholder="Filtrar por equipe">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="filterStartDate">Período</label>
+                            <div class="input-group">
+                                <input type="date" class="form-control" id="filterStartDate" name="data_inicio" placeholder="Data inicial">
+                                <input type="date" class="form-control" id="filterEndDate" name="data_fim" placeholder="Data final">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -104,8 +131,8 @@
                             <th>Ação</th>
                             <th>Meta</th>
                             <th>Etapa</th>
-                            <th>Coordenação</th>
                             <th>Responsável</th>
+                            <th>Equipe</th>
                             <th>Status</th>
                             <th>Início</th>
                             <th>Término</th>
@@ -115,13 +142,13 @@
                         <?php if (isset($dados) && !empty($dados)) : ?>
                             <?php foreach ($dados as $registro) : ?>
                                 <tr>
-                                    <td class="text-wrap"><?= $registro['plano'] ?></td>
-                                    <td class="text-wrap"><?= $registro['acao'] ?></td>
-                                    <td class="text-wrap"><?= $registro['meta'] ?></td>
-                                    <td class="text-wrap"><?= $registro['etapa'] ?></td>
-                                    <td class="text-wrap"><?= $registro['coordenacao'] ?></td>
-                                    <td class="text-wrap"><?= $registro['responsavel_etapa'] ?></td>
-                                    <td class="text-center">
+                                    <td class="text-wrap align-middle"><?= esc($registro['plano']) ?></td>
+                                    <td class="text-wrap align-middle"><?= esc($registro['acao']) ?></td>
+                                    <td class="text-wrap align-middle"><?= esc($registro['meta']) ?></td>
+                                    <td class="text-wrap align-middle"><?= esc($registro['etapa']) ?></td>
+                                    <td class="text-wrap align-middle"><?= esc($registro['responsavel']) ?></td>
+                                    <td class="text-wrap align-middle"><?= esc($registro['equipe']) ?></td>
+                                    <td class="text-center align-middle">
                                         <?php
                                         $badge_class = '';
                                         switch ($registro['status']) {
@@ -141,10 +168,10 @@
                                                 $badge_class = 'badge-light';
                                         }
                                         ?>
-                                        <span class="badge <?= $badge_class ?>"><?= $registro['status'] ?></span>
+                                        <span class="badge <?= $badge_class ?>"><?= esc($registro['status']) ?></span>
                                     </td>
-                                    <td class="text-center"><?= !empty($registro['data_inicio']) ? date('d/m/Y', strtotime($registro['data_inicio'])) : '' ?></td>
-                                    <td class="text-center"><?= !empty($registro['data_fim']) ? date('d/m/Y', strtotime($registro['data_fim'])) : '' ?></td>
+                                    <td class="text-center align-middle"><?= !empty($registro['data_inicio']) ? esc(date('d/m/Y', strtotime($registro['data_inicio']))) : '' ?></td>
+                                    <td class="text-center align-middle"><?= !empty($registro['data_fim']) ? esc(date('d/m/Y', strtotime($registro['data_fim']))) : '' ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else : ?>
@@ -161,5 +188,4 @@
 </div>
 <!-- /.container-fluid -->
 
-<!-- Scripts da página -->
-<?php echo view('scripts/visao-geral.php'); ?>
+<?php echo view('scripts/visao-geral'); ?>

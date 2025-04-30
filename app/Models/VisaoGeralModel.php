@@ -7,14 +7,25 @@ use CodeIgniter\Model;
 class VisaoGeralModel extends Model
 {
     protected $table = 'visao_geral';
-    protected $primaryKey = 'acao_id'; // Ajuste conforme sua necessidade
-
-    protected $allowedFields = []; // Views geralmente não permitem escrita
-
+    protected $primaryKey = 'acao_id';
+    protected $allowedFields = [];
     protected $returnType = 'array';
-
-    // Não use timestamps para views
     protected $useTimestamps = false;
+
+    /**
+     * Busca valores distintos para os filtros
+     */
+    public function getFiltrosDistinct()
+    {
+        return [
+            'planos' => $this->builder()->select('plano')->distinct(true)->orderBy('plano', 'ASC')->get()->getResultArray(),
+            'acoes' => $this->builder()->select('acao')->distinct(true)->orderBy('acao', 'ASC')->get()->getResultArray(),
+            'metas' => $this->builder()->select('meta')->distinct(true)->orderBy('meta', 'ASC')->get()->getResultArray(),
+            'etapas' => $this->builder()->select('etapa')->distinct(true)->orderBy('etapa', 'ASC')->get()->getResultArray(),
+            'responsavel' => $this->builder()->select('responsavel')->distinct(true)->orderBy('responsavel', 'ASC')->get()->getResultArray(),
+            'status' => $this->builder()->select('status')->distinct(true)->orderBy('status', 'ASC')->get()->getResultArray()
+        ];
+    }
 
     /**
      * Filtra os dados da visão geral
@@ -24,27 +35,27 @@ class VisaoGeralModel extends Model
         $builder = $this->builder();
 
         if (!empty($filtros['plano'])) {
-            $builder->like('plano', $filtros['plano']);
+            $builder->where('plano', $filtros['plano']);
         }
 
         if (!empty($filtros['acao'])) {
-            $builder->like('acao', $filtros['acao']);
+            $builder->where('acao', $filtros['acao']);
         }
 
         if (!empty($filtros['meta'])) {
-            $builder->like('meta', $filtros['meta']);
+            $builder->where('meta', $filtros['meta']);
         }
 
         if (!empty($filtros['etapa'])) {
-            $builder->like('etapa', $filtros['etapa']);
-        }
-
-        if (!empty($filtros['coordenacao'])) {
-            $builder->like('coordenacao', $filtros['coordenacao']);
+            $builder->where('etapa', $filtros['etapa']);
         }
 
         if (!empty($filtros['responsavel'])) {
-            $builder->like('responsavel_etapa', $filtros['responsavel']);
+            $builder->where('responsavel', $filtros['responsavel']);
+        }
+
+        if (!empty($filtros['equipe'])) {
+            $builder->like('equipe', $filtros['equipe']);
         }
 
         if (!empty($filtros['status'])) {

@@ -42,10 +42,22 @@
         $('#formFiltros').submit(function(e) {
             e.preventDefault();
 
+            var formData = {
+                'plano': $('#filterPlano').val(),
+                'acao': $('#filterAcao').val(),
+                'meta': $('#filterMeta').val(),
+                'etapa': $('#filterEtapa').val(),
+                'responsavel': $('#filterResponsavel').val(),
+                'equipe': $('#filterEquipe').val(),
+                'status': $('#filterStatus').val(),
+                'data_inicio': $('#filterStartDate').val(),
+                'data_fim': $('#filterEndDate').val()
+            };
+
             // Verifica se há filtros aplicados
             var hasFilters = false;
-            $(this).find('input, select').each(function() {
-                if ($(this).val() !== '' && $(this).val() !== null) {
+            $.each(formData, function(key, value) {
+                if (value !== '' && value !== null) {
                     hasFilters = true;
                     return false;
                 }
@@ -60,51 +72,58 @@
             $.ajax({
                 type: "POST",
                 url: '<?= site_url('visao-geral/filtrar') ?>',
-                data: $(this).serialize(),
+                data: formData,
                 dataType: "json",
+                // No success do AJAX, adicione:
                 success: function(response) {
                     if (response.success) {
                         // Destroi a tabela atual
-                        dataTable.destroy();
+                        if ($.fn.DataTable.isDataTable('#dataTable')) {
+                            dataTable.destroy();
+                        }
 
                         // Limpa o corpo da tabela
                         $('#dataTable tbody').empty();
 
                         // Adiciona os novos registros filtrados
-                        $.each(response.data, function(index, registro) {
-                            var badge_class = '';
+                        if (response.data.length > 0) {
+                            $.each(response.data, function(index, registro) {
+                                var badge_class = '';
 
-                            switch (registro.status) {
-                                case 'Em andamento':
-                                    badge_class = 'badge-primary';
-                                    break;
-                                case 'Não iniciado':
-                                    badge_class = 'badge-secondary';
-                                    break;
-                                case 'Finalizado':
-                                    badge_class = 'badge-success';
-                                    break;
-                                case 'Paralisado':
-                                    badge_class = 'badge-warning';
-                                    break;
-                                default:
-                                    badge_class = 'badge-light';
-                            }
+                                switch (registro.status) {
+                                    case 'Em andamento':
+                                        badge_class = 'badge-primary';
+                                        break;
+                                    case 'Não iniciado':
+                                        badge_class = 'badge-secondary';
+                                        break;
+                                    case 'Finalizado':
+                                        badge_class = 'badge-success';
+                                        break;
+                                    case 'Paralisado':
+                                        badge_class = 'badge-warning';
+                                        break;
+                                    default:
+                                        badge_class = 'badge-light';
+                                }
 
-                            var row = '<tr>' +
-                                '<td class="text-wrap">' + (registro.plano || '') + '</td>' +
-                                '<td class="text-wrap">' + (registro.acao || '') + '</td>' +
-                                '<td class="text-wrap">' + (registro.meta || '') + '</td>' +
-                                '<td class="text-wrap">' + (registro.etapa || '') + '</td>' +
-                                '<td class="text-wrap">' + (registro.coordenacao || '') + '</td>' +
-                                '<td class="text-wrap">' + (registro.responsavel_etapa || '') + '</td>' +
-                                '<td class="text-center"><span class="badge ' + badge_class + '">' + registro.status + '</span></td>' +
-                                '<td class="text-center">' + (registro.data_inicio_formatada || '') + '</td>' +
-                                '<td class="text-center">' + (registro.data_fim_formatada || '') + '</td>' +
-                                '</tr>';
+                                var row = '<tr>' +
+                                    '<td class="text-wrap">' + (registro.plano || '') + '</td>' +
+                                    '<td class="text-wrap">' + (registro.acao || '') + '</td>' +
+                                    '<td class="text-wrap">' + (registro.meta || '') + '</td>' +
+                                    '<td class="text-wrap">' + (registro.etapa || '') + '</td>' +
+                                    '<td class="text-wrap">' + (registro.responsavel || '') + '</td>' +
+                                    '<td class="text-wrap">' + (registro.equipe || '') + '</td>' +
+                                    '<td class="text-center"><span class="badge ' + badge_class + '">' + registro.status + '</span></td>' +
+                                    '<td class="text-center">' + (registro.data_inicio_formatada || '') + '</td>' +
+                                    '<td class="text-center">' + (registro.data_fim_formatada || '') + '</td>' +
+                                    '</tr>';
 
-                            $('#dataTable tbody').append(row);
-                        });
+                                $('#dataTable tbody').append(row);
+                            });
+                        } else {
+                            $('#dataTable tbody').append('<tr><td colspan="9" class="text-center">Nenhum registro encontrado</td></tr>');
+                        }
 
                         // Re-inicializa o DataTable
                         dataTable = $('#dataTable').DataTable({
@@ -113,7 +132,7 @@
                                 "url": "//cdn.datatables.net/plug-ins/1.10.20/i18n/Portuguese-Brasil.json",
                                 "lengthMenu": "Mostrar _MENU_ registros por página",
                                 "zeroRecords": "Nenhum registro encontrado",
-                                "info": "Mostrando página _PAGE_ de _PAGES_",
+                                "info": "Mostrando de _START_ até _END_ de " + response.totalRegistros + " registros",
                                 "infoEmpty": "Nenhum registro disponível",
                                 "infoFiltered": "(filtrado de _MAX_ registros totais)",
                                 "search": "Pesquisar:",
@@ -128,7 +147,31 @@
                             "responsive": true,
                             "autoWidth": false,
                             "lengthMenu": [5, 10, 25, 50, 100],
-                            "pageLength": 10
+                            "pageLength": 10,
+                            "initComplete": function(settings, json) {
+                                // Atualiza manualmente a informação de contagem
+                                var api = this.api();
+                                var pageInfo = api.page.info();
+                                var total = response.totalRegistros;
+                                var info = api.page.info();
+
+                                $(api.table().container()).find('.dataTables_info').html(
+                                    'Mostrando ' + (info.start + 1) + ' até ' +
+                                    (info.end) + ' de ' + total + ' registros'
+                                );
+                            }
+                        });
+
+                        // Força a atualização da contagem após a paginação
+                        dataTable.on('draw.dt', function() {
+                            var api = dataTable.api();
+                            var pageInfo = api.page.info();
+                            var total = response.totalRegistros;
+
+                            $(api.table().container()).find('.dataTables_info').html(
+                                'Mostrando ' + (pageInfo.start + 1) + ' até ' +
+                                (pageInfo.end) + ' de ' + total + ' registros'
+                            );
                         });
                     } else {
                         alert('Erro ao filtrar registros: ' + response.message);

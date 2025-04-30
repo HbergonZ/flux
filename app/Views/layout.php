@@ -53,8 +53,8 @@
                 <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
                         <h6 class="collapse-header">Modos de Visualização:</h6>
-                        <a class="collapse-item" href="<?php echo base_url('/projetos-cadastrados'); ?>">Visão por paginação</a>
-                        <a class="collapse-item" href="cards.html">Visão geral</a>
+                        <a class="collapse-item" href="<?php echo base_url('/planos'); ?>">Visão por paginação</a>
+                        <a class="collapse-item" href="<?php echo base_url('/visao-geral'); ?>">Visão geral</a>
                     </div>
                 </div>
             </li>
