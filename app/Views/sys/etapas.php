@@ -7,12 +7,16 @@
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Etapas <?= $tipo === 'acao' ? 'da Ação' : 'da Meta' ?>: <?= $nomeVinculo ?></h1>
-        <a href="<?= $tipo === 'acao' ? site_url("acoes/{$idVinculo}") : site_url("metas/{$idVinculo}") ?>" class="btn btn-secondary btn-icon-split btn-sm">
-            <span class="icon text-white-50">
-                <i class="fas fa-arrow-left"></i>
-            </span>
-            <span class="text">Voltar para <?= $tipo === 'acao' ? 'Ações' : 'Metas' ?></span>
-        </a>
+        <?php if ($tipo === 'acao'): ?>
+            <a href="<?= site_url("acoes/{$acao['id_plano']}") ?>" class="btn btn-secondary btn-icon-split btn-sm">
+            <?php else: ?>
+                <a href="<?= site_url("metas/{$acao['id']}") ?>" class="btn btn-secondary btn-icon-split btn-sm">
+                <?php endif; ?>
+                <span class="icon text-white-50">
+                    <i class="fas fa-arrow-left"></i>
+                </span>
+                <span class="text">Voltar para <?= $tipo === 'acao' ? 'Ações' : 'Metas' ?></span>
+                </a>
     </div>
 
     <!-- Filtros -->

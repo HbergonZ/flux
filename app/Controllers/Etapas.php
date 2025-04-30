@@ -36,8 +36,10 @@ class Etapas extends BaseController
         $data = [
             'tipo' => 'acao',
             'idVinculo' => $idAcao,
+            'idPlano' => $acao['id_plano'], // Adicionado
             'nomeVinculo' => $acao['acao'],
-            'etapas' => $etapas
+            'etapas' => $etapas,
+            'acao' => $acao // Passa os dados da ação para a view
         ];
 
         $this->content_data['content'] = view('sys/etapas', $data);
@@ -51,18 +53,27 @@ class Etapas extends BaseController
             return redirect()->to('/metas');
         }
 
+        // Busca a meta e a ação relacionada
         $meta = $this->metasModel->find($idMeta);
         if (!$meta) {
             return redirect()->to('/metas');
         }
 
+        $acao = $this->acoesModel->find($meta['id_acao']);
+        if (!$acao) {
+            return redirect()->to('/acoes');
+        }
+
+        // Busca as etapas vinculadas à meta
         $etapas = $this->etapasModel->getEtapasByMeta($idMeta);
 
         $data = [
             'tipo' => 'meta',
             'idVinculo' => $idMeta,
+            'idAcao' => $meta['id_acao'], // ID da ação para o botão "Voltar"
             'nomeVinculo' => $meta['nome'],
-            'etapas' => $etapas
+            'etapas' => $etapas,
+            'acao' => $acao // Passa os dados da ação para a view
         ];
 
         $this->content_data['content'] = view('sys/etapas', $data);
@@ -72,7 +83,7 @@ class Etapas extends BaseController
     public function cadastrar($tipo, $idVinculo)
     {
         if (!$this->request->isAJAX()) {
-            return redirect()->to("/etapas/$tipo/$idVinculo");
+            return redirect()->back(); // Usando redirect back para manter a origem
         }
 
         $response = ['success' => false, 'message' => ''];
@@ -119,7 +130,7 @@ class Etapas extends BaseController
     public function editar($idEtapa = null)
     {
         if (!$this->request->isAJAX()) {
-            return redirect()->to('/acoes');
+            return redirect()->back(); // Usando redirect back para manter a origem
         }
 
         $response = ['success' => false, 'message' => '', 'data' => null];
@@ -138,7 +149,7 @@ class Etapas extends BaseController
     public function atualizar($tipo, $idVinculo)
     {
         if (!$this->request->isAJAX()) {
-            return redirect()->to("/etapas/$tipo/$idVinculo");
+            return redirect()->back(); // Usando redirect back para manter a origem
         }
 
         $response = ['success' => false, 'message' => ''];
@@ -185,7 +196,7 @@ class Etapas extends BaseController
     public function excluir($tipo, $idVinculo)
     {
         if (!$this->request->isAJAX()) {
-            return redirect()->to("/etapas/$tipo/$idVinculo");
+            return redirect()->back(); // Usando redirect back para manter a origem
         }
 
         $response = ['success' => false, 'message' => ''];
@@ -204,7 +215,7 @@ class Etapas extends BaseController
     public function filtrar($tipo, $idVinculo)
     {
         if (!$this->request->isAJAX()) {
-            return redirect()->to("/etapas/$tipo/$idVinculo");
+            return redirect()->back(); // Usando redirect back para manter a origem
         }
 
         $filtros = [

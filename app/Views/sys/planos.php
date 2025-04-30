@@ -75,11 +75,11 @@
                             <?php foreach ($planos as $plano) :
                                 $id = $plano['id'] . '-' . str_replace(' ', '-', strtolower($plano['nome'])); ?>
                                 <tr>
-                                    <td class="text-wrap"><?= $plano['nome'] ?></td>
-                                    <td class="text-center"><?= $plano['sigla'] ?></td>
-                                    <td class="text-wrap"><?= $plano['descricao'] ?></td>
+                                    <td class="text-wrap align-middle"><?= $plano['nome'] ?></td>
+                                    <td class="text-center align-middle"><?= $plano['sigla'] ?></td>
+                                    <td class="text-wrap align-middle"><?= $plano['descricao'] ?></td>
                                     <!-- Dentro da tabela, na coluna de ações: -->
-                                    <td class="text-center">
+                                    <td class="text-center align-middle">
                                         <div class="d-inline-flex">
                                             <!-- Botão Visualizar Ações -->
                                             <a href="<?= site_url('acoes/' . $plano['id']) ?>" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Ações">

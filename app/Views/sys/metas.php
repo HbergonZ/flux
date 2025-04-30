@@ -78,7 +78,7 @@
                                     <td class="text-center">
                                         <div class="d-inline-flex">
                                             <!-- Botão Visualizar Etapas -->
-                                            <a href="<?= site_url('etapas/meta/' . $meta['id']) ?>" class="btn btn-secondary btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Etapas">
+                                            <a href="<?= site_url("etapas/meta/{$meta['id']}") ?>" class="btn btn-secondary btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Etapas">
                                                 <i class="fas fa-tasks"></i>
                                             </a>
 

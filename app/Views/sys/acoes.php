@@ -89,12 +89,12 @@
                             <?php foreach ($acoes as $acao) :
                                 $id = $acao['id'] . '-' . str_replace(' ', '-', strtolower($acao['acao'])); ?>
                                 <tr>
-                                    <td class="text-center"><?= $acao['identificador'] ?></td>
-                                    <td class="text-wrap"><?= $acao['acao'] ?></td>
-                                    <td class="text-wrap"><?= $acao['descricao'] ?></td>
-                                    <td class="text-wrap"><?= $acao['projeto_vinculado'] ?></td>
-                                    <td class="text-wrap"><?= $acao['responsaveis'] ?></td>
-                                    <td class="text-center">
+                                    <td class="text-center align-middle"><?= $acao['identificador'] ?></td>
+                                    <td class="text-wrap align-middle"><?= $acao['acao'] ?></td>
+                                    <td class="text-wrap align-middle"><?= $acao['descricao'] ?></td>
+                                    <td class="text-wrap align-middle"><?= $acao['projeto_vinculado'] ?></td>
+                                    <td class="text-wrap align-middle"><?= $acao['responsaveis'] ?></td>
+                                    <td class="text-center align-middle">
                                         <div class="d-inline-flex">
                                             <!-- Botão Visualizar Metas -->
                                             <a href="<?= site_url('metas/' . $acao['id']) ?>" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Metas">
