@@ -118,7 +118,7 @@
         // Excluir ação
         $(document).on('click', '.btn-danger[title="Excluir"]', function() {
             var acaoId = $(this).data('id').split('-')[0];
-            var acaoName = $(this).closest('tr').find('td:nth-child(1)').text();
+            var acaoName = $(this).closest('tr').find('td:first').text().trim();
 
             $('#deleteAcaoId').val(acaoId);
             $('#acaoNameToDelete').text(acaoName);
@@ -129,14 +129,19 @@
         $('#formDeleteAcao').submit(function(e) {
             e.preventDefault();
 
+            var form = $(this);
+            var url = form.attr('action');
+            var formData = form.serialize();
+
             $.ajax({
                 type: "POST",
-                url: $(this).attr('action'),
-                data: $(this).serialize(),
+                url: url,
+                data: formData,
                 dataType: "json",
                 success: function(response) {
                     if (response.success) {
                         $('#deleteAcaoModal').modal('hide');
+                        // Recarregar a página ou atualizar a tabela
                         location.reload();
                     } else {
                         alert('Erro: ' + response.message);
@@ -144,6 +149,7 @@
                 },
                 error: function(xhr, status, error) {
                     alert('Erro na requisição: ' + error);
+                    console.error(xhr.responseText);
                 }
             });
         });

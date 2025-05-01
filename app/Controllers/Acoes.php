@@ -157,11 +157,20 @@ class Acoes extends BaseController
         $response = ['success' => false, 'message' => ''];
         $id = $this->request->getPost('id');
 
-        if ($this->acoesModel->delete($id)) {
-            $response['success'] = true;
-            $response['message'] = 'Ação excluída com sucesso!';
-        } else {
-            $response['message'] = 'Erro ao excluir ação';
+        if (empty($id)) {
+            $response['message'] = 'ID da ação não fornecido';
+            return $this->response->setJSON($response);
+        }
+
+        try {
+            if ($this->acoesModel->delete($id)) {
+                $response['success'] = true;
+                $response['message'] = 'Ação excluída com sucesso!';
+            } else {
+                $response['message'] = 'Erro ao excluir ação: registro não encontrado';
+            }
+        } catch (\Exception $e) {
+            $response['message'] = 'Erro ao excluir ação: ' . $e->getMessage();
         }
 
         return $this->response->setJSON($response);
