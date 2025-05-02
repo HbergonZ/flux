@@ -85,8 +85,8 @@
                         $('#editEtapaId').val(response.data.id_etapa);
                         $('#editEtapaNome').val(response.data.etapa);
                         $('#editEtapaAcao').val(response.data.acao);
-                        $('#editEtapaCoordenacao').val(response.data.coordenacao);
                         $('#editEtapaResponsavel').val(response.data.responsavel);
+                        $('#editEtapaEquipe').val(response.data.equipe);
                         $('#editEtapaTempoEstimado').val(response.data.tempo_estimado_dias);
                         $('#editEtapaDataInicio').val(response.data.data_inicio);
                         $('#editEtapaDataFim').val(response.data.data_fim);
@@ -205,15 +205,15 @@
                             }
 
                             var row = '<tr>' +
-                                '<td class="text-wrap">' + etapa.etapa + '</td>' +
-                                '<td class="text-wrap">' + etapa.acao + '</td>' +
-                                '<td class="text-wrap">' + etapa.coordenacao + '</td>' +
-                                '<td class="text-wrap">' + etapa.responsavel + '</td>' +
-                                '<td class="text-center">' + etapa.tempo_estimado_dias + ' dias</td>' +
-                                '<td class="text-center">' + formatDate(etapa.data_inicio) + '</td>' +
-                                '<td class="text-center">' + formatDate(etapa.data_fim) + '</td>' +
-                                '<td class="text-center"><span class="badge ' + badge_class + '">' + etapa.status + '</span></td>' +
-                                '<td class="text-center">' +
+                                '<td class="text-wrap align-middle">' + etapa.etapa + '</td>' +
+                                '<td class="text-wrap align-middle">' + etapa.acao + '</td>' +
+                                '<td class="text-wrap align-middle">' + etapa.responsavel + '</td>' +
+                                '<td class="text-wrap align-middle">' + etapa.equipe + '</td>' +
+                                '<td class="text-center align-middle">' + (etapa.tempo_estimado_dias ? etapa.tempo_estimado_dias + ' dias' : '') + '</td>' +
+                                '<td class="text-center align-middle">' + (etapa.data_inicio ? formatDate(etapa.data_inicio) : '') + '</td>' +
+                                '<td class="text-center align-middle">' + (etapa.data_fim ? formatDate(etapa.data_fim) : '') + '</td>' +
+                                '<td class="text-center align-middle"><span class="badge ' + badge_class + '">' + etapa.status + '</span></td>' +
+                                '<td class="text-center align-middle">' +
                                 '<div class="d-inline-flex">' +
                                 '<button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="' + id + '" title="Editar">' +
                                 '<i class="fas fa-edit"></i>' +

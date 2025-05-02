@@ -19,7 +19,6 @@ class Etapas extends BaseController
         $this->metasModel = new MetasModel();
     }
 
-    // Para acessar via ações (quando não tem meta)
     public function index($idAcao = null)
     {
         if (empty($idAcao)) {
@@ -36,24 +35,22 @@ class Etapas extends BaseController
         $data = [
             'tipo' => 'acao',
             'idVinculo' => $idAcao,
-            'idPlano' => $acao['id_plano'], // Adicionado
+            'idPlano' => $acao['id_plano'],
             'nomeVinculo' => $acao['acao'],
             'etapas' => $etapas,
-            'acao' => $acao // Passa os dados da ação para a view
+            'acao' => $acao
         ];
 
         $this->content_data['content'] = view('sys/etapas', $data);
         return view('layout', $this->content_data);
     }
 
-    // Para acessar via metas
     public function meta($idMeta = null)
     {
         if (empty($idMeta)) {
             return redirect()->to('/metas');
         }
 
-        // Busca a meta e a ação relacionada
         $meta = $this->metasModel->find($idMeta);
         if (!$meta) {
             return redirect()->to('/metas');
@@ -64,16 +61,15 @@ class Etapas extends BaseController
             return redirect()->to('/acoes');
         }
 
-        // Busca as etapas vinculadas à meta
         $etapas = $this->etapasModel->getEtapasByMeta($idMeta);
 
         $data = [
             'tipo' => 'meta',
             'idVinculo' => $idMeta,
-            'idAcao' => $meta['id_acao'], // ID da ação para o botão "Voltar"
+            'idAcao' => $meta['id_acao'],
             'nomeVinculo' => $meta['nome'],
             'etapas' => $etapas,
-            'acao' => $acao // Passa os dados da ação para a view
+            'acao' => $acao
         ];
 
         $this->content_data['content'] = view('sys/etapas', $data);
@@ -83,7 +79,7 @@ class Etapas extends BaseController
     public function cadastrar($tipo, $idVinculo)
     {
         if (!$this->request->isAJAX()) {
-            return redirect()->back(); // Usando redirect back para manter a origem
+            return redirect()->back();
         }
 
         $response = ['success' => false, 'message' => ''];
@@ -91,8 +87,8 @@ class Etapas extends BaseController
         $rules = [
             'etapa' => 'required|max_length[255]',
             'acao' => 'required|max_length[255]',
-            'coordenacao' => 'required|max_length[255]',
             'responsavel' => 'required|max_length[255]',
+            'equipe' => 'required|max_length[255]',
             'tempo_estimado_dias' => 'required|integer',
             'data_inicio' => 'required|valid_date',
             'data_fim' => 'required|valid_date',
@@ -104,8 +100,8 @@ class Etapas extends BaseController
                 $data = [
                     'etapa' => $this->request->getPost('etapa'),
                     'acao' => $this->request->getPost('acao'),
-                    'coordenacao' => $this->request->getPost('coordenacao'),
                     'responsavel' => $this->request->getPost('responsavel'),
+                    'equipe' => $this->request->getPost('equipe'),
                     'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias'),
                     'data_inicio' => $this->request->getPost('data_inicio'),
                     'data_fim' => $this->request->getPost('data_fim'),
@@ -130,7 +126,7 @@ class Etapas extends BaseController
     public function editar($idEtapa = null)
     {
         if (!$this->request->isAJAX()) {
-            return redirect()->back(); // Usando redirect back para manter a origem
+            return redirect()->back();
         }
 
         $response = ['success' => false, 'message' => '', 'data' => null];
@@ -149,7 +145,7 @@ class Etapas extends BaseController
     public function atualizar($tipo, $idVinculo)
     {
         if (!$this->request->isAJAX()) {
-            return redirect()->back(); // Usando redirect back para manter a origem
+            return redirect()->back();
         }
 
         $response = ['success' => false, 'message' => ''];
@@ -158,8 +154,8 @@ class Etapas extends BaseController
             'id_etapa' => 'required',
             'etapa' => 'required|max_length[255]',
             'acao' => 'required|max_length[255]',
-            'coordenacao' => 'required|max_length[255]',
             'responsavel' => 'required|max_length[255]',
+            'equipe' => 'required|max_length[255]',
             'tempo_estimado_dias' => 'required|integer',
             'data_inicio' => 'required|valid_date',
             'data_fim' => 'required|valid_date',
@@ -172,8 +168,8 @@ class Etapas extends BaseController
                     'id_etapa' => $this->request->getPost('id_etapa'),
                     'etapa' => $this->request->getPost('etapa'),
                     'acao' => $this->request->getPost('acao'),
-                    'coordenacao' => $this->request->getPost('coordenacao'),
                     'responsavel' => $this->request->getPost('responsavel'),
+                    'equipe' => $this->request->getPost('equipe'),
                     'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias'),
                     'data_inicio' => $this->request->getPost('data_inicio'),
                     'data_fim' => $this->request->getPost('data_fim'),
@@ -196,7 +192,7 @@ class Etapas extends BaseController
     public function excluir($tipo, $idVinculo)
     {
         if (!$this->request->isAJAX()) {
-            return redirect()->back(); // Usando redirect back para manter a origem
+            return redirect()->back();
         }
 
         $response = ['success' => false, 'message' => ''];
@@ -215,14 +211,14 @@ class Etapas extends BaseController
     public function filtrar($tipo, $idVinculo)
     {
         if (!$this->request->isAJAX()) {
-            return redirect()->back(); // Usando redirect back para manter a origem
+            return redirect()->back();
         }
 
         $filtros = [
             'etapa' => $this->request->getPost('etapa'),
             'acao' => $this->request->getPost('acao'),
-            'coordenacao' => $this->request->getPost('coordenacao'),
             'responsavel' => $this->request->getPost('responsavel'),
+            'equipe' => $this->request->getPost('equipe'),
             'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias'),
             'data_inicio' => $this->request->getPost('data_inicio'),
             'data_fim' => $this->request->getPost('data_fim'),
@@ -241,12 +237,12 @@ class Etapas extends BaseController
             $builder->like('acao', $filtros['acao']);
         }
 
-        if (!empty($filtros['coordenacao'])) {
-            $builder->like('coordenacao', $filtros['coordenacao']);
-        }
-
         if (!empty($filtros['responsavel'])) {
             $builder->like('responsavel', $filtros['responsavel']);
+        }
+
+        if (!empty($filtros['equipe'])) {
+            $builder->like('equipe', $filtros['equipe']);
         }
 
         if (!empty($filtros['tempo_estimado_dias'])) {

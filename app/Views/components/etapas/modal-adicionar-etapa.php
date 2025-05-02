@@ -29,14 +29,14 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="etapaCoordenacao">Coordenação*</label>
-                                <input type="text" class="form-control" id="etapaCoordenacao" name="coordenacao" required maxlength="255">
+                                <label for="etapaResponsavel">Responsável*</label>
+                                <input type="text" class="form-control" id="etapaResponsavel" name="responsavel" required maxlength="255">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="etapaResponsavel">Responsável*</label>
-                                <input type="text" class="form-control" id="etapaResponsavel" name="responsavel" required maxlength="255">
+                                <label for="etapaEquipe">Equipe*</label>
+                                <input type="text" class="form-control" id="etapaEquipe" name="equipe" required maxlength="255">
                             </div>
                         </div>
                     </div>

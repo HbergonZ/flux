@@ -8,12 +8,11 @@ class EtapasModel extends Model
 {
     protected $table = 'etapas';
     protected $primaryKey = 'id_etapa';
-
     protected $allowedFields = [
         'etapa',
         'acao',
-        'coordenacao',
-        'responsavel',
+        'responsavel',  // Antes era 'coordenacao'
+        'equipe',       // Antes era 'responsavel'
         'tempo_estimado_dias',
         'data_inicio',
         'data_fim',
@@ -21,20 +20,22 @@ class EtapasModel extends Model
         'id_acao',
         'id_meta'
     ];
-
+    protected $returnType = 'array';
     protected $useTimestamps = true;
     protected $createdField = 'created_at';
     protected $updatedField = 'updated_at';
 
-    protected $returnType = 'array';
-
     public function getEtapasByAcao($idAcao)
     {
-        return $this->where('id_acao', $idAcao)->findAll();
+        return $this->where('id_acao', $idAcao)
+            ->orderBy('data_inicio', 'ASC')
+            ->findAll();
     }
 
     public function getEtapasByMeta($idMeta)
     {
-        return $this->where('id_meta', $idMeta)->findAll();
+        return $this->where('id_meta', $idMeta)
+            ->orderBy('data_inicio', 'ASC')
+            ->findAll();
     }
 }

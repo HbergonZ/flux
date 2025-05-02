@@ -38,14 +38,14 @@
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="filterCoordenacao">Coordenação</label>
-                            <input type="text" class="form-control" id="filterCoordenacao" name="coordenacao" placeholder="Filtrar por coordenação">
+                            <label for="filterResponsavel">Responsável</label>
+                            <input type="text" class="form-control" id="filterResponsavel" name="responsavel" placeholder="Filtrar por responsável">
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="filterResponsavel">Responsável</label>
-                            <input type="text" class="form-control" id="filterResponsavel" name="responsavel" placeholder="Filtrar por responsável">
+                            <label for="filterEquipe">Equipe</label>
+                            <input type="text" class="form-control" id="filterEquipe" name="equipe" placeholder="Filtrar por equipe">
                         </div>
                     </div>
                 </div>
@@ -122,8 +122,8 @@
                         <tr class="text-center">
                             <th>Etapa</th>
                             <th>Ação</th>
-                            <th>Coordenação</th>
                             <th>Responsável</th>
+                            <th>Equipe</th>
                             <th>Tempo Estimado</th>
                             <th>Data Início</th>
                             <th>Data Fim</th>
@@ -136,14 +136,14 @@
                             <?php foreach ($etapas as $etapa) :
                                 $id = $etapa['id_etapa'] . '-' . str_replace(' ', '-', strtolower($etapa['etapa'])); ?>
                                 <tr>
-                                    <td class="text-wrap"><?= $etapa['etapa'] ?></td>
-                                    <td class="text-wrap"><?= $etapa['acao'] ?></td>
-                                    <td class="text-wrap"><?= $etapa['coordenacao'] ?></td>
-                                    <td class="text-wrap"><?= $etapa['responsavel'] ?></td>
-                                    <td class="text-center"><?= $etapa['tempo_estimado_dias'] ?> dias</td>
-                                    <td class="text-center"><?= date('d/m/Y', strtotime($etapa['data_inicio'])) ?></td>
-                                    <td class="text-center"><?= date('d/m/Y', strtotime($etapa['data_fim'])) ?></td>
-                                    <td class="text-center">
+                                    <td class="text-wrap align-middle"><?= $etapa['etapa'] ?></td>
+                                    <td class="text-wrap align-middle"><?= $etapa['acao'] ?></td>
+                                    <td class="text-center align-middle"><?= $etapa['responsavel'] ?></td>
+                                    <td class="text-wrap align-middle"><?= $etapa['equipe'] ?></td>
+                                    <td class="text-center align-middle"><?= !empty($etapa['tempo_estimado_dias']) ? $etapa['tempo_estimado_dias'] . ' dias' : '' ?></td>
+                                    <td class="text-center align-middle"><?= !empty($etapa['data_inicio']) ? date('d/m/Y', strtotime($etapa['data_inicio'])) : '' ?></td>
+                                    <td class="text-center align-middle"><?= !empty($etapa['data_fim']) ? date('d/m/Y', strtotime($etapa['data_fim'])) : '' ?></td>
+                                    <td class="text-center align-middle">
                                         <?php
                                         $badge_class = '';
                                         switch ($etapa['status']) {
@@ -163,7 +163,7 @@
                                         ?>
                                         <span class="badge <?= $badge_class ?>"><?= $etapa['status'] ?></span>
                                     </td>
-                                    <td class="text-center">
+                                    <td class="text-center align-middle">
                                         <div class="d-inline-flex">
                                             <!-- Botão Editar -->
                                             <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Editar">
