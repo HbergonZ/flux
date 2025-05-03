@@ -30,7 +30,7 @@
             <!-- Sidebar - Brand -->
             <a class="sidebar-brand d-flex align-items-center justify-content-center" href="index.html">
                 <div class="sidebar-brand-icon rotate-n-15">
-                    <i class="fas fa-laugh-wink"></i>
+                    <i class="fas fa-project-diagram"></i> <!-- Ícone mais relacionado a projetos -->
                 </div>
                 <div class="sidebar-brand-text mx-3">Projeta</div>
             </a>
@@ -43,41 +43,28 @@
                 Área Gerencial
             </div>
 
-            <!-- Nav Item - Pages Collapse Menu -->
-            <li class="nav-item">
-                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseTwo"
-                    aria-expanded="true" aria-controls="collapseTwo">
-                    <i class="fas fa-fw fa-cog"></i>
-                    <span>Monitoramento</span>
-                </a>
-                <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
-                    <div class="bg-white py-2 collapse-inner rounded">
-                        <h6 class="collapse-header">Modos de Visualização:</h6>
-                        <a class="collapse-item" href="<?php echo base_url('/planos'); ?>">Visão por paginação</a>
-                        <a class="collapse-item" href="<?php echo base_url('/visao-geral'); ?>">Visão geral</a>
-                    </div>
-                </div>
-            </li>
-
-            <!-- Projetos Cadastrados-->
-            <li class="nav-item">
-                <a class="nav-link" href="<?php echo base_url('/projetos-cadastrados'); ?>">
-                    <i class=" fas fa-fw fa-project-diagram"></i>
-                    <span>Projetos Cadastrados</span></a>
-            </li>
-
             <!-- Solicitações de Alterações -->
             <li class="nav-item">
                 <a class="nav-link" href="<?php echo base_url('/solicitacoes-edicao'); ?>">
-                    <i class="fas fa-fw fa-exchange-alt"></i>
-                    <span>Solicitações de Alterações</span></a>
+                    <i class="fas fa-edit"></i> <!-- Mais representativo para "edições" -->
+                    <span>Solicitações de Alterações</span>
+                </a>
             </li>
 
             <!-- Histórico de Solicitações -->
             <li class="nav-item">
                 <a class="nav-link" href="<?php echo base_url('/historico-solicitacoes'); ?>">
-                    <i class="fas fa-fw fa-history"></i>
-                    <span>Histórico de Solicitações</span></a>
+                    <i class="fas fa-clipboard-list"></i> <!-- Melhor para "histórico de solicitações" -->
+                    <span>Histórico de Solicitações</span>
+                </a>
+            </li>
+
+            <!-- Atribuir grupos -->
+            <li class="nav-item">
+                <a class="nav-link" href="<?php echo base_url('/atribuir-grupos'); ?>">
+                    <i class="fas fa-users-cog"></i> <!-- Ícone mais adequado para gerenciamento de grupos -->
+                    <span>Atribuir Grupos</span>
+                </a>
             </li>
 
             <!-- Divider -->
@@ -90,16 +77,18 @@
 
             <!-- Minhas atividades -->
             <li class="nav-item">
-                <a class="nav-link" href="<?php echo base_url('/meus-projetos'); ?>">
-                    <i class="fas fa-fw fa-folder-open"></i>
-                    <span>Minhas Atividades</span></a>
+                <a class="nav-link" href="<?php echo base_url('/planos'); ?>">
+                    <i class="fas fa-tasks"></i> <!-- Atividades / tarefas -->
+                    <span>Atividades</span>
+                </a>
             </li>
 
-            <!-- Minhas Solicitações -->
+            <!-- Visão Geral -->
             <li class="nav-item">
-                <a class="nav-link" href="<?php echo base_url('/minhas-solicitacoes'); ?>">
-                    <i class="fas fa-fw fa-tasks"></i>
-                    <span>Minhas Solicitações</span></a>
+                <a class="nav-link" href="<?php echo base_url('/visao-geral'); ?>">
+                    <i class="fas fa-th-list"></i> <!-- Representa visão geral / painel -->
+                    <span>Visão Geral</span>
+                </a>
             </li>
 
             <!-- Divider -->
@@ -111,6 +100,7 @@
             </div>
 
         </ul>
+
         <!-- End of Sidebar -->
 
         <!-- Content Wrapper -->
@@ -278,8 +268,10 @@
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <span class="mr-2 d-none d-lg-inline text-gray-600 small">
-                                    Douglas McGee<br>
-                                    <small class="text-muted">Gerente</small>
+                                    <?= auth()->user()->username ?? 'Usuário' ?><br>
+                                    <small class="text-muted">
+                                        <?= auth()->user()->getGroups()[0] ?? 'Sem grupo' ?>
+                                    </small>
                                 </span>
                                 <img class="img-profile rounded-circle"
                                     src="/projeta/app/ThirdParty/template/img/undraw_profile.svg">
@@ -344,7 +336,7 @@
                 <div class="modal-body">Select "Logout" below if you are ready to end your current session.</div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                    <a class="btn btn-primary" href="login.html">Logout</a>
+                    <a class="btn btn-primary" href="<?php echo base_url('/logout'); ?>">Logout</a>
                 </div>
             </div>
         </div>

@@ -4,18 +4,22 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class SolicitacaoEdicaoModel extends Model
+class SolicitacoesModel extends Model
 {
-    protected $table = 'solicitacoes_edicao';
+    protected $table = 'solicitacoes';
     protected $primaryKey = 'id';
     protected $allowedFields = [
         'id_etapa',
         'id_acao',
-        'id_projeto',
+        'id_plano',
+        'id_meta',
+        'tipo',
         'dados_atuais',
         'dados_alterados',
         'justificativa',
+        'solicitante',
         'status',
+        'data_solicitacao',
         'data_avaliacao',
         'id_avaliador'
     ];

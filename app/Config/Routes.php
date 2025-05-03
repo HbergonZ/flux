@@ -1,11 +1,17 @@
 <?php
 
 use CodeIgniter\Router\RouteCollection;
+use App\Controllers\LoginController;
 
 /**
  * @var RouteCollection $routes
  */
-$routes->get('/', 'ProjetosCadastrados::index');
+
+service('auth')->routes($routes);
+$routes->get('login', '\App\Controllers\Auth\LoginController::loginView');
+$routes->get('register', '\App\Controllers\Auth\RegisterController::registerView');
+
+$routes->get('/', 'VisaoGeral::index');
 $routes->get('projetos-cadastrados', 'ProjetosCadastrados::index');
 $routes->post('projetos-cadastrados/cadastrar', 'ProjetosCadastrados::cadastrar');
 $routes->get('projetos-cadastrados/editar/(:num)', 'ProjetosCadastrados::editar/$1');
@@ -20,11 +26,6 @@ $routes->group('', function ($routes) {
     // Novas rotas para solicitação de edição
     $routes->get('visao-projeto/dados-etapa/(:num)/(:any)', 'VisaoProjeto::dadosEtapa/$1/$2');
     $routes->post('visao-projeto/solicitar-edicao', 'VisaoProjeto::solicitarEdicao');
-
-    // Rotas para gerenciamento de solicitações
-    $routes->get('solicitacoes-edicao', 'SolicitacoesEdicao::index');
-    $routes->get('solicitacoes-edicao/detalhes/(:num)', 'SolicitacoesEdicao::detalhes/$1', ['as' => 'detalhes_solicitacao']);
-    $routes->post('solicitacoes-edicao/processar/(:num)', 'SolicitacoesEdicao::processar/$1');
 });
 
 $routes->group('historico-solicitacoes', function ($routes) {
@@ -79,3 +80,7 @@ $routes->post('etapas/filtrar/meta/(:num)', 'Etapas::filtrar/meta/$1');
 
 $routes->get('visao-geral', 'VisaoGeral::index');
 $routes->post('visao-geral/filtrar', 'VisaoGeral::filtrar');
+
+$routes->post('etapas/solicitar-edicao', 'Etapas::solicitarEdicao');
+$routes->post('etapas/solicitar-exclusao', 'Etapas::solicitarExclusao');
+$routes->post('etapas/solicitar-inclusao', 'Etapas::solicitarInclusao');
