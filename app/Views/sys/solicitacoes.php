@@ -1,11 +1,11 @@
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Histórico de Solicitações</h1>
+        <h1 class="h3 mb-0 text-gray-800">Solicitações Pendentes</h1>
     </div>
 
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Lista de Solicitações Avaliadas</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Lista de Solicitações</h6>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -16,9 +16,7 @@
                             <th>Nível</th>
                             <th>Nome</th>
                             <th>Solicitante</th>
-                            <th>Data Solicitação</th>
-                            <th>Data Avaliação</th>
-                            <th>Avaliador</th>
+                            <th>Data</th>
                             <th>Status</th>
                             <th>Ações</th>
                         </tr>
@@ -31,22 +29,14 @@
                                 <td><?= $solicitacao['nome'] ?></td>
                                 <td><?= $solicitacao['solicitante'] ?></td>
                                 <td><?= date('d/m/Y H:i', strtotime($solicitacao['data_solicitacao'])) ?></td>
-                                <td><?= date('d/m/Y H:i', strtotime($solicitacao['data_avaliacao'])) ?></td>
-                                <td><?= $solicitacao['avaliador_username'] ?></td>
-                                <td class="text-center align-middle">
-                                    <?php if (strtolower($solicitacao['status']) == 'aprovada') : ?>
-                                        <span class="badge badge-success"><?= ucfirst($solicitacao['status']) ?></span>
-                                    <?php elseif (strtolower($solicitacao['status']) == 'rejeitada') : ?>
-                                        <span class="badge badge-danger"><?= ucfirst($solicitacao['status']) ?></span>
-                                    <?php else : ?>
-                                        <span class="badge badge-warning"><?= ucfirst($solicitacao['status']) ?></span>
-                                    <?php endif; ?>
+                                <td>
+                                    <span class="badge badge-warning"><?= ucfirst($solicitacao['status']) ?></span>
                                 </td>
                                 <td class="text-center">
-                                    <button class="btn btn-info btn-sm visualizar-btn"
+                                    <button class="btn btn-primary btn-sm avaliar-btn"
                                         data-id="<?= $solicitacao['id'] ?>"
-                                        title="Visualizar Solicitação">
-                                        <i class="fas fa-eye"></i> Visualizar
+                                        title="Avaliar Solicitação">
+                                        <i class="fas fa-eye"></i> Avaliar
                                     </button>
                                 </td>
                             </tr>
@@ -58,70 +48,55 @@
     </div>
 </div>
 
-<!-- Modal de Visualização -->
-<div class="modal fade" id="visualizarModal" tabindex="-1" role="dialog" aria-labelledby="visualizarModalLabel" aria-hidden="true">
+<!-- Modal de Avaliação -->
+<div class="modal fade" id="avaliarModal" tabindex="-1" role="dialog" aria-labelledby="avaliarModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title" id="visualizarModalLabel">Detalhes da Solicitação</h5>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="avaliarModalLabel">Avaliar Solicitação</h5>
                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <div class="modal-body">
-                <div id="modalLoading" class="text-center py-4">
-                    <i class="fas fa-spinner fa-spin fa-3x"></i>
-                    <p class="mt-2">Carregando dados da solicitação...</p>
-                </div>
-
-                <div id="modalContent" style="display:none;">
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <h6 class="font-weight-bold">Dados Atuais no Momento da Solicitação</h6>
-                            <div class="table-responsive">
-                                <table class="table table-sm table-bordered" id="tabelaDadosAtuais"></table>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <h6 class="font-weight-bold">Alterações Solicitadas</h6>
-                            <div class="table-responsive">
-                                <table class="table table-sm table-bordered" id="tabelaDadosAlterados"></table>
-                            </div>
-                        </div>
+            <form id="formAvaliar">
+                <input type="hidden" name="id" id="solicitacaoId">
+                <div class="modal-body">
+                    <div id="modalLoading" class="text-center py-4">
+                        <i class="fas fa-spinner fa-spin fa-3x"></i>
+                        <p class="mt-2">Carregando dados da solicitação...</p>
                     </div>
 
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <h6 class="font-weight-bold">Informações da Avaliação</h6>
-                            <div class="table-responsive">
-                                <table class="table table-sm table-bordered">
-                                    <tr>
-                                        <th width="40%">Status</th>
-                                        <td id="statusAvaliacao"></td>
-                                    </tr>
-                                    <tr>
-                                        <th>Data da Avaliação</th>
-                                        <td id="dataAvaliacao"></td>
-                                    </tr>
-                                    <tr>
-                                        <th>Avaliador</th>
-                                        <td id="avaliador"></td>
-                                    </tr>
-                                </table>
+                    <div id="modalContent" style="display:none;">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h6 class="font-weight-bold">Dados Atuais</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered" id="tabelaDadosAtuais"></table>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="font-weight-bold">Alterações Solicitadas</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered" id="tabelaDadosAlterados"></table>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <h6 class="font-weight-bold">Justificativa</h6>
-                            <div class="p-3 bg-light rounded" id="justificativa">
-                                <em class="text-muted">Nenhuma justificativa fornecida.</em>
-                            </div>
+
+                        <div class="form-group">
+                            <label for="justificativa">Justificativa (Opcional)</label>
+                            <textarea class="form-control" id="justificativa" name="justificativa" rows="3" placeholder="Adicione uma justificativa para sua decisão..."></textarea>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
-            </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger recusar-btn">
+                        <i class="fas fa-times"></i> Recusar
+                    </button>
+                    <button type="button" class="btn btn-success aceitar-btn">
+                        <i class="fas fa-check"></i> Aceitar
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -169,29 +144,29 @@
                     "sortDescending": ": ativar para ordenar coluna descendente"
                 }
             },
-            "searching": true,
+            "searching": false, // Desativa o campo de busca
             "responsive": true,
             "autoWidth": false,
             "lengthMenu": [5, 10, 25, 50, 100],
             "pageLength": 10,
             "order": [
-                [5, 'desc']
-            ], // Ordena por data de avaliação decrescente
+                [4, 'desc']
+            ], // Ordena por data decrescente (coluna 4)
             "columnDefs": [{
                     responsivePriority: 1,
                     targets: 0
                 }, // Tipo Solicitação
                 {
                     responsivePriority: 2,
-                    targets: 8
+                    targets: 6
                 }, // Ações
                 {
                     responsivePriority: 3,
-                    targets: 5
-                }, // Data Avaliação
+                    targets: 4
+                }, // Data
                 {
                     responsivePriority: 4,
-                    targets: 7
+                    targets: 5
                 }, // Status
                 {
                     responsivePriority: 5,
@@ -203,35 +178,30 @@
                 }, // Solicitante
                 {
                     responsivePriority: 7,
-                    targets: 6
-                }, // Avaliador
-                {
-                    responsivePriority: 8,
-                    targets: 4
-                }, // Data Solicitação
-                {
-                    responsivePriority: 9,
                     targets: 1
                 } // Nível
             ]
         });
 
-        // Abre modal de visualização
-        $(document).on('click', '.visualizar-btn', function() {
+        // Abre modal de avaliação
+        $(document).on('click', '.avaliar-btn', function() {
             var id = $(this).data('id');
 
             // Reset do modal
+            $('#formAvaliar')[0].reset();
             $('#modalLoading').show();
             $('#modalContent').hide();
 
-            $('#visualizarModal').modal('show');
+            $('#avaliarModal').modal('show');
 
             $.ajax({
-                url: '<?= site_url('historico-solicitacoes/detalhes') ?>/' + id,
+                url: '<?= site_url('solicitacoes/avaliar') ?>/' + id,
                 type: 'GET',
                 dataType: 'json',
                 success: function(response) {
                     if (response.success) {
+                        $('#solicitacaoId').val(id);
+
                         // Formatadores para melhor exibição
                         function formatFieldName(name) {
                             const names = {
@@ -283,35 +253,79 @@
                         }
                         $('#tabelaDadosAlterados').html(htmlAlterados);
 
-                        // Preenche informações da avaliação
-                        $('#statusAvaliacao').html(response.data.status === 'aprovada' ?
-                            '<span class="badge badge-success">Aprovada</span>' :
-                            '<span class="badge badge-danger">Rejeitada</span>');
-                        $('#dataAvaliacao').html(response.data.data_avaliacao ?
-                            new Date(response.data.data_avaliacao).toLocaleString('pt-BR') : 'N/A');
-                        $('#avaliador').html(response.data.avaliador_username || 'Sistema');
-
-                        // Preenche justificativa
-                        if (response.data.justificativa && response.data.justificativa.trim() !== '') {
-                            $('#justificativa').html(response.data.justificativa);
-                        } else {
-                            $('#justificativa').html('<em class="text-muted">Nenhuma justificativa fornecida.</em>');
-                        }
-
                         // Mostra conteúdo e esconde loader
                         $('#modalLoading').hide();
                         $('#modalContent').show();
 
                     } else {
                         Swal.fire('Erro', response.message || 'Erro ao carregar solicitação', 'error');
-                        $('#visualizarModal').modal('hide');
+                        $('#avaliarModal').modal('hide');
                     }
                 },
                 error: function() {
                     Swal.fire('Erro', 'Falha ao comunicar com o servidor', 'error');
-                    $('#visualizarModal').modal('hide');
+                    $('#avaliarModal').modal('hide');
                 }
             });
         });
+
+        // Processa aceitação
+        $('.aceitar-btn').click(function() {
+            processarSolicitacao('aceitar');
+        });
+
+        // Processa recusa
+        $('.recusar-btn').click(function() {
+            processarSolicitacao('recusar');
+        });
+
+        function processarSolicitacao(acao) {
+            var formData = {
+                id: $('#solicitacaoId').val(),
+                acao: acao,
+                justificativa: $('#justificativa').val()
+            };
+
+            var buttons = $('#avaliarModal .modal-footer button');
+
+            // Desabilita botões durante o processamento
+            buttons.prop('disabled', true);
+            $('.aceitar-btn, .recusar-btn').html('<i class="fas fa-spinner fa-spin"></i> Processando...');
+
+            $.ajax({
+                url: '<?= site_url('solicitacoes/processar') ?>',
+                type: 'POST',
+                data: formData,
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            title: 'Sucesso!',
+                            text: response.message,
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(() => {
+                            $('#avaliarModal').modal('hide');
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire('Erro!', response.message, 'error');
+                    }
+                },
+                error: function(xhr) {
+                    let errorMsg = 'Falha ao processar solicitação';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    }
+                    Swal.fire('Erro!', errorMsg, 'error');
+                },
+                complete: function() {
+                    buttons.prop('disabled', false);
+                    $('.aceitar-btn').html('<i class="fas fa-check"></i> Aceitar');
+                    $('.recusar-btn').html('<i class="fas fa-times"></i> Recusar');
+                }
+            });
+        }
     });
 </script>

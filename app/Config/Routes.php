@@ -84,3 +84,12 @@ $routes->post('visao-geral/filtrar', 'VisaoGeral::filtrar');
 $routes->post('etapas/solicitar-edicao', 'Etapas::solicitarEdicao');
 $routes->post('etapas/solicitar-exclusao', 'Etapas::solicitarExclusao');
 $routes->post('etapas/solicitar-inclusao', 'Etapas::solicitarInclusao');
+
+$routes->get('solicitacoes', 'Solicitacoes::index');
+$routes->get('solicitacoes/avaliar/(:num)', 'Solicitacoes::avaliar/$1');
+$routes->post('solicitacoes/processar', 'Solicitacoes::processar');
+
+$routes->group('historico-solicitacoes', function ($routes) {
+    $routes->get('/', 'HistoricoSolicitacoes::index');
+    $routes->get('detalhes/(:num)', 'HistoricoSolicitacoes::detalhes/$1');
+});

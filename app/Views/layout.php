@@ -43,11 +43,11 @@
                 Área Gerencial
             </div>
 
-            <!-- Solicitações de Alterações -->
+            <!-- Solicitações -->
             <li class="nav-item">
-                <a class="nav-link" href="<?php echo base_url('/solicitacoes-edicao'); ?>">
+                <a class="nav-link" href="<?php echo base_url('/solicitacoes'); ?>">
                     <i class="fas fa-edit"></i> <!-- Mais representativo para "edições" -->
-                    <span>Solicitações de Alterações</span>
+                    <span>Solicitações</span>
                 </a>
             </li>
 

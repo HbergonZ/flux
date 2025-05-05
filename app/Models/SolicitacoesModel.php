@@ -9,6 +9,7 @@ class SolicitacoesModel extends Model
     protected $table = 'solicitacoes';
     protected $primaryKey = 'id';
     protected $allowedFields = [
+        'nivel',
         'id_etapa',
         'id_acao',
         'id_plano',

@@ -267,6 +267,7 @@ class Etapas extends BaseController
         $etapas = $builder->findAll();
         return $this->response->setJSON(['success' => true, 'data' => $etapas]);
     }
+
     public function solicitarEdicao()
     {
         if (!$this->request->isAJAX()) {
@@ -274,6 +275,7 @@ class Etapas extends BaseController
         }
 
         $response = ['success' => false, 'message' => ''];
+        $postData = $this->request->getPost();
 
         $rules = [
             'id_etapa' => 'required',
@@ -282,60 +284,37 @@ class Etapas extends BaseController
 
         if ($this->validate($rules)) {
             try {
-                $postData = $this->request->getPost();
-
-                // Obter a etapa atual do banco de dados
                 $etapaAtual = $this->etapasModel->find($postData['id_etapa']);
-
                 if (!$etapaAtual) {
                     $response['message'] = 'Etapa não encontrada';
                     return $this->response->setJSON($response);
                 }
 
-                // Campos que podem ser alterados
-                $camposEditaveis = [
-                    'etapa',
-                    'acao',
-                    'responsavel',
-                    'equipe',
-                    'tempo_estimado_dias',
-                    'data_inicio',
-                    'data_fim',
-                    'status'
-                ];
-
                 // Verificar alterações
                 $alteracoes = [];
+                $camposEditaveis = ['etapa', 'acao', 'responsavel', 'equipe', 'tempo_estimado_dias', 'data_inicio', 'data_fim', 'status'];
+
                 foreach ($camposEditaveis as $campo) {
-                    if (isset($postData[$campo])) {
-                        $valorAtual = $etapaAtual[$campo] ?? null;
-                        $valorNovo = $postData[$campo];
-
-                        // Comparação especial para datas
-                        if (in_array($campo, ['data_inicio', 'data_fim']) && $valorAtual) {
-                            $valorAtual = date('Y-m-d', strtotime($valorAtual));
-                        }
-
-                        if ($valorNovo != $valorAtual) {
-                            $alteracoes[$campo] = [
-                                'de' => $valorAtual,
-                                'para' => $valorNovo
-                            ];
-                        }
+                    if (isset($postData[$campo]) && $postData[$campo] != $etapaAtual[$campo]) {
+                        $alteracoes[$campo] = [
+                            'de' => $etapaAtual[$campo],
+                            'para' => $postData[$campo]
+                        ];
                     }
                 }
 
                 if (empty($alteracoes)) {
-                    $response['message'] = 'Nenhuma alteração foi detectada em relação aos dados atuais.';
+                    $response['message'] = 'Nenhuma alteração detectada';
                     return $this->response->setJSON($response);
                 }
 
-                // Preparar dados para inserção
+                // Preparar dados para a solicitação
                 $data = [
+                    'nivel' => 'etapa',
                     'id_etapa' => $postData['id_etapa'],
                     'id_acao' => $etapaAtual['id_acao'],
+                    'id_meta' => $etapaAtual['id_meta'],
                     'id_plano' => $postData['id_plano'] ?? null,
-                    'id_meta' => $etapaAtual['id_meta'] ?? null,
                     'tipo' => 'edicao',
                     'dados_atuais' => json_encode($etapaAtual),
                     'dados_alterados' => json_encode($alteracoes),
@@ -346,7 +325,6 @@ class Etapas extends BaseController
                 ];
 
                 $this->solicitacoesModel->insert($data);
-
                 $response['success'] = true;
                 $response['message'] = 'Solicitação de edição enviada com sucesso!';
             } catch (\Exception $e) {
@@ -367,6 +345,7 @@ class Etapas extends BaseController
         }
 
         $response = ['success' => false, 'message' => ''];
+        $postData = $this->request->getPost();
 
         $rules = [
             'id_etapa' => 'required',
@@ -375,14 +354,32 @@ class Etapas extends BaseController
 
         if ($this->validate($rules)) {
             try {
+                $etapa = $this->etapasModel->find($postData['id_etapa']);
+                if (!$etapa) {
+                    $response['message'] = 'Etapa não encontrada';
+                    return $this->response->setJSON($response);
+                }
+
+                $dadosAtuais = [
+                    'etapa' => $etapa['etapa'],
+                    'acao' => $etapa['acao'],
+                    'responsavel' => $etapa['responsavel'],
+                    'equipe' => $etapa['equipe'],
+                    'tempo_estimado_dias' => $etapa['tempo_estimado_dias'],
+                    'data_inicio' => $etapa['data_inicio'],
+                    'data_fim' => $etapa['data_fim'],
+                    'status' => $etapa['status']
+                ];
+
                 $data = [
-                    'id_etapa' => $this->request->getPost('id_etapa'),
-                    'id_acao' => $this->request->getPost('id_acao'),
-                    'id_plano' => $this->request->getPost('id_plano'),
-                    'id_meta' => $this->request->getPost('id_meta'),
+                    'nivel' => 'etapa', // Define o nível como etapa
+                    'id_etapa' => $postData['id_etapa'],
+                    'id_acao' => $etapa['id_acao'],
+                    'id_meta' => $etapa['id_meta'],
+                    'id_plano' => $postData['id_plano'] ?? null,
                     'tipo' => 'exclusao',
-                    'dados_atuais' => $this->request->getPost('dados_atuais'),
-                    'justificativa' => $this->request->getPost('justificativa'),
+                    'dados_atuais' => json_encode($dadosAtuais),
+                    'justificativa' => $postData['justificativa'],
                     'solicitante' => auth()->user()->username,
                     'status' => 'pendente',
                     'data_solicitacao' => date('Y-m-d H:i:s')
@@ -392,7 +389,8 @@ class Etapas extends BaseController
                 $response['success'] = true;
                 $response['message'] = 'Solicitação de exclusão enviada com sucesso!';
             } catch (\Exception $e) {
-                $response['message'] = 'Erro ao enviar solicitação: ' . $e->getMessage();
+                log_message('error', 'Erro em solicitarExclusao: ' . $e->getMessage());
+                $response['message'] = 'Erro ao processar solicitação: ' . $e->getMessage();
             }
         } else {
             $response['message'] = implode('<br>', $this->validator->getErrors());
@@ -408,6 +406,7 @@ class Etapas extends BaseController
         }
 
         $response = ['success' => false, 'message' => ''];
+        $postData = $this->request->getPost();
 
         $rules = [
             'etapa' => 'required|max_length[255]',
@@ -423,24 +422,27 @@ class Etapas extends BaseController
 
         if ($this->validate($rules)) {
             try {
-                $dadosAlterados = json_encode([
-                    'etapa' => $this->request->getPost('etapa'),
-                    'acao' => $this->request->getPost('acao'),
-                    'responsavel' => $this->request->getPost('responsavel'),
-                    'equipe' => $this->request->getPost('equipe'),
-                    'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias'),
-                    'data_inicio' => $this->request->getPost('data_inicio'),
-                    'data_fim' => $this->request->getPost('data_fim'),
-                    'status' => $this->request->getPost('status')
-                ]);
+                $dadosAlterados = [
+                    'etapa' => $postData['etapa'],
+                    'acao' => $postData['acao'],
+                    'responsavel' => $postData['responsavel'],
+                    'equipe' => $postData['equipe'],
+                    'tempo_estimado_dias' => $postData['tempo_estimado_dias'],
+                    'data_inicio' => $postData['data_inicio'],
+                    'data_fim' => $postData['data_fim'],
+                    'status' => $postData['status'],
+                    'id_acao' => $postData['id_acao'] ?? null,
+                    'id_meta' => $postData['id_meta'] ?? null
+                ];
 
                 $data = [
-                    'id_acao' => $this->request->getPost('id_acao'),
-                    'id_plano' => $this->request->getPost('id_plano'),
-                    'id_meta' => $this->request->getPost('id_meta'),
+                    'nivel' => 'etapa', // Define o nível como etapa
+                    'id_acao' => $postData['id_acao'] ?? null,
+                    'id_plano' => $postData['id_plano'] ?? null,
+                    'id_meta' => $postData['id_meta'] ?? null,
                     'tipo' => 'inclusao',
-                    'dados_alterados' => $dadosAlterados,
-                    'justificativa' => $this->request->getPost('justificativa'),
+                    'dados_alterados' => json_encode($dadosAlterados),
+                    'justificativa' => $postData['justificativa'],
                     'solicitante' => auth()->user()->username,
                     'status' => 'pendente',
                     'data_solicitacao' => date('Y-m-d H:i:s')
@@ -450,7 +452,8 @@ class Etapas extends BaseController
                 $response['success'] = true;
                 $response['message'] = 'Solicitação de inclusão enviada com sucesso!';
             } catch (\Exception $e) {
-                $response['message'] = 'Erro ao enviar solicitação: ' . $e->getMessage();
+                log_message('error', 'Erro em solicitarInclusao: ' . $e->getMessage());
+                $response['message'] = 'Erro ao processar solicitação: ' . $e->getMessage();
             }
         } else {
             $response['message'] = implode('<br>', $this->validator->getErrors());
