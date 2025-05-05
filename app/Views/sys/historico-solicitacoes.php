@@ -243,6 +243,7 @@
         // Abre modal de visualização
         $(document).on('click', '.visualizar-btn', function() {
             var id = $(this).data('id');
+            var avaliadorNome = $(this).closest('tr').find('td:nth-child(7)').text().trim();
 
             // Reset do modal
             $('#modalLoading').show();
@@ -328,7 +329,10 @@
                             '<span class="badge badge-warning">' + response.data.status + '</span>';
                         $('#statusAvaliacao').html(statusBadge);
 
-                        $('#avaliador').text(response.data.avaliador_username || 'Sistema');
+                        // Usa o nome do avaliador da tabela ou do response (priorizando o response)
+                        const avaliador = response.data.avaliador_nome || avaliadorNome || 'Sistema';
+                        $('#avaliador').text(avaliador);
+
                         $('#dataAvaliacao').text(response.data.data_avaliacao ?
                             formatFieldValue(response.data.data_avaliacao) : 'Não avaliada');
 

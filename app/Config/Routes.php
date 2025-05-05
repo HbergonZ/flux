@@ -48,6 +48,8 @@ $routes->post('etapas/solicitar-edicao', 'Etapas::solicitarEdicao');
 $routes->post('etapas/solicitar-exclusao', 'Etapas::solicitarExclusao');
 $routes->post('etapas/solicitar-inclusao', 'Etapas::solicitarInclusao');
 
+$routes->get('minhas-solicitacoes', 'MinhasSolicitacoes::index');
+
 $routes->group('', ['filter' => 'group:admin'], function ($routes) {
 
     $routes->post('planos/cadastrar', 'Planos::cadastrar');

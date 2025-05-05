@@ -80,7 +80,7 @@
             <!-- Minhas atividades -->
             <li class="nav-item">
                 <a class="nav-link" href="<?php echo base_url('/planos'); ?>">
-                    <i class="fas fa-tasks"></i> <!-- Atividades / tarefas -->
+                    <i class="fas fa-tasks"></i>
                     <span>Atividades</span>
                 </a>
             </li>
@@ -88,8 +88,16 @@
             <!-- Visão Geral -->
             <li class="nav-item">
                 <a class="nav-link" href="<?php echo base_url('/visao-geral'); ?>">
-                    <i class="fas fa-th-list"></i> <!-- Representa visão geral / painel -->
+                    <i class="fas fa-th-list"></i>
                     <span>Visão Geral</span>
+                </a>
+            </li>
+
+            <!-- Minhas Solicitações -->
+            <li class="nav-item">
+                <a class="nav-link" href="<?php echo base_url('/minhas-solcitacoes'); ?>">
+                    <i class="fas fa-inbox"></i>
+                    <span>Minhas Solicitações</span>
                 </a>
             </li>
 

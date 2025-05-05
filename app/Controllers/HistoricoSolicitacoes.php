@@ -52,6 +52,9 @@ class HistoricoSolicitacoes extends BaseController
             return redirect()->back();
         }
 
+        // Carrega o model de usuários
+        $userModel = new UserModel();
+
         $solicitacao = $this->solicitacoesModel->find($id);
         if (!$solicitacao) {
             return $this->response->setJSON([
@@ -60,9 +63,16 @@ class HistoricoSolicitacoes extends BaseController
             ]);
         }
 
+        // Busca o nome do avaliador
+        $avaliadorNome = 'Sistema';
+        if ($solicitacao['id_avaliador']) {
+            $user = $userModel->find($solicitacao['id_avaliador']);
+            $avaliadorNome = $user ? $user->username : 'Usuário removido';
+        }
+
         return $this->response->setJSON([
             'success' => true,
-            'data' => $solicitacao,
+            'data' => array_merge($solicitacao, ['avaliador_nome' => $avaliadorNome]),
             'dados_atuais' => json_decode($solicitacao['dados_atuais'], true),
             'dados_alterados' => json_decode($solicitacao['dados_alterados'], true)
         ]);
