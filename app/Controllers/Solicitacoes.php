@@ -60,7 +60,7 @@ class Solicitacoes extends BaseController
 
         $id = $this->request->getPost('id');
         $acao = $this->request->getPost('acao');
-        $justificativa = $this->request->getPost('justificativa');
+        $justificativaAvaliador = $this->request->getPost('justificativa');
 
         // Validação básica
         if (empty($id) || empty($acao)) {
@@ -86,7 +86,7 @@ class Solicitacoes extends BaseController
             'status' => $status,
             'data_avaliacao' => date('Y-m-d H:i:s'),
             'id_avaliador' => auth()->user()->id,
-            'justificativa' => $justificativa
+            'justificativa_avaliador' => $justificativaAvaliador
         ];
 
         // Atualiza a solicitação

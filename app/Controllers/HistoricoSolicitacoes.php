@@ -54,22 +54,17 @@ class HistoricoSolicitacoes extends BaseController
 
         $solicitacao = $this->solicitacoesModel->find($id);
         if (!$solicitacao) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Solicitação não encontrada']);
-        }
-
-        // Obtém username do avaliador usando o UserModel do Shield
-        if (!empty($solicitacao['id_avaliador'])) {
-            $avaliador = $this->userModel->find($solicitacao['id_avaliador']);
-            $solicitacao['avaliador_username'] = $avaliador->username ?? 'Desconhecido';
-        } else {
-            $solicitacao['avaliador_username'] = 'Sistema';
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Solicitação não encontrada'
+            ]);
         }
 
         return $this->response->setJSON([
             'success' => true,
             'data' => $solicitacao,
-            'dados_atuais' => json_decode($solicitacao['dados_atuais']),
-            'dados_alterados' => json_decode($solicitacao['dados_alterados'])
+            'dados_atuais' => json_decode($solicitacao['dados_atuais'], true),
+            'dados_alterados' => json_decode($solicitacao['dados_alterados'], true)
         ]);
     }
 }

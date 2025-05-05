@@ -3,7 +3,7 @@
         <h1 class="h3 mb-0 text-gray-800">Solicitações Pendentes</h1>
     </div>
 
-    <div class="card shadow mb-4">
+    <div class="card shadow mb-4 mx-md-5 mx-3">
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">Lista de Solicitações</h6>
         </div>
@@ -11,7 +11,7 @@
             <div class="table-responsive">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
-                        <tr>
+                        <tr class="text-center">
                             <th>Tipo Solicitação</th>
                             <th>Nível</th>
                             <th>Nome</th>
@@ -24,12 +24,12 @@
                     <tbody>
                         <?php foreach ($solicitacoes as $solicitacao) : ?>
                             <tr>
-                                <td><?= ucfirst($solicitacao['tipo']) ?></td>
-                                <td><?= $solicitacao['nivel'] ?></td>
+                                <td class="text-center"><?= ucfirst($solicitacao['tipo']) ?></td>
+                                <td class="text-center"><?= ucfirst($solicitacao['nivel']) ?></td>
                                 <td><?= $solicitacao['nome'] ?></td>
-                                <td><?= $solicitacao['solicitante'] ?></td>
-                                <td><?= date('d/m/Y H:i', strtotime($solicitacao['data_solicitacao'])) ?></td>
-                                <td>
+                                <td class="text-center"><?= $solicitacao['solicitante'] ?></td>
+                                <td class="text-center"><?= date('d/m/Y H:i', strtotime($solicitacao['data_solicitacao'])) ?></td>
+                                <td class="text-center">
                                     <span class="badge badge-warning"><?= ucfirst($solicitacao['status']) ?></span>
                                 </td>
                                 <td class="text-center">
@@ -65,26 +65,61 @@
                         <i class="fas fa-spinner fa-spin fa-3x"></i>
                         <p class="mt-2">Carregando dados da solicitação...</p>
                     </div>
-
-                    <div id="modalContent" style="display:none;">
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <h6 class="font-weight-bold">Dados Atuais</h6>
-                                <div class="table-responsive">
-                                    <table class="table table-sm table-bordered" id="tabelaDadosAtuais"></table>
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="m-0 font-weight-bold text-primary">Dados da Solicitação</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="font-weight-bold">Dados Atuais no Momento da Solicitação</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered" id="tabelaDadosAtuais"></table>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <h6 class="font-weight-bold">Alterações Solicitadas</h6>
-                                <div class="table-responsive">
-                                    <table class="table table-sm table-bordered" id="tabelaDadosAlterados"></table>
+                                <div class="col-md-6">
+                                    <h6 class="font-weight-bold">Alterações Solicitadas</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered" id="tabelaDadosAlterados"></table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
+                    <!-- Seção do Solicitante -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="m-0 font-weight-bold text-primary">Informações do Solicitante</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Solicitante:</label>
+                                        <p id="nomeSolicitante">-</p>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Data da Solicitação:</label>
+                                        <p id="dataSolicitacao">-</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Justificativa:</label>
+                                        <div class="p-3 bg-light rounded border" id="justificativaSolicitacao">
+                                            <em class="text-muted">Nenhuma justificativa fornecida.</em>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
                         <div class="form-group">
-                            <label for="justificativa">Justificativa (Opcional)</label>
-                            <textarea class="form-control" id="justificativa" name="justificativa" rows="3" placeholder="Adicione uma justificativa para sua decisão..."></textarea>
+                            <label for="justificativa-avaliador">Justificativa do Avaliador (Opcional)</label>
+                            <textarea class="form-control" id="justificativa-avaliador" name="justificativa" rows="3" placeholder="Adicione uma justificativa para sua decisão..."></textarea>
                         </div>
                     </div>
                 </div>
@@ -101,19 +136,10 @@
     </div>
 </div>
 
-<!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
-
-<!-- DataTables -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap4.min.css" />
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap4.min.js"></script>
-
-<!-- Font Awesome (para os ícones) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
-
 <!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -201,6 +227,7 @@
                 success: function(response) {
                     if (response.success) {
                         $('#solicitacaoId').val(id);
+                        $('#justificativa-solicitante').val(response.data.justificativa_solicitante || 'Nenhuma justificativa fornecida');
 
                         // Formatadores para melhor exibição
                         function formatFieldName(name) {
@@ -253,6 +280,16 @@
                         }
                         $('#tabelaDadosAlterados').html(htmlAlterados);
 
+                        // Preenche seção do solicitante
+                        $('#nomeSolicitante').text(response.data.solicitante || 'Não informado');
+                        $('#dataSolicitacao').text(response.data.data_solicitacao ?
+                            formatFieldValue(response.data.data_solicitacao) : 'Não informado');
+                        if (response.data.justificativa_solicitante && response.data.justificativa_solicitante.trim() !== '') {
+                            $('#justificativaSolicitacao').html(response.data.justificativa_solicitante);
+                        } else {
+                            $('#justificativaSolicitacao').html('<em class="text-muted">Nenhuma justificativa fornecida.</em>');
+                        }
+
                         // Mostra conteúdo e esconde loader
                         $('#modalLoading').hide();
                         $('#modalContent').show();
@@ -283,7 +320,7 @@
             var formData = {
                 id: $('#solicitacaoId').val(),
                 acao: acao,
-                justificativa: $('#justificativa').val()
+                justificativa: $('#justificativa-avaliador').val()
             };
 
             var buttons = $('#avaliarModal .modal-footer button');

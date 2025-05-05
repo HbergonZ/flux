@@ -11,8 +11,8 @@ class EtapasModel extends Model
     protected $allowedFields = [
         'etapa',
         'acao',
-        'responsavel',  // Antes era 'coordenacao'
-        'equipe',       // Antes era 'responsavel'
+        'responsavel',
+        'equipe',
         'tempo_estimado_dias',
         'data_inicio',
         'data_fim',
