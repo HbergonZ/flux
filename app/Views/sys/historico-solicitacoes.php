@@ -177,7 +177,7 @@
 
 <script>
     $(document).ready(function() {
-        // Inicializa o DataTable com as configurações desejadas
+        // Inicializa o DataTable
         $('#dataTable').DataTable({
             "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             "language": {
@@ -209,35 +209,44 @@
             "pageLength": 10,
             "order": [
                 [5, 'desc']
-            ], // Ordena por data de avaliação decrescente
+            ],
             "columnDefs": [{
-                responsivePriority: 1,
-                targets: 0
-            }, {
-                responsivePriority: 2,
-                targets: 8
-            }, {
-                responsivePriority: 3,
-                targets: 5
-            }, {
-                responsivePriority: 4,
-                targets: 7
-            }, {
-                responsivePriority: 5,
-                targets: 2
-            }, {
-                responsivePriority: 6,
-                targets: 3
-            }, {
-                responsivePriority: 7,
-                targets: 6
-            }, {
-                responsivePriority: 8,
-                targets: 4
-            }, {
-                responsivePriority: 9,
-                targets: 1
-            }]
+                    responsivePriority: 1,
+                    targets: 0
+                },
+                {
+                    responsivePriority: 2,
+                    targets: 8
+                },
+                {
+                    responsivePriority: 3,
+                    targets: 5
+                },
+                {
+                    responsivePriority: 4,
+                    targets: 7
+                },
+                {
+                    responsivePriority: 5,
+                    targets: 2
+                },
+                {
+                    responsivePriority: 6,
+                    targets: 3
+                },
+                {
+                    responsivePriority: 7,
+                    targets: 6
+                },
+                {
+                    responsivePriority: 8,
+                    targets: 4
+                },
+                {
+                    responsivePriority: 9,
+                    targets: 1
+                }
+            ]
         });
 
         // Abre modal de visualização
@@ -267,53 +276,108 @@
                                 'tempo_estimado_dias': 'Tempo Estimado (dias)',
                                 'data_inicio': 'Data Início',
                                 'data_fim': 'Data Fim',
-                                'status': 'Status'
+                                'status': 'Status',
+                                'descricao': 'Descrição',
+                                'prioridade': 'Prioridade',
+                                'orcamento': 'Orçamento'
                             };
-                            return names[name] || name;
+                            return names[name] || name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                         }
 
                         function formatFieldValue(value) {
-                            if (value === null || value === '') return '<span class="text-muted">Não informado</span>';
+                            if (value === null || value === '' || value === undefined)
+                                return '<span class="text-muted">Não informado</span>';
                             if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
                                 const [year, month, day] = value.split('-');
                                 return `${day}/${month}/${year}`;
                             }
                             if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
-                                const [datePart, timePart] = value.split(' ');
-                                const [year, month, day] = datePart.split('-');
-                                return `${day}/${month}/${year} ${timePart}`;
+                                const [date, time] = value.split(' ');
+                                const [year, month, day] = date.split('-');
+                                return `${day}/${month}/${year} ${time}`;
                             }
                             return value;
                         }
 
-                        // Preenche dados técnicos
+                        const isInclusao = response.tipo === 'inclusão';
+                        const isExclusao = response.tipo === 'exclusão';
+                        const nivel = response.nivel || 'registro';
+
+                        // Preenche tabela de dados atuais
                         let htmlAtuais = '';
-                        if (response.dados_atuais) {
+                        if (isInclusao) {
+                            htmlAtuais = `
+                            <tr>
+                                <th width="30%">Tipo</th>
+                                <td>Nova ${nivel.charAt(0).toUpperCase() + nivel.slice(1)}</td>
+                            </tr>
+                            <tr>
+                                <th width="30%">Status</th>
+                                <td><span class="badge badge-info">Novo registro</span></td>
+                            </tr>`;
+                        } else {
                             for (let key in response.dados_atuais) {
-                                htmlAtuais += `<tr><th width="30%">${formatFieldName(key)}</th><td>${formatFieldValue(response.dados_atuais[key])}</td></tr>`;
+                                htmlAtuais += `
+                            <tr>
+                                <th width="30%">${formatFieldName(key)}</th>
+                                <td>${formatFieldValue(response.dados_atuais[key])}</td>
+                            </tr>`;
                             }
                         }
                         $('#tabelaDadosAtuais').html(htmlAtuais);
 
+                        // Preenche tabela de alterações
                         let htmlAlterados = '';
-                        if (response.dados_alterados) {
+
+                        if (isExclusao) {
+                            htmlAlterados = `
+    <tr>
+        <td colspan="2" class="text-center bg-danger-light p-3">
+            <div class="alert alert-danger mb-0">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                <strong>EXCLUSÃO SOLICITADA</strong> - Este registro será removido permanentemente
+            </div>
+        </td>
+    </tr>`;
+
+                            // Opcional: Mostrar os dados que serão removidos
+                            for (let key in response.dados_atuais) {
+                                htmlAlterados += `
+        <tr>
+            <th width="30%">${formatFieldName(key)}</th>
+            <td>${formatFieldValue(response.dados_atuais[key])}</td>
+        </tr>`;
+                            }
+                        } else if (isInclusao) {
                             for (let key in response.dados_alterados) {
                                 htmlAlterados += `
-                                    <tr>
-                                        <th width="30%">${formatFieldName(key)}</th>
-                                        <td>
-                                            <div class="text-danger mb-1"><small>Atual:</small><br><s>${formatFieldValue(response.dados_alterados[key].de)}</s></div>
-                                            <div class="text-success"><small>Novo:</small><br><strong>${formatFieldValue(response.dados_alterados[key].para)}</strong></div>
-                                        </td>
-                                    </tr>`;
+                                <tr>
+                                    <th width="30%">${formatFieldName(key)}</th>
+                                    <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key].para)}</strong></td>
+                                </tr>`;
+                            }
+                        } else {
+                            for (let key in response.dados_alterados) {
+                                htmlAlterados += `
+                                <tr>
+                                    <th width="30%">${formatFieldName(key)}</th>
+                                    <td>
+                                        <div class="text-danger mb-1"><small>Atual:</small><br><s>${formatFieldValue(response.dados_alterados[key].de)}</s></div>
+                                        <div class="text-success"><small>Novo:</small><br><strong>${formatFieldValue(response.dados_alterados[key].para)}</strong></div>
+                                    </td>
+                                </tr>`;
                             }
                         }
+
                         $('#tabelaDadosAlterados').html(htmlAlterados);
 
                         // Preenche seção do solicitante
                         $('#nomeSolicitante').text(response.data.solicitante || 'Não informado');
-                        $('#dataSolicitacao').text(response.data.data_solicitacao ?
-                            formatFieldValue(response.data.data_solicitacao) : 'Não informado');
+
+                        const dataSolicitacao = response.data.data_solicitacao ?
+                            new Date(response.data.data_solicitacao).toLocaleString('pt-BR') :
+                            'Não informado';
+                        $('#dataSolicitacao').text(dataSolicitacao);
 
                         if (response.data.justificativa_solicitante && response.data.justificativa_solicitante.trim() !== '') {
                             $('#justificativaSolicitacao').html(response.data.justificativa_solicitante);
@@ -329,12 +393,11 @@
                             '<span class="badge badge-warning">' + response.data.status + '</span>';
                         $('#statusAvaliacao').html(statusBadge);
 
-                        // Usa o nome do avaliador da tabela ou do response (priorizando o response)
                         const avaliador = response.data.avaliador_nome || avaliadorNome || 'Sistema';
                         $('#avaliador').text(avaliador);
 
                         $('#dataAvaliacao').text(response.data.data_avaliacao ?
-                            formatFieldValue(response.data.data_avaliacao) : 'Não avaliada');
+                            new Date(response.data.data_avaliacao).toLocaleString('pt-BR') : 'Não avaliada');
 
                         if (response.data.justificativa_avaliador && response.data.justificativa_avaliador.trim() !== '') {
                             $('#justificativaAvaliador').html(response.data.justificativa_avaliador);

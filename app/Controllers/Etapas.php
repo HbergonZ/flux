@@ -72,7 +72,12 @@ class Etapas extends BaseController
             'idAcao' => $meta['id_acao'],
             'nomeVinculo' => $meta['nome'],
             'etapas' => $etapas,
-            'acao' => $acao
+            'acao' => [
+                'id' => $acao['id'],
+                'acao' => $acao['acao'],
+                'id_plano' => $acao['id_plano'],
+                'nome_meta' => $meta['nome'] // Adiciona o nome da meta aqui
+            ]
         ];
 
         $this->content_data['content'] = view('sys/etapas', $data);
@@ -93,8 +98,8 @@ class Etapas extends BaseController
             'responsavel' => 'required|max_length[255]',
             'equipe' => 'required|max_length[255]',
             'tempo_estimado_dias' => 'required|integer',
-            'data_inicio' => 'required|valid_date',
-            'data_fim' => 'required|valid_date',
+            'data_inicio' => 'permit_empty|valid_date',
+            'data_fim' => 'permit_empty|valid_date',
             'status' => 'required|in_list[Em andamento,Finalizado,Paralisado,Não iniciado]'
         ];
 
@@ -160,8 +165,8 @@ class Etapas extends BaseController
             'responsavel' => 'required|max_length[255]',
             'equipe' => 'required|max_length[255]',
             'tempo_estimado_dias' => 'required|integer',
-            'data_inicio' => 'required|valid_date',
-            'data_fim' => 'required|valid_date',
+            'data_inicio' => 'valid_date',
+            'data_fim' => 'valid_date',
             'status' => 'required|in_list[Em andamento,Finalizado,Paralisado,Não iniciado]'
         ];
 
@@ -414,8 +419,8 @@ class Etapas extends BaseController
             'responsavel' => 'required|max_length[255]',
             'equipe' => 'required|max_length[255]',
             'tempo_estimado_dias' => 'required|integer',
-            'data_inicio' => 'required|valid_date',
-            'data_fim' => 'required|valid_date',
+            'data_inicio' => 'permit_empty|valid_date',
+            'data_fim' => 'permit_empty|valid_date',
             'status' => 'required|in_list[Em andamento,Finalizado,Paralisado,Não iniciado]',
             'justificativa' => 'required'
         ];
@@ -436,10 +441,10 @@ class Etapas extends BaseController
                 ];
 
                 $data = [
-                    'nivel' => 'etapa', // Define o nível como etapa
-                    'id_acao' => $postData['id_acao'] ?? null,
-                    'id_plano' => $postData['id_plano'] ?? null,
-                    'id_meta' => $postData['id_meta'] ?? null,
+                    'nivel' => 'etapa',
+                    'id_acao' => !empty($postData['id_acao']) ? $postData['id_acao'] : null,
+                    'id_plano' => !empty($postData['id_plano']) ? $postData['id_plano'] : null,
+                    'id_meta' => !empty($postData['id_meta']) ? $postData['id_meta'] : null,
                     'tipo' => 'Inclusão',
                     'dados_alterados' => json_encode($dadosAlterados),
                     'justificativa_solicitante' => $postData['justificativa'],
@@ -448,15 +453,47 @@ class Etapas extends BaseController
                     'data_solicitacao' => date('Y-m-d H:i:s')
                 ];
 
+                // Garantir que id_etapa não está sendo enviado de forma alguma
+                if (array_key_exists('id_etapa', $data)) {
+                    unset($data['id_etapa']);
+                }
+
+                // Debug: Verifique os dados antes de inserir
+                log_message('debug', 'Dados sendo inseridos: ' . print_r($data, true));
+
                 $this->solicitacoesModel->insert($data);
                 $response['success'] = true;
                 $response['message'] = 'Solicitação de inclusão enviada com sucesso!';
             } catch (\Exception $e) {
                 log_message('error', 'Erro em solicitarInclusao: ' . $e->getMessage());
                 $response['message'] = 'Erro ao processar solicitação: ' . $e->getMessage();
+
+                // Adicione informações adicionais de debug
+                $response['debug'] = [
+                    'postData' => $postData,
+                    'trace' => $e->getTraceAsString()
+                ];
             }
         } else {
             $response['message'] = implode('<br>', $this->validator->getErrors());
+        }
+
+        return $this->response->setJSON($response);
+    }
+    public function dadosEtapa($idEtapa = null)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $response = ['success' => false, 'message' => '', 'data' => null];
+        $etapa = $this->etapasModel->find($idEtapa);
+
+        if ($etapa) {
+            $response['success'] = true;
+            $response['data'] = $etapa;
+        } else {
+            $response['message'] = 'Etapa não encontrada';
         }
 
         return $this->response->setJSON($response);

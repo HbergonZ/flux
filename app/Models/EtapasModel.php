@@ -38,4 +38,17 @@ class EtapasModel extends Model
             ->orderBy('data_inicio', 'ASC')
             ->findAll();
     }
+    protected $beforeInsert = ['emptyStringToNull'];
+
+    protected function emptyStringToNull(array $data)
+    {
+        if (array_key_exists('data', $data)) {
+            foreach ($data['data'] as $key => $value) {
+                if ($value === '') {
+                    $data['data'][$key] = null;
+                }
+            }
+        }
+        return $data;
+    }
 }

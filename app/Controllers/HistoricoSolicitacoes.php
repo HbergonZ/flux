@@ -28,13 +28,17 @@ class HistoricoSolicitacoes extends BaseController
         foreach ($solicitacoes as &$solicitacao) {
             $dados = json_decode($solicitacao['dados_atuais'] ?? '{}', true);
 
-            // Define o nome para exibição
-            $solicitacao['nome'] = $dados['etapa'] ?? $dados['acao'] ?? $dados['nome'] ?? 'Solicitação';
+            // Para solicitações de inclusão, pega o nome dos dados alterados
+            if ($solicitacao['tipo'] == 'inclusão' && !empty($solicitacao['dados_alterados'])) {
+                $dadosAlterados = json_decode($solicitacao['dados_alterados'], true);
+                $solicitacao['nome'] = $dadosAlterados['etapa'] ?? $dadosAlterados['acao'] ?? $dadosAlterados['nome'] ?? 'Nova Solicitação';
+            } else {
+                $solicitacao['nome'] = $dados['etapa'] ?? $dados['acao'] ?? $dados['nome'] ?? 'Solicitação';
+            }
 
-            // Obtém username do avaliador usando o UserModel do Shield
+            // Obtém username do avaliador
             if (!empty($solicitacao['id_avaliador'])) {
                 $avaliador = $this->userModel->find($solicitacao['id_avaliador']);
-                // O Shield usa 'username' como padrão para o nome de usuário
                 $solicitacao['avaliador_username'] = $avaliador->username ?? 'Desconhecido';
             } else {
                 $solicitacao['avaliador_username'] = 'Sistema';
@@ -52,9 +56,6 @@ class HistoricoSolicitacoes extends BaseController
             return redirect()->back();
         }
 
-        // Carrega o model de usuários
-        $userModel = new UserModel();
-
         $solicitacao = $this->solicitacoesModel->find($id);
         if (!$solicitacao) {
             return $this->response->setJSON([
@@ -66,15 +67,32 @@ class HistoricoSolicitacoes extends BaseController
         // Busca o nome do avaliador
         $avaliadorNome = 'Sistema';
         if ($solicitacao['id_avaliador']) {
-            $user = $userModel->find($solicitacao['id_avaliador']);
+            $user = $this->userModel->find($solicitacao['id_avaliador']);
             $avaliadorNome = $user ? $user->username : 'Usuário removido';
+        }
+
+        // Processa os dados conforme o tipo
+        $dadosAtuais = json_decode($solicitacao['dados_atuais'], true) ?: [];
+        $dadosAlterados = [];
+
+        if ($solicitacao['tipo'] == 'exclusão') {
+            // Para exclusão, formatamos os dados atuais como alterações
+            foreach ($dadosAtuais as $key => $value) {
+                $dadosAlterados[$key] = ['de' => $value, 'para' => null];
+            }
+        } else {
+            $dadosAlterados = json_decode($solicitacao['dados_alterados'], true) ?: [];
         }
 
         return $this->response->setJSON([
             'success' => true,
-            'data' => array_merge($solicitacao, ['avaliador_nome' => $avaliadorNome]),
-            'dados_atuais' => json_decode($solicitacao['dados_atuais'], true),
-            'dados_alterados' => json_decode($solicitacao['dados_alterados'], true)
+            'data' => array_merge($solicitacao, [
+                'avaliador_nome' => $avaliadorNome,
+                'tipo' => $solicitacao['tipo'],
+                'nivel' => $solicitacao['nivel']
+            ]),
+            'dados_atuais' => $dadosAtuais,
+            'dados_alterados' => $dadosAlterados
         ]);
     }
 }

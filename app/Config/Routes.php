@@ -47,10 +47,11 @@ $routes->post('visao-geral/filtrar', 'VisaoGeral::filtrar');
 $routes->post('etapas/solicitar-edicao', 'Etapas::solicitarEdicao');
 $routes->post('etapas/solicitar-exclusao', 'Etapas::solicitarExclusao');
 $routes->post('etapas/solicitar-inclusao', 'Etapas::solicitarInclusao');
+$routes->get('etapas/dados-etapa/(:num)', 'Etapas::dadosEtapa/$1');
 
 $routes->get('minhas-solicitacoes', 'MinhasSolicitacoes::index');
 
-$routes->group('', function ($routes) {
+$routes->group('', ['filter' => 'group:admin'], function ($routes) {
 
     $routes->post('planos/cadastrar', 'Planos::cadastrar');
     $routes->get('planos/editar/(:num)', 'Planos::editar/$1');

@@ -55,7 +55,7 @@
             submitForm($(this), '#addEtapaModal');
         });
 
-        // Editar etapa - Abrir modal
+        // Editar etapa - Abrir modal (apenas admin)
         $(document).on('click', '.btn-primary[title="Editar"]', function() {
             var etapaId = $(this).data('id').split('-')[0];
 
@@ -85,13 +85,15 @@
             });
         });
 
-        // Solicitar edição de etapa - Abrir modal
+        // Solicitar edição de etapa - Abrir modal (para não-admins)
         $(document).on('click', '.btn-primary[title="Solicitar Edição"]', function() {
             var etapaId = $(this).data('id').split('-')[0];
             var etapaRow = $(this).closest('tr');
+            var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
+            var url = isAdmin ? '<?= site_url('etapas/editar/') ?>' : '<?= site_url('etapas/dados-etapa/') ?>';
 
             $.ajax({
-                url: '<?= site_url('etapas/editar/') ?>' + etapaId,
+                url: url + etapaId,
                 type: 'GET',
                 dataType: 'json',
                 success: function(response) {
@@ -166,13 +168,15 @@
             submitForm($(this), '#solicitarEdicaoModal', 'Solicitação de edição enviada com sucesso!');
         });
 
-        // Solicitar exclusão de etapa - Abrir modal
+        // Solicitar exclusão de etapa - Abrir modal (para não-admins)
         $(document).on('click', '.btn-danger[title="Solicitar Exclusão"]', function() {
             var etapaId = $(this).data('id').split('-')[0];
             var etapaName = $(this).closest('tr').find('td:first').text();
+            var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
+            var url = isAdmin ? '<?= site_url('etapas/editar/') ?>' : '<?= site_url('etapas/dados-etapa/') ?>';
 
             $.ajax({
-                url: '<?= site_url('etapas/editar/') ?>' + etapaId,
+                url: url + etapaId,
                 type: 'GET',
                 dataType: 'json',
                 success: function(response) {
@@ -206,13 +210,13 @@
             submitForm($(this), '#solicitarInclusaoModal', 'Solicitação de inclusão enviada com sucesso!');
         });
 
-        // Atualizar etapa
+        // Atualizar etapa (apenas admin)
         $('#formEditEtapa').submit(function(e) {
             e.preventDefault();
             submitForm($(this), '#editEtapaModal');
         });
 
-        // Excluir etapa - Abrir modal de confirmação
+        // Excluir etapa - Abrir modal de confirmação (apenas admin)
         $(document).on('click', '.btn-danger[title="Excluir"]', function() {
             var etapaId = $(this).data('id').split('-')[0];
             var etapaName = $(this).closest('tr').find('td:first').text();
@@ -222,7 +226,7 @@
             $('#deleteEtapaModal').modal('show');
         });
 
-        // Confirmar exclusão
+        // Confirmar exclusão (apenas admin)
         $('#formDeleteEtapa').submit(function(e) {
             e.preventDefault();
             submitForm($(this), '#deleteEtapaModal');

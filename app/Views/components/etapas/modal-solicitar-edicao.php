@@ -13,7 +13,7 @@
                 <input type="hidden" name="tipo" value="edicao">
                 <input type="hidden" name="id_plano" value="<?= $acao['id_plano'] ?>">
                 <input type="hidden" name="id_acao" value="<?= $tipo === 'acao' ? $idVinculo : $acao['id'] ?>">
-                <input type="hidden" name="id_meta" value="<?= $tipo === 'meta' ? $idVinculo : null ?>">
+                <input type="hidden" name="id_meta" value="<?= $tipo === 'meta' ? $idVinculo : '' ?>">
 
                 <div class="modal-body">
                     <div id="alertNenhumaAlteracao" class="alert alert-warning d-none">
@@ -29,10 +29,22 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="solicitarEdicaoAcao">Ação*</label>
-                                <input type="text" class="form-control" id="solicitarEdicaoAcao" name="acao" required maxlength="255">
+                                <input type="text" class="form-control" id="solicitarEdicaoAcao" value="<?= $acao['acao'] ?>" readonly>
+                                <input type="hidden" name="acao" value="<?= $acao['acao'] ?>">
                             </div>
                         </div>
                     </div>
+
+                    <?php if ($tipo === 'meta' && isset($acao['nome_meta'])): ?>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="solicitarEdicaoMeta">Meta</label>
+                                    <input type="text" class="form-control" id="solicitarEdicaoMeta" value="<?= $acao['nome_meta'] ?>" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
 
                     <div class="row">
                         <div class="col-md-6">

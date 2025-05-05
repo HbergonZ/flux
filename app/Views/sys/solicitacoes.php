@@ -145,7 +145,7 @@
 
 <script>
     $(document).ready(function() {
-        // Inicializa o DataTable com as configurações desejadas
+        // Inicializa o DataTable
         $('#dataTable').DataTable({
             "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             "language": {
@@ -170,42 +170,42 @@
                     "sortDescending": ": ativar para ordenar coluna descendente"
                 }
             },
-            "searching": false, // Desativa o campo de busca
+            "searching": false,
             "responsive": true,
             "autoWidth": false,
             "lengthMenu": [5, 10, 25, 50, 100],
             "pageLength": 10,
             "order": [
                 [4, 'desc']
-            ], // Ordena por data decrescente (coluna 4)
+            ],
             "columnDefs": [{
                     responsivePriority: 1,
                     targets: 0
-                }, // Tipo Solicitação
+                },
                 {
                     responsivePriority: 2,
                     targets: 6
-                }, // Ações
+                },
                 {
                     responsivePriority: 3,
                     targets: 4
-                }, // Data
+                },
                 {
                     responsivePriority: 4,
                     targets: 5
-                }, // Status
+                },
                 {
                     responsivePriority: 5,
                     targets: 2
-                }, // Nome
+                },
                 {
                     responsivePriority: 6,
                     targets: 3
-                }, // Solicitante
+                },
                 {
                     responsivePriority: 7,
                     targets: 1
-                } // Nível
+                }
             ]
         });
 
@@ -227,7 +227,6 @@
                 success: function(response) {
                     if (response.success) {
                         $('#solicitacaoId').val(id);
-                        $('#justificativa-solicitante').val(response.data.justificativa_solicitante || 'Nenhuma justificativa fornecida');
 
                         // Formatadores para melhor exibição
                         function formatFieldName(name) {
@@ -240,36 +239,66 @@
                                 'tempo_estimado_dias': 'Tempo Estimado (dias)',
                                 'data_inicio': 'Data Início',
                                 'data_fim': 'Data Fim',
-                                'status': 'Status'
+                                'status': 'Status',
+                                'descricao': 'Descrição',
+                                'prioridade': 'Prioridade',
+                                'orcamento': 'Orçamento'
                             };
-                            return names[name] || name;
+                            return names[name] || name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                         }
 
                         function formatFieldValue(value) {
-                            if (value === null || value === '') return '<span class="text-muted">Não informado</span>';
+                            if (value === null || value === '' || value === undefined)
+                                return '<span class="text-muted">Não informado</span>';
                             if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                                // Formata datas no formato YYYY-MM-DD
                                 const [year, month, day] = value.split('-');
                                 return `${day}/${month}/${year}`;
+                            }
+                            if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+                                const [date, time] = value.split(' ');
+                                const [year, month, day] = date.split('-');
+                                return `${day}/${month}/${year} ${time}`;
                             }
                             return value;
                         }
 
+                        const isInclusao = response.tipo === 'inclusão';
+                        const nivel = response.nivel || 'registro';
+
                         // Preenche tabela de dados atuais
                         let htmlAtuais = '';
-                        for (let key in response.dados_atuais) {
-                            htmlAtuais += `
+                        if (isInclusao) {
+                            htmlAtuais = `
+                            <tr>
+                                <th width="30%">Tipo</th>
+                                <td>Nova ${nivel.charAt(0).toUpperCase() + nivel.slice(1)}</td>
+                            </tr>
+                            <tr>
+                                <th width="30%">Status</th>
+                                <td><span class="badge badge-info">Novo registro</span></td>
+                            </tr>`;
+                        } else {
+                            for (let key in response.dados_atuais) {
+                                htmlAtuais += `
                             <tr>
                                 <th width="30%">${formatFieldName(key)}</th>
                                 <td>${formatFieldValue(response.dados_atuais[key])}</td>
                             </tr>`;
+                            }
                         }
                         $('#tabelaDadosAtuais').html(htmlAtuais);
 
                         // Preenche tabela de alterações
                         let htmlAlterados = '';
                         for (let key in response.dados_alterados) {
-                            htmlAlterados += `
+                            if (isInclusao) {
+                                htmlAlterados += `
+                            <tr>
+                                <th width="30%">${formatFieldName(key)}</th>
+                                <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key].para)}</strong></td>
+                            </tr>`;
+                            } else {
+                                htmlAlterados += `
                             <tr>
                                 <th width="30%">${formatFieldName(key)}</th>
                                 <td>
@@ -277,13 +306,18 @@
                                     <div class="text-success"><small>Novo:</small><br><strong>${formatFieldValue(response.dados_alterados[key].para)}</strong></div>
                                 </td>
                             </tr>`;
+                            }
                         }
                         $('#tabelaDadosAlterados').html(htmlAlterados);
 
                         // Preenche seção do solicitante
                         $('#nomeSolicitante').text(response.data.solicitante || 'Não informado');
-                        $('#dataSolicitacao').text(response.data.data_solicitacao ?
-                            formatFieldValue(response.data.data_solicitacao) : 'Não informado');
+
+                        const dataSolicitacao = response.data.data_solicitacao ?
+                            new Date(response.data.data_solicitacao).toLocaleString('pt-BR') :
+                            'Não informado';
+                        $('#dataSolicitacao').text(dataSolicitacao);
+
                         if (response.data.justificativa_solicitante && response.data.justificativa_solicitante.trim() !== '') {
                             $('#justificativaSolicitacao').html(response.data.justificativa_solicitante);
                         } else {
@@ -324,8 +358,6 @@
             };
 
             var buttons = $('#avaliarModal .modal-footer button');
-
-            // Desabilita botões durante o processamento
             buttons.prop('disabled', true);
             $('.aceitar-btn, .recusar-btn').html('<i class="fas fa-spinner fa-spin"></i> Processando...');
 

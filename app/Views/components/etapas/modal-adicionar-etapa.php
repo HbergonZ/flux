@@ -9,6 +9,8 @@
             </div>
             <form id="formAddEtapa" action="<?= site_url("etapas/cadastrar/$tipo/$idVinculo") ?>" method="post">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
+                <input type="hidden" name="id_acao" value="<?= $tipo === 'acao' ? $idVinculo : $acao['id'] ?>">
+                <input type="hidden" name="id_meta" value="<?= $tipo === 'meta' ? $idVinculo : '' ?>">
 
                 <div class="modal-body">
                     <div class="row">
@@ -21,10 +23,22 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="etapaAcao">Ação*</label>
-                                <input type="text" class="form-control" id="etapaAcao" name="acao" required maxlength="255">
+                                <input type="text" class="form-control" id="etapaAcao" value="<?= $acao['acao'] ?>" readonly>
+                                <input type="hidden" name="acao" value="<?= $acao['acao'] ?>">
                             </div>
                         </div>
                     </div>
+
+                    <?php if ($tipo === 'meta' && isset($acao['nome_meta'])): ?>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="etapaMeta">Meta</label>
+                                    <input type="text" class="form-control" id="etapaMeta" value="<?= $acao['nome_meta'] ?>" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
 
                     <div class="row">
                         <div class="col-md-6">
@@ -45,19 +59,19 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="etapaTempoEstimado">Tempo Estimado (dias)*</label>
-                                <input type="number" class="form-control" id="etapaTempoEstimado" name="tempo_estimado_dias" required>
+                                <input type="number" class="form-control  optional-date" id="etapaTempoEstimado" name="tempo_estimado_dias" required>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label for="etapaDataInicio">Data Início*</label>
-                                <input type="date" class="form-control" id="etapaDataInicio" name="data_inicio" required>
+                                <label for="etapaDataInicio">Data Início</label>
+                                <input type="date" class="form-control  optional-date" id="etapaDataInicio" name="data_inicio">
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label for="etapaDataFim">Data Fim*</label>
-                                <input type="date" class="form-control" id="etapaDataFim" name="data_fim" required>
+                                <label for="etapaDataFim">Data Fim</label>
+                                <input type="date" class="form-control" id="etapaDataFim" name="data_fim">
                             </div>
                         </div>
                     </div>

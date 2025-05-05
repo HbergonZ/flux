@@ -10,6 +10,8 @@
             <form id="formEditEtapa" method="post" action="<?= site_url("etapas/atualizar/$tipo/$idVinculo") ?>">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                 <input type="hidden" name="id_etapa" id="editEtapaId">
+                <input type="hidden" name="id_acao" value="<?= $tipo === 'acao' ? $idVinculo : $acao['id'] ?>">
+                <input type="hidden" name="id_meta" value="<?= $tipo === 'meta' ? $idVinculo : '' ?>">
 
                 <div class="modal-body">
                     <div class="row">
@@ -22,10 +24,22 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="editEtapaAcao">Ação*</label>
-                                <input type="text" class="form-control" id="editEtapaAcao" name="acao" required maxlength="255">
+                                <input type="text" class="form-control" id="editEtapaAcao" value="<?= $acao['acao'] ?>" readonly>
+                                <input type="hidden" name="acao" value="<?= $acao['acao'] ?>">
                             </div>
                         </div>
                     </div>
+
+                    <?php if ($tipo === 'meta' && isset($acao['nome_meta'])): ?>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="editEtapaMeta">Meta</label>
+                                    <input type="text" class="form-control" id="editEtapaMeta" value="<?= $acao['nome_meta'] ?>" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
 
                     <div class="row">
                         <div class="col-md-6">

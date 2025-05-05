@@ -12,7 +12,7 @@
                 <input type="hidden" name="tipo" value="inclusao">
                 <input type="hidden" name="id_plano" value="<?= $acao['id_plano'] ?>">
                 <input type="hidden" name="id_acao" value="<?= $tipo === 'acao' ? $idVinculo : $acao['id'] ?>">
-                <input type="hidden" name="id_meta" value="<?= $tipo === 'meta' ? $idVinculo : null ?>">
+                <input type="hidden" name="id_meta" value="<?= $tipo === 'meta' ? $idVinculo : '' ?>">
 
                 <div class="modal-body">
                     <div class="row">
@@ -25,10 +25,22 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="solicitarInclusaoAcao">Ação*</label>
-                                <input type="text" class="form-control" id="solicitarInclusaoAcao" name="acao" required maxlength="255">
+                                <input type="text" class="form-control" id="solicitarInclusaoAcao" value="<?= $acao['acao'] ?>" readonly>
+                                <input type="hidden" name="acao" value="<?= $acao['acao'] ?>">
                             </div>
                         </div>
                     </div>
+
+                    <?php if ($tipo === 'meta' && isset($acao['nome_meta'])): ?>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="solicitarInclusaoMeta">Meta</label>
+                                    <input type="text" class="form-control" id="solicitarInclusaoMeta" value="<?= $acao['nome_meta'] ?>" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
 
                     <div class="row">
                         <div class="col-md-6">
@@ -54,14 +66,14 @@
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label for="solicitarInclusaoDataInicio">Data Início*</label>
-                                <input type="date" class="form-control" id="solicitarInclusaoDataInicio" name="data_inicio" required>
+                                <label for="solicitarInclusaoDataInicio">Data Início</label>
+                                <input type="date" class="form-control  optional-date" id="solicitarInclusaoDataInicio" name="data_inicio">
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label for="solicitarInclusaoDataFim">Data Fim*</label>
-                                <input type="date" class="form-control" id="solicitarInclusaoDataFim" name="data_fim" required>
+                                <label for="solicitarInclusaoDataFim">Data Fim</label>
+                                <input type="date" class="form-control  optional-date" id="solicitarInclusaoDataFim" name="data_fim">
                             </div>
                         </div>
                     </div>
