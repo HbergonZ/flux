@@ -50,7 +50,7 @@ $routes->post('etapas/solicitar-inclusao', 'Etapas::solicitarInclusao');
 
 $routes->get('minhas-solicitacoes', 'MinhasSolicitacoes::index');
 
-$routes->group('', ['filter' => 'group:admin'], function ($routes) {
+$routes->group('', function ($routes) {
 
     $routes->post('planos/cadastrar', 'Planos::cadastrar');
     $routes->get('planos/editar/(:num)', 'Planos::editar/$1');
