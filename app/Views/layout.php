@@ -62,9 +62,9 @@
 
                 <!-- Atribuir grupos -->
                 <li class="nav-item">
-                    <a class="nav-link" href="<?= base_url('/atribuir-grupos'); ?>">
+                    <a class="nav-link" href="<?= base_url('/gerenciar-usuarios'); ?>">
                         <i class="fas fa-users-cog"></i>
-                        <span>Atribuir Grupos</span>
+                        <span>Gerenciar Usuários</span>
                     </a>
                 </li>
 

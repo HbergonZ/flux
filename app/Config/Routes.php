@@ -61,6 +61,11 @@ $routes->post('acoes/solicitar-exclusao', 'Acoes::solicitarExclusao');
 $routes->post('acoes/solicitar-inclusao', 'Acoes::solicitarInclusao');
 $routes->get('acoes/dados-acao/(:num)', 'Acoes::dadosAcao/$1');
 
+$routes->post('planos/solicitar-edicao', 'Planos::solicitarEdicao');
+$routes->post('planos/solicitar-exclusao', 'Planos::solicitarExclusao');
+$routes->post('planos/solicitar-inclusao', 'Planos::solicitarInclusao');
+$routes->get('planos/dados-plano/(:num)', 'Planos::dadosPlano/$1');
+
 $routes->group('', ['filter' => 'group:admin'], function ($routes) {
 
     $routes->post('planos/cadastrar', 'Planos::cadastrar');
@@ -98,4 +103,11 @@ $routes->group('', ['filter' => 'group:admin'], function ($routes) {
 
     $routes->get('atribuir-grupos', 'AtribuirGrupos::index');
     $routes->post('atribuir-grupos/atribuir', 'AtribuirGrupos::atribuir'); // Exemplo extra
+
+    $routes->get('gerenciar-usuarios', 'Usuarios::index');
+    $routes->post('usuarios/filtrar', 'Usuarios::filtrar');
+    $routes->get('usuarios/editar/(:num)', 'Usuarios::editar/$1');
+    $routes->post('usuarios/atualizar', 'Usuarios::atualizar');
+    $routes->post('usuarios/alterar-grupo', 'Usuarios::alterarGrupo');
+    $routes->post('usuarios/excluir', 'Usuarios::excluir');
 });

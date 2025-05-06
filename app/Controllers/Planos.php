@@ -3,14 +3,17 @@
 namespace App\Controllers;
 
 use App\Models\PlanosModel;
+use App\Models\SolicitacoesModel;
 
 class Planos extends BaseController
 {
     protected $planoModel;
+    protected $solicitacoesModel;
 
     public function __construct()
     {
         $this->planoModel = new PlanosModel();
+        $this->solicitacoesModel = new SolicitacoesModel();
     }
 
     public function index(): string
@@ -160,5 +163,185 @@ class Planos extends BaseController
 
         $planos = $builder->get()->getResultArray();
         return $this->response->setJSON(['success' => true, 'data' => $planos]);
+    }
+    public function dadosPlano($id = null)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $response = ['success' => false, 'message' => '', 'data' => null];
+        $plano = $this->planoModel->find($id);
+
+        if ($plano) {
+            $response['success'] = true;
+            $response['data'] = $plano;
+        } else {
+            $response['message'] = 'Plano não encontrado';
+        }
+
+        return $this->response->setJSON($response);
+    }
+
+    public function solicitarEdicao()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $response = ['success' => false, 'message' => ''];
+        $postData = $this->request->getPost();
+
+        $rules = [
+            'id_plano' => 'required',
+            'justificativa' => 'required'
+        ];
+
+        if ($this->validate($rules)) {
+            try {
+                $planoAtual = $this->planoModel->find($postData['id_plano']);
+                if (!$planoAtual) {
+                    $response['message'] = 'Plano não encontrado';
+                    return $this->response->setJSON($response);
+                }
+
+                // Verificar alterações
+                $alteracoes = [];
+                $camposEditaveis = ['nome', 'sigla', 'descricao'];
+
+                foreach ($camposEditaveis as $campo) {
+                    if (isset($postData[$campo]) && $postData[$campo] != $planoAtual[$campo]) {
+                        $alteracoes[$campo] = [
+                            'de' => $planoAtual[$campo],
+                            'para' => $postData[$campo]
+                        ];
+                    }
+                }
+
+                if (empty($alteracoes)) {
+                    $response['message'] = 'Nenhuma alteração detectada';
+                    return $this->response->setJSON($response);
+                }
+
+                // Preparar dados para a solicitação
+                $data = [
+                    'nivel' => 'plano',
+                    'id_plano' => $postData['id_plano'],
+                    'tipo' => 'Edição',
+                    'dados_atuais' => json_encode($planoAtual),
+                    'dados_alterados' => json_encode($alteracoes),
+                    'justificativa_solicitante' => $postData['justificativa'],
+                    'solicitante' => auth()->user()->username,
+                    'status' => 'pendente',
+                    'data_solicitacao' => date('Y-m-d H:i:s')
+                ];
+
+                $this->solicitacoesModel->insert($data);
+                $response['success'] = true;
+                $response['message'] = 'Solicitação de edição enviada com sucesso!';
+            } catch (\Exception $e) {
+                log_message('error', 'Erro em solicitarEdicao: ' . $e->getMessage());
+                $response['message'] = 'Erro ao processar solicitação: ' . $e->getMessage();
+            }
+        } else {
+            $response['message'] = implode('<br>', $this->validator->getErrors());
+        }
+
+        return $this->response->setJSON($response);
+    }
+
+    public function solicitarExclusao()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $response = ['success' => false, 'message' => ''];
+        $postData = $this->request->getPost();
+
+        $rules = [
+            'id_plano' => 'required',
+            'justificativa' => 'required'
+        ];
+
+        if ($this->validate($rules)) {
+            try {
+                $plano = $this->planoModel->find($postData['id_plano']);
+                if (!$plano) {
+                    $response['message'] = 'Plano não encontrado';
+                    return $this->response->setJSON($response);
+                }
+
+                $data = [
+                    'nivel' => 'plano',
+                    'id_plano' => $postData['id_plano'],
+                    'tipo' => 'Exclusão',
+                    'dados_atuais' => json_encode($plano),
+                    'justificativa_solicitante' => $postData['justificativa'],
+                    'solicitante' => auth()->user()->username,
+                    'status' => 'pendente',
+                    'data_solicitacao' => date('Y-m-d H:i:s')
+                ];
+
+                $this->solicitacoesModel->insert($data);
+                $response['success'] = true;
+                $response['message'] = 'Solicitação de exclusão enviada com sucesso!';
+            } catch (\Exception $e) {
+                log_message('error', 'Erro em solicitarExclusao: ' . $e->getMessage());
+                $response['message'] = 'Erro ao processar solicitação: ' . $e->getMessage();
+            }
+        } else {
+            $response['message'] = implode('<br>', $this->validator->getErrors());
+        }
+
+        return $this->response->setJSON($response);
+    }
+
+    public function solicitarInclusao()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $response = ['success' => false, 'message' => ''];
+        $postData = $this->request->getPost();
+
+        $rules = [
+            'nome' => 'required|min_length[3]|max_length[255]',
+            'sigla' => 'required|max_length[50]',
+            'descricao' => 'permit_empty',
+            'justificativa' => 'required'
+        ];
+
+        if ($this->validate($rules)) {
+            try {
+                $dadosAlterados = [
+                    'nome' => $postData['nome'],
+                    'sigla' => $postData['sigla'],
+                    'descricao' => $postData['descricao'] ?? null
+                ];
+
+                $data = [
+                    'nivel' => 'plano',
+                    'tipo' => 'Inclusão',
+                    'dados_alterados' => json_encode($dadosAlterados),
+                    'justificativa_solicitante' => $postData['justificativa'],
+                    'solicitante' => auth()->user()->username,
+                    'status' => 'pendente',
+                    'data_solicitacao' => date('Y-m-d H:i:s')
+                ];
+
+                $this->solicitacoesModel->insert($data);
+                $response['success'] = true;
+                $response['message'] = 'Solicitação de inclusão enviada com sucesso!';
+            } catch (\Exception $e) {
+                log_message('error', 'Erro em solicitarInclusao: ' . $e->getMessage());
+                $response['message'] = 'Erro ao processar solicitação: ' . $e->getMessage();
+            }
+        } else {
+            $response['message'] = implode('<br>', $this->validator->getErrors());
+        }
+
+        return $this->response->setJSON($response);
     }
 }
