@@ -50,6 +50,7 @@ $routes->post('etapas/solicitar-inclusao', 'Etapas::solicitarInclusao');
 $routes->get('etapas/dados-etapa/(:num)', 'Etapas::dadosEtapa/$1');
 
 $routes->get('minhas-solicitacoes', 'MinhasSolicitacoes::index');
+$routes->get('minhas-solicitacoes/detalhes/(:num)', 'MinhasSolicitacoes::detalhes/$1');
 
 $routes->post('metas/solicitar-edicao', 'Metas::solicitarEdicao');
 $routes->post('metas/solicitar-exclusao', 'Metas::solicitarExclusao');
