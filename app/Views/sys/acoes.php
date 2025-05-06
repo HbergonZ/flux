@@ -2,6 +2,9 @@
 <?php echo view('components/acoes/modal-editar-acao.php'); ?>
 <?php echo view('components/acoes/modal-confirmar-exclusao.php'); ?>
 <?php echo view('components/acoes/modal-adicionar-acao.php'); ?>
+<?php echo view('components/acoes/modal-solicitar-edicao.php'); ?>
+<?php echo view('components/acoes/modal-solicitar-exclusao.php'); ?>
+<?php echo view('components/acoes/modal-solicitar-inclusao.php'); ?>
 
 <div class="container-fluid">
     <!-- Page Heading -->
@@ -81,12 +84,21 @@
     <div class="card shadow mb-4 mx-md-5 mx-3">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Lista de Ações</h6>
-            <a href="#" class="btn btn-primary btn-icon-split btn-sm" data-toggle="modal" data-target="#addAcaoModal">
-                <span class="icon text-white-50">
-                    <i class="fas fa-plus"></i>
-                </span>
-                <span class="text">Incluir Ação</span>
-            </a>
+            <?php if (auth()->user()->inGroup('admin')): ?>
+                <a href="#" class="btn btn-primary btn-icon-split btn-sm" data-toggle="modal" data-target="#addAcaoModal">
+                    <span class="icon text-white-50">
+                        <i class="fas fa-plus"></i>
+                    </span>
+                    <span class="text">Incluir Ação</span>
+                </a>
+            <?php else: ?>
+                <a href="#" class="btn btn-primary btn-icon-split btn-sm" data-toggle="modal" data-target="#solicitarInclusaoModal">
+                    <span class="icon text-white-50">
+                        <i class="fas fa-plus"></i>
+                    </span>
+                    <span class="text">Solicitar Inclusão</span>
+                </a>
+            <?php endif; ?>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -121,15 +133,27 @@
                                                 <i class="fas fa-tasks"></i>
                                             </a>
 
-                                            <!-- Botão Editar -->
-                                            <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Editar">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
+                                            <?php if (auth()->user()->inGroup('admin')): ?>
+                                                <!-- Botão Editar -->
+                                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Editar">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
 
-                                            <!-- Botão Excluir -->
-                                            <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Excluir">
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
+                                                <!-- Botão Excluir -->
+                                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Excluir">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            <?php else: ?>
+                                                <!-- Botão Solicitar Edição -->
+                                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Edição">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+
+                                                <!-- Botão Solicitar Exclusão -->
+                                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Exclusão">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>

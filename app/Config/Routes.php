@@ -51,6 +51,16 @@ $routes->get('etapas/dados-etapa/(:num)', 'Etapas::dadosEtapa/$1');
 
 $routes->get('minhas-solicitacoes', 'MinhasSolicitacoes::index');
 
+$routes->post('metas/solicitar-edicao', 'Metas::solicitarEdicao');
+$routes->post('metas/solicitar-exclusao', 'Metas::solicitarExclusao');
+$routes->post('metas/solicitar-inclusao', 'Metas::solicitarInclusao');
+$routes->get('metas/dados-meta/(:num)', 'Metas::dadosMeta/$1');
+
+$routes->post('acoes/solicitar-edicao', 'Acoes::solicitarEdicao');
+$routes->post('acoes/solicitar-exclusao', 'Acoes::solicitarExclusao');
+$routes->post('acoes/solicitar-inclusao', 'Acoes::solicitarInclusao');
+$routes->get('acoes/dados-acao/(:num)', 'Acoes::dadosAcao/$1');
+
 $routes->group('', ['filter' => 'group:admin'], function ($routes) {
 
     $routes->post('planos/cadastrar', 'Planos::cadastrar');

@@ -4,16 +4,19 @@ namespace App\Controllers;
 
 use App\Models\MetasModel;
 use App\Models\AcoesModel;
+use App\Models\SolicitacoesModel;
 
 class Metas extends BaseController
 {
     protected $metasModel;
     protected $acoesModel;
+    protected $solicitacoesModel;
 
     public function __construct()
     {
         $this->metasModel = new MetasModel();
         $this->acoesModel = new AcoesModel();
+        $this->solicitacoesModel = new SolicitacoesModel();
     }
 
     public function index($idAcao = null)
@@ -160,5 +163,193 @@ class Metas extends BaseController
 
         $metas = $builder->findAll();
         return $this->response->setJSON(['success' => true, 'data' => $metas]);
+    }
+    public function dadosMeta($idMeta = null)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $response = ['success' => false, 'message' => '', 'data' => null];
+        $meta = $this->metasModel->find($idMeta);
+
+        if ($meta) {
+            $response['success'] = true;
+            $response['data'] = $meta;
+        } else {
+            $response['message'] = 'Meta não encontrada';
+        }
+
+        return $this->response->setJSON($response);
+    }
+
+    public function solicitarEdicao()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $response = ['success' => false, 'message' => ''];
+        $postData = $this->request->getPost();
+
+        $rules = [
+            'id_meta' => 'required',
+            'justificativa' => 'required'
+        ];
+
+        if ($this->validate($rules)) {
+            try {
+                $metaAtual = $this->metasModel->find($postData['id_meta']);
+                if (!$metaAtual) {
+                    $response['message'] = 'Meta não encontrada';
+                    return $this->response->setJSON($response);
+                }
+
+                // Verificar alterações
+                $alteracoes = [];
+                $camposEditaveis = ['nome'];
+
+                foreach ($camposEditaveis as $campo) {
+                    if (isset($postData[$campo]) && $postData[$campo] != $metaAtual[$campo]) {
+                        $alteracoes[$campo] = [
+                            'de' => $metaAtual[$campo],
+                            'para' => $postData[$campo]
+                        ];
+                    }
+                }
+
+                if (empty($alteracoes)) {
+                    $response['message'] = 'Nenhuma alteração detectada';
+                    return $this->response->setJSON($response);
+                }
+
+                // Preparar dados para a solicitação
+                $data = [
+                    'nivel' => 'meta',
+                    'id_meta' => $postData['id_meta'],
+                    'id_acao' => $metaAtual['id_acao'],
+                    'id_plano' => $postData['id_plano'],
+                    'tipo' => 'Edição',
+                    'dados_atuais' => json_encode($metaAtual),
+                    'dados_alterados' => json_encode($alteracoes),
+                    'justificativa_solicitante' => $postData['justificativa'],
+                    'solicitante' => auth()->user()->username,
+                    'status' => 'pendente',
+                    'data_solicitacao' => date('Y-m-d H:i:s')
+                ];
+
+                $this->solicitacoesModel->insert($data);
+                $response['success'] = true;
+                $response['message'] = 'Solicitação de edição enviada com sucesso!';
+            } catch (\Exception $e) {
+                log_message('error', 'Erro em solicitarEdicao: ' . $e->getMessage());
+                $response['message'] = 'Erro ao processar solicitação: ' . $e->getMessage();
+            }
+        } else {
+            $response['message'] = implode('<br>', $this->validator->getErrors());
+        }
+
+        return $this->response->setJSON($response);
+    }
+
+    public function solicitarExclusao()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $response = ['success' => false, 'message' => ''];
+        $postData = $this->request->getPost();
+
+        $rules = [
+            'id_meta' => 'required',
+            'justificativa' => 'required'
+        ];
+
+        if ($this->validate($rules)) {
+            try {
+                $meta = $this->metasModel->find($postData['id_meta']);
+                if (!$meta) {
+                    $response['message'] = 'Meta não encontrada';
+                    return $this->response->setJSON($response);
+                }
+
+                $dadosAtuais = [
+                    'nome' => $meta['nome'],
+                    'id_acao' => $meta['id_acao']
+                ];
+
+                $data = [
+                    'nivel' => 'meta',
+                    'id_meta' => $postData['id_meta'],
+                    'id_acao' => $meta['id_acao'],
+                    'id_plano' => $postData['id_plano'],
+                    'tipo' => 'Exclusão',
+                    'dados_atuais' => json_encode($dadosAtuais),
+                    'justificativa_solicitante' => $postData['justificativa'],
+                    'solicitante' => auth()->user()->username,
+                    'status' => 'pendente',
+                    'data_solicitacao' => date('Y-m-d H:i:s')
+                ];
+
+                $this->solicitacoesModel->insert($data);
+                $response['success'] = true;
+                $response['message'] = 'Solicitação de exclusão enviada com sucesso!';
+            } catch (\Exception $e) {
+                log_message('error', 'Erro em solicitarExclusao: ' . $e->getMessage());
+                $response['message'] = 'Erro ao processar solicitação: ' . $e->getMessage();
+            }
+        } else {
+            $response['message'] = implode('<br>', $this->validator->getErrors());
+        }
+
+        return $this->response->setJSON($response);
+    }
+
+    public function solicitarInclusao()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $response = ['success' => false, 'message' => ''];
+        $postData = $this->request->getPost();
+
+        $rules = [
+            'nome' => 'required|min_length[3]|max_length[255]',
+            'justificativa' => 'required'
+        ];
+
+        if ($this->validate($rules)) {
+            try {
+                $dadosAlterados = [
+                    'nome' => $postData['nome'],
+                    'id_acao' => $postData['id_acao']
+                ];
+
+                $data = [
+                    'nivel' => 'meta',
+                    'id_acao' => $postData['id_acao'],
+                    'id_plano' => $postData['id_plano'],
+                    'tipo' => 'Inclusão',
+                    'dados_alterados' => json_encode($dadosAlterados),
+                    'justificativa_solicitante' => $postData['justificativa'],
+                    'solicitante' => auth()->user()->username,
+                    'status' => 'pendente',
+                    'data_solicitacao' => date('Y-m-d H:i:s')
+                ];
+
+                $this->solicitacoesModel->insert($data);
+                $response['success'] = true;
+                $response['message'] = 'Solicitação de inclusão enviada com sucesso!';
+            } catch (\Exception $e) {
+                log_message('error', 'Erro em solicitarInclusao: ' . $e->getMessage());
+                $response['message'] = 'Erro ao processar solicitação: ' . $e->getMessage();
+            }
+        } else {
+            $response['message'] = implode('<br>', $this->validator->getErrors());
+        }
+
+        return $this->response->setJSON($response);
     }
 }
