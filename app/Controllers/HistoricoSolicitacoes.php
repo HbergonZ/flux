@@ -56,43 +56,42 @@ class HistoricoSolicitacoes extends BaseController
             return redirect()->back();
         }
 
-        $solicitacao = $this->solicitacoesModel->find($id);
-        if (!$solicitacao) {
+        try {
+            $solicitacao = $this->solicitacoesModel->find($id);
+            if (!$solicitacao) {
+                throw new \Exception('Solicitação não encontrada');
+            }
+
+            // Busca o nome do avaliador
+            $avaliadorNome = 'Sistema';
+            if ($solicitacao['id_avaliador']) {
+                $user = $this->userModel->find($solicitacao['id_avaliador']);
+                $avaliadorNome = $user ? $user->username : 'Usuário removido';
+            }
+
+            // Processa os dados JSON
+            $dadosAtuais = json_decode($solicitacao['dados_atuais'], true) ?: [];
+            $dadosAlterados = json_decode($solicitacao['dados_alterados'], true) ?: [];
+
+            // Log para depuração (remova em produção)
+            log_message('debug', 'Dados da solicitação: ' . print_r($solicitacao, true));
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => array_merge($solicitacao, [
+                    'avaliador_nome' => $avaliadorNome,
+                    'tipo' => $solicitacao['tipo'],
+                    'nivel' => $solicitacao['nivel']
+                ]),
+                'dados_atuais' => $dadosAtuais,
+                'dados_alterados' => $dadosAlterados
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Erro ao carregar solicitação: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Solicitação não encontrada'
+                'message' => $e->getMessage()
             ]);
         }
-
-        // Busca o nome do avaliador
-        $avaliadorNome = 'Sistema';
-        if ($solicitacao['id_avaliador']) {
-            $user = $this->userModel->find($solicitacao['id_avaliador']);
-            $avaliadorNome = $user ? $user->username : 'Usuário removido';
-        }
-
-        // Processa os dados conforme o tipo
-        $dadosAtuais = json_decode($solicitacao['dados_atuais'], true) ?: [];
-        $dadosAlterados = [];
-
-        if ($solicitacao['tipo'] == 'exclusão') {
-            // Para exclusão, formatamos os dados atuais como alterações
-            foreach ($dadosAtuais as $key => $value) {
-                $dadosAlterados[$key] = ['de' => $value, 'para' => null];
-            }
-        } else {
-            $dadosAlterados = json_decode($solicitacao['dados_alterados'], true) ?: [];
-        }
-
-        return $this->response->setJSON([
-            'success' => true,
-            'data' => array_merge($solicitacao, [
-                'avaliador_nome' => $avaliadorNome,
-                'tipo' => $solicitacao['tipo'],
-                'nivel' => $solicitacao['nivel']
-            ]),
-            'dados_atuais' => $dadosAtuais,
-            'dados_alterados' => $dadosAlterados
-        ]);
     }
 }

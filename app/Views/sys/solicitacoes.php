@@ -262,43 +262,72 @@
                             return value;
                         }
 
-                        const isInclusao = response.tipo === 'inclusão';
+                        const tipoSolicitacao = response.tipo.toLowerCase();
+                        const isInclusao = tipoSolicitacao === 'inclusão';
+                        const isExclusao = tipoSolicitacao === 'exclusão';
                         const nivel = response.nivel || 'registro';
+                        const nivelFormatado = nivel.charAt(0).toUpperCase() + nivel.slice(1);
 
                         // Preenche tabela de dados atuais
                         let htmlAtuais = '';
+
                         if (isInclusao) {
                             htmlAtuais = `
-                            <tr>
-                                <th width="30%">Tipo</th>
-                                <td>Nova ${nivel.charAt(0).toUpperCase() + nivel.slice(1)}</td>
-                            </tr>
-                            <tr>
-                                <th width="30%">Status</th>
-                                <td><span class="badge badge-info">Novo registro</span></td>
-                            </tr>`;
+                        <tr>
+                            <th width="30%">Tipo</th>
+                            <td>Novo(a) ${nivelFormatado}</td>
+                        </tr>
+                        <tr>
+                            <th width="30%">Status</th>
+                            <td><span class="badge badge-info">Novo Registro</span></td>
+                        </tr>`;
+                        } else if (isExclusao) {
+                            for (let key in response.dados_atuais) {
+                                htmlAtuais += `
+                        <tr>
+                            <th width="30%">${formatFieldName(key)}</th>
+                            <td>${formatFieldValue(response.dados_atuais[key])}</td>
+                        </tr>`;
+                            }
                         } else {
                             for (let key in response.dados_atuais) {
                                 htmlAtuais += `
-                            <tr>
-                                <th width="30%">${formatFieldName(key)}</th>
-                                <td>${formatFieldValue(response.dados_atuais[key])}</td>
-                            </tr>`;
+                        <tr>
+                            <th width="30%">${formatFieldName(key)}</th>
+                            <td>${formatFieldValue(response.dados_atuais[key])}</td>
+                        </tr>`;
                             }
                         }
                         $('#tabelaDadosAtuais').html(htmlAtuais);
 
                         // Preenche tabela de alterações
                         let htmlAlterados = '';
-                        for (let key in response.dados_alterados) {
-                            if (isInclusao) {
+
+                        if (isInclusao) {
+                            // Para inclusão, response.dados_alterados contém os campos diretamente
+                            for (let key in response.dados_alterados) {
                                 htmlAlterados += `
-                            <tr>
-                                <th width="30%">${formatFieldName(key)}</th>
-                                <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key].para)}</strong></td>
-                            </tr>`;
-                            } else {
-                                htmlAlterados += `
+                        <tr>
+                            <th width="30%">${formatFieldName(key)}</th>
+                            <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key])}</strong></td>
+                        </tr>`;
+                            }
+                        } else if (isExclusao) {
+                            htmlAlterados = `
+                        <tr>
+                            <th width="30%">Tipo</th>
+                            <td class="text-danger"><strong>Exclusão de ${nivelFormatado}</strong></td>
+                        </tr>
+                        <tr>
+                            <th width="30%">Status</th>
+                            <td><span class="badge badge-danger">Registro será removido</span></td>
+                        </tr>`;
+                        } else {
+                            // Para edição, response.dados_alterados contém {de: valor_antigo, para: valor_novo}
+                            for (let key in response.dados_alterados) {
+                                // Verifica se é um objeto com propriedades 'de' e 'para'
+                                if (response.dados_alterados[key] && typeof response.dados_alterados[key] === 'object') {
+                                    htmlAlterados += `
                             <tr>
                                 <th width="30%">${formatFieldName(key)}</th>
                                 <td>
@@ -306,11 +335,27 @@
                                     <div class="text-success"><small>Novo:</small><br><strong>${formatFieldValue(response.dados_alterados[key].para)}</strong></div>
                                 </td>
                             </tr>`;
+                                } else {
+                                    // Caso não esteja no formato esperado, mostra o valor diretamente
+                                    htmlAlterados += `
+                            <tr>
+                                <th width="30%">${formatFieldName(key)}</th>
+                                <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key])}</strong></td>
+                            </tr>`;
+                                }
+                            }
+
+                            if (htmlAlterados === '') {
+                                htmlAlterados = `
+                            <tr>
+                                <td colspan="2" class="text-center text-muted">
+                                    Nenhuma alteração detectada nos campos
+                                </td>
+                            </tr>`;
                             }
                         }
                         $('#tabelaDadosAlterados').html(htmlAlterados);
 
-                        // Preenche seção do solicitante
                         $('#nomeSolicitante').text(response.data.solicitante || 'Não informado');
 
                         const dataSolicitacao = response.data.data_solicitacao ?

@@ -51,13 +51,17 @@ class Solicitacoes extends BaseController
         }
 
         $dadosAtuais = json_decode($solicitacao['dados_atuais'], true);
+        $dadosAlterados = json_decode($solicitacao['dados_alterados'], true);
 
-        // Para exclusão, mostramos os dados atuais que serão removidos
+        // Para inclusão, os dados_alterados contêm diretamente os valores
+        // Para edição, os dados_alterados contêm {de: valor_antigo, para: valor_novo}
+        // Para exclusão, só precisamos dos dados_atuais
+
         return $this->response->setJSON([
             'success' => true,
             'data' => $solicitacao,
             'dados_atuais' => $dadosAtuais,
-            'dados_alterados' => [], // Não precisa de dados alterados para exclusão
+            'dados_alterados' => $dadosAlterados,
             'tipo' => $solicitacao['tipo'],
             'nivel' => $solicitacao['nivel']
         ]);

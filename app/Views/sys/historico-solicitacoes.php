@@ -85,13 +85,15 @@
                                 <div class="col-md-6">
                                     <h6 class="font-weight-bold">Dados Atuais no Momento da Solicitação</h6>
                                     <div class="table-responsive">
-                                        <table class="table table-sm table-bordered" id="tabelaDadosAtuais"></table>
+                                        <table class="table table-sm table-bordered">
+                                            <tbody id="tabelaDadosAtuais"></tbody>
+                                        </table>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <h6 class="font-weight-bold">Alterações Solicitadas</h6>
-                                    <div class="table-responsive">
-                                        <table class="table table-sm table-bordered" id="tabelaDadosAlterados"></table>
+                                    <div id="alteracoesSolicitadas">
+                                        <!-- Conteúdo será inserido dinamicamente -->
                                     </div>
                                 </div>
                             </div>
@@ -172,35 +174,15 @@
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap4.min.css" />
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap4.min.js"></script>
-<!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
     $(document).ready(function() {
-        // Inicializa o DataTable
+        // Inicialização do DataTable (mantido igual)
         $('#dataTable').DataTable({
             "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json",
-                "emptyTable": "Nenhum dado disponível na tabela",
-                "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
-                "infoEmpty": "Mostrando 0 a 0 de 0 registros",
-                "infoFiltered": "(filtrado de _MAX_ registros no total)",
-                "lengthMenu": "Mostrar _MENU_ registros por página",
-                "loadingRecords": "Carregando...",
-                "processing": "Processando...",
-                "search": "Pesquisar:",
-                "zeroRecords": "Nenhum registro correspondente encontrado",
-                "paginate": {
-                    "first": "Primeira",
-                    "last": "Última",
-                    "next": "Próxima",
-                    "previous": "Anterior"
-                },
-                "aria": {
-                    "sortAscending": ": ativar para ordenar coluna ascendente",
-                    "sortDescending": ": ativar para ordenar coluna descendente"
-                }
+                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json"
             },
             "searching": true,
             "responsive": true,
@@ -249,7 +231,42 @@
             ]
         });
 
-        // Abre modal de visualização
+        // Função para formatar nomes de campos (mantida igual)
+        function formatFieldName(name) {
+            const names = {
+                'etapa': 'Etapa',
+                'acao': 'Ação',
+                'nome': 'Nome',
+                'responsavel': 'Responsável',
+                'equipe': 'Equipe',
+                'tempo_estimado_dias': 'Tempo Estimado (dias)',
+                'data_inicio': 'Data Início',
+                'data_fim': 'Data Fim',
+                'status': 'Status',
+                'descricao': 'Descrição',
+                'prioridade': 'Prioridade',
+                'orcamento': 'Orçamento'
+            };
+            return names[name] || name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+        // Função para formatar valores (mantida igual)
+        function formatFieldValue(value) {
+            if (value === null || value === '' || value === undefined)
+                return '<span class="text-muted">Não informado</span>';
+            if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                const [year, month, day] = value.split('-');
+                return `${day}/${month}/${year}`;
+            }
+            if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+                const [date, time] = value.split(' ');
+                const [year, month, day] = date.split('-');
+                return `${day}/${month}/${year} ${time}`;
+            }
+            return value;
+        }
+
+        // Abre modal de visualização - AJUSTADO PARA PADRONIZAR COM O MODAL DE PENDENTES
         $(document).on('click', '.visualizar-btn', function() {
             var id = $(this).data('id');
             var avaliadorNome = $(this).closest('tr').find('td:nth-child(7)').text().trim();
@@ -265,150 +282,147 @@
                 dataType: 'json',
                 success: function(response) {
                     if (response.success) {
-                        // Formatadores para melhor exibição
-                        function formatFieldName(name) {
-                            const names = {
-                                'etapa': 'Etapa',
-                                'acao': 'Ação',
-                                'nome': 'Nome',
-                                'responsavel': 'Responsável',
-                                'equipe': 'Equipe',
-                                'tempo_estimado_dias': 'Tempo Estimado (dias)',
-                                'data_inicio': 'Data Início',
-                                'data_fim': 'Data Fim',
-                                'status': 'Status',
-                                'descricao': 'Descrição',
-                                'prioridade': 'Prioridade',
-                                'orcamento': 'Orçamento'
-                            };
-                            return names[name] || name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                        }
+                        try {
+                            const responseData = response.data || {};
+                            const tipoSolicitacao = (response.tipo || responseData.tipo || '').toString().toLowerCase();
+                            const isInclusao = tipoSolicitacao.includes('inclusão') || tipoSolicitacao.includes('inclusao');
+                            const isExclusao = tipoSolicitacao.includes('exclusão') || tipoSolicitacao.includes('exclusao');
+                            const nivel = response.nivel || responseData.nivel || 'registro';
+                            const nivelFormatado = nivel.charAt(0).toUpperCase() + nivel.slice(1);
+                            const dadosAtuais = response.dados_atuais || {};
+                            const dadosAlterados = response.dados_alterados || {};
 
-                        function formatFieldValue(value) {
-                            if (value === null || value === '' || value === undefined)
-                                return '<span class="text-muted">Não informado</span>';
-                            if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                                const [year, month, day] = value.split('-');
-                                return `${day}/${month}/${year}`;
+                            // Preenche tabela de dados atuais - PADRONIZADO COM PENDENTES
+                            let htmlAtuais = '';
+
+                            if (isInclusao) {
+                                htmlAtuais = `
+                                    <tr>
+                                        <th width="30%">Tipo</th>
+                                        <td>Novo(a) ${nivelFormatado}</td>
+                                    </tr>
+                                    <tr>
+                                        <th width="30%">Status</th>
+                                        <td><span class="badge badge-info">Novo Registro</span></td>
+                                    </tr>`;
+                            } else if (isExclusao) {
+                                for (let key in dadosAtuais) {
+                                    htmlAtuais += `
+                                        <tr>
+                                            <th width="30%">${formatFieldName(key)}</th>
+                                            <td>${formatFieldValue(dadosAtuais[key])}</td>
+                                        </tr>`;
+                                }
+                            } else {
+                                for (let key in dadosAtuais) {
+                                    htmlAtuais += `
+                                        <tr>
+                                            <th width="30%">${formatFieldName(key)}</th>
+                                            <td>${formatFieldValue(dadosAtuais[key])}</td>
+                                        </tr>`;
+                                }
                             }
-                            if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
-                                const [date, time] = value.split(' ');
-                                const [year, month, day] = date.split('-');
-                                return `${day}/${month}/${year} ${time}`;
+                            $('#tabelaDadosAtuais').html(htmlAtuais);
+
+                            // Preenche tabela de alterações - PADRONIZADO COM PENDENTES
+                            let htmlAlterados = '';
+
+                            if (isInclusao) {
+                                for (let key in dadosAlterados) {
+                                    htmlAlterados += `
+                                        <tr>
+                                            <th width="30%">${formatFieldName(key)}</th>
+                                            <td class="text-success"><strong>${formatFieldValue(dadosAlterados[key])}</strong></td>
+                                        </tr>`;
+                                }
+                            } else if (isExclusao) {
+                                htmlAlterados = `
+                                    <tr>
+                                        <th width="30%">Tipo</th>
+                                        <td class="text-danger"><strong>Exclusão de ${nivelFormatado}</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <th width="30%">Status</th>
+                                        <td><span class="badge badge-danger">Registro removido</span></td>
+                                    </tr>`;
+                            } else {
+                                for (let key in dadosAlterados) {
+                                    if (dadosAlterados[key] && typeof dadosAlterados[key] === 'object') {
+                                        htmlAlterados += `
+                                            <tr>
+                                                <th width="30%">${formatFieldName(key)}</th>
+                                                <td>
+                                                    <div class="text-danger mb-1"><small>Original:</small><br><s>${formatFieldValue(dadosAlterados[key].de)}</s></div>
+                                                    <div class="text-success"><small>Alteração:</small><br><strong>${formatFieldValue(dadosAlterados[key].para)}</strong></div>
+                                                </td>
+                                            </tr>`;
+                                    } else {
+                                        htmlAlterados += `
+                                            <tr>
+                                                <th width="30%">${formatFieldName(key)}</th>
+                                                <td class="text-success"><strong>${formatFieldValue(dadosAlterados[key])}</strong></td>
+                                            </tr>`;
+                                    }
+                                }
+
+                                if (htmlAlterados === '') {
+                                    htmlAlterados = `
+                                        <tr>
+                                            <td colspan="2" class="text-center text-muted">
+                                                Nenhuma alteração detectada nos campos
+                                            </td>
+                                        </tr>`;
+                                }
                             }
-                            return value;
+
+                            // Usando a mesma estrutura de tabela do modal de pendentes
+                            $('#alteracoesSolicitadas').html(`
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered">
+                                        <tbody>${htmlAlterados}</tbody>
+                                    </table>
+                                </div>
+                            `);
+
+                            // Preenche informações do solicitante
+                            $('#nomeSolicitante').text(responseData.solicitante || 'Não informado');
+                            $('#dataSolicitacao').text(responseData.data_solicitacao ?
+                                new Date(responseData.data_solicitacao).toLocaleString('pt-BR') : 'Não informado');
+                            $('#justificativaSolicitacao').html(
+                                responseData.justificativa_solicitante && responseData.justificativa_solicitante.trim() !== '' ?
+                                responseData.justificativa_solicitante : '<em class="text-muted">Nenhuma justificativa fornecida.</em>'
+                            );
+
+                            // Preenche informações da avaliação
+                            const status = responseData.status || '';
+                            $('#statusAvaliacao').html(
+                                status === 'aprovada' ? '<span class="badge badge-success">Aprovada</span>' :
+                                status === 'rejeitada' ? '<span class="badge badge-danger">Rejeitada</span>' :
+                                '<span class="badge badge-warning">' + status + '</span>'
+                            );
+                            $('#avaliador').text(responseData.avaliador_nome || avaliadorNome || 'Sistema');
+                            $('#dataAvaliacao').text(responseData.data_avaliacao ?
+                                new Date(responseData.data_avaliacao).toLocaleString('pt-BR') : 'Não avaliada');
+                            $('#justificativaAvaliador').html(
+                                responseData.justificativa_avaliador && responseData.justificativa_avaliador.trim() !== '' ?
+                                responseData.justificativa_avaliador : '<em class="text-muted">Nenhuma justificativa fornecida.</em>'
+                            );
+
+                            // Mostra conteúdo
+                            $('#modalLoading').hide();
+                            $('#modalContent').fadeIn();
+
+                        } catch (e) {
+                            console.error('Erro:', e);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Erro',
+                                text: 'Erro ao processar os dados da solicitação',
+                                confirmButtonColor: '#3085d6'
+                            });
+                            $('#modalLoading').hide();
+                            $('#visualizarModal').modal('hide');
                         }
-
-                        const isInclusao = response.tipo === 'inclusão';
-                        const isExclusao = response.tipo === 'exclusão';
-                        const nivel = response.nivel || 'registro';
-
-                        // Preenche tabela de dados atuais
-                        let htmlAtuais = '';
-                        if (isInclusao) {
-                            htmlAtuais = `
-                            <tr>
-                                <th width="30%">Tipo</th>
-                                <td>Nova ${nivel.charAt(0).toUpperCase() + nivel.slice(1)}</td>
-                            </tr>
-                            <tr>
-                                <th width="30%">Status</th>
-                                <td><span class="badge badge-info">Novo registro</span></td>
-                            </tr>`;
-                        } else {
-                            for (let key in response.dados_atuais) {
-                                htmlAtuais += `
-                            <tr>
-                                <th width="30%">${formatFieldName(key)}</th>
-                                <td>${formatFieldValue(response.dados_atuais[key])}</td>
-                            </tr>`;
-                            }
-                        }
-                        $('#tabelaDadosAtuais').html(htmlAtuais);
-
-                        // Preenche tabela de alterações
-                        let htmlAlterados = '';
-
-                        if (isExclusao) {
-                            htmlAlterados = `
-    <tr>
-        <td colspan="2" class="text-center bg-danger-light p-3">
-            <div class="alert alert-danger mb-0">
-                <i class="fas fa-exclamation-triangle mr-2"></i>
-                <strong>EXCLUSÃO SOLICITADA</strong> - Este registro será removido permanentemente
-            </div>
-        </td>
-    </tr>`;
-
-                            // Opcional: Mostrar os dados que serão removidos
-                            for (let key in response.dados_atuais) {
-                                htmlAlterados += `
-        <tr>
-            <th width="30%">${formatFieldName(key)}</th>
-            <td>${formatFieldValue(response.dados_atuais[key])}</td>
-        </tr>`;
-                            }
-                        } else if (isInclusao) {
-                            for (let key in response.dados_alterados) {
-                                htmlAlterados += `
-                                <tr>
-                                    <th width="30%">${formatFieldName(key)}</th>
-                                    <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key].para)}</strong></td>
-                                </tr>`;
-                            }
-                        } else {
-                            for (let key in response.dados_alterados) {
-                                htmlAlterados += `
-                                <tr>
-                                    <th width="30%">${formatFieldName(key)}</th>
-                                    <td>
-                                        <div class="text-danger mb-1"><small>Atual:</small><br><s>${formatFieldValue(response.dados_alterados[key].de)}</s></div>
-                                        <div class="text-success"><small>Novo:</small><br><strong>${formatFieldValue(response.dados_alterados[key].para)}</strong></div>
-                                    </td>
-                                </tr>`;
-                            }
-                        }
-
-                        $('#tabelaDadosAlterados').html(htmlAlterados);
-
-                        // Preenche seção do solicitante
-                        $('#nomeSolicitante').text(response.data.solicitante || 'Não informado');
-
-                        const dataSolicitacao = response.data.data_solicitacao ?
-                            new Date(response.data.data_solicitacao).toLocaleString('pt-BR') :
-                            'Não informado';
-                        $('#dataSolicitacao').text(dataSolicitacao);
-
-                        if (response.data.justificativa_solicitante && response.data.justificativa_solicitante.trim() !== '') {
-                            $('#justificativaSolicitacao').html(response.data.justificativa_solicitante);
-                        } else {
-                            $('#justificativaSolicitacao').html('<em class="text-muted">Nenhuma justificativa fornecida.</em>');
-                        }
-
-                        // Preenche seção do avaliador
-                        const statusBadge = response.data.status === 'aprovada' ?
-                            '<span class="badge badge-success">Aprovada</span>' :
-                            response.data.status === 'rejeitada' ?
-                            '<span class="badge badge-danger">Rejeitada</span>' :
-                            '<span class="badge badge-warning">' + response.data.status + '</span>';
-                        $('#statusAvaliacao').html(statusBadge);
-
-                        const avaliador = response.data.avaliador_nome || avaliadorNome || 'Sistema';
-                        $('#avaliador').text(avaliador);
-
-                        $('#dataAvaliacao').text(response.data.data_avaliacao ?
-                            new Date(response.data.data_avaliacao).toLocaleString('pt-BR') : 'Não avaliada');
-
-                        if (response.data.justificativa_avaliador && response.data.justificativa_avaliador.trim() !== '') {
-                            $('#justificativaAvaliador').html(response.data.justificativa_avaliador);
-                        } else {
-                            $('#justificativaAvaliador').html('<em class="text-muted">Nenhuma justificativa fornecida.</em>');
-                        }
-
-                        // Mostra conteúdo
-                        $('#modalLoading').hide();
-                        $('#modalContent').show();
-
                     } else {
                         Swal.fire({
                             icon: 'error',
@@ -416,16 +430,27 @@
                             text: response.message || 'Erro ao carregar solicitação',
                             confirmButtonColor: '#3085d6'
                         });
+                        $('#modalLoading').hide();
                         $('#visualizarModal').modal('hide');
                     }
                 },
-                error: function(xhr) {
+                error: function(xhr, status, error) {
+                    console.error('Erro AJAX:', status, error);
+                    let errorMsg = 'Falha ao carregar os dados';
+
+                    if (status === 'timeout') {
+                        errorMsg = 'Tempo de resposta excedido';
+                    } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    }
+
                     Swal.fire({
                         icon: 'error',
                         title: 'Erro',
-                        text: 'Falha ao comunicar com o servidor',
+                        text: errorMsg,
                         confirmButtonColor: '#3085d6'
                     });
+                    $('#modalLoading').hide();
                     $('#visualizarModal').modal('hide');
                 }
             });
