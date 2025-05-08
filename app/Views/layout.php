@@ -11,12 +11,14 @@
     <title>Projeta</title>
 
     <!-- Custom fonts for this template-->
-    <link href="/projeta/app/ThirdParty/template/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href=<?php echo base_url("template/vendor/fontawesome-free/css/all.min.css"); ?> rel="stylesheet" type="text/css">
     <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
 
     <!-- Custom styles for this template-->
-    <link href="/projeta/app/ThirdParty/template/css/sb-admin-2.min.css" rel="stylesheet">
-    <link href="/projeta/app/ThirdParty/template/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+    <link href=<?php echo base_url("template/css/sb-admin-2.min.css"); ?> rel="stylesheet">
+    <link href=<?php echo base_url("template/vendor/datatables/dataTables.bootstrap4.min.css"); ?> rel="stylesheet">
+
+
 </head>
 
 <body id="page-top">
@@ -32,7 +34,7 @@
                 <div class="sidebar-brand-icon rotate-n-15">
                     <i class="fas fa-project-diagram"></i> <!-- Ícone mais relacionado a projetos -->
                 </div>
-                <div class="sidebar-brand-text mx-3">Projeta</div>
+                <div class="sidebar-brand-text mx-3">Flux</div>
             </a>
 
             <!-- Divider -->
@@ -167,7 +169,8 @@
                                     </small>
                                 </span>
                                 <img class="img-profile rounded-circle"
-                                    src="/projeta/app/ThirdParty/template/img/undraw_profile.svg">
+                                    src=<?php echo base_url("template/img/undraw_profile.svg"); ?>>
+
                             </a>
                             <!-- Dropdown - User Information -->
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
@@ -236,18 +239,19 @@
     </div>
 
     <!-- Bootstrap core JavaScript-->
-    <script src="/projeta/app/ThirdParty/template/vendor/jquery/jquery.min.js"></script>
-    <script src="/projeta/app/ThirdParty/template/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src=<?php echo base_url("template/vendor/jquery/jquery.min.js"); ?>></script>
+    <script src=<?php echo base_url("template/vendor/bootstrap/js/bootstrap.bundle.min.js"); ?>></script>
 
     <!-- Core plugin JavaScript-->
-    <script src="/projeta/app/ThirdParty/template/vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src=<?php echo base_url("template/vendor/jquery-easing/jquery.easing.min.js"); ?>></script>
 
     <!-- Custom scripts for all pages-->
-    <script src="/projeta/app/ThirdParty/template/js/sb-admin-2.min.js"></script>
+    <script src=<?php echo base_url("template/js/sb-admin-2.min.js"); ?>></script>
 
     <!-- Page level plugins -->
-    <script src="/projeta/app/ThirdParty/template/vendor/datatables/jquery.dataTables.min.js"></script>
-    <script src="/projeta/app/ThirdParty/template/vendor/datatables/dataTables.bootstrap4.min.js"></script>
+    <script src=<?php echo base_url("template/vendor/datatables/jquery.dataTables.min.js"); ?>></script>
+    <script src=<?php echo base_url("template/vendor/datatables/dataTables.bootstrap4.min.js"); ?>></script>
+
 
 </body>
 

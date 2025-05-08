@@ -7,7 +7,7 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="formEditUsuario" method="post" action="<?= site_url('usuarios/atualizar') ?>">
+            <form id="formEditUsuario">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                 <input type="hidden" name="id" id="editUserId">
 

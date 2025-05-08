@@ -8,7 +8,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Login - Projeta</title>
+    <title>Flux - Login</title>
 
     <!-- Custom fonts for this template-->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -17,7 +17,8 @@
         rel="stylesheet">
 
     <!-- Custom styles for this template-->
-    <link href="/projeta/app/ThirdParty/template/css/sb-admin-2.min.css" rel="stylesheet">
+    <link href=<?php echo base_url("template/css/sb-admin-2.min.css"); ?> rel="stylesheet">
+
 </head>
 
 <body class="bg-gradient-primary">
@@ -110,14 +111,14 @@
     </div>
 
     <!-- Bootstrap core JavaScript-->
-    <script src="/projeta/app/ThirdParty/template/vendor/jquery/jquery.min.js"></script>
-    <script src="/projeta/app/ThirdParty/template/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src=<?php echo base_url("template/vendor/jquery/jquery.min.js"); ?>></script>
+    <script src=<?php echo base_url("template/vendor/bootstrap/js/bootstrap.bundle.min.js"); ?>></script>
 
     <!-- Core plugin JavaScript-->
-    <script src="/projeta/app/ThirdParty/template/vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src=<?php echo base_url("template/vendor/jquery-easing/jquery.easing.min.js"); ?>></script>
 
     <!-- Custom scripts for all pages-->
-    <script src="/projeta/app/ThirdParty/template/js/sb-admin-2.min.js"></script>
+    <script src=<?php echo base_url("template/js/sb-admin-2.min.js"); ?>></script>
 </body>
 
 </html>

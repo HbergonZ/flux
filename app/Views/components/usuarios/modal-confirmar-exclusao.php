@@ -7,7 +7,7 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="formDeleteUsuario" method="post" action="<?= site_url('usuarios/excluir') ?>">
+            <form id="formDeleteUsuario">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                 <input type="hidden" name="id" id="deleteUserId">
 

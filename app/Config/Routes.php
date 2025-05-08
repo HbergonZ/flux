@@ -10,6 +10,7 @@ use App\Controllers\LoginController;
 service('auth')->routes($routes);
 $routes->get('login', '\App\Controllers\Auth\LoginController::loginView');
 $routes->get('register', '\App\Controllers\Auth\RegisterController::registerView');
+$routes->get('logout', '\App\Controllers\Auth\LoginController::logoutAction');
 
 $routes->get('/', 'VisaoGeral::index');
 $routes->group('', function ($routes) {

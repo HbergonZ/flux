@@ -7,7 +7,7 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="formAlterarGrupo" method="post" action="<?= site_url('usuarios/alterar-grupo') ?>">
+            <form id="formAlterarGrupo">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                 <input type="hidden" name="id" id="alterarGrupoUserId">
 
@@ -17,9 +17,9 @@
                     <div class="form-group">
                         <label for="alterarGrupoSelect">Novo Grupo*</label>
                         <select class="form-control" id="alterarGrupoSelect" name="group" required>
-                            <?php foreach ($groups as $group): ?>
-                                <option value="<?= $group ?>"><?= ucfirst($group) ?></option>
-                            <?php endforeach; ?>
+                            <option value="">Selecione um grupo</option>
+                            <option value="admin">Administrador</option>
+                            <option value="user">Usuário</option>
                         </select>
                     </div>
                 </div>

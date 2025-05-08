@@ -25,10 +25,6 @@
                     "last": "Última",
                     "next": "Próxima",
                     "previous": "Anterior"
-                },
-                "aria": {
-                    "sortAscending": ": ativar para ordenar coluna ascendente",
-                    "sortDescending": ": ativar para ordenar coluna descendente"
                 }
             },
             "searching": false,
@@ -37,10 +33,9 @@
             "lengthMenu": [10, 25, 50, 100],
             "pageLength": 10,
             "columnDefs": [{
-                    "orderable": false,
-                    "targets": [5]
-                } // Desabilita ordenação na coluna de ações
-            ]
+                "orderable": false,
+                "targets": [5]
+            }]
         });
 
         // Configuração do AJAX
@@ -113,10 +108,59 @@
             submitForm($(this), '#editUsuarioModal');
         });
 
-        // Enviar formulário de alterar grupo
         $('#formAlterarGrupo').submit(function(e) {
             e.preventDefault();
-            submitForm($(this), '#alterarGrupoModal');
+
+            var form = $(this);
+            var submitBtn = form.find('button[type="submit"]');
+            var originalText = submitBtn.html();
+
+            submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Processando...');
+
+            $.ajax({
+                url: form.attr('action'),
+                type: 'POST',
+                data: form.serialize(),
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        $('#alterarGrupoModal').modal('hide');
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Sucesso',
+                            text: response.message,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erro',
+                            text: response.message || 'Erro ao alterar grupo'
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    var errorMsg = 'Erro na comunicação com o servidor';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    } else if (xhr.status === 403) {
+                        errorMsg = 'Token de segurança inválido. Recarregue a página e tente novamente.';
+                    } else if (xhr.status === 405) {
+                        errorMsg = 'Método não permitido';
+                    }
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro',
+                        text: errorMsg
+                    });
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).html(originalText);
+                }
+            });
         });
 
         // Enviar formulário de exclusão
@@ -148,37 +192,45 @@
                         $('#dataTable tbody').empty();
 
                         $.each(response.data, function(index, user) {
-                            var isAdmin = user.groups.includes('admin');
-                            var canEdit = !isAdmin || (isAdmin && <?= auth()->user()->id ?> == user.id);
+                            var isCurrentUser = <?= auth()->user()->id ?> == user.id;
+                            var userIsAdmin = user.groups.includes('admin');
+                            var loggedUserIsAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
+
+                            var canChangeGroup = loggedUserIsAdmin && !isCurrentUser && !userIsAdmin;
+                            var canEdit = loggedUserIsAdmin || isCurrentUser;
+                            var canDelete = loggedUserIsAdmin && !isCurrentUser && !userIsAdmin;
 
                             var row = `
-                                <tr>
-                                    <td class="text-center align-middle">${user.id}</td>
-                                    <td class="align-middle">${user.username}</td>
-                                    <td class="align-middle">${user.email}</td>
-                                    <td class="text-center align-middle">${user.groups.map(g => g.charAt(0).toUpperCase() + g.slice(1)).join(', ')}</td>
-                                    <td class="text-center align-middle">
-                                        <span class="badge ${user.active ? 'badge-success' : 'badge-secondary'}">
-                                            ${user.active ? 'Ativo' : 'Inativo'}
-                                        </span>
-                                    </td>
-                                    <td class="text-center align-middle">
-                                        <div class="d-inline-flex">
-                                            <button type="button" class="btn btn-warning btn-sm mx-1" style="width: 32px; height: 32px;"
-                                                title="Alterar Grupo" data-id="${user.id}" data-username="${user.username}" ${!canEdit ? 'disabled' : ''}>
-                                                <i class="fas fa-users"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;"
-                                                title="Editar" data-id="${user.id}" ${!canEdit ? 'disabled' : ''}>
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;"
-                                                title="Excluir" data-id="${user.id}" data-username="${user.username}" ${!canEdit ? 'disabled' : ''}>
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>`;
+                            <tr>
+                                <td class="text-center align-middle">${user.id}</td>
+                                <td class="align-middle">${user.username}</td>
+                                <td class="align-middle">${user.email}</td>
+                                <td class="text-center align-middle">${user.groups.map(g => g === 'admin' ? 'Administrador' : 'Usuário').join(', ')}</td>
+                                <td class="text-center align-middle">
+                                    <span class="badge ${user.active ? 'badge-success' : 'badge-secondary'}">
+                                        ${user.active ? 'Ativo' : 'Inativo'}
+                                    </span>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <div class="d-inline-flex">
+                                        <button type="button" class="btn btn-sm mx-1 ${canChangeGroup ? 'btn-warning' : 'btn-secondary'}"
+                                            style="width: 32px; height: 32px;"
+                                            title="Alterar Grupo" data-id="${user.id}" data-username="${user.username}" ${!canChangeGroup ? 'disabled' : ''}>
+                                            <i class="fas fa-users"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm mx-1 ${canEdit ? 'btn-primary' : 'btn-secondary'}"
+                                            style="width: 32px; height: 32px;"
+                                            title="Editar" data-id="${user.id}" ${!canEdit ? 'disabled' : ''}>
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm mx-1 ${canDelete ? 'btn-danger' : 'btn-secondary'}"
+                                            style="width: 32px; height: 32px;"
+                                            title="Excluir" data-id="${user.id}" data-username="${user.username}" ${!canDelete ? 'disabled' : ''}>
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>`;
 
                             $('#dataTable tbody').append(row);
                         });
@@ -235,7 +287,6 @@
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.error(xhr.responseText);
                     showErrorAlert('Erro na comunicação com o servidor: ' + error);
                 },
                 complete: function() {
