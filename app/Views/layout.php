@@ -8,7 +8,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Projeta</title>
+    <title>Flux</title>
 
     <!-- Custom fonts for this template-->
     <link href=<?php echo base_url("template/vendor/fontawesome-free/css/all.min.css"); ?> rel="stylesheet" type="text/css">

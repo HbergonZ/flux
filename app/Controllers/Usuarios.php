@@ -14,15 +14,13 @@ class Usuarios extends BaseController
     public function __construct()
     {
         $this->userModel = new UserModel();
-        $this->authGroups = config('AuthGroups')->groups;
+        $this->authGroups = config('AuthGroups')->groups ?? ['admin' => [], 'user' => []];
     }
 
     public function index()
     {
-
         $users = $this->userModel->findAll();
 
-        // Carrega os grupos para cada usuário
         foreach ($users as $user) {
             $user->groups = $user->getGroups();
         }
@@ -41,7 +39,7 @@ class Usuarios extends BaseController
     public function filtrar()
     {
         if (!$this->request->isAJAX()) {
-            return redirect()->back();
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Método não permitido']);
         }
 
         $username = $this->request->getPost('username');
@@ -55,7 +53,6 @@ class Usuarios extends BaseController
 
         $users = $builder->get()->getResult();
 
-        // Filtra por grupo se necessário
         if (!empty($group)) {
             $filteredUsers = [];
             foreach ($users as $user) {
@@ -66,7 +63,6 @@ class Usuarios extends BaseController
             $users = $filteredUsers;
         }
 
-        // Carrega os grupos para cada usuário
         foreach ($users as $user) {
             $user->groups = $user->getGroups();
         }
@@ -80,69 +76,85 @@ class Usuarios extends BaseController
     public function editar($id = null)
     {
         if (!$this->request->isAJAX()) {
-            return redirect()->back();
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Método não permitido']);
+        }
+
+        if (!$id) {
+            return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'ID não fornecido']);
         }
 
         $user = $this->userModel->find($id);
         if (!$user) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Usuário não encontrado'
-            ]);
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Usuário não encontrado']);
         }
 
-        // Verifica se é admin e não pode editar outro admin
-        if (in_array('admin', $user->getGroups()) && auth()->user()->id != $user->id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Você não pode editar outro administrador'
-            ]);
+        $isSelfEdit = (auth()->user()->id == $user->id);
+
+        $responseData = [
+            'id' => $user->id,
+            'username' => $user->username,
+            'email' => $user->email,
+            'active' => $user->active,
+            'is_self_edit' => $isSelfEdit
+        ];
+
+        if (!$isSelfEdit) {
+            $responseData['groups'] = $user->getGroups();
         }
 
         return $this->response->setJSON([
             'success' => true,
-            'data' => $user
+            'data' => $responseData
         ]);
     }
 
     public function atualizar()
     {
         if (!$this->request->isAJAX()) {
-            return redirect()->back();
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Método não permitido']);
         }
 
         $id = $this->request->getPost('id');
+        if (!$id) {
+            return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'ID não fornecido']);
+        }
+
         $user = $this->userModel->find($id);
-
         if (!$user) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Usuário não encontrado'
-            ]);
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Usuário não encontrado']);
         }
 
-        // Verifica se é admin e não pode editar outro admin
-        if (in_array('admin', $user->getGroups()) && auth()->user()->id != $user->id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Você não pode editar outro administrador'
-            ]);
-        }
+        $isSelfEdit = (auth()->user()->id == $user->id);
 
         $rules = [
             'username' => 'required|min_length[3]|max_length[30]|is_unique[users.username,id,' . $id . ']',
-            'email' => 'required|valid_email|is_unique[users.email,id,' . $id . ']',
+            'email' => 'required|valid_email|is_unique[users.email,id,' . $id . ']'
         ];
 
+        if (!$isSelfEdit) {
+            $rules['group'] = 'required|in_list[' . implode(',', array_keys($this->authGroups)) . ']';
+        }
+
         if (!$this->validate($rules)) {
-            return $this->response->setJSON([
+            return $this->response->setStatusCode(422)->setJSON([
                 'success' => false,
                 'message' => implode('<br>', $this->validator->getErrors())
             ]);
         }
 
         try {
-            $user->fill($this->request->getPost());
+            $user->fill([
+                'username' => $this->request->getPost('username'),
+                'email' => $this->request->getPost('email')
+            ]);
+
+            if (!$isSelfEdit) {
+                foreach ($user->getGroups() as $oldGroup) {
+                    $user->removeGroup($oldGroup);
+                }
+                $user->addGroup($this->request->getPost('group'));
+            }
+
             $this->userModel->save($user);
 
             return $this->response->setJSON([
@@ -150,7 +162,7 @@ class Usuarios extends BaseController
                 'message' => 'Usuário atualizado com sucesso!'
             ]);
         } catch (\Exception $e) {
-            return $this->response->setJSON([
+            return $this->response->setStatusCode(500)->setJSON([
                 'success' => false,
                 'message' => 'Erro ao atualizar usuário: ' . $e->getMessage()
             ]);
@@ -160,39 +172,34 @@ class Usuarios extends BaseController
     public function alterarGrupo()
     {
         if (!$this->request->isAJAX()) {
-            return redirect()->back();
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Método não permitido']);
         }
 
         $id = $this->request->getPost('id');
-        $user = $this->userModel->find($id);
-
-        if (!$user) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Usuário não encontrado'
-            ]);
+        if (!$id) {
+            return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'ID não fornecido']);
         }
 
-        // Verifica se é admin e não pode editar outro admin
+        $user = $this->userModel->find($id);
+        if (!$user) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Usuário não encontrado']);
+        }
+
         if (in_array('admin', $user->getGroups()) && auth()->user()->id != $user->id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Você não pode alterar o grupo de outro administrador'
-            ]);
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Você não pode alterar o grupo de outro administrador']);
         }
 
         $group = $this->request->getPost('group');
         $groups = array_keys($this->authGroups);
 
-        if (!in_array($group, $groups)) {
-            return $this->response->setJSON([
+        if (!$group || !in_array($group, $groups)) {
+            return $this->response->setStatusCode(400)->setJSON([
                 'success' => false,
                 'message' => 'Grupo inválido'
             ]);
         }
 
         try {
-            // Remove todos os grupos e adiciona o novo
             foreach ($user->getGroups() as $oldGroup) {
                 $user->removeGroup($oldGroup);
             }
@@ -203,7 +210,7 @@ class Usuarios extends BaseController
                 'message' => 'Grupo do usuário alterado com sucesso!'
             ]);
         } catch (\Exception $e) {
-            return $this->response->setJSON([
+            return $this->response->setStatusCode(500)->setJSON([
                 'success' => false,
                 'message' => 'Erro ao alterar grupo: ' . $e->getMessage()
             ]);
@@ -213,33 +220,25 @@ class Usuarios extends BaseController
     public function excluir()
     {
         if (!$this->request->isAJAX()) {
-            return redirect()->back();
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Método não permitido']);
         }
 
         $id = $this->request->getPost('id');
+        if (!$id) {
+            return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'ID não fornecido']);
+        }
+
         $user = $this->userModel->find($id);
-
         if (!$user) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Usuário não encontrado'
-            ]);
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Usuário não encontrado']);
         }
 
-        // Verifica se é admin e não pode excluir outro admin
         if (in_array('admin', $user->getGroups())) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Você não pode excluir um administrador'
-            ]);
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Você não pode excluir um administrador']);
         }
 
-        // Não pode excluir a si mesmo
         if (auth()->user()->id == $user->id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Você não pode excluir a si mesmo'
-            ]);
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Você não pode excluir a si mesmo']);
         }
 
         try {
@@ -250,7 +249,7 @@ class Usuarios extends BaseController
                 'message' => 'Usuário excluído com sucesso!'
             ]);
         } catch (\Exception $e) {
-            return $this->response->setJSON([
+            return $this->response->setStatusCode(500)->setJSON([
                 'success' => false,
                 'message' => 'Erro ao excluir usuário: ' . $e->getMessage()
             ]);

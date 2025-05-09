@@ -107,9 +107,9 @@ $routes->group('', ['filter' => 'group:admin'], function ($routes) {
     $routes->post('atribuir-grupos/atribuir', 'AtribuirGrupos::atribuir'); // Exemplo extra
 
     $routes->get('gerenciar-usuarios', 'Usuarios::index');
-    $routes->post('usuarios/filtrar', 'Usuarios::filtrar');
-    $routes->get('usuarios/editar/(:num)', 'Usuarios::editar/$1');
-    $routes->post('usuarios/atualizar', 'Usuarios::atualizar');
-    $routes->post('usuarios/alterar-grupo', 'Usuarios::alterarGrupo');
-    $routes->post('usuarios/excluir', 'Usuarios::excluir');
+    $routes->post('gerenciar-usuarios/filtrar', 'Usuarios::filtrar');
+    $routes->get('gerenciar-usuarios/editar/(:num)', 'Usuarios::editar/$1');
+    $routes->post('gerenciar-usuarios/atualizar', 'Usuarios::atualizar');
+    $routes->post('gerenciar-usuarios/alterar-grupo', 'Usuarios::alterarGrupo');
+    $routes->post('gerenciar-usuarios/excluir', 'Usuarios::excluir');
 });

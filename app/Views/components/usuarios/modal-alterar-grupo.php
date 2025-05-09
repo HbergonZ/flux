@@ -7,7 +7,7 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="formAlterarGrupo">
+            <form id="formAlterarGrupo" action="<?= site_url('admin/gerenciar-usuarios/alterar-grupo') ?>">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                 <input type="hidden" name="id" id="alterarGrupoUserId">
 

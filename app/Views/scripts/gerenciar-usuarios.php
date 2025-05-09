@@ -6,26 +6,11 @@
 
 <script>
     $(document).ready(function() {
-        // Inicializa o DataTable
+        // Initialize DataTable
         var dataTable = $('#dataTable').DataTable({
             "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json",
-                "emptyTable": "Nenhum dado disponível na tabela",
-                "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
-                "infoEmpty": "Mostrando 0 a 0 de 0 registros",
-                "infoFiltered": "(filtrado de _MAX_ registros no total)",
-                "lengthMenu": "Mostrar _MENU_ registros por página",
-                "loadingRecords": "Carregando...",
-                "processing": "Processando...",
-                "search": "Pesquisar:",
-                "zeroRecords": "Nenhum registro correspondente encontrado",
-                "paginate": {
-                    "first": "Primeira",
-                    "last": "Última",
-                    "next": "Próxima",
-                    "previous": "Anterior"
-                }
+                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json"
             },
             "searching": false,
             "responsive": true,
@@ -38,42 +23,52 @@
             }]
         });
 
-        // Configuração do AJAX
+        // AJAX setup
         $.ajaxSetup({
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             }
         });
 
-        // Aplicar filtros
+        // Apply filters
         $('#formFiltros').submit(function(e) {
             e.preventDefault();
             applyFilters();
         });
 
-        // Limpar filtros
+        // Clear filters
         $('#btnLimparFiltros').click(function() {
             $('#formFiltros')[0].reset();
             applyFilters();
         });
 
-        // Abrir modal de alterar grupo
+        // Open change group modal
         $(document).on('click', '.btn-warning:not(:disabled)', function() {
             var userId = $(this).data('id');
             var username = $(this).data('username');
+
+            if (!userId || !username) {
+                showErrorAlert("Dados do usuário não encontrados");
+                return;
+            }
 
             $('#alterarGrupoUserId').val(userId);
             $('#alterarGrupoUsername').text(username);
             $('#alterarGrupoModal').modal('show');
         });
 
-        // Abrir modal de edição
+        // Open edit modal - Fixed version
         $(document).on('click', '.btn-primary:not(:disabled)', function() {
             var userId = $(this).data('id');
 
+            if (!userId) {
+                showErrorAlert("ID do usuário não encontrado");
+                return;
+            }
+
             $.ajax({
-                url: '<?= site_url('usuarios/editar/') ?>' + userId,
+                url: 'gerenciar-usuarios/editar/' + userId,
                 type: 'GET',
                 dataType: 'json',
                 success: function(response) {
@@ -81,35 +76,93 @@
                         $('#editUserId').val(response.data.id);
                         $('#editUsername').val(response.data.username);
                         $('#editEmail').val(response.data.email);
+
+                        // Show/hide group field based on self-edit
+                        if (response.data.is_self_edit) {
+                            $('#editGroupContainer').hide();
+                        } else {
+                            $('#editGroupContainer').show();
+                            if (response.data.groups && response.data.groups.length > 0) {
+                                $('#editGroup').val(response.data.groups[0]);
+                            }
+                        }
+
                         $('#editUsuarioModal').modal('show');
                     } else {
                         showErrorAlert(response.message || "Erro ao carregar usuário");
                     }
                 },
-                error: function(xhr, status, error) {
-                    showErrorAlert("Falha na comunicação com o servidor.");
+                error: function(xhr) {
+                    var errorMsg = xhr.responseJSON?.message || 'Erro na comunicação com o servidor';
+                    showErrorAlert(errorMsg);
                 }
             });
         });
 
-        // Abrir modal de exclusão
+        // Open delete modal
         $(document).on('click', '.btn-danger:not(:disabled)', function() {
             var userId = $(this).data('id');
             var username = $(this).data('username');
+
+            if (!userId || !username) {
+                showErrorAlert("Dados do usuário não encontrados");
+                return;
+            }
 
             $('#deleteUserId').val(userId);
             $('#usuarioNameToDelete').text(username);
             $('#deleteUsuarioModal').modal('show');
         });
 
-        // Enviar formulário de edição
+        // Submit edit form - Fixed version
         $('#formEditUsuario').submit(function(e) {
             e.preventDefault();
-            submitForm($(this), '#editUsuarioModal');
+
+            var form = $(this);
+            var submitBtn = form.find('button[type="submit"]');
+            var originalText = submitBtn.html();
+            var isSelfEdit = ($('#editUserId').val() == <?= auth()->user()->id ?>);
+
+            // Remove group field if self-edit
+            if (isSelfEdit) {
+                form.find('[name="group"]').remove();
+            }
+
+            submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Salvando...');
+
+            $.ajax({
+                url: 'gerenciar-usuarios/atualizar',
+                type: 'POST',
+                data: form.serialize(),
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        $('#editUsuarioModal').modal('hide');
+                        showSuccessAlert(response.message);
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showErrorAlert(response.message);
+                    }
+                },
+                error: function(xhr) {
+                    var errorMsg = xhr.responseJSON?.message || 'Erro na comunicação com o servidor';
+                    showErrorAlert(errorMsg);
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).html(originalText);
+                }
+            });
         });
 
+        // Submit change group form
         $('#formAlterarGrupo').submit(function(e) {
             e.preventDefault();
+
+            var grupoSelecionado = $('#alterarGrupoSelect').val();
+            if (!grupoSelecionado) {
+                showErrorAlert("Selecione um grupo válido");
+                return;
+            }
 
             var form = $(this);
             var submitBtn = form.find('button[type="submit"]');
@@ -118,44 +171,22 @@
             submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Processando...');
 
             $.ajax({
-                url: form.attr('action'),
+                url: 'gerenciar-usuarios/alterar-grupo',
                 type: 'POST',
                 data: form.serialize(),
                 dataType: 'json',
                 success: function(response) {
                     if (response.success) {
                         $('#alterarGrupoModal').modal('hide');
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Sucesso',
-                            text: response.message,
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
+                        showSuccessAlert(response.message);
                         setTimeout(() => location.reload(), 1500);
                     } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Erro',
-                            text: response.message || 'Erro ao alterar grupo'
-                        });
+                        showErrorAlert(response.message || "Erro ao alterar grupo");
                     }
                 },
                 error: function(xhr) {
-                    var errorMsg = 'Erro na comunicação com o servidor';
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        errorMsg = xhr.responseJSON.message;
-                    } else if (xhr.status === 403) {
-                        errorMsg = 'Token de segurança inválido. Recarregue a página e tente novamente.';
-                    } else if (xhr.status === 405) {
-                        errorMsg = 'Método não permitido';
-                    }
-
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Erro',
-                        text: errorMsg
-                    });
+                    var errorMsg = xhr.responseJSON?.message || 'Erro na comunicação com o servidor';
+                    showErrorAlert(errorMsg);
                 },
                 complete: function() {
                     submitBtn.prop('disabled', false).html(originalText);
@@ -163,13 +194,41 @@
             });
         });
 
-        // Enviar formulário de exclusão
+        // Submit delete form
         $('#formDeleteUsuario').submit(function(e) {
             e.preventDefault();
-            submitForm($(this), '#deleteUsuarioModal');
+
+            var form = $(this);
+            var submitBtn = form.find('button[type="submit"]');
+            var originalText = submitBtn.html();
+
+            submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Excluindo...');
+
+            $.ajax({
+                url: 'gerenciar-usuarios/excluir',
+                type: 'POST',
+                data: form.serialize(),
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        $('#deleteUsuarioModal').modal('hide');
+                        showSuccessAlert(response.message);
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showErrorAlert(response.message || "Erro ao excluir usuário");
+                    }
+                },
+                error: function(xhr) {
+                    var errorMsg = xhr.responseJSON?.message || 'Erro na comunicação com o servidor';
+                    showErrorAlert(errorMsg);
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).html(originalText);
+                }
+            });
         });
 
-        // Função para aplicar filtros
+        // Apply filters function
         function applyFilters() {
             const hasFilters = $('#formFiltros').find('input, select').toArray().some(el => $(el).val() !== '' && $(el).val() !== null);
 
@@ -180,7 +239,7 @@
 
             $.ajax({
                 type: "POST",
-                url: '<?= site_url('usuarios/filtrar') ?>',
+                url: 'gerenciar-usuarios/filtrar',
                 data: $('#formFiltros').serialize(),
                 dataType: "json",
                 beforeSend: function() {
@@ -197,40 +256,40 @@
                             var loggedUserIsAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
 
                             var canChangeGroup = loggedUserIsAdmin && !isCurrentUser && !userIsAdmin;
-                            var canEdit = loggedUserIsAdmin || isCurrentUser;
+                            var canEdit = (loggedUserIsAdmin && (!userIsAdmin || isCurrentUser)) || (!loggedUserIsAdmin && isCurrentUser);
                             var canDelete = loggedUserIsAdmin && !isCurrentUser && !userIsAdmin;
 
                             var row = `
-                            <tr>
-                                <td class="text-center align-middle">${user.id}</td>
-                                <td class="align-middle">${user.username}</td>
-                                <td class="align-middle">${user.email}</td>
-                                <td class="text-center align-middle">${user.groups.map(g => g === 'admin' ? 'Administrador' : 'Usuário').join(', ')}</td>
-                                <td class="text-center align-middle">
-                                    <span class="badge ${user.active ? 'badge-success' : 'badge-secondary'}">
-                                        ${user.active ? 'Ativo' : 'Inativo'}
-                                    </span>
-                                </td>
-                                <td class="text-center align-middle">
-                                    <div class="d-inline-flex">
-                                        <button type="button" class="btn btn-sm mx-1 ${canChangeGroup ? 'btn-warning' : 'btn-secondary'}"
-                                            style="width: 32px; height: 32px;"
-                                            title="Alterar Grupo" data-id="${user.id}" data-username="${user.username}" ${!canChangeGroup ? 'disabled' : ''}>
-                                            <i class="fas fa-users"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-sm mx-1 ${canEdit ? 'btn-primary' : 'btn-secondary'}"
-                                            style="width: 32px; height: 32px;"
-                                            title="Editar" data-id="${user.id}" ${!canEdit ? 'disabled' : ''}>
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-sm mx-1 ${canDelete ? 'btn-danger' : 'btn-secondary'}"
-                                            style="width: 32px; height: 32px;"
-                                            title="Excluir" data-id="${user.id}" data-username="${user.username}" ${!canDelete ? 'disabled' : ''}>
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>`;
+                        <tr>
+                            <td class="text-center align-middle">${user.id}</td>
+                            <td class="align-middle">${user.username}</td>
+                            <td class="align-middle">${user.email}</td>
+                            <td class="text-center align-middle">${user.groups.map(g => g.charAt(0).toUpperCase() + g.slice(1)).join(', ')}</td>
+                            <td class="text-center align-middle">
+                                <span class="badge ${user.active ? 'badge-success' : 'badge-secondary'}">
+                                    ${user.active ? 'Ativo' : 'Inativo'}
+                                </span>
+                            </td>
+                            <td class="text-center align-middle">
+                                <div class="d-inline-flex">
+                                    <button type="button" class="btn btn-sm mx-1 ${canChangeGroup ? 'btn-warning' : 'btn-secondary'}"
+                                        style="width: 32px; height: 32px;"
+                                        title="Alterar Grupo" data-id="${user.id}" data-username="${user.username}" ${!canChangeGroup ? 'disabled' : ''}>
+                                        <i class="fas fa-users"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm mx-1 ${canEdit ? 'btn-primary' : 'btn-secondary'}"
+                                        style="width: 32px; height: 32px;"
+                                        title="Editar" data-id="${user.id}" ${!canEdit ? 'disabled' : ''}>
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm mx-1 ${canDelete ? 'btn-danger' : 'btn-secondary'}"
+                                        style="width: 32px; height: 32px;"
+                                        title="Excluir" data-id="${user.id}" data-username="${user.username}" ${!canDelete ? 'disabled' : ''}>
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>`;
 
                             $('#dataTable tbody').append(row);
                         });
@@ -254,8 +313,9 @@
                         showErrorAlert('Erro ao filtrar usuários: ' + response.message);
                     }
                 },
-                error: function(xhr, status, error) {
-                    showErrorAlert('Erro na requisição: ' + error);
+                error: function(xhr) {
+                    var errorMsg = xhr.responseJSON?.message || 'Erro na requisição';
+                    showErrorAlert(errorMsg);
                 },
                 complete: function() {
                     $('#dataTable').css('opacity', '1');
@@ -263,39 +323,7 @@
             });
         }
 
-        // Função genérica para enviar formulários
-        function submitForm(form, modalId, successMessage = null) {
-            const submitBtn = form.find('button[type="submit"]');
-            const originalBtnText = submitBtn.html();
-
-            submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...');
-
-            $.ajax({
-                type: "POST",
-                url: form.attr('action'),
-                data: form.serialize(),
-                dataType: "json",
-                success: function(response) {
-                    if (response.success) {
-                        if (modalId) {
-                            $(modalId).modal('hide');
-                        }
-                        showSuccessAlert(successMessage || response.message || 'Operação realizada com sucesso!');
-                        setTimeout(() => location.reload(), 1500);
-                    } else {
-                        showErrorAlert(response.message || 'Ocorreu um erro durante a operação.');
-                    }
-                },
-                error: function(xhr, status, error) {
-                    showErrorAlert('Erro na comunicação com o servidor: ' + error);
-                },
-                complete: function() {
-                    submitBtn.prop('disabled', false).html(originalBtnText);
-                }
-            });
-        }
-
-        // Funções para exibir alertas
+        // Show success alert
         function showSuccessAlert(message) {
             Swal.fire({
                 icon: 'success',
@@ -306,6 +334,7 @@
             });
         }
 
+        // Show error alert
         function showErrorAlert(message) {
             Swal.fire({
                 icon: 'error',

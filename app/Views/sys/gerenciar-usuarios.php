@@ -109,7 +109,7 @@
 
                                             <!-- Alterar Grupo -->
                                             <button type="button"
-                                                class="btn btn-sm mx-1 <?= $canChangeGroup ? 'btn-warning' : 'btn-secondary' ?>"
+                                                class="btn btn-sm mx-1 d-flex justify-content-center align-items-center <?= $canChangeGroup ? 'btn-warning' : 'btn-secondary' ?>"
                                                 style="width: 32px; height: 32px;"
                                                 title="Alterar Grupo"
                                                 data-id="<?= $user->id ?>"
@@ -120,7 +120,7 @@
 
                                             <!-- Editar -->
                                             <button type="button"
-                                                class="btn btn-sm mx-1 <?= $canEdit ? 'btn-primary' : 'btn-secondary' ?>"
+                                                class="btn btn-sm mx-1 d-flex justify-content-center align-items-center <?= $canEdit ? 'btn-primary' : 'btn-secondary' ?>"
                                                 style="width: 32px; height: 32px;"
                                                 title="Editar"
                                                 data-id="<?= $user->id ?>"
@@ -130,7 +130,7 @@
 
                                             <!-- Excluir -->
                                             <button type="button"
-                                                class="btn btn-sm mx-1 <?= $canDelete ? 'btn-danger' : 'btn-secondary' ?>"
+                                                class="btn btn-sm mx-1 d-flex justify-content-center align-items-center <?= $canDelete ? 'btn-danger' : 'btn-secondary' ?>"
                                                 style="width: 32px; height: 32px;"
                                                 title="Excluir"
                                                 data-id="<?= $user->id ?>"

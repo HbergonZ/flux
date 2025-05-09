@@ -99,22 +99,22 @@
 
                                             <?php if (auth()->user()->inGroup('admin')): ?>
                                                 <!-- Botão Editar -->
-                                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Editar">
+                                                <button type="button" class="btn btn-primary btn-sm mx-1 d-flex justify-content-center align-items-center" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Editar">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
 
                                                 <!-- Botão Excluir -->
-                                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Excluir">
+                                                <button type="button" class="btn btn-danger btn-sm mx-1 d-flex justify-content-center align-items-center" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Excluir">
                                                     <i class="fas fa-trash-alt"></i>
                                                 </button>
                                             <?php else: ?>
                                                 <!-- Botão Solicitar Edição -->
-                                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Edição">
+                                                <button type="button" class="btn btn-primary btn-sm mx-1 d-flex justify-content-center align-items-center" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Edição">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
 
                                                 <!-- Botão Solicitar Exclusão -->
-                                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Exclusão">
+                                                <button type="button" class="btn btn-danger btn-sm mx-1 d-flex justify-content-center align-items-center" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Exclusão">
                                                     <i class="fas fa-trash-alt"></i>
                                                 </button>
                                             <?php endif; ?>
