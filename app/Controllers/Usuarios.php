@@ -126,13 +126,18 @@ class Usuarios extends BaseController
 
         $isSelfEdit = (auth()->user()->id == $user->id);
 
+        // Regras básicas para todos os casos
         $rules = [
             'username' => 'required|min_length[3]|max_length[30]|is_unique[users.username,id,' . $id . ']',
             'email' => 'required|valid_email|is_unique[users.email,id,' . $id . ']'
         ];
 
+        // Só valida grupo se não for self-edit
         if (!$isSelfEdit) {
             $rules['group'] = 'required|in_list[' . implode(',', array_keys($this->authGroups)) . ']';
+        } else {
+            // Remove o campo group se for self-edit para evitar validação
+            $this->request->setGlobal('post', array_merge($this->request->getPost(), ['group' => null]));
         }
 
         if (!$this->validate($rules)) {
@@ -148,7 +153,8 @@ class Usuarios extends BaseController
                 'email' => $this->request->getPost('email')
             ]);
 
-            if (!$isSelfEdit) {
+            // Só altera grupos se não for self-edit
+            if (!$isSelfEdit && $this->request->getPost('group')) {
                 foreach ($user->getGroups() as $oldGroup) {
                     $user->removeGroup($oldGroup);
                 }
@@ -162,9 +168,10 @@ class Usuarios extends BaseController
                 'message' => 'Usuário atualizado com sucesso!'
             ]);
         } catch (\Exception $e) {
+            log_message('error', 'Erro ao atualizar usuário: ' . $e->getMessage());
             return $this->response->setStatusCode(500)->setJSON([
                 'success' => false,
-                'message' => 'Erro ao atualizar usuário: ' . $e->getMessage()
+                'message' => 'Erro ao atualizar usuário. Por favor, tente novamente.'
             ]);
         }
     }
@@ -210,9 +217,10 @@ class Usuarios extends BaseController
                 'message' => 'Grupo do usuário alterado com sucesso!'
             ]);
         } catch (\Exception $e) {
+            log_message('error', 'Erro ao alterar grupo do usuário: ' . $e->getMessage());
             return $this->response->setStatusCode(500)->setJSON([
                 'success' => false,
-                'message' => 'Erro ao alterar grupo: ' . $e->getMessage()
+                'message' => 'Erro ao alterar grupo do usuário. Por favor, tente novamente.'
             ]);
         }
     }
@@ -249,9 +257,10 @@ class Usuarios extends BaseController
                 'message' => 'Usuário excluído com sucesso!'
             ]);
         } catch (\Exception $e) {
+            log_message('error', 'Erro ao excluir usuário: ' . $e->getMessage());
             return $this->response->setStatusCode(500)->setJSON([
                 'success' => false,
-                'message' => 'Erro ao excluir usuário: ' . $e->getMessage()
+                'message' => 'Erro ao excluir usuário. Por favor, tente novamente.'
             ]);
         }
     }

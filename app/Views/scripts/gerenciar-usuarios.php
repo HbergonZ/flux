@@ -6,342 +6,213 @@
 
 <script>
     $(document).ready(function() {
-        // Initialize DataTable
-        var dataTable = $('#dataTable').DataTable({
-            "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-            "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json"
+        // Inicialização da DataTable
+        $('#dataTable').DataTable({
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json'
             },
-            "searching": false,
-            "responsive": true,
-            "autoWidth": false,
-            "lengthMenu": [10, 25, 50, 100],
-            "pageLength": 10,
-            "columnDefs": [{
-                "orderable": false,
-                "targets": [5]
+            columnDefs: [{
+                orderable: false,
+                targets: [5]
             }]
         });
 
-        // AJAX setup
-        $.ajaxSetup({
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            }
+        // Abrir modal de edição
+        $(document).on('click', '.btn-primary[title="Editar"]', function() {
+            const userId = $(this).data('id');
+
+            $.get('<?= site_url('gerenciar-usuarios/editar') ?>/' + userId, function(response) {
+                if (response.success) {
+                    $('#editUserId').val(response.data.id);
+                    $('#editUsername').val(response.data.username);
+                    $('#editEmail').val(response.data.email);
+
+                    $('#editUsuarioModal').modal('show');
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro',
+                        text: response.message
+                    });
+                }
+            }).fail(function() {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro',
+                    text: 'Falha ao carregar dados do usuário'
+                });
+            });
         });
 
-        // Apply filters
-        $('#formFiltros').submit(function(e) {
+        // Submeter edição de usuário
+        $('#formEditarUsuario').on('submit', function(e) {
             e.preventDefault();
-            applyFilters();
-        });
 
-        // Clear filters
-        $('#btnLimparFiltros').click(function() {
-            $('#formFiltros')[0].reset();
-            applyFilters();
-        });
-
-        // Open change group modal
-        $(document).on('click', '.btn-warning:not(:disabled)', function() {
-            var userId = $(this).data('id');
-            var username = $(this).data('username');
-
-            if (!userId || !username) {
-                showErrorAlert("Dados do usuário não encontrados");
-                return;
-            }
-
-            $('#alterarGrupoUserId').val(userId);
-            $('#alterarGrupoUsername').text(username);
-            $('#alterarGrupoModal').modal('show');
-        });
-
-        // Open edit modal - Fixed version
-        $(document).on('click', '.btn-primary:not(:disabled)', function() {
-            var userId = $(this).data('id');
-
-            if (!userId) {
-                showErrorAlert("ID do usuário não encontrado");
-                return;
-            }
+            const formData = $(this).serialize();
 
             $.ajax({
-                url: 'gerenciar-usuarios/editar/' + userId,
-                type: 'GET',
+                url: $(this).attr('action'),
+                type: 'POST',
+                data: formData,
                 dataType: 'json',
                 success: function(response) {
-                    if (response.success && response.data) {
-                        $('#editUserId').val(response.data.id);
-                        $('#editUsername').val(response.data.username);
-                        $('#editEmail').val(response.data.email);
-
-                        // Show/hide group field based on self-edit
-                        if (response.data.is_self_edit) {
-                            $('#editGroupContainer').hide();
-                        } else {
-                            $('#editGroupContainer').show();
-                            if (response.data.groups && response.data.groups.length > 0) {
-                                $('#editGroup').val(response.data.groups[0]);
-                            }
-                        }
-
-                        $('#editUsuarioModal').modal('show');
+                    if (response.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Sucesso',
+                            text: response.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            $('#editUsuarioModal').modal('hide');
+                            location.reload();
+                        });
                     } else {
-                        showErrorAlert(response.message || "Erro ao carregar usuário");
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erro',
+                            html: response.message
+                        });
                     }
                 },
                 error: function(xhr) {
-                    var errorMsg = xhr.responseJSON?.message || 'Erro na comunicação com o servidor';
-                    showErrorAlert(errorMsg);
+                    let errorMessage = 'Erro ao atualizar usuário';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro',
+                        text: errorMessage
+                    });
                 }
             });
         });
 
-        // Open delete modal
-        $(document).on('click', '.btn-danger:not(:disabled)', function() {
-            var userId = $(this).data('id');
-            var username = $(this).data('username');
+        // Abrir modal de alteração de grupo
+        $(document).on('click', '.btn-warning[title="Alterar Grupo"]', function() {
+            const userId = $(this).data('id');
+            const username = $(this).data('username');
 
-            if (!userId || !username) {
-                showErrorAlert("Dados do usuário não encontrados");
-                return;
-            }
+            $('#changeGroupUserId').val(userId);
+            $('#changeGroupUsername').text(username);
+
+            // Carregar grupos disponíveis
+            $.get('<?= site_url('gerenciar-usuarios/editar') ?>/' + userId, function(response) {
+                if (response.success) {
+                    const $groupSelect = $('#newGroup');
+                    $groupSelect.empty();
+
+                    // Adicionar opções de grupos
+                    <?php foreach ($groups as $group): ?>
+                        $groupSelect.append($('<option>', {
+                            value: '<?= $group ?>',
+                            text: '<?= ucfirst($group) ?>'
+                        }));
+                    <?php endforeach; ?>
+
+                    // Selecionar o grupo atual (se houver)
+                    if (response.data.groups && response.data.groups.length > 0) {
+                        $groupSelect.val(response.data.groups[0]);
+                    }
+
+                    $('#changeGroupModal').modal('show');
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro',
+                        text: response.message
+                    });
+                }
+            });
+        });
+
+        // Submeter alteração de grupo
+        $('#formAlterarGrupo').on('submit', function(e) {
+            e.preventDefault();
+
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                data: $(this).serialize(),
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Sucesso',
+                            text: response.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            $('#changeGroupModal').modal('hide');
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erro',
+                            text: response.message
+                        });
+                    }
+                },
+                error: function() {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro',
+                        text: 'Falha ao alterar grupo do usuário'
+                    });
+                }
+            });
+        });
+
+        // Abrir modal de confirmação de exclusão
+        $(document).on('click', '.btn-danger[title="Excluir"]', function() {
+            const userId = $(this).data('id');
+            const username = $(this).data('username');
 
             $('#deleteUserId').val(userId);
-            $('#usuarioNameToDelete').text(username);
-            $('#deleteUsuarioModal').modal('show');
+            $('#deleteUsername').text(username);
+            $('#confirmDeleteModal').modal('show');
         });
 
-        // Submit edit form - Fixed version
-        $('#formEditUsuario').submit(function(e) {
+        // Submeter exclusão de usuário
+        $('#formConfirmarExclusao').on('submit', function(e) {
             e.preventDefault();
 
-            var form = $(this);
-            var submitBtn = form.find('button[type="submit"]');
-            var originalText = submitBtn.html();
-            var isSelfEdit = ($('#editUserId').val() == <?= auth()->user()->id ?>);
-
-            // Remove group field if self-edit
-            if (isSelfEdit) {
-                form.find('[name="group"]').remove();
-            }
-
-            submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Salvando...');
-
             $.ajax({
-                url: 'gerenciar-usuarios/atualizar',
+                url: $(this).attr('action'),
                 type: 'POST',
-                data: form.serialize(),
+                data: $(this).serialize(),
                 dataType: 'json',
                 success: function(response) {
                     if (response.success) {
-                        $('#editUsuarioModal').modal('hide');
-                        showSuccessAlert(response.message);
-                        setTimeout(() => location.reload(), 1500);
-                    } else {
-                        showErrorAlert(response.message);
-                    }
-                },
-                error: function(xhr) {
-                    var errorMsg = xhr.responseJSON?.message || 'Erro na comunicação com o servidor';
-                    showErrorAlert(errorMsg);
-                },
-                complete: function() {
-                    submitBtn.prop('disabled', false).html(originalText);
-                }
-            });
-        });
-
-        // Submit change group form
-        $('#formAlterarGrupo').submit(function(e) {
-            e.preventDefault();
-
-            var grupoSelecionado = $('#alterarGrupoSelect').val();
-            if (!grupoSelecionado) {
-                showErrorAlert("Selecione um grupo válido");
-                return;
-            }
-
-            var form = $(this);
-            var submitBtn = form.find('button[type="submit"]');
-            var originalText = submitBtn.html();
-
-            submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Processando...');
-
-            $.ajax({
-                url: 'gerenciar-usuarios/alterar-grupo',
-                type: 'POST',
-                data: form.serialize(),
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        $('#alterarGrupoModal').modal('hide');
-                        showSuccessAlert(response.message);
-                        setTimeout(() => location.reload(), 1500);
-                    } else {
-                        showErrorAlert(response.message || "Erro ao alterar grupo");
-                    }
-                },
-                error: function(xhr) {
-                    var errorMsg = xhr.responseJSON?.message || 'Erro na comunicação com o servidor';
-                    showErrorAlert(errorMsg);
-                },
-                complete: function() {
-                    submitBtn.prop('disabled', false).html(originalText);
-                }
-            });
-        });
-
-        // Submit delete form
-        $('#formDeleteUsuario').submit(function(e) {
-            e.preventDefault();
-
-            var form = $(this);
-            var submitBtn = form.find('button[type="submit"]');
-            var originalText = submitBtn.html();
-
-            submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Excluindo...');
-
-            $.ajax({
-                url: 'gerenciar-usuarios/excluir',
-                type: 'POST',
-                data: form.serialize(),
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        $('#deleteUsuarioModal').modal('hide');
-                        showSuccessAlert(response.message);
-                        setTimeout(() => location.reload(), 1500);
-                    } else {
-                        showErrorAlert(response.message || "Erro ao excluir usuário");
-                    }
-                },
-                error: function(xhr) {
-                    var errorMsg = xhr.responseJSON?.message || 'Erro na comunicação com o servidor';
-                    showErrorAlert(errorMsg);
-                },
-                complete: function() {
-                    submitBtn.prop('disabled', false).html(originalText);
-                }
-            });
-        });
-
-        // Apply filters function
-        function applyFilters() {
-            const hasFilters = $('#formFiltros').find('input, select').toArray().some(el => $(el).val() !== '' && $(el).val() !== null);
-
-            if (!hasFilters) {
-                location.reload();
-                return;
-            }
-
-            $.ajax({
-                type: "POST",
-                url: 'gerenciar-usuarios/filtrar',
-                data: $('#formFiltros').serialize(),
-                dataType: "json",
-                beforeSend: function() {
-                    $('#dataTable').css('opacity', '0.5');
-                },
-                success: function(response) {
-                    if (response.success) {
-                        dataTable.destroy();
-                        $('#dataTable tbody').empty();
-
-                        $.each(response.data, function(index, user) {
-                            var isCurrentUser = <?= auth()->user()->id ?> == user.id;
-                            var userIsAdmin = user.groups.includes('admin');
-                            var loggedUserIsAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
-
-                            var canChangeGroup = loggedUserIsAdmin && !isCurrentUser && !userIsAdmin;
-                            var canEdit = (loggedUserIsAdmin && (!userIsAdmin || isCurrentUser)) || (!loggedUserIsAdmin && isCurrentUser);
-                            var canDelete = loggedUserIsAdmin && !isCurrentUser && !userIsAdmin;
-
-                            var row = `
-                        <tr>
-                            <td class="text-center align-middle">${user.id}</td>
-                            <td class="align-middle">${user.username}</td>
-                            <td class="align-middle">${user.email}</td>
-                            <td class="text-center align-middle">${user.groups.map(g => g.charAt(0).toUpperCase() + g.slice(1)).join(', ')}</td>
-                            <td class="text-center align-middle">
-                                <span class="badge ${user.active ? 'badge-success' : 'badge-secondary'}">
-                                    ${user.active ? 'Ativo' : 'Inativo'}
-                                </span>
-                            </td>
-                            <td class="text-center align-middle">
-                                <div class="d-inline-flex">
-                                    <button type="button" class="btn btn-sm mx-1 ${canChangeGroup ? 'btn-warning' : 'btn-secondary'}"
-                                        style="width: 32px; height: 32px;"
-                                        title="Alterar Grupo" data-id="${user.id}" data-username="${user.username}" ${!canChangeGroup ? 'disabled' : ''}>
-                                        <i class="fas fa-users"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm mx-1 ${canEdit ? 'btn-primary' : 'btn-secondary'}"
-                                        style="width: 32px; height: 32px;"
-                                        title="Editar" data-id="${user.id}" ${!canEdit ? 'disabled' : ''}>
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm mx-1 ${canDelete ? 'btn-danger' : 'btn-secondary'}"
-                                        style="width: 32px; height: 32px;"
-                                        title="Excluir" data-id="${user.id}" data-username="${user.username}" ${!canDelete ? 'disabled' : ''}>
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>`;
-
-                            $('#dataTable tbody').append(row);
-                        });
-
-                        dataTable = $('#dataTable').DataTable({
-                            "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-                            "language": {
-                                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json"
-                            },
-                            "searching": false,
-                            "responsive": true,
-                            "autoWidth": false,
-                            "lengthMenu": [10, 25, 50, 100],
-                            "pageLength": 10,
-                            "columnDefs": [{
-                                "orderable": false,
-                                "targets": [5]
-                            }]
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Sucesso',
+                            text: response.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            $('#confirmDeleteModal').modal('hide');
+                            location.reload();
                         });
                     } else {
-                        showErrorAlert('Erro ao filtrar usuários: ' + response.message);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erro',
+                            text: response.message
+                        });
                     }
                 },
-                error: function(xhr) {
-                    var errorMsg = xhr.responseJSON?.message || 'Erro na requisição';
-                    showErrorAlert(errorMsg);
-                },
-                complete: function() {
-                    $('#dataTable').css('opacity', '1');
+                error: function() {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro',
+                        text: 'Falha ao excluir usuário'
+                    });
                 }
             });
-        }
-
-        // Show success alert
-        function showSuccessAlert(message) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Sucesso',
-                text: message,
-                timer: 2000,
-                showConfirmButton: false
-            });
-        }
-
-        // Show error alert
-        function showErrorAlert(message) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Erro',
-                text: message,
-                confirmButtonText: 'Entendi'
-            });
-        }
+        });
     });
 </script>
