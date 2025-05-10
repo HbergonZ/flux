@@ -10,11 +10,13 @@ class Usuarios extends BaseController
 {
     protected $userModel;
     protected $authGroups;
+    protected $authIdentities;
 
     public function __construct()
     {
         $this->userModel = new UserModel();
         $this->authGroups = config('AuthGroups')->groups ?? ['admin' => [], 'user' => []];
+        $this->authIdentities = db_connect()->table('auth_identities');
     }
 
     public function index()
@@ -23,6 +25,11 @@ class Usuarios extends BaseController
 
         foreach ($users as $user) {
             $user->groups = $user->getGroups();
+            // Carrega o email da tabela auth_identities
+            $identity = $this->authIdentities->where('user_id', $user->id)->get()->getRow();
+            if ($identity) {
+                $user->email = $identity->secret; // 'secret' é a coluna que armazena o email
+            }
         }
 
         $groups = array_keys($this->authGroups);
@@ -65,6 +72,11 @@ class Usuarios extends BaseController
 
         foreach ($users as $user) {
             $user->groups = $user->getGroups();
+            // Carrega o email da tabela auth_identities
+            $identity = $this->authIdentities->where('user_id', $user->id)->get()->getRow();
+            if ($identity) {
+                $user->email = $identity->secret;
+            }
         }
 
         return $this->response->setJSON([
@@ -88,12 +100,16 @@ class Usuarios extends BaseController
             return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Usuário não encontrado']);
         }
 
+        // Busca o email da tabela auth_identities
+        $identity = $this->authIdentities->where('user_id', $user->id)->get()->getRow();
+        $email = $identity ? $identity->secret : '';
+
         $isSelfEdit = (auth()->user()->id == $user->id);
 
         $responseData = [
             'id' => $user->id,
             'username' => $user->username,
-            'email' => $user->email,
+            'email' => $email,
             'active' => $user->active,
             'is_self_edit' => $isSelfEdit
         ];
@@ -126,17 +142,24 @@ class Usuarios extends BaseController
 
         $isSelfEdit = (auth()->user()->id == $user->id);
 
-        // Regras básicas para todos os casos
+        // Busca o email atual para validação
+        $currentIdentity = $this->authIdentities->where('user_id', $user->id)->get()->getRow();
+        $currentEmail = $currentIdentity ? $currentIdentity->secret : '';
+
         $rules = [
             'username' => 'required|min_length[3]|max_length[30]|is_unique[users.username,id,' . $id . ']',
-            'email' => 'required|valid_email|is_unique[users.email,id,' . $id . ']'
+            'email' => 'required|valid_email'
         ];
 
-        // Só valida grupo se não for self-edit
-        if (!$isSelfEdit) {
+        // Verifica se o email foi alterado
+        $newEmail = $this->request->getPost('email');
+        if ($newEmail !== $currentEmail) {
+            $rules['email'] .= '|is_unique[auth_identities.secret]';
+        }
+
+        if (!$isSelfEdit && $this->request->getPost('group')) {
             $rules['group'] = 'required|in_list[' . implode(',', array_keys($this->authGroups)) . ']';
         } else {
-            // Remove o campo group se for self-edit para evitar validação
             $this->request->setGlobal('post', array_merge($this->request->getPost(), ['group' => null]));
         }
 
@@ -148,10 +171,16 @@ class Usuarios extends BaseController
         }
 
         try {
+            // Atualiza dados básicos na tabela users
             $user->fill([
-                'username' => $this->request->getPost('username'),
-                'email' => $this->request->getPost('email')
+                'username' => $this->request->getPost('username')
             ]);
+
+            // Atualiza email na tabela auth_identities
+            if ($newEmail !== $currentEmail) {
+                $this->authIdentities->where('user_id', $user->id)
+                    ->update(['secret' => $newEmail]);
+            }
 
             // Só altera grupos se não for self-edit
             if (!$isSelfEdit && $this->request->getPost('group')) {
@@ -250,6 +279,10 @@ class Usuarios extends BaseController
         }
 
         try {
+            // Primeiro remove as identidades associadas
+            $this->authIdentities->where('user_id', $user->id)->delete();
+
+            // Depois remove o usuário
             $this->userModel->delete($user->id);
 
             return $this->response->setJSON([
