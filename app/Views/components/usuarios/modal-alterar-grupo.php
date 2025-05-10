@@ -15,11 +15,9 @@
                     <p>Alterar grupo do usuário: <strong id="alterarGrupoUsername"></strong></p>
 
                     <div class="form-group">
-                        <label for="alterarGrupoSelect">Novo Grupo*</label>
+                        <label for="alterarGrupoSelect">Novo Grupo</label>
                         <select class="form-control" id="alterarGrupoSelect" name="group" required>
-                            <option value="">Selecione um grupo</option>
-                            <option value="admin">Administrador</option>
-                            <option value="user">Usuário</option>
+                            <!-- Grupos serão preenchidos via JavaScript -->
                         </select>
                     </div>
                 </div>

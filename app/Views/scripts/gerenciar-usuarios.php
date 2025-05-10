@@ -17,11 +17,48 @@
             }]
         });
 
+        // Filtros
+        $('#formFiltros').on('submit', function(e) {
+            e.preventDefault();
+            const formData = $(this).serialize();
+
+            $.ajax({
+                url: '<?= site_url("gerenciar-usuarios/filtrar") ?>',
+                type: 'POST',
+                data: formData,
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        window.location.href = '<?= site_url("gerenciar-usuarios") ?>?' + formData;
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erro',
+                            text: response.message
+                        });
+                    }
+                },
+                error: function() {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro',
+                        text: 'Falha ao aplicar filtros'
+                    });
+                }
+            });
+        });
+
+        // Limpar filtros
+        $('#btnLimparFiltros').on('click', function() {
+            $('#formFiltros')[0].reset();
+            window.location.href = '<?= site_url("gerenciar-usuarios") ?>';
+        });
+
         // Abrir modal de edição
         $(document).on('click', '.btn-primary[title="Editar"]', function() {
             const userId = $(this).data('id');
 
-            $.get('<?= site_url('gerenciar-usuarios/editar') ?>/' + userId, function(response) {
+            $.get('<?= site_url("gerenciar-usuarios/editar") ?>/' + userId, function(response) {
                 if (response.success) {
                     $('#editUserId').val(response.data.id);
                     $('#editUsername').val(response.data.username);
@@ -51,7 +88,7 @@
             const formData = $(this).serialize();
 
             $.ajax({
-                url: $(this).attr('action'),
+                url: '<?= site_url("gerenciar-usuarios/atualizar") ?>',
                 type: 'POST',
                 data: formData,
                 dataType: 'json',
@@ -89,18 +126,18 @@
             });
         });
 
-        // Abrir modal de alteração de grupo
+        // Abrir modal de alteração de grupo - VERSÃO CORRIGIDA
         $(document).on('click', '.btn-warning[title="Alterar Grupo"]', function() {
             const userId = $(this).data('id');
             const username = $(this).data('username');
 
-            $('#changeGroupUserId').val(userId);
-            $('#changeGroupUsername').text(username);
+            $('#alterarGrupoUserId').val(userId);
+            $('#alterarGrupoUsername').text(username);
 
             // Carregar grupos disponíveis
-            $.get('<?= site_url('gerenciar-usuarios/editar') ?>/' + userId, function(response) {
+            $.get('<?= site_url("gerenciar-usuarios/editar") ?>/' + userId, function(response) {
                 if (response.success) {
-                    const $groupSelect = $('#newGroup');
+                    const $groupSelect = $('#alterarGrupoSelect');
                     $groupSelect.empty();
 
                     // Adicionar opções de grupos
@@ -116,7 +153,7 @@
                         $groupSelect.val(response.data.groups[0]);
                     }
 
-                    $('#changeGroupModal').modal('show');
+                    $('#alterarGrupoModal').modal('show');
                 } else {
                     Swal.fire({
                         icon: 'error',
@@ -127,12 +164,12 @@
             });
         });
 
-        // Submeter alteração de grupo
+        // Submeter alteração de grupo - VERSÃO CORRIGIDA
         $('#formAlterarGrupo').on('submit', function(e) {
             e.preventDefault();
 
             $.ajax({
-                url: $(this).attr('action'),
+                url: '<?= site_url("gerenciar-usuarios/alterar-grupo") ?>',
                 type: 'POST',
                 data: $(this).serialize(),
                 dataType: 'json',
@@ -145,7 +182,7 @@
                             timer: 1500,
                             showConfirmButton: false
                         }).then(() => {
-                            $('#changeGroupModal').modal('hide');
+                            $('#alterarGrupoModal').modal('hide');
                             location.reload();
                         });
                     } else {
@@ -156,11 +193,15 @@
                         });
                     }
                 },
-                error: function() {
+                error: function(xhr) {
+                    let errorMessage = 'Falha ao alterar grupo do usuário';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
                     Swal.fire({
                         icon: 'error',
                         title: 'Erro',
-                        text: 'Falha ao alterar grupo do usuário'
+                        text: errorMessage
                     });
                 }
             });
@@ -181,7 +222,7 @@
             e.preventDefault();
 
             $.ajax({
-                url: $(this).attr('action'),
+                url: '<?= site_url("gerenciar-usuarios/excluir") ?>',
                 type: 'POST',
                 data: $(this).serialize(),
                 dataType: 'json',
@@ -205,11 +246,15 @@
                         });
                     }
                 },
-                error: function() {
+                error: function(xhr) {
+                    let errorMessage = 'Falha ao excluir usuário';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
                     Swal.fire({
                         icon: 'error',
                         title: 'Erro',
-                        text: 'Falha ao excluir usuário'
+                        text: errorMessage
                     });
                 }
             });
