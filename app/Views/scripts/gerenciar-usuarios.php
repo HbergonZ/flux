@@ -126,45 +126,48 @@
             });
         });
 
-        // Abrir modal de alteração de grupo - VERSÃO CORRIGIDA
+        // Abrir modal de alteração de grupo
         $(document).on('click', '.btn-warning[title="Alterar Grupo"]', function() {
             const userId = $(this).data('id');
             const username = $(this).data('username');
+            const isSuperadmin = $(this).data('superadmin') === 'true';
+            const isAdmin = $(this).data('admin') === 'true';
 
             $('#alterarGrupoUserId').val(userId);
             $('#alterarGrupoUsername').text(username);
 
+            // Determinar grupos permitidos baseado no usuário logado
+            let allowedGroups = ['user']; // Padrão
+
+            <?php if (auth()->user()->inGroup('superadmin')): ?>
+                allowedGroups = ['superadmin', 'admin', 'user'];
+            <?php elseif (auth()->user()->inGroup('admin')): ?>
+                allowedGroups = ['admin', 'user'];
+            <?php endif; ?>
+
             // Carregar grupos disponíveis
+            const $groupSelect = $('#alterarGrupoSelect');
+            $groupSelect.empty();
+
+            // Adicionar opções permitidas
+            allowedGroups.forEach(group => {
+                $groupSelect.append($('<option>', {
+                    value: group,
+                    text: group.charAt(0).toUpperCase() + group.slice(1)
+                }));
+            });
+
+            // Selecionar o grupo atual
             $.get('<?= site_url("gerenciar-usuarios/editar") ?>/' + userId, function(response) {
-                if (response.success) {
-                    const $groupSelect = $('#alterarGrupoSelect');
-                    $groupSelect.empty();
-
-                    // Adicionar opções de grupos
-                    <?php foreach ($groups as $group): ?>
-                        $groupSelect.append($('<option>', {
-                            value: '<?= $group ?>',
-                            text: '<?= ucfirst($group) ?>'
-                        }));
-                    <?php endforeach; ?>
-
-                    // Selecionar o grupo atual (se houver)
-                    if (response.data.groups && response.data.groups.length > 0) {
-                        $groupSelect.val(response.data.groups[0]);
-                    }
-
-                    $('#alterarGrupoModal').modal('show');
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Erro',
-                        text: response.message
-                    });
+                if (response.success && response.data.groups && response.data.groups.length > 0) {
+                    $groupSelect.val(response.data.groups[0]);
                 }
             });
+
+            $('#alterarGrupoModal').modal('show');
         });
 
-        // Submeter alteração de grupo - VERSÃO CORRIGIDA
+        // Submeter alteração de grupo
         $('#formAlterarGrupo').on('submit', function(e) {
             e.preventDefault();
 

@@ -42,6 +42,7 @@ class VisaoGeral extends BaseController
 
         // Recebe os parâmetros de filtro
         $filtros = [
+            'priorizacao_gab' => $this->request->getPost('priorizacao_gab'),
             'plano' => $this->request->getPost('plano'),
             'acao' => $this->request->getPost('acao'),
             'meta' => $this->request->getPost('meta'),

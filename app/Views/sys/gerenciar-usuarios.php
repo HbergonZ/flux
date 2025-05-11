@@ -3,6 +3,12 @@
 <?php echo view('components/usuarios/modal-alterar-grupo.php'); ?>
 <?php echo view('components/usuarios/modal-confirmar-exclusao.php'); ?>
 
+<?php
+$loggedUser = auth()->user();
+$isSuperadmin = $loggedUser->inGroup('superadmin');
+$isAdmin = $loggedUser->inGroup('admin');
+?>
+
 <div class="container-fluid">
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
@@ -25,9 +31,9 @@
                             <label for="filterGroup">Grupo</label>
                             <select class="form-control" id="filterGroup" name="group">
                                 <option value="">Todos</option>
-                                <?php foreach ($groups as $group): ?>
-                                    <option value="<?= $group ?>"><?= ucfirst($group) ?></option>
-                                <?php endforeach; ?>
+                                <option value="superadmin">Superadmin</option>
+                                <option value="admin">Administrador</option>
+                                <option value="user">Usuário</option>
                             </select>
                         </div>
                     </div>
@@ -89,22 +95,30 @@
                                     <td class="text-center align-middle">
                                         <div class="d-inline-flex">
                                             <?php
-                                            $isCurrentUser = auth()->user()->id == $user->id;
-                                            $userIsAdmin = in_array('admin', $user->getGroups());
-                                            $loggedUserIsAdmin = auth()->user()->inGroup('admin');
+                                            $isCurrentUser = $loggedUser->id == $user->id;
+                                            $userGroups = $user->getGroups();
+                                            $userIsSuperadmin = in_array('superadmin', $userGroups);
+                                            $userIsAdmin = in_array('admin', $userGroups);
 
                                             // Pode editar se:
-                                            // 1. É admin E (não está editando outro admin OU é ele mesmo)
-                                            // 2. Não é admin mas está editando a si mesmo
-                                            $canEdit = ($loggedUserIsAdmin && (!$userIsAdmin || $isCurrentUser)) || (!$loggedUserIsAdmin && $isCurrentUser);
+                                            // 1. É superadmin
+                                            // 2. É admin E (não está editando outro admin/superadmin OU é ele mesmo)
+                                            // 3. Não é admin mas está editando a si mesmo
+                                            $canEdit = $isSuperadmin ||
+                                                ($isAdmin && (!$userIsAdmin && !$userIsSuperadmin || $isCurrentUser)) ||
+                                                (!$isAdmin && $isCurrentUser);
 
                                             // Pode alterar grupo se:
-                                            // É admin E não está editando a si mesmo E usuário não é admin
-                                            $canChangeGroup = $loggedUserIsAdmin && !$isCurrentUser && !$userIsAdmin;
+                                            // 1. É superadmin E não está editando a si mesmo
+                                            // 2. É admin E não está editando a si mesmo E usuário não é admin/superadmin
+                                            $canChangeGroup = ($isSuperadmin && !$isCurrentUser) ||
+                                                ($isAdmin && !$isCurrentUser && !$userIsAdmin && !$userIsSuperadmin);
 
                                             // Pode excluir se:
-                                            // É admin E não está editando a si mesmo E usuário não é admin
-                                            $canDelete = $loggedUserIsAdmin && !$isCurrentUser && !$userIsAdmin;
+                                            // 1. É superadmin E não está editando a si mesmo E usuário não é superadmin
+                                            // 2. É admin E não está editando a si mesmo E usuário não é admin/superadmin
+                                            $canDelete = ($isSuperadmin && !$isCurrentUser && !$userIsSuperadmin) ||
+                                                ($isAdmin && !$isCurrentUser && !$userIsAdmin && !$userIsSuperadmin);
                                             ?>
 
                                             <!-- Alterar Grupo -->
@@ -114,6 +128,8 @@
                                                 title="Alterar Grupo"
                                                 data-id="<?= $user->id ?>"
                                                 data-username="<?= $user->username ?>"
+                                                data-superadmin="<?= $userIsSuperadmin ? 'true' : 'false' ?>"
+                                                data-admin="<?= $userIsAdmin ? 'true' : 'false' ?>"
                                                 <?= !$canChangeGroup ? 'disabled' : '' ?>>
                                                 <i class="fas fa-users"></i>
                                             </button>

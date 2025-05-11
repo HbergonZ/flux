@@ -40,7 +40,7 @@
             <!-- Divider -->
             <hr class="sidebar-divider">
 
-            <?php if (auth()->user()->inGroup('admin')): ?>
+            <?php if (auth()->user()->inGroup('admin') || auth()->user()->inGroup('superadmin')): ?>
                 <!-- Área Gerencial -->
                 <div class="sidebar-heading">
                     Área Gerencial

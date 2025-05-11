@@ -2,6 +2,8 @@
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap4.min.css" />
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap4.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
     $(document).ready(function() {
@@ -27,8 +29,16 @@
             "responsive": true,
             "autoWidth": false,
             "lengthMenu": [5, 10, 25, 50, 100],
-            "pageLength": 10
+            "pageLength": 10,
+            "columnDefs": [{
+                    "orderable": false,
+                    "targets": 0
+                } // Desabilita ordenação na coluna de priorização
+            ]
         });
+
+        // Inicializa tooltips
+        $('[data-toggle="tooltip"]').tooltip();
 
         // Configuração do AJAX
         $.ajaxSetup({
@@ -43,6 +53,7 @@
             e.preventDefault();
 
             var formData = {
+                'priorizacao_gab': $('#filterPriorizacao').val(),
                 'plano': $('#filterPlano').val(),
                 'acao': $('#filterAcao').val(),
                 'meta': $('#filterMeta').val(),
@@ -74,7 +85,6 @@
                 url: '<?= site_url('visao-geral/filtrar') ?>',
                 data: formData,
                 dataType: "json",
-                // No success do AJAX, adicione:
                 success: function(response) {
                     if (response.success) {
                         // Destroi a tabela atual
@@ -107,7 +117,13 @@
                                         badge_class = 'badge-light';
                                 }
 
+                                var priorizacaoHtml = '';
+                                if (registro.priorizacao_gab == 1) {
+                                    priorizacaoHtml = '<i class="fas fa-star text-warning" data-toggle="tooltip" title="Priorizada pelo gabinete"></i>';
+                                }
+
                                 var row = '<tr>' +
+                                    '<td class="text-center">' + priorizacaoHtml + '</td>' +
                                     '<td class="text-wrap">' + (registro.plano || '') + '</td>' +
                                     '<td class="text-wrap">' + (registro.acao || '') + '</td>' +
                                     '<td class="text-wrap">' + (registro.meta || '') + '</td>' +
@@ -122,7 +138,7 @@
                                 $('#dataTable tbody').append(row);
                             });
                         } else {
-                            $('#dataTable tbody').append('<tr><td colspan="9" class="text-center">Nenhum registro encontrado</td></tr>');
+                            $('#dataTable tbody').append('<tr><td colspan="10" class="text-center">Nenhum registro encontrado</td></tr>');
                         }
 
                         // Re-inicializa o DataTable
@@ -148,6 +164,11 @@
                             "autoWidth": false,
                             "lengthMenu": [5, 10, 25, 50, 100],
                             "pageLength": 10,
+                            "columnDefs": [{
+                                    "orderable": false,
+                                    "targets": 0
+                                } // Desabilita ordenação na coluna de priorização
+                            ],
                             "initComplete": function(settings, json) {
                                 // Atualiza manualmente a informação de contagem
                                 var api = this.api();
@@ -159,6 +180,9 @@
                                     'Mostrando ' + (info.start + 1) + ' até ' +
                                     (info.end) + ' de ' + total + ' registros'
                                 );
+
+                                // Inicializa tooltips para os novos elementos
+                                $('[data-toggle="tooltip"]').tooltip();
                             }
                         });
 
@@ -172,6 +196,9 @@
                                 'Mostrando ' + (pageInfo.start + 1) + ' até ' +
                                 (pageInfo.end) + ' de ' + total + ' registros'
                             );
+
+                            // Inicializa tooltips após cada redesenho da tabela
+                            $('[data-toggle="tooltip"]').tooltip();
                         });
                     } else {
                         alert('Erro ao filtrar registros: ' + response.message);

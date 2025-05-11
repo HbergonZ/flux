@@ -68,7 +68,7 @@ $routes->post('planos/solicitar-exclusao', 'Planos::solicitarExclusao');
 $routes->post('planos/solicitar-inclusao', 'Planos::solicitarInclusao');
 $routes->get('planos/dados-plano/(:num)', 'Planos::dadosPlano/$1');
 
-$routes->group('', ['filter' => 'group:admin'], function ($routes) {
+$routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
 
     $routes->post('planos/cadastrar', 'Planos::cadastrar');
     $routes->get('planos/editar/(:num)', 'Planos::editar/$1');

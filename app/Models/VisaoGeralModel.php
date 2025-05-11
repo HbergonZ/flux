@@ -34,6 +34,11 @@ class VisaoGeralModel extends Model
     {
         $builder = $this->builder();
 
+        // Filtro de priorização
+        if (isset($filtros['priorizacao_gab']) && $filtros['priorizacao_gab'] !== '') {
+            $builder->where('priorizacao_gab', $filtros['priorizacao_gab']);
+        }
+
         if (!empty($filtros['plano'])) {
             $builder->where('plano', $filtros['plano']);
         }

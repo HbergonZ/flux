@@ -13,6 +13,16 @@
                 <div class="row">
                     <div class="col-md-3">
                         <div class="form-group">
+                            <label for="filterPriorizacao">Priorização</label>
+                            <select class="form-control" id="filterPriorizacao" name="priorizacao_gab">
+                                <option value="">Todos</option>
+                                <option value="1">Priorizadas</option>
+                                <option value="0">Não priorizadas</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
                             <label for="filterPlano">Plano</label>
                             <select class="form-control" id="filterPlano" name="plano">
                                 <option value="">Todos</option>
@@ -44,6 +54,8 @@
                             </select>
                         </div>
                     </div>
+                </div>
+                <div class="row">
                     <div class="col-md-3">
                         <div class="form-group">
                             <label for="filterStatus">Status</label>
@@ -55,8 +67,6 @@
                             </select>
                         </div>
                     </div>
-                </div>
-                <div class="row">
                     <div class="col-md-3">
                         <div class="form-group">
                             <label for="filterEtapa">Etapa</label>
@@ -85,6 +95,8 @@
                             <input type="text" class="form-control" id="filterEquipe" name="equipe" placeholder="Filtrar por equipe">
                         </div>
                     </div>
+                </div>
+                <div class="row">
                     <div class="col-md-3">
                         <div class="form-group">
                             <label for="filterStartDate">Período</label>
@@ -127,6 +139,7 @@
                 <table class="table table-bordered align-middle" id="dataTable" cellspacing="0">
                     <thead>
                         <tr class="text-center">
+                            <th>Priorização</th>
                             <th>Plano</th>
                             <th>Ação</th>
                             <th>Meta</th>
@@ -142,6 +155,11 @@
                         <?php if (isset($dados) && !empty($dados)) : ?>
                             <?php foreach ($dados as $registro) : ?>
                                 <tr>
+                                    <td class="text-center align-middle">
+                                        <?php if ($registro['priorizacao_gab'] == 1) : ?>
+                                            <i class="fas fa-star text-warning" data-toggle="tooltip" title="Priorizada pelo gabinete"></i>
+                                        <?php endif; ?>
+                                    </td>
                                     <td class="text-wrap align-middle"><?= esc($registro['plano']) ?></td>
                                     <td class="text-wrap align-middle"><?= esc($registro['acao']) ?></td>
                                     <td class="text-wrap align-middle"><?= esc($registro['meta']) ?></td>
@@ -176,7 +194,7 @@
                             <?php endforeach; ?>
                         <?php else : ?>
                             <tr>
-                                <td colspan="9" class="text-center">Nenhum registro encontrado</td>
+                                <td colspan="10" class="text-center">Nenhum registro encontrado</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
