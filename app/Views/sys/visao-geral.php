@@ -108,7 +108,6 @@
                     </div>
                 </div>
 
-                <!-- Linha dos botões alinhados à direita -->
                 <div class="row mt-3">
                     <div class="col-md-12 text-right">
                         <button type="button" id="btnLimparFiltros" class="btn btn-secondary btn-icon-split btn-sm">
@@ -131,24 +130,27 @@
 
     <!-- DataTales Example -->
     <div class="card shadow mb-4 mx-md-5 mx-3">
-        <div class="card-header py-3">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Visão Geral dos Projetos</h6>
+            <button class="btn btn-sm btn-secondary" id="btnConfigurarCampos">
+                <i class="fas fa-cog"></i> Configurar Campos
+            </button>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered align-middle" id="dataTable" cellspacing="0">
+                <table class="table table-bordered align-middle" id="dataTable" cellspacing="0" style="width:100%">
                     <thead>
                         <tr class="text-center">
-                            <th>Priorização</th>
-                            <th>Plano</th>
-                            <th>Ação</th>
-                            <th>Meta</th>
-                            <th>Etapa</th>
-                            <th>Responsável</th>
-                            <th>Equipe</th>
-                            <th>Status</th>
-                            <th>Início</th>
-                            <th>Término</th>
+                            <th class="text-center align-middle">Priorização</th>
+                            <th class="align-middle">Plano</th>
+                            <th class="align-middle">Ação</th>
+                            <th class="align-middle">Meta</th>
+                            <th class="align-middle">Etapa</th>
+                            <th class="align-middle">Responsável</th>
+                            <th class="align-middle">Equipe</th>
+                            <th class="text-center align-middle">Status</th>
+                            <th class="align-middle">Início</th>
+                            <th class="align-middle">Término</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -156,9 +158,9 @@
                             <?php foreach ($dados as $registro) : ?>
                                 <tr>
                                     <td class="text-center align-middle">
-                                        <?php if ($registro['priorizacao_gab'] == 1) : ?>
-                                            <i class="fas fa-star text-warning" data-toggle="tooltip" title="Priorizada pelo gabinete"></i>
-                                        <?php endif; ?>
+                                        <?= $registro['priorizacao_gab'] == 1 ?
+                                            '<i class="fas fa-star text-warning fa-lg" data-toggle="tooltip" title="Priorizada pelo gabinete"></i>' :
+                                            '<i class="far fa-star text-secondary fa-lg" data-toggle="tooltip" title="Não priorizada"></i>' ?>
                                     </td>
                                     <td class="text-wrap align-middle"><?= esc($registro['plano']) ?></td>
                                     <td class="text-wrap align-middle"><?= esc($registro['acao']) ?></td>
@@ -186,10 +188,12 @@
                                                 $badge_class = 'badge-light';
                                         }
                                         ?>
-                                        <span class="badge <?= $badge_class ?>"><?= esc($registro['status']) ?></span>
+                                        <span class="badge badge-pill <?= $badge_class ?> py-2" style="min-width: 110px; display: inline-block; text-align: center;">
+                                            <?= esc($registro['status']) ?>
+                                        </span>
                                     </td>
-                                    <td class="text-center align-middle"><?= !empty($registro['data_inicio']) ? esc(date('d/m/Y', strtotime($registro['data_inicio']))) : '' ?></td>
-                                    <td class="text-center align-middle"><?= !empty($registro['data_fim']) ? esc(date('d/m/Y', strtotime($registro['data_fim']))) : '' ?></td>
+                                    <td class="text-center align-middle"><?= esc($registro['data_inicio_formatada']) ?></td>
+                                    <td class="text-center align-middle"><?= esc($registro['data_fim_formatada']) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else : ?>
@@ -199,6 +203,71 @@
                         <?php endif; ?>
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Configurar Campos -->
+    <div class="modal fade" id="modalConfigurarCampos" tabindex="-1" role="dialog" aria-labelledby="modalConfigurarCamposLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalConfigurarCamposLabel">Configurar Campos Visíveis</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="formConfigurarCampos">
+                        <div class="form-group">
+                            <label>Selecione os campos a serem exibidos:</label>
+                            <div class="form-check">
+                                <input class="form-check-input campo-visivel" type="checkbox" value="priorizacao" id="campoPriorizacao" checked>
+                                <label class="form-check-label" for="campoPriorizacao">Priorização</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input campo-visivel" type="checkbox" value="plano" id="campoPlano">
+                                <label class="form-check-label" for="campoPlano">Plano</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input campo-visivel" type="checkbox" value="acao" id="campoAcao">
+                                <label class="form-check-label" for="campoAcao">Ação</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input campo-visivel" type="checkbox" value="meta" id="campoMeta">
+                                <label class="form-check-label" for="campoMeta">Meta</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input campo-visivel" type="checkbox" value="etapa" id="campoEtapa" checked>
+                                <label class="form-check-label" for="campoEtapa">Etapa</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input campo-visivel" type="checkbox" value="responsavel" id="campoResponsavel">
+                                <label class="form-check-label" for="campoResponsavel">Responsável</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input campo-visivel" type="checkbox" value="equipe" id="campoEquipe" checked>
+                                <label class="form-check-label" for="campoEquipe">Equipe</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input campo-visivel" type="checkbox" value="status" id="campoStatus" checked>
+                                <label class="form-check-label" for="campoStatus">Status</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input campo-visivel" type="checkbox" value="data_inicio" id="campoDataInicio" checked>
+                                <label class="form-check-label" for="campoDataInicio">Início</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input campo-visivel" type="checkbox" value="data_fim" id="campoDataFim" checked>
+                                <label class="form-check-label" for="campoDataFim">Término</label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnAplicarConfigCampos">Aplicar</button>
+                </div>
             </div>
         </div>
     </div>

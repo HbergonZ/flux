@@ -18,19 +18,32 @@ class VisaoGeral extends BaseController
         // Busca todos os registros da view
         $dados = $this->visaoGeralModel->findAll();
 
+        // Formata os dados exatamente como no AJAX
+        $dadosFormatados = array_map(function ($registro) {
+            return [
+                'priorizacao_gab' => (int)$registro['priorizacao_gab'], // Garante que é inteiro
+                'plano' => $registro['plano'] ?? '',
+                'acao' => $registro['acao'] ?? '',
+                'meta' => $registro['meta'] ?? '',
+                'etapa' => $registro['etapa'] ?? '',
+                'responsavel' => $registro['responsavel'] ?? '',
+                'equipe' => $registro['equipe'] ?? '',
+                'status' => $registro['status'] ?? '',
+                'data_inicio_formatada' => !empty($registro['data_inicio']) ? date('d/m/Y', strtotime($registro['data_inicio'])) : '',
+                'data_fim_formatada' => !empty($registro['data_fim']) ? date('d/m/Y', strtotime($registro['data_fim'])) : ''
+            ];
+        }, $dados);
+
         // Busca os valores distintos para os filtros
         $filtros = $this->visaoGeralModel->getFiltrosDistinct();
 
         // Passa os dados para a view
         $data = [
-            'dados' => $dados,
+            'dados' => $dadosFormatados,
             'filtros' => $filtros
         ];
 
-        // Conteúdo da página interna
         $this->content_data['content'] = view('sys/visao-geral', $data);
-
-        // Conteúdo da estrutura externa
         return view('layout', $this->content_data);
     }
 
@@ -57,29 +70,26 @@ class VisaoGeral extends BaseController
         // Aplica os filtros
         $dados = $this->visaoGeralModel->filtrar($filtros);
 
-        // Conta o total de registros filtrados
-        $totalRegistros = count($dados);
-
-        // Formata as datas antes de enviar
-        foreach ($dados as &$registro) {
-            if (!empty($registro['data_inicio'])) {
-                $registro['data_inicio_formatada'] = date('d/m/Y', strtotime($registro['data_inicio']));
-            } else {
-                $registro['data_inicio_formatada'] = '';
-            }
-
-            if (!empty($registro['data_fim'])) {
-                $registro['data_fim_formatada'] = date('d/m/Y', strtotime($registro['data_fim']));
-            } else {
-                $registro['data_fim_formatada'] = '';
-            }
-        }
-        unset($registro);
+        // Formata os dados para resposta
+        $dadosFormatados = array_map(function ($registro) {
+            return [
+                'priorizacao_gab' => (int)$registro['priorizacao_gab'], // Garante que é inteiro
+                'plano' => $registro['plano'] ?? '',
+                'acao' => $registro['acao'] ?? '',
+                'meta' => $registro['meta'] ?? '',
+                'etapa' => $registro['etapa'] ?? '',
+                'responsavel' => $registro['responsavel'] ?? '',
+                'equipe' => $registro['equipe'] ?? '',
+                'status' => $registro['status'] ?? '',
+                'data_inicio_formatada' => !empty($registro['data_inicio']) ? date('d/m/Y', strtotime($registro['data_inicio'])) : '',
+                'data_fim_formatada' => !empty($registro['data_fim']) ? date('d/m/Y', strtotime($registro['data_fim'])) : ''
+            ];
+        }, $dados);
 
         return $this->response->setJSON([
             'success' => true,
-            'data' => $dados,
-            'totalRegistros' => $totalRegistros
+            'data' => $dadosFormatados,
+            'totalRegistros' => count($dados)
         ]);
     }
 }
