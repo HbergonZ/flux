@@ -5,14 +5,6 @@
 
 <script>
     $(document).ready(function() {
-        // Adiciona a legenda antes da tabela
-        $('.card-body').prepend(
-            '<div class="mb-3 small text-muted text-center">' +
-            '<i class="fas fa-star text-warning"></i> = Priorizada pelo gabinete | ' +
-            '<i class="far fa-star text-secondary"></i> = Não priorizada' +
-            '</div>'
-        );
-
         // Configuração inicial dos campos visíveis
         var camposVisiveis = {
             'priorizacao': true,
@@ -34,6 +26,14 @@
             'data_inicio': 8,
             'data_fim': 9
         };
+
+        // Adiciona a legenda antes da tabela (após os filtros)
+        $('#dataTable').before(
+            '<div class="mb-3 small text-muted text-center">' +
+            '<i class="fas fa-star text-warning"></i> Priorizada pelo gabinete | ' +
+            '<i class="far fa-star text-secondary"></i> Não priorizada' +
+            '</div>'
+        );
 
         // Inicializa o DataTable com os dados do PHP
         var dataTable = $('#dataTable').DataTable({
@@ -153,6 +153,9 @@
             atualizarColunasVisiveis();
         }
 
+        // Inicializa a configuração de campos
+        carregarConfiguracaoCampos();
+
         // Abrir modal de configuração
         $('#btnConfigurarCampos').click(function() {
             $('#modalConfigurarCampos').modal('show');
@@ -169,8 +172,6 @@
             $('#modalConfigurarCampos').modal('hide');
         });
 
-        // Inicializa a configuração de campos
-        carregarConfiguracaoCampos();
 
         // Inicializa tooltips
         $('[data-toggle="tooltip"]').tooltip();

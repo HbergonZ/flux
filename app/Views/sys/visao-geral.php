@@ -81,12 +81,7 @@
                     <div class="col-md-3">
                         <div class="form-group">
                             <label for="filterResponsavel">Responsável</label>
-                            <select class="form-control" id="filterResponsavel" name="responsavel">
-                                <option value="">Todos</option>
-                                <?php foreach ($filtros['responsavel'] as $responsavel) : ?>
-                                    <option value="<?= esc($responsavel['responsavel']) ?>"><?= esc($responsavel['responsavel']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <input type="text" class="form-control" id="filterResponsavel" name="responsavel" placeholder="Filtrar por responsável">
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -222,7 +217,7 @@
                         <div class="form-group">
                             <label>Selecione os campos a serem exibidos:</label>
                             <div class="form-check">
-                                <input class="form-check-input campo-visivel" type="checkbox" value="priorizacao" id="campoPriorizacao" checked>
+                                <input class="form-check-input campo-visivel" type="checkbox" value="priorizacao" id="campoPriorizacao">
                                 <label class="form-check-label" for="campoPriorizacao">Priorização</label>
                             </div>
                             <div class="form-check">
@@ -238,7 +233,7 @@
                                 <label class="form-check-label" for="campoMeta">Meta</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input campo-visivel" type="checkbox" value="etapa" id="campoEtapa" checked>
+                                <input class="form-check-input campo-visivel" type="checkbox" value="etapa" id="campoEtapa">
                                 <label class="form-check-label" for="campoEtapa">Etapa</label>
                             </div>
                             <div class="form-check">
@@ -246,11 +241,11 @@
                                 <label class="form-check-label" for="campoResponsavel">Responsável</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input campo-visivel" type="checkbox" value="equipe" id="campoEquipe" checked>
+                                <input class="form-check-input campo-visivel" type="checkbox" value="equipe" id="campoEquipe">
                                 <label class="form-check-label" for="campoEquipe">Equipe</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input campo-visivel" type="checkbox" value="status" id="campoStatus" checked>
+                                <input class="form-check-input campo-visivel" type="checkbox" value="status" id="campoStatus">
                                 <label class="form-check-label" for="campoStatus">Status</label>
                             </div>
                             <div class="form-check">

@@ -15,13 +15,16 @@ class VisaoGeral extends BaseController
 
     public function index(): string
     {
-        // Busca todos os registros da view
-        $dados = $this->visaoGeralModel->findAll();
+        // Busca todos os registros
+        $dados = $this->visaoGeralModel->getVisaoGeral();
 
-        // Formata os dados exatamente como no AJAX
+        // Busca os valores distintos para os filtros
+        $filtros = $this->visaoGeralModel->getFiltrosDistinct();
+
+        // Formata os dados para a view
         $dadosFormatados = array_map(function ($registro) {
             return [
-                'priorizacao_gab' => (int)$registro['priorizacao_gab'], // Garante que é inteiro
+                'priorizacao_gab' => (int)$registro['priorizacao_gab'],
                 'plano' => $registro['plano'] ?? '',
                 'acao' => $registro['acao'] ?? '',
                 'meta' => $registro['meta'] ?? '',
@@ -34,13 +37,21 @@ class VisaoGeral extends BaseController
             ];
         }, $dados);
 
-        // Busca os valores distintos para os filtros
-        $filtros = $this->visaoGeralModel->getFiltrosDistinct();
-
-        // Passa os dados para a view
         $data = [
             'dados' => $dadosFormatados,
-            'filtros' => $filtros
+            'filtros' => $filtros,
+            'colunas_padrao' => json_encode([
+                'priorizacao' => true,
+                'plano' => true,
+                'acao' => true,
+                'meta' => true,
+                'etapa' => true,
+                'responsavel' => true,
+                'equipe' => true,
+                'status' => true,
+                'data_inicio' => true,
+                'data_fim' => true
+            ])
         ];
 
         $this->content_data['content'] = view('sys/visao-geral', $data);
@@ -68,12 +79,12 @@ class VisaoGeral extends BaseController
         ];
 
         // Aplica os filtros
-        $dados = $this->visaoGeralModel->filtrar($filtros);
+        $dados = $this->visaoGeralModel->getVisaoGeral($filtros);
 
         // Formata os dados para resposta
         $dadosFormatados = array_map(function ($registro) {
             return [
-                'priorizacao_gab' => (int)$registro['priorizacao_gab'], // Garante que é inteiro
+                'priorizacao_gab' => (int)$registro['priorizacao_gab'],
                 'plano' => $registro['plano'] ?? '',
                 'acao' => $registro['acao'] ?? '',
                 'meta' => $registro['meta'] ?? '',
