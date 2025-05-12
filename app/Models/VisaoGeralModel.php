@@ -12,7 +12,7 @@ class VisaoGeralModel extends Model
     protected $useTimestamps = true;
     protected $createdField = 'created_at';
     protected $updatedField = 'updated_at';
-    protected $allowedFields = ['etapa', 'responsavel', 'equipe', 'tempo_estimado_dias', 'data_inicio', 'data_fim', 'status', 'id_acao', 'id_meta'];
+    protected $allowedFields = ['etapa', 'responsavel', 'equipe', 'tempo_estimado_dias', 'data_inicio', 'data_fim', 'status', 'id_acao', 'ordem', 'id_meta'];
 
     public function getVisaoGeral(array $filtros = [])
     {
@@ -28,7 +28,8 @@ class VisaoGeralModel extends Model
             ->join('acoes', 'acoes.id = etapas.id_acao')
             ->join('metas', 'metas.id = etapas.id_meta', 'left')
             ->join('eixos', 'eixos.id = acoes.id_eixo', 'left')
-            ->join('planos', 'planos.id = acoes.id_plano', 'left');
+            ->join('planos', 'planos.id = acoes.id_plano', 'left')
+            ->orderBy('acoes.acao, etapas.ordem', 'ASC');
 
         // Aplica filtros
         $this->aplicarFiltros($builder, $filtros);
@@ -48,6 +49,7 @@ class VisaoGeralModel extends Model
                 'meta' => $item['meta_nome'] ?? '',
                 'id_etapa' => $item['id_etapa'],
                 'etapa' => $item['etapa'],
+                'ordem' => $item['ordem'],
                 'responsavel' => $item['responsavel'],
                 'equipe' => $item['equipe'],
                 'tempo_estimado_dias' => $item['tempo_estimado_dias'],
@@ -117,55 +119,93 @@ class VisaoGeralModel extends Model
     public function getFiltrosDistinct()
     {
         $builder = $this->builder();
-        $builder->select('planos.nome as plano,
-                        acoes.acao,
-                        metas.nome as meta,
-                        etapas.etapa,
-                        etapas.responsavel,
-                        etapas.status')
-            ->join('acoes', 'acoes.id = etapas.id_acao')
-            ->join('metas', 'metas.id = etapas.id_meta', 'left')
-            ->join('planos', 'planos.id = acoes.id_plano', 'left')
-            ->groupBy('planos.nome, acoes.acao, metas.nome, etapas.etapa, etapas.responsavel, etapas.status')
-            ->orderBy('planos.nome, acoes.acao, metas.nome, etapas.etapa');
 
-        $result = $builder->get()->getResultArray();
+        // Consulta para planos
+        $planos = $this->builder()
+            ->select('planos.nome as plano')
+            ->join('acoes', 'acoes.id = etapas.id_acao')
+            ->join('planos', 'planos.id = acoes.id_plano', 'left')
+            ->groupBy('planos.nome')
+            ->orderBy('planos.nome')
+            ->get()
+            ->getResultArray();
+
+        // Consulta para ações
+        $acoes = $this->builder()
+            ->select('acoes.acao')
+            ->join('acoes', 'acoes.id = etapas.id_acao')
+            ->groupBy('acoes.acao')
+            ->orderBy('acoes.acao')
+            ->get()
+            ->getResultArray();
+
+        // Consulta para metas
+        $metas = $this->builder()
+            ->select('metas.nome as meta')
+            ->join('metas', 'metas.id = etapas.id_meta', 'left')
+            ->groupBy('metas.nome')
+            ->orderBy('metas.nome')
+            ->get()
+            ->getResultArray();
+
+        // Consulta para etapas
+        $etapas = $this->builder()
+            ->select('etapas.etapa')
+            ->groupBy('etapas.etapa')
+            ->orderBy('etapas.etapa')
+            ->get()
+            ->getResultArray();
+
+        // Consulta para responsáveis
+        $responsaveis = $this->builder()
+            ->select('etapas.responsavel')
+            ->groupBy('etapas.responsavel')
+            ->orderBy('etapas.responsavel')
+            ->get()
+            ->getResultArray();
+
+        // Consulta para status
+        $status = $this->builder()
+            ->select('etapas.status')
+            ->groupBy('etapas.status')
+            ->orderBy('etapas.status')
+            ->get()
+            ->getResultArray();
 
         // Processa os resultados para obter valores distintos
         $filtros = [
-            'planos' => [],
-            'acoes' => [],
-            'metas' => [],
-            'etapas' => [],
-            'responsavel' => [],
-            'status' => []
+            'planos' => array_values(array_unique(array_column($planos, 'plano'))),
+            'acoes' => array_values(array_unique(array_column($acoes, 'acao'))),
+            'metas' => array_values(array_unique(array_column($metas, 'meta'))),
+            'etapas' => array_values(array_unique(array_column($etapas, 'etapa'))),
+            'responsavel' => array_values(array_unique(array_column($responsaveis, 'responsavel'))),
+            'status' => array_values(array_unique(array_column($status, 'status')))
         ];
 
-        foreach ($result as $row) {
-            if (!empty($row['plano']) && !in_array(['plano' => $row['plano']], $filtros['planos'])) {
-                $filtros['planos'][] = ['plano' => $row['plano']];
-            }
+        // Converte para o formato esperado (array de arrays associativos)
+        $filtros['planos'] = array_map(function ($item) {
+            return ['plano' => $item];
+        }, $filtros['planos']);
 
-            if (!empty($row['acao']) && !in_array(['acao' => $row['acao']], $filtros['acoes'])) {
-                $filtros['acoes'][] = ['acao' => $row['acao']];
-            }
+        $filtros['acoes'] = array_map(function ($item) {
+            return ['acao' => $item];
+        }, $filtros['acoes']);
 
-            if (!empty($row['meta']) && !in_array(['meta' => $row['meta']], $filtros['metas'])) {
-                $filtros['metas'][] = ['meta' => $row['meta']];
-            }
+        $filtros['metas'] = array_map(function ($item) {
+            return ['meta' => $item];
+        }, $filtros['metas']);
 
-            if (!empty($row['etapa']) && !in_array(['etapa' => $row['etapa']], $filtros['etapas'])) {
-                $filtros['etapas'][] = ['etapa' => $row['etapa']];
-            }
+        $filtros['etapas'] = array_map(function ($item) {
+            return ['etapa' => $item];
+        }, $filtros['etapas']);
 
-            if (!empty($row['responsavel']) && !in_array(['responsavel' => $row['responsavel']], $filtros['responsavel'])) {
-                $filtros['responsavel'][] = ['responsavel' => $row['responsavel']];
-            }
+        $filtros['responsavel'] = array_map(function ($item) {
+            return ['responsavel' => $item];
+        }, $filtros['responsavel']);
 
-            if (!empty($row['status']) && !in_array(['status' => $row['status']], $filtros['status'])) {
-                $filtros['status'][] = ['status' => $row['status']];
-            }
-        }
+        $filtros['status'] = array_map(function ($item) {
+            return ['status' => $item];
+        }, $filtros['status']);
 
         return $filtros;
     }

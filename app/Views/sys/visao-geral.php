@@ -140,6 +140,7 @@
                             <th class="align-middle">Plano</th>
                             <th class="align-middle">Ação</th>
                             <th class="align-middle">Meta</th>
+                            <th class="align-middle">Ordem</th>
                             <th class="align-middle">Etapa</th>
                             <th class="align-middle">Responsável</th>
                             <th class="align-middle">Equipe</th>
@@ -160,6 +161,7 @@
                                     <td class="text-wrap align-middle"><?= esc($registro['plano']) ?></td>
                                     <td class="text-wrap align-middle"><?= esc($registro['acao']) ?></td>
                                     <td class="text-wrap align-middle"><?= esc($registro['meta']) ?></td>
+                                    <td class="text-center align-middle"><?= esc($registro['ordem']) ?></td>
                                     <td class="text-wrap align-middle"><?= esc($registro['etapa']) ?></td>
                                     <td class="text-wrap align-middle"><?= esc($registro['responsavel']) ?></td>
                                     <td class="text-wrap align-middle"><?= esc($registro['equipe']) ?></td>
@@ -193,7 +195,7 @@
                             <?php endforeach; ?>
                         <?php else : ?>
                             <tr>
-                                <td colspan="10" class="text-center">Nenhum registro encontrado</td>
+                                <td colspan="11" class="text-center">Nenhum registro encontrado</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
@@ -231,6 +233,10 @@
                             <div class="form-check">
                                 <input class="form-check-input campo-visivel" type="checkbox" value="meta" id="campoMeta">
                                 <label class="form-check-label" for="campoMeta">Meta</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input campo-visivel" type="checkbox" value="ordem" id="campoOrdem">
+                                <label class="form-check-label" for="campoOrdem">Ordem</label>
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input campo-visivel" type="checkbox" value="etapa" id="campoEtapa">

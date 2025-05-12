@@ -8,9 +8,16 @@
         // Configuração inicial dos campos visíveis
         var camposVisiveis = {
             'priorizacao': true,
+            'plano': true,
+            'acao': true,
+            'meta': true,
+            'ordem': true,
             'etapa': true,
+            'responsavel': true,
             'equipe': true,
-            'status': true
+            'status': true,
+            'data_inicio': true,
+            'data_fim': true
         };
 
         // Mapeamento de colunas
@@ -19,12 +26,13 @@
             'plano': 1,
             'acao': 2,
             'meta': 3,
-            'etapa': 4,
-            'responsavel': 5,
-            'equipe': 6,
-            'status': 7,
-            'data_inicio': 8,
-            'data_fim': 9
+            'ordem': 4,
+            'etapa': 5,
+            'responsavel': 6,
+            'equipe': 7,
+            'status': 8,
+            'data_inicio': 9,
+            'data_fim': 10
         };
 
         // Adiciona a legenda antes da tabela (após os filtros)
@@ -82,6 +90,10 @@
                 {
                     "data": "meta",
                     "className": "align-middle"
+                },
+                {
+                    "data": "ordem",
+                    "className": "text-center align-middle"
                 },
                 {
                     "data": "etapa",
@@ -171,7 +183,6 @@
             atualizarColunasVisiveis();
             $('#modalConfigurarCampos').modal('hide');
         });
-
 
         // Inicializa tooltips
         $('[data-toggle="tooltip"]').tooltip();
