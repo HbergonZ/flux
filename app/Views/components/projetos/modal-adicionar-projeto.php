@@ -1,62 +1,54 @@
-<!-- Modal para Adicionar Projeto -->
-<div class="modal fade" id="addProjectModal" tabindex="-1" role="dialog" aria-labelledby="addProjectModalLabel" aria-hidden="true">
+<div class="modal fade" id="addAcaoModal" tabindex="-1" role="dialog" aria-labelledby="addAcaoModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="addProjectModalLabel">Incluir Novo Projeto</h5>
+                <h5 class="modal-title" id="addAcaoModalLabel">Incluir Nova Ação</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="formAddProject" action="<?= site_url('projetos-cadastrados/cadastrar') ?>" method="post">
-                <!-- Token CSRF -->
+            <form id="formAddAcao" action="<?= site_url("acoes/cadastrar/$idPlano") ?>" method="post">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
 
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="projectName">Nome do Projeto*</label>
-                        <input type="text" class="form-control" id="projectName" name="nome" required>
+                        <label for="acaoNome">Ação*</label>
+                        <input type="text" class="form-control" id="acaoNome" name="acao" required maxlength="255">
                     </div>
 
                     <div class="form-group">
-                        <label for="projectObjective">Objetivo*</label>
-                        <textarea class="form-control" id="projectObjective" name="objetivo" rows="3" required></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="projectPerspective">Perspectiva Estratégica</label>
-                        <textarea class="form-control" id="projectPerspective" name="perspectiva_estrategica" rows="2"></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="projectStakeholders">Interessados</label>
-                        <textarea class="form-control" id="projectStakeholders" name="interessados" rows="2"></textarea>
+                        <label for="acaoDescricao">Descrição</label>
+                        <textarea class="form-control" id="acaoDescricao" name="descricao" rows="3"></textarea>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="projectStatus">Status*</label>
-                                <select class="form-control" id="projectStatus" name="status" required>
-                                    <option value="">Selecione...</option>
-                                    <option value="Em andamento">Em andamento</option>
-                                    <option value="Não iniciado">Não iniciado</option>
-                                    <option value="Finalizado">Finalizado</option>
-                                    <option value="Paralisado">Paralisado</option>
-                                </select>
+                                <label for="acaoProjetoVinculado">Projeto Vinculado</label>
+                                <input type="text" class="form-control" id="acaoProjetoVinculado" name="projeto_vinculado" maxlength="255">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="projectPublicationDate">Data de Início*</label>
-                                <input type="date" class="form-control" id="projectPublicationDate" name="data_publicacao" required>
+                                <label for="acaoEixo">Eixo</label>
+                                <select class="form-control" id="acaoEixo" name="id_eixo">
+                                    <option value="">Selecione um eixo</option>
+                                    <?php foreach ($eixos as $eixo): ?>
+                                        <option value="<?= $eixo['id'] ?>"><?= $eixo['nome'] ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="acaoResponsaveis">Responsáveis</label>
+                        <textarea class="form-control" id="acaoResponsaveis" name="responsaveis" rows="2"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar Projeto</button>
+                    <button type="submit" class="btn btn-primary">Salvar Ação</button>
                 </div>
             </form>
         </div>

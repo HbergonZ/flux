@@ -4,17 +4,21 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class EtapasModel extends Model
+class ProjetosModel extends Model
 {
-    protected $table = 'etapas';
+    protected $table = 'projetos'; // Mantemos o nome da tabela por enquanto
     protected $primaryKey = 'id';
 
     protected $useAutoIncrement = true;
 
     protected $allowedFields = [
-        'nome',
-        'id_projeto',
-        'ordem'
+        'identificador',
+        'acao',
+        'descricao',
+        'projeto_vinculado',
+        'id_eixo',
+        'id_plano',
+        'responsaveis'
     ];
 
     protected $useTimestamps = true;
@@ -32,10 +36,16 @@ class EtapasModel extends Model
         return $data;
     }
 
-    public function getEtapasByProjeto($idProjeto)
+    public function getProjetosByPlano($idPlano)
+    {
+        return $this->where('id_plano', $idPlano)->findAll();
+    }
+
+    public function getAcoesDiretasByProjeto($idProjeto)
     {
         return $this->where('id_projeto', $idProjeto)
-            ->orderBy('data_criacao', 'ASC')
+            ->where('id_etapa IS NULL')
+            ->orderBy('ordem', 'ASC')
             ->findAll();
     }
 }

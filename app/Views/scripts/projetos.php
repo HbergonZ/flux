@@ -1,4 +1,5 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap4.min.css" />
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap4.min.js"></script>
@@ -9,18 +10,25 @@
         var dataTable = $('#dataTable').DataTable({
             "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.20/i18n/Portuguese-Brasil.json",
+                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json",
+                "emptyTable": "Nenhum dado disponível na tabela",
+                "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
+                "infoEmpty": "Mostrando 0 a 0 de 0 registros",
+                "infoFiltered": "(filtrado de _MAX_ registros no total)",
                 "lengthMenu": "Mostrar _MENU_ registros por página",
-                "zeroRecords": "Nenhum registro encontrado",
-                "info": "Mostrando página _PAGE_ de _PAGES_",
-                "infoEmpty": "Nenhum registro disponível",
-                "infoFiltered": "(filtrado de _MAX_ registros totais)",
+                "loadingRecords": "Carregando...",
+                "processing": "Processando...",
                 "search": "Pesquisar:",
+                "zeroRecords": "Nenhum registro correspondente encontrado",
                 "paginate": {
                     "first": "Primeira",
                     "last": "Última",
                     "next": "Próxima",
                     "previous": "Anterior"
+                },
+                "aria": {
+                    "sortAscending": ": ativar para ordenar coluna ascendente",
+                    "sortDescending": ": ativar para ordenar coluna descendente"
                 }
             },
             "searching": false,
@@ -38,319 +46,343 @@
             }
         });
 
-        // Cadastrar novo projeto
-        $('#formAddProject').submit(function(e) {
-            e.preventDefault();
+        // Armazenar dados originais do formulário
+        let formOriginalData = {};
 
-            $.ajax({
-                type: "POST",
-                url: $(this).attr('action'),
-                data: $(this).serialize(),
-                dataType: "json",
-                success: function(response) {
-                    if (response.success) {
-                        $('#addProjectModal').modal('hide');
-                        location.reload();
-                    } else {
-                        alert('Erro: ' + response.message);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    alert('Erro na requisição: ' + error);
-                }
-            });
+        // Cadastrar novo projeto (apenas admin)
+        $('#formAddProjeto').submit(function(e) {
+            e.preventDefault();
+            submitForm($(this), '#addProjetoModal');
         });
 
-        // Editar projeto
+        // Editar projeto - Abrir modal (apenas admin)
         $(document).on('click', '.btn-primary[title="Editar"]', function() {
-            // Extrai o ID do projeto (formato: "1-nome-projeto")
-            var projectId = $(this).data('id').split('-')[0];
+            var projetoId = $(this).data('id').split('-')[0];
 
-            // Configuração do AJAX com CSRF
             $.ajax({
-                url: '<?= site_url('projetos-cadastrados/editar/') ?>' + projectId,
+                url: '<?= site_url('projetos/editar/') ?>' + projetoId,
                 type: 'GET',
                 dataType: 'json',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
-                },
-                beforeSend: function() {
-                    // Opcional: Mostrar loader
-                    console.log("Carregando dados do projeto...");
-                },
                 success: function(response) {
-                    console.log("Resposta:", response);
-
                     if (response.success && response.data) {
-                        // Preenche o formulário do modal
-                        $('#editProjectId').val(response.data.id);
-                        $('#editProjectName').val(response.data.nome);
-                        $('#editProjectObjective').val(response.data.objetivo);
-                        $('#editProjectPerspective').val(response.data.perspectiva_estrategica);
-                        $('#editProjectStakeholders').val(response.data.interessados);
-                        $('#editProjectStatus').val(response.data.status);
-
-                        // Formata a data (YYYY-MM-DD para o input date)
-                        if (response.data.data_publicacao) {
-                            var dataParts = response.data.data_publicacao.split(' ')[0].split('-');
-                            var formattedDate = dataParts[0] + '-' + dataParts[1] + '-' + dataParts[2];
-                            $('#editProjectPublicationDate').val(formattedDate);
-                        }
-
-                        // Abre o modal
-                        $('#editProjectModal').modal('show');
+                        $('#editProjetoId').val(response.data.id);
+                        $('#editProjetoIdentificador').val(response.data.identificador);
+                        $('#editProjetoNome').val(response.data.nome);
+                        $('#editProjetoDescricao').val(response.data.descricao);
+                        $('#editProjetoVinculado').val(response.data.projeto_vinculado);
+                        $('#editProjetoEixo').val(response.data.id_eixo);
+                        $('#editProjetoResponsaveis').val(response.data.responsaveis);
+                        $('#editProjetoModal').modal('show');
                     } else {
-                        alert(response.message || "Erro ao carregar projeto");
+                        showErrorAlert(response.message || "Erro ao carregar projeto");
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.error("Erro AJAX:", {
-                        Status: xhr.status,
-                        StatusText: xhr.statusText,
-                        Response: xhr.responseText
-                    });
-                    alert("Falha na comunicação com o servidor. Verifique o console.");
+                    showErrorAlert("Falha na comunicação com o servidor.");
                 }
             });
         });
 
-        // Atualizar projeto
-        $('#formEditProject').submit(function(e) {
-            e.preventDefault();
+        // Solicitar edição de projeto - Abrir modal (para não-admins)
+        $(document).on('click', '.btn-primary[title="Solicitar Edição"]', function() {
+            var projetoId = $(this).data('id').split('-')[0];
+            var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
+            var url = isAdmin ? '<?= site_url('projetos/editar/') ?>' : '<?= site_url('projetos/dados-projeto/') ?>';
 
             $.ajax({
-                type: "POST",
-                url: '<?= site_url('projetos-cadastrados/atualizar') ?>',
-                data: $(this).serialize(),
-                dataType: "json",
+                url: url + projetoId,
+                type: 'GET',
+                dataType: 'json',
                 success: function(response) {
-                    if (response.success) {
-                        $('#editProjectModal').modal('hide');
-                        location.reload();
+                    if (response.success && response.data) {
+                        var projeto = response.data;
+
+                        // Preenche os campos do formulário
+                        $('#solicitarEdicaoId').val(projeto.id);
+                        $('#solicitarEdicaoIdentificador').val(projeto.identificador);
+                        $('#solicitarEdicaoNome').val(projeto.nome);
+                        $('#solicitarEdicaoDescricao').val(projeto.descricao);
+                        $('#solicitarEdicaoVinculado').val(projeto.projeto_vinculado);
+                        $('#solicitarEdicaoEixo').val(projeto.id_eixo);
+                        $('#solicitarEdicaoResponsaveis').val(projeto.responsaveis);
+
+                        // Armazena os valores originais para comparação
+                        formOriginalData = {
+                            identificador: projeto.identificador,
+                            nome: projeto.nome,
+                            descricao: projeto.descricao,
+                            projeto_vinculado: projeto.projeto_vinculado,
+                            id_eixo: projeto.id_eixo,
+                            responsaveis: projeto.responsaveis
+                        };
+
+                        $('#solicitarEdicaoModal').modal('show');
+                        $('#alertNenhumaAlteracao').addClass('d-none');
                     } else {
-                        alert('Erro: ' + response.message);
+                        showErrorAlert(response.message || "Erro ao carregar projeto");
                     }
                 },
                 error: function(xhr, status, error) {
-                    alert('Erro na requisição: ' + error);
+                    showErrorAlert("Falha na comunicação com o servidor.");
                 }
             });
         });
 
-        // Excluir projeto
+        // Verificar alterações em tempo real no modal de edição
+        $('#solicitarEdicaoModal').on('shown.bs.modal', function() {
+            $('#formSolicitarEdicao').on('input change', function() {
+                checkForChanges();
+            });
+        });
+
+        function checkForChanges() {
+            let hasChanges = false;
+            const form = $('#formSolicitarEdicao');
+
+            ['identificador', 'nome', 'descricao', 'projeto_vinculado', 'id_eixo', 'responsaveis'].forEach(field => {
+                const currentValue = form.find(`[name="${field}"]`).val();
+                if (formOriginalData[field] != currentValue) {
+                    hasChanges = true;
+                }
+            });
+
+            if (hasChanges) {
+                $('#alertNenhumaAlteracao').addClass('d-none');
+                $('#formSolicitarEdicao button[type="submit"]').prop('disabled', false);
+            } else {
+                $('#alertNenhumaAlteracao').removeClass('d-none');
+                $('#formSolicitarEdicao button[type="submit"]').prop('disabled', true);
+            }
+        }
+
+        // Enviar solicitação de edição
+        $('#formSolicitarEdicao').submit(function(e) {
+            e.preventDefault();
+            submitForm($(this), '#solicitarEdicaoModal', 'Solicitação de edição enviada com sucesso!');
+        });
+
+        // Solicitar exclusão de projeto - Abrir modal (para não-admins)
+        $(document).on('click', '.btn-danger[title="Solicitar Exclusão"]', function() {
+            var projetoId = $(this).data('id').split('-')[0];
+            var projetoName = $(this).closest('tr').find('td:nth-child(2)').text();
+            var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
+            var url = isAdmin ? '<?= site_url('projetos/editar/') ?>' : '<?= site_url('projetos/dados-projeto/') ?>';
+
+            $.ajax({
+                url: url + projetoId,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success && response.data) {
+                        var projeto = response.data;
+                        var dadosAtuais = `Identificador: ${projeto.identificador}\nNome: ${projeto.nome}\nDescrição: ${projeto.descricao}\nProjeto Vinculado: ${projeto.projeto_vinculado}\nEixo: ${projeto.id_eixo}\nResponsáveis: ${projeto.responsaveis}`;
+
+                        $('#solicitarExclusaoId').val(projeto.id);
+                        $('#projetoNameToRequestDelete').text(projetoName);
+                        $('#solicitarExclusaoDadosAtuais').val(dadosAtuais);
+                        $('#solicitarExclusaoModal').modal('show');
+                    } else {
+                        showErrorAlert(response.message || "Erro ao carregar projeto");
+                    }
+                },
+                error: function(xhr, status, error) {
+                    showErrorAlert("Falha na comunicação com o servidor.");
+                }
+            });
+        });
+
+        // Enviar solicitação de exclusão
+        $('#formSolicitarExclusao').submit(function(e) {
+            e.preventDefault();
+            submitForm($(this), '#solicitarExclusaoModal', 'Solicitação de exclusão enviada com sucesso!');
+        });
+
+        // Enviar solicitação de inclusão
+        $('#formSolicitarInclusao').submit(function(e) {
+            e.preventDefault();
+            submitForm($(this), '#solicitarInclusaoModal', 'Solicitação de inclusão enviada com sucesso!');
+        });
+
+        // Atualizar projeto (apenas admin)
+        $('#formEditProjeto').submit(function(e) {
+            e.preventDefault();
+            submitForm($(this), '#editProjetoModal');
+        });
+
+        // Excluir projeto - Abrir modal de confirmação (apenas admin)
         $(document).on('click', '.btn-danger[title="Excluir"]', function() {
-            var projectId = $(this).data('id').split('-')[0];
-            var projectName = $(this).closest('tr').find('td:nth-child(2)').text();
+            var projetoId = $(this).data('id').split('-')[0];
+            var projetoName = $(this).closest('tr').find('td:nth-child(2)').text();
 
-            $('#deleteProjectId').val(projectId);
-            $('#projectNameToDelete').text(projectName);
-            $('#deleteProjectModal').modal('show');
+            $('#deleteProjetoId').val(projetoId);
+            $('#projetoNameToDelete').text(projetoName);
+            $('#deleteProjetoModal').modal('show');
         });
 
-        // Confirmar exclusão
-        $('#formDeleteProject').submit(function(e) {
+        // Confirmar exclusão (apenas admin)
+        $('#formDeleteProjeto').submit(function(e) {
             e.preventDefault();
-
-            $.ajax({
-                type: "POST",
-                url: '<?= site_url('projetos-cadastrados/excluir') ?>',
-                data: $(this).serialize(),
-                dataType: "json",
-                success: function(response) {
-                    if (response.success) {
-                        $('#deleteProjectModal').modal('hide');
-                        location.reload();
-                    } else {
-                        alert('Erro: ' + response.message);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    alert('Erro na requisição: ' + error);
-                }
-            });
+            submitForm($(this), '#deleteProjetoModal');
         });
 
         // Aplicar filtros
         $('#formFiltros').submit(function(e) {
             e.preventDefault();
+            applyFilters();
+        });
 
-            // Verifica se há filtros aplicados
-            var hasFilters = false;
-            $(this).find('input, select').each(function() {
-                if ($(this).val() !== '' && $(this).val() !== null) {
-                    hasFilters = true;
-                    return false;
+        // Limpar filtros
+        $('#btnLimparFiltros').click(function() {
+            $('#formFiltros')[0].reset();
+            applyFilters();
+        });
+
+        // Função genérica para enviar formulários
+        function submitForm(form, modalId, successMessage = null) {
+            const submitBtn = form.find('button[type="submit"]');
+            const originalBtnText = submitBtn.html();
+
+            submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...');
+
+            $.ajax({
+                type: "POST",
+                url: form.attr('action'),
+                data: form.serialize(),
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        if (modalId) {
+                            $(modalId).modal('hide');
+                        }
+                        showSuccessAlert(successMessage || response.message || 'Operação realizada com sucesso!');
+
+                        if (!modalId || (modalId !== '#solicitarEdicaoModal' && modalId !== '#solicitarExclusaoModal' && modalId !== '#solicitarInclusaoModal')) {
+                            setTimeout(() => location.reload(), 1500);
+                        }
+                    } else {
+                        showErrorAlert(response.message || 'Ocorreu um erro durante a operação.');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error(xhr.responseText);
+                    showErrorAlert('Erro na comunicação com o servidor: ' + error);
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).html(originalBtnText);
                 }
             });
+        }
 
-            // Se não houver filtros, apenas recarrega a página
+        // Aplicar filtros na tabela
+        function applyFilters() {
+            const hasFilters = $('#formFiltros').find('input, select').toArray().some(el => $(el).val() !== '' && $(el).val() !== null);
+
             if (!hasFilters) {
                 location.reload();
                 return;
             }
 
-            // Mostra loading
-            /* $('#dataTable').closest('.card-body').append('<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>'); */
-
             $.ajax({
                 type: "POST",
-                url: '<?= site_url('projetos-cadastrados/filtrar') ?>',
-                data: $(this).serialize(),
+                url: '<?= site_url("projetos/filtrar/$idPlano") ?>',
+                data: $('#formFiltros').serialize(),
                 dataType: "json",
+                beforeSend: function() {
+                    $('#dataTable').css('opacity', '0.5');
+                },
                 success: function(response) {
-                    // Remove loading
-                    $('.overlay').remove();
-
                     if (response.success) {
-                        // Destroi a tabela atual
                         dataTable.destroy();
-
-                        // Limpa o corpo da tabela
                         $('#dataTable tbody').empty();
 
-                        // Adiciona os novos registros filtrados
                         $.each(response.data, function(index, projeto) {
                             var id = projeto.id + '-' + projeto.nome.toLowerCase().replace(/\s+/g, '-');
-                            var badge_class = '';
+                            var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
+                            var actionButtons = '';
 
-                            switch (projeto.status) {
-                                case 'Em andamento':
-                                    badge_class = 'badge-primary';
-                                    break;
-                                case 'Não iniciado':
-                                    badge_class = 'badge-secondary';
-                                    break;
-                                case 'Finalizado':
-                                    badge_class = 'badge-success';
-                                    break;
-                                case 'Paralisado':
-                                    badge_class = 'badge-warning';
-                                    break;
-                                default:
-                                    badge_class = 'badge-light';
+                            if (isAdmin) {
+                                actionButtons = `
+                                    <div class="d-inline-flex">
+                                        <a href="<?= site_url('projetos/') ?>${projeto.id}/etapas" class="btn btn-secondary btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Etapas">
+                                            <i class="fas fa-tasks"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>`;
+                            } else {
+                                actionButtons = `
+                                    <div class="d-inline-flex">
+                                        <a href="<?= site_url('projetos/') ?>${projeto.id}/etapas" class="btn btn-secondary btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Etapas">
+                                            <i class="fas fa-tasks"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>`;
                             }
 
-                            // Formata a data corretamente
-                            var dataFormatada = projeto.data_formatada || formatDate(projeto.data_publicacao);
-
-                            var row = '<tr>' +
-                                '<td class="text-wrap">' + projeto.nome + '</td>' +
-                                '<td class="text-wrap">' + projeto.objetivo + '</td>' +
-                                '<td class="text-wrap">' + (projeto.perspectiva_estrategica || '') + '</td>' +
-                                '<td class="text-wrap">' + (projeto.interessados || '') + '</td>' +
-                                '<td class="text-center"><span class="badge ' + badge_class + '">' + projeto.status + '</span></td>' +
-                                '<td class="text-center">' + dataFormatada + '</td>' +
-                                '<td class="text-center">' +
-                                '<div class="d-inline-flex">' +
-                                '<a href="<?= site_url('visao-projeto/') ?>' + projeto.id + '" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar">' +
-                                '<i class="fas fa-eye"></i>' +
-                                '</a>' +
-                                '<button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="' + id + '" title="Editar">' +
-                                '<i class="fas fa-edit"></i>' +
-                                '</button>' +
-                                '<button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="' + id + '" title="Excluir">' +
-                                '<i class="fas fa-trash-alt"></i>' +
-                                '</button>' +
-                                '</div>' +
-                                '</td>' +
-                                '</tr>';
+                            var row = `
+                                <tr>
+                                    <td class="text-wrap align-middle">${projeto.identificador || ''}</td>
+                                    <td class="text-wrap align-middle">${projeto.nome}</td>
+                                    <td class="text-wrap align-middle">${projeto.descricao || ''}</td>
+                                    <td class="text-wrap align-middle">${projeto.projeto_vinculado || ''}</td>
+                                    <td class="text-wrap align-middle">${projeto.responsaveis || ''}</td>
+                                    <td class="text-center align-middle">${actionButtons}</td>
+                                </tr>`;
 
                             $('#dataTable tbody').append(row);
                         });
 
-                        // Re-inicializa o DataTable
                         dataTable = $('#dataTable').DataTable({
                             "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
                             "language": {
-                                "url": "//cdn.datatables.net/plug-ins/1.10.20/i18n/Portuguese-Brasil.json",
-                                "lengthMenu": "Mostrar _MENU_ registros por página",
-                                "zeroRecords": "Nenhum registro encontrado",
-                                "info": "Mostrando página _PAGE_ de _PAGES_",
-                                "infoEmpty": "Nenhum registro disponível",
-                                "infoFiltered": "(filtrado de _MAX_ registros totais)",
-                                "search": "Pesquisar:",
-                                "paginate": {
-                                    "first": "Primeira",
-                                    "last": "Última",
-                                    "next": "Próxima",
-                                    "previous": "Anterior"
-                                }
+                                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json"
                             },
                             "searching": false,
-                            "columnDefs": [{
-                                "targets": 0
-                            }, {
-                                "targets": 1
-                            }, {
-                                "targets": 2
-                            }, {
-                                "targets": 3
-                            }, {
-                                "targets": 4
-                            }, {
-                                "targets": 5
-                            }, {
-                                "targets": 6
-                            }],
                             "responsive": true,
                             "autoWidth": false,
                             "lengthMenu": [5, 10, 25, 50, 100],
                             "pageLength": 10
                         });
                     } else {
-                        alert('Erro ao filtrar projetos: ' + response.message);
+                        showErrorAlert('Erro ao filtrar projetos: ' + response.message);
                     }
                 },
                 error: function(xhr, status, error) {
-                    $('.overlay').remove();
-                    alert('Erro na requisição: ' + error);
+                    showErrorAlert('Erro na requisição: ' + error);
+                },
+                complete: function() {
+                    $('#dataTable').css('opacity', '1');
                 }
             });
-        });
+        }
 
-        // Limpar filtros
-        $('#btnLimparFiltros').click(function() {
-            $('#formFiltros')[0].reset();
-            $('#formFiltros').submit();
-        });
+        // Funções para exibir alertas
+        function showSuccessAlert(message) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Sucesso',
+                text: message,
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
 
-        // Função para formatar data corretamente (sem alterar o valor)
-        function formatDate(dateString) {
-            if (!dateString) return '';
-
-            // Se já estiver no formato dd/mm/yyyy, retorna como está
-            if (dateString.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                return dateString;
-            }
-
-            // Se for uma data ISO (yyyy-mm-dd)
-            if (dateString.match(/^\d{4}-\d{2}-\d{2}(?:T|$)/)) {
-                const date = new Date(dateString);
-                if (isNaN(date.getTime())) {
-                    return dateString;
-                }
-
-                const day = String(date.getDate()).padStart(2, '0');
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const year = date.getFullYear();
-                return `${day}/${month}/${year}`;
-            }
-
-            // Para outros formatos, tenta converter
-            try {
-                const date = new Date(dateString);
-                if (isNaN(date.getTime())) {
-                    return dateString;
-                }
-
-                const day = String(date.getDate()).padStart(2, '0');
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const year = date.getFullYear();
-                return `${day}/${month}/${year}`;
-            } catch (e) {
-                return dateString;
-            }
+        function showErrorAlert(message) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro',
+                text: message,
+                confirmButtonText: 'Entendi'
+            });
         }
     });
 </script>

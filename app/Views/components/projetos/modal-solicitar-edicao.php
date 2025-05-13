@@ -10,7 +10,8 @@
             <form id="formSolicitarEdicao" method="post" action="<?= site_url('acoes/solicitar-edicao') ?>">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                 <input type="hidden" name="id_acao" id="solicitarEdicaoId">
-                <input type="hidden" name="id_projeto" value="<?= $idProjeto ?>">
+                <input type="hidden" name="tipo" value="edicao">
+                <input type="hidden" name="id_plano" value="<?= $idPlano ?>">
 
                 <div class="modal-body">
                     <div id="alertNenhumaAlteracao" class="alert alert-warning d-none">
@@ -20,8 +21,17 @@
                     <div class="row">
                         <div class="col-md-12">
                             <div class="form-group">
-                                <label for="solicitarEdicaoNome">Nome da Ação*</label>
-                                <input type="text" class="form-control" id="solicitarEdicaoNome" name="nome" required maxlength="255">
+                                <label for="solicitarEdicaoAcao">Ação*</label>
+                                <input type="text" class="form-control" id="solicitarEdicaoAcao" name="acao" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="solicitarEdicaoDescricao">Descrição</label>
+                                <textarea class="form-control" id="solicitarEdicaoDescricao" name="descricao" rows="3"></textarea>
                             </div>
                         </div>
                     </div>
@@ -29,14 +39,28 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="solicitarEdicaoResponsavel">Responsável*</label>
-                                <input type="text" class="form-control" id="solicitarEdicaoResponsavel" name="responsavel" required maxlength="255">
+                                <label for="solicitarEdicaoProjetoVinculado">Projeto Vinculado</label>
+                                <input type="text" class="form-control" id="solicitarEdicaoProjetoVinculado" name="projeto_vinculado">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="solicitarEdicaoEquipe">Equipe</label>
-                                <input type="text" class="form-control" id="solicitarEdicaoEquipe" name="equipe" maxlength="255">
+                                <label for="solicitarEdicaoEixo">Eixo</label>
+                                <select class="form-control" id="solicitarEdicaoEixo" name="id_eixo">
+                                    <option value="">Selecione um eixo</option>
+                                    <?php foreach ($eixos as $eixo): ?>
+                                        <option value="<?= $eixo['id'] ?>"><?= $eixo['nome'] ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="solicitarEdicaoResponsaveis">Responsáveis</label>
+                                <textarea class="form-control" id="solicitarEdicaoResponsaveis" name="responsaveis" rows="2"></textarea>
                             </div>
                         </div>
                     </div>

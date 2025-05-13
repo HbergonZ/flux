@@ -8,14 +8,20 @@
 
 <div class="container-fluid">
     <!-- Page Heading -->
+    <!-- No cabeçalho da página -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Ações do Plano: <?= $plano['nome'] ?></h1>
-        <a href="<?= site_url('planos') ?>" class="btn btn-secondary btn-icon-split btn-sm">
-            <span class="icon text-white-50">
-                <i class="fas fa-arrow-left"></i>
-            </span>
-            <span class="text">Voltar para Planos</span>
-        </a>
+        <?php if (isset($acesso_direto) && $acesso_direto): ?>
+            <h1 class="h3 mb-0 text-gray-800">Ações Diretas do Projeto: <?= $projeto['nome'] ?></h1>
+            <a href="<?= site_url("projetos/{$projeto['id_plano']}/projetos") ?>" class="btn btn-secondary btn-icon-split btn-sm">
+                <span class="text">Voltar para Projetos</span>
+            </a>
+        <?php else: ?>
+            <!-- Cabeçalho original para ações de etapas -->
+            <h1 class="h3 mb-0 text-gray-800">Ações da Etapa: <?= $etapa['nome'] ?></h1>
+            <a href="<?= site_url("projetos/{$projeto['id']}/etapas") ?>" class="btn btn-secondary btn-icon-split btn-sm">
+                <span class="text">Voltar para Etapas</span>
+            </a>
+        <?php endif; ?>
     </div>
 
     <!-- Filtros -->
@@ -23,57 +29,80 @@
         <div class="card-body">
             <form id="formFiltros">
                 <div class="row">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="form-group">
                             <label for="filterAcao">Ação</label>
-                            <select class="form-control" id="filterAcao" name="acao">
-                                <option value="">Todas as ações</option>
-                                <?php foreach ($acoes as $acao): ?>
-                                    <option value="<?= $acao['acao'] ?>"><?= $acao['acao'] ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <input type="text" class="form-control" id="filterAcao" name="acao" placeholder="Filtrar por ação">
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="form-group">
-                            <label for="filterProjetoVinculado">Projeto Vinculado</label>
-                            <select class="form-control" id="filterProjetoVinculado" name="projeto_vinculado">
-                                <option value="">Todos os projetos</option>
-                                <?php foreach ($acoes as $acao): ?>
-                                    <?php if (!empty($acao['projeto_vinculado'])): ?>
-                                        <option value="<?= $acao['projeto_vinculado'] ?>"><?= $acao['projeto_vinculado'] ?></option>
-                                    <?php endif; ?>
-                                <?php endforeach; ?>
-                            </select>
+                            <label for="filterProjeto">Projeto</label>
+                            <input type="text" class="form-control" id="filterProjeto" name="projeto" placeholder="Filtrar por projeto">
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="form-group">
-                            <label for="filterEixo">Eixo</label>
-                            <select class="form-control" id="filterEixo" name="id_eixo">
-                                <option value="">Todos os eixos</option>
-                                <?php foreach ($eixos as $eixo): ?>
-                                    <option value="<?= $eixo['id'] ?>"><?= $eixo['nome'] ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <label for="filterResponsavel">Responsável</label>
+                            <input type="text" class="form-control" id="filterResponsavel" name="responsavel" placeholder="Filtrar por responsável">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="filterEquipe">Equipe</label>
+                            <input type="text" class="form-control" id="filterEquipe" name="equipe" placeholder="Filtrar por equipe">
                         </div>
                     </div>
                 </div>
 
                 <div class="row mt-3">
-                    <div class="col-md-12 text-right">
-                        <button type="button" id="btnLimparFiltros" class="btn btn-secondary btn-icon-split btn-sm">
-                            <span class="icon text-white-50">
-                                <i class="fas fa-broom"></i>
-                            </span>
-                            <span class="text">Limpar</span>
-                        </button>
-                        <button type="submit" class="btn btn-primary btn-icon-split btn-sm mr-2">
-                            <span class="icon text-white-50">
-                                <i class="fas fa-filter"></i>
-                            </span>
-                            <span class="text">Filtrar</span>
-                        </button>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label for="filterTempoEstimado">Tempo (dias)</label>
+                            <input type="number" class="form-control" id="filterTempoEstimado" name="tempo_estimado_dias" placeholder="Dias">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label for="filterDataInicio">Data Início</label>
+                            <input type="date" class="form-control" id="filterDataInicio" name="data_inicio">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label for="filterDataFim">Data Fim</label>
+                            <input type="date" class="form-control" id="filterDataFim" name="data_fim">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="filterStatus">Status</label>
+                            <select class="form-control" id="filterStatus" name="status">
+                                <option value="">Todos</option>
+                                <option value="Não iniciado">Não iniciado</option>
+                                <option value="Em andamento">Em andamento</option>
+                                <option value="Paralisado">Paralisado</option>
+                                <option value="Finalizado">Finalizado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <div class="form-group w-100">
+                            <div class="text-right">
+                                <button type="button" id="btnLimparFiltros" class="btn btn-secondary btn-icon-split btn-sm">
+                                    <span class="icon text-white-50">
+                                        <i class="fas fa-broom"></i>
+                                    </span>
+                                    <span class="text">Limpar</span>
+                                </button>
+                                <button type="submit" class="btn btn-primary btn-icon-split btn-sm ml-2">
+                                    <span class="icon text-white-50">
+                                        <i class="fas fa-filter"></i>
+                                    </span>
+                                    <span class="text">Filtrar</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </form>
@@ -106,33 +135,50 @@
                     <thead>
                         <tr class="text-center">
                             <th>Ação</th>
-                            <th>Descrição</th>
-                            <th>Projeto Vinculado</th>
-                            <th>Responsáveis</th>
+                            <th>Projeto</th>
+                            <th>Responsável</th>
+                            <th>Equipe</th>
+                            <th>Tempo Estimado</th>
+                            <th>Data Início</th>
+                            <th>Data Fim</th>
+                            <th>Status</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (isset($acoes) && !empty($acoes)) : ?>
                             <?php foreach ($acoes as $acao) :
-                                $id = $acao['id'] . '-' . str_replace(' ', '-', strtolower($acao['acao'])); ?>
+                                $id = $acao['id_acao'] . '-' . str_replace(' ', '-', strtolower($acao['acao'])); ?>
                                 <tr>
                                     <td class="text-wrap align-middle"><?= $acao['acao'] ?></td>
-                                    <td class="text-wrap align-middle"><?= $acao['descricao'] ?></td>
-                                    <td class="text-wrap align-middle"><?= $acao['projeto_vinculado'] ?></td>
-                                    <td class="text-wrap align-middle"><?= $acao['responsaveis'] ?></td>
+                                    <td class="text-wrap align-middle"><?= $acao['projeto'] ?></td>
+                                    <td class="text-center align-middle"><?= $acao['responsavel'] ?></td>
+                                    <td class="text-wrap align-middle"><?= $acao['equipe'] ?></td>
+                                    <td class="text-center align-middle"><?= !empty($acao['tempo_estimado_dias']) ? $acao['tempo_estimado_dias'] . ' dias' : '' ?></td>
+                                    <td class="text-center align-middle"><?= !empty($acao['data_inicio']) ? date('d/m/Y', strtotime($acao['data_inicio'])) : '' ?></td>
+                                    <td class="text-center align-middle"><?= !empty($acao['data_fim']) ? date('d/m/Y', strtotime($acao['data_fim'])) : '' ?></td>
+                                    <td class="text-center align-middle">
+                                        <?php
+                                        $badge_class = '';
+                                        switch ($acao['status']) {
+                                            case 'Em andamento':
+                                                $badge_class = 'badge-primary';
+                                                break;
+                                            case 'Finalizado':
+                                                $badge_class = 'badge-success';
+                                                break;
+                                            case 'Paralisado':
+                                                $badge_class = 'badge-warning';
+                                                break;
+                                            case 'Não iniciado':
+                                                $badge_class = 'badge-secondary';
+                                                break;
+                                        }
+                                        ?>
+                                        <span class="badge <?= $badge_class ?>"><?= $acao['status'] ?></span>
+                                    </td>
                                     <td class="text-center align-middle">
                                         <div class="d-inline-flex">
-                                            <!-- Botão Visualizar Metas -->
-                                            <a href="<?= site_url('metas/' . $acao['id']) ?>" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Metas">
-                                                <i class="fas fa-bullseye"></i>
-                                            </a>
-
-                                            <!-- Botão Visualizar Etapas -->
-                                            <a href="<?= site_url('etapas/' . $acao['id']) ?>" class="btn btn-secondary btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Etapas">
-                                                <i class="fas fa-tasks"></i>
-                                            </a>
-
                                             <?php if (auth()->user()->inGroup('admin')): ?>
                                                 <!-- Botão Editar -->
                                                 <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Editar">
@@ -160,7 +206,7 @@
                             <?php endforeach; ?>
                         <?php else : ?>
                             <tr>
-                                <td colspan="5" class="text-center">Nenhuma ação encontrada</td>
+                                <td colspan="9" class="text-center">Nenhuma ação encontrada</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>

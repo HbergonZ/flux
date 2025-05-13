@@ -7,13 +7,13 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="formDeleteAcao" action="<?= site_url("acoes/excluir/$idPlano") ?>" method="post">
+            <form id="formDeleteAcao" method="post" action="<?= site_url("acoes/excluir/$idProjeto") ?>">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                 <input type="hidden" name="id" id="deleteAcaoId">
 
                 <div class="modal-body">
-                    <p>Tem certeza que deseja excluir a ação <strong id="acaoNameToDelete"></strong>?</p>
-                    <p class="text-danger"><small>Esta ação não pode ser desfeita.</small></p>
+                    <p>Tem certeza que deseja excluir esta ação? Esta ação não pode ser desfeita.</p>
+                    <p><strong>Ação: </strong><span id="acaoNameToDelete"></span></p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>

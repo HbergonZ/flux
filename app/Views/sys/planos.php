@@ -93,7 +93,7 @@
                                     <td class="text-center align-middle">
                                         <div class="d-inline-flex">
                                             <!-- Botão Visualizar Ações -->
-                                            <a href="<?= site_url('acoes/' . $plano['id']) ?>" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Ações">
+                                            <a href="<?= site_url('projetos/' . $plano['id']) ?>" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Ações">
                                                 <i class="fas fa-eye"></i>
                                             </a>
 

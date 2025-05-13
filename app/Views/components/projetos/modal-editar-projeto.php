@@ -1,56 +1,50 @@
-<!-- Modal para Editar Projeto -->
-<div class="modal fade" id="editProjectModal" tabindex="-1" role="dialog" aria-labelledby="editProjectModalLabel" aria-hidden="true">
+<div class="modal fade" id="editAcaoModal" tabindex="-1" role="dialog" aria-labelledby="editAcaoModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="editProjectModalLabel">Editar Projeto</h5>
+                <h5 class="modal-title" id="editAcaoModalLabel">Editar Ação</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="formEditProject" method="post">
+            <form id="formEditAcao" method="post" action="<?= site_url("acoes/atualizar/$idPlano") ?>">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
-                <input type="hidden" name="id" id="editProjectId">
+                <input type="hidden" name="id" id="editAcaoId">
 
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="editProjectName">Nome do Projeto*</label>
-                        <input type="text" class="form-control" id="editProjectName" name="nome" required>
+                        <label for="editAcaoNome">Ação*</label>
+                        <input type="text" class="form-control" id="editAcaoNome" name="acao" required maxlength="255">
                     </div>
 
                     <div class="form-group">
-                        <label for="editProjectObjective">Objetivo*</label>
-                        <textarea class="form-control" id="editProjectObjective" name="objetivo" rows="3" required></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="editProjectPerspective">Perspectiva Estratégica</label>
-                        <textarea class="form-control" id="editProjectPerspective" name="perspectiva_estrategica" rows="2"></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="editProjectStakeholders">Interessados</label>
-                        <textarea class="form-control" id="editProjectStakeholders" name="interessados" rows="2"></textarea>
+                        <label for="editAcaoDescricao">Descrição</label>
+                        <textarea class="form-control" id="editAcaoDescricao" name="descricao" rows="3"></textarea>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="editProjectStatus">Status*</label>
-                                <select class="form-control" id="editProjectStatus" name="status" required>
-                                    <option value="Em andamento">Em andamento</option>
-                                    <option value="Não iniciado">Não iniciado</option>
-                                    <option value="Finalizado">Finalizado</option>
-                                    <option value="Paralisado">Paralisado</option>
-                                </select>
+                                <label for="editAcaoProjetoVinculado">Projeto Vinculado</label>
+                                <input type="text" class="form-control" id="editAcaoProjetoVinculado" name="projeto_vinculado" maxlength="255">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="editProjectPublicationDate">Data de Início*</label>
-                                <input type="date" class="form-control" id="editProjectPublicationDate" name="data_publicacao" required>
+                                <label for="editAcaoEixo">Eixo</label>
+                                <select class="form-control" id="editAcaoEixo" name="id_eixo">
+                                    <option value="">Selecione um eixo</option>
+                                    <?php foreach ($eixos as $eixo): ?>
+                                        <option value="<?= $eixo['id'] ?>"><?= $eixo['nome'] ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editAcaoResponsaveis">Responsáveis</label>
+                        <textarea class="form-control" id="editAcaoResponsaveis" name="responsaveis" rows="2"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">

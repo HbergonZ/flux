@@ -10,16 +10,10 @@
             <form id="formSolicitarExclusao" method="post" action="<?= site_url('acoes/solicitar-exclusao') ?>">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                 <input type="hidden" name="id_acao" id="solicitarExclusaoId">
-                <input type="hidden" name="tipo" value="exclusao">
-                <input type="hidden" name="id_plano" value="<?= $idPlano ?>">
+                <input type="hidden" name="id_projeto" value="<?= $idProjeto ?>">
 
                 <div class="modal-body">
                     <p>Você está solicitando a exclusão da ação: <strong id="acaoNameToRequestDelete"></strong></p>
-
-                    <div class="form-group">
-                        <label for="solicitarExclusaoDadosAtuais">Dados Atuais</label>
-                        <textarea class="form-control" id="solicitarExclusaoDadosAtuais" name="dados_atuais" rows="4" readonly></textarea>
-                    </div>
 
                     <div class="form-group">
                         <label for="solicitarExclusaoJustificativa">Justificativa*</label>

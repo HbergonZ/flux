@@ -2,12 +2,12 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="deleteEtapaModalLabel">Confirmar Exclusão</h5>
+                <h5 class="modal-title" id="deleteEtapaModalLabel">Confirmar Exclusão de Etapa</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="formDeleteEtapa" method="post" action="<?= site_url("etapas/excluir/$tipo/$idVinculo") ?>">
+            <form id="formDeleteEtapa" method="post" action="<?= site_url("etapas/excluir/$idProjeto") ?>">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                 <input type="hidden" name="id" id="deleteEtapaId">
 

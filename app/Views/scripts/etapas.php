@@ -36,6 +36,7 @@
             "autoWidth": false,
             "lengthMenu": [5, 10, 25, 50, 100],
             "pageLength": 10
+
         });
 
         // Configuração do AJAX
@@ -49,7 +50,7 @@
         // Armazenar dados originais do formulário
         let formOriginalData = {};
 
-        // Cadastrar nova etapa
+        // Cadastrar nova etapa (apenas admin)
         $('#formAddEtapa').submit(function(e) {
             e.preventDefault();
             submitForm($(this), '#addEtapaModal');
@@ -65,15 +66,9 @@
                 dataType: 'json',
                 success: function(response) {
                     if (response.success && response.data) {
-                        $('#editEtapaId').val(response.data.id_etapa);
-                        $('#editEtapaNome').val(response.data.etapa);
-                        $('#editEtapaAcao').val(response.data.acao);
-                        $('#editEtapaResponsavel').val(response.data.responsavel);
-                        $('#editEtapaEquipe').val(response.data.equipe);
-                        $('#editEtapaTempoEstimado').val(response.data.tempo_estimado_dias);
-                        $('#editEtapaDataInicio').val(response.data.data_inicio);
-                        $('#editEtapaDataFim').val(response.data.data_fim);
-                        $('#editEtapaStatus').val(response.data.status);
+                        $('#editEtapaId').val(response.data.id);
+                        $('#editEtapaNome').val(response.data.nome);
+                        $('#editEtapaOrdem').val(response.data.ordem);
                         $('#editEtapaModal').modal('show');
                     } else {
                         showErrorAlert(response.message || "Erro ao carregar etapa");
@@ -88,7 +83,6 @@
         // Solicitar edição de etapa - Abrir modal (para não-admins)
         $(document).on('click', '.btn-primary[title="Solicitar Edição"]', function() {
             var etapaId = $(this).data('id').split('-')[0];
-            var etapaRow = $(this).closest('tr');
             var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
             var url = isAdmin ? '<?= site_url('etapas/editar/') ?>' : '<?= site_url('etapas/dados-etapa/') ?>';
 
@@ -101,26 +95,14 @@
                         var etapa = response.data;
 
                         // Preenche os campos do formulário
-                        $('#solicitarEdicaoId').val(etapa.id_etapa);
-                        $('#solicitarEdicaoEtapa').val(etapa.etapa);
-                        $('#solicitarEdicaoAcao').val(etapa.acao);
-                        $('#solicitarEdicaoResponsavel').val(etapa.responsavel);
-                        $('#solicitarEdicaoEquipe').val(etapa.equipe);
-                        $('#solicitarEdicaoTempoEstimado').val(etapa.tempo_estimado_dias);
-                        $('#solicitarEdicaoDataInicio').val(etapa.data_inicio);
-                        $('#solicitarEdicaoDataFim').val(etapa.data_fim);
-                        $('#solicitarEdicaoStatus').val(etapa.status);
+                        $('#solicitarEdicaoId').val(etapa.id);
+                        $('#solicitarEdicaoNome').val(etapa.nome);
+                        $('#solicitarEdicaoOrdem').val(etapa.ordem);
 
                         // Armazena os valores originais para comparação
                         formOriginalData = {
-                            etapa: etapa.etapa,
-                            acao: etapa.acao,
-                            responsavel: etapa.responsavel,
-                            equipe: etapa.equipe,
-                            tempo_estimado_dias: etapa.tempo_estimado_dias,
-                            data_inicio: etapa.data_inicio,
-                            data_fim: etapa.data_fim,
-                            status: etapa.status
+                            nome: etapa.nome,
+                            ordem: etapa.ordem
                         };
 
                         $('#solicitarEdicaoModal').modal('show');
@@ -146,7 +128,7 @@
             let hasChanges = false;
             const form = $('#formSolicitarEdicao');
 
-            ['etapa', 'acao', 'responsavel', 'equipe', 'tempo_estimado_dias', 'data_inicio', 'data_fim', 'status'].forEach(field => {
+            ['nome', 'ordem'].forEach(field => {
                 const currentValue = form.find(`[name="${field}"]`).val();
                 if (formOriginalData[field] != currentValue) {
                     hasChanges = true;
@@ -171,7 +153,7 @@
         // Solicitar exclusão de etapa - Abrir modal (para não-admins)
         $(document).on('click', '.btn-danger[title="Solicitar Exclusão"]', function() {
             var etapaId = $(this).data('id').split('-')[0];
-            var etapaName = $(this).closest('tr').find('td:first').text();
+            var etapaName = $(this).closest('tr').find('td:nth-child(2)').text();
             var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
             var url = isAdmin ? '<?= site_url('etapas/editar/') ?>' : '<?= site_url('etapas/dados-etapa/') ?>';
 
@@ -182,9 +164,9 @@
                 success: function(response) {
                     if (response.success && response.data) {
                         var etapa = response.data;
-                        var dadosAtuais = `Etapa: ${etapa.etapa}\nAção: ${etapa.acao}\nResponsável: ${etapa.responsavel}\nEquipe: ${etapa.equipe}\nTempo Estimado: ${etapa.tempo_estimado_dias} dias\nData Início: ${etapa.data_inicio}\nData Fim: ${etapa.data_fim}\nStatus: ${etapa.status}`;
+                        var dadosAtuais = `Nome: ${etapa.nome}\nOrdem: ${etapa.ordem}\nProjeto: ${etapa.id_projeto}`;
 
-                        $('#solicitarExclusaoId').val(etapa.id_etapa);
+                        $('#solicitarExclusaoId').val(etapa.id);
                         $('#etapaNameToRequestDelete').text(etapaName);
                         $('#solicitarExclusaoDadosAtuais').val(dadosAtuais);
                         $('#solicitarExclusaoModal').modal('show');
@@ -219,7 +201,7 @@
         // Excluir etapa - Abrir modal de confirmação (apenas admin)
         $(document).on('click', '.btn-danger[title="Excluir"]', function() {
             var etapaId = $(this).data('id').split('-')[0];
-            var etapaName = $(this).closest('tr').find('td:first').text();
+            var etapaName = $(this).closest('tr').find('td:nth-child(2)').text();
 
             $('#deleteEtapaId').val(etapaId);
             $('#etapaNameToDelete').text(etapaName);
@@ -263,7 +245,6 @@
                         }
                         showSuccessAlert(successMessage || response.message || 'Operação realizada com sucesso!');
 
-                        // Recarregar a página apenas se for uma operação que altera dados
                         if (!modalId || (modalId !== '#solicitarEdicaoModal' && modalId !== '#solicitarExclusaoModal' && modalId !== '#solicitarInclusaoModal')) {
                             setTimeout(() => location.reload(), 1500);
                         }
@@ -292,7 +273,7 @@
 
             $.ajax({
                 type: "POST",
-                url: '<?= site_url("etapas/filtrar/$tipo/$idVinculo") ?>',
+                url: '<?= site_url("etapas/filtrar/$idProjeto") ?>',
                 data: $('#formFiltros').serialize(),
                 dataType: "json",
                 beforeSend: function() {
@@ -304,30 +285,16 @@
                         $('#dataTable tbody').empty();
 
                         $.each(response.data, function(index, etapa) {
-                            var id = etapa.id_etapa + '-' + etapa.etapa.toLowerCase().replace(/\s+/g, '-');
-
-                            var badge_class = '';
-                            switch (etapa.status) {
-                                case 'Em andamento':
-                                    badge_class = 'badge-primary';
-                                    break;
-                                case 'Finalizado':
-                                    badge_class = 'badge-success';
-                                    break;
-                                case 'Paralisado':
-                                    badge_class = 'badge-warning';
-                                    break;
-                                case 'Não iniciado':
-                                    badge_class = 'badge-secondary';
-                                    break;
-                            }
-
+                            var id = etapa.id + '-' + etapa.nome.toLowerCase().replace(/\s+/g, '-');
                             var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
                             var actionButtons = '';
 
                             if (isAdmin) {
                                 actionButtons = `
                                     <div class="d-inline-flex">
+                                        <a href="<?= site_url('etapas/') ?>${etapa.id}/acoes" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Ações">
+                                            <i class="fas fa-tasks"></i>
+                                        </a>
                                         <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
                                             <i class="fas fa-edit"></i>
                                         </button>
@@ -338,6 +305,9 @@
                             } else {
                                 actionButtons = `
                                     <div class="d-inline-flex">
+                                        <a href="<?= site_url('etapas/') ?>${etapa.id}/acoes" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Ações">
+                                            <i class="fas fa-tasks"></i>
+                                        </a>
                                         <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
                                             <i class="fas fa-edit"></i>
                                         </button>
@@ -349,15 +319,11 @@
 
                             var row = `
                                 <tr>
-                                    <td class="text-wrap align-middle">${etapa.etapa}</td>
-                                    <td class="text-wrap align-middle">${etapa.acao}</td>
-                                    <td class="text-center align-middle">${etapa.responsavel}</td>
-                                    <td class="text-wrap align-middle">${etapa.equipe}</td>
-                                    <td class="text-center align-middle">${etapa.tempo_estimado_dias ? etapa.tempo_estimado_dias + ' dias' : ''}</td>
-                                    <td class="text-center align-middle">${etapa.data_inicio ? formatDate(etapa.data_inicio) : ''}</td>
-                                    <td class="text-center align-middle">${etapa.data_fim ? formatDate(etapa.data_fim) : ''}</td>
-                                    <td class="text-center align-middle"><span class="badge ${badge_class}">${etapa.status}</span></td>
-                                    <td class="text-center align-middle">${actionButtons}</td>
+                                    <td class="text-center">${etapa.ordem || '-'}</td>
+                                    <td class="text-wrap">${etapa.nome}</td>
+                                    <td class="text-center">${formatDate(etapa.data_criacao)}</td>
+                                    <td class="text-center">${formatDate(etapa.data_atualizacao)}</td>
+                                    <td class="text-center">${actionButtons}</td>
                                 </tr>`;
 
                             $('#dataTable tbody').append(row);
@@ -372,7 +338,10 @@
                             "responsive": true,
                             "autoWidth": false,
                             "lengthMenu": [5, 10, 25, 50, 100],
-                            "pageLength": 10
+                            "pageLength": 10,
+                            "order": [
+                                [0, 'asc']
+                            ]
                         });
                     } else {
                         showErrorAlert('Erro ao filtrar etapas: ' + response.message);
@@ -389,12 +358,9 @@
 
         // Função para formatar data
         function formatDate(dateString) {
-            if (!dateString) return '';
+            if (!dateString) return '-';
             const date = new Date(dateString);
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
-            return `${day}/${month}/${year}`;
+            return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR');
         }
 
         // Funções para exibir alertas

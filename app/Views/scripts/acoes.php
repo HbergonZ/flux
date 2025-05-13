@@ -49,7 +49,7 @@
         // Armazenar dados originais do formulário
         let formOriginalData = {};
 
-        // Cadastrar nova ação (apenas admin)
+        // Cadastrar nova ação
         $('#formAddAcao').submit(function(e) {
             e.preventDefault();
             submitForm($(this), '#addAcaoModal');
@@ -65,12 +65,15 @@
                 dataType: 'json',
                 success: function(response) {
                     if (response.success && response.data) {
-                        $('#editAcaoId').val(response.data.id);
+                        $('#editAcaoId').val(response.data.id_acao);
                         $('#editAcaoNome').val(response.data.acao);
-                        $('#editAcaoDescricao').val(response.data.descricao);
-                        $('#editAcaoProjetoVinculado').val(response.data.projeto_vinculado);
-                        $('#editAcaoEixo').val(response.data.id_eixo);
-                        $('#editAcaoResponsaveis').val(response.data.responsaveis);
+                        $('#editAcaoProjeto').val(response.data.projeto);
+                        $('#editAcaoResponsavel').val(response.data.responsavel);
+                        $('#editAcaoEquipe').val(response.data.equipe);
+                        $('#editAcaoTempoEstimado').val(response.data.tempo_estimado_dias);
+                        $('#editAcaoDataInicio').val(response.data.data_inicio);
+                        $('#editAcaoDataFim').val(response.data.data_fim);
+                        $('#editAcaoStatus').val(response.data.status);
                         $('#editAcaoModal').modal('show');
                     } else {
                         showErrorAlert(response.message || "Erro ao carregar ação");
@@ -85,6 +88,7 @@
         // Solicitar edição de ação - Abrir modal (para não-admins)
         $(document).on('click', '.btn-primary[title="Solicitar Edição"]', function() {
             var acaoId = $(this).data('id').split('-')[0];
+            var acaoRow = $(this).closest('tr');
             var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
             var url = isAdmin ? '<?= site_url('acoes/editar/') ?>' : '<?= site_url('acoes/dados-acao/') ?>';
 
@@ -97,20 +101,26 @@
                         var acao = response.data;
 
                         // Preenche os campos do formulário
-                        $('#solicitarEdicaoId').val(acao.id);
+                        $('#solicitarEdicaoId').val(acao.id_acao);
                         $('#solicitarEdicaoAcao').val(acao.acao);
-                        $('#solicitarEdicaoDescricao').val(acao.descricao);
-                        $('#solicitarEdicaoProjetoVinculado').val(acao.projeto_vinculado);
-                        $('#solicitarEdicaoEixo').val(acao.id_eixo);
-                        $('#solicitarEdicaoResponsaveis').val(acao.responsaveis);
+                        $('#solicitarEdicaoProjeto').val(acao.projeto);
+                        $('#solicitarEdicaoResponsavel').val(acao.responsavel);
+                        $('#solicitarEdicaoEquipe').val(acao.equipe);
+                        $('#solicitarEdicaoTempoEstimado').val(acao.tempo_estimado_dias);
+                        $('#solicitarEdicaoDataInicio').val(acao.data_inicio);
+                        $('#solicitarEdicaoDataFim').val(acao.data_fim);
+                        $('#solicitarEdicaoStatus').val(acao.status);
 
                         // Armazena os valores originais para comparação
                         formOriginalData = {
                             acao: acao.acao,
-                            descricao: acao.descricao,
-                            projeto_vinculado: acao.projeto_vinculado,
-                            id_eixo: acao.id_eixo,
-                            responsaveis: acao.responsaveis
+                            projeto: acao.projeto,
+                            responsavel: acao.responsavel,
+                            equipe: acao.equipe,
+                            tempo_estimado_dias: acao.tempo_estimado_dias,
+                            data_inicio: acao.data_inicio,
+                            data_fim: acao.data_fim,
+                            status: acao.status
                         };
 
                         $('#solicitarEdicaoModal').modal('show');
@@ -136,7 +146,7 @@
             let hasChanges = false;
             const form = $('#formSolicitarEdicao');
 
-            ['acao', 'descricao', 'projeto_vinculado', 'id_eixo', 'responsaveis'].forEach(field => {
+            ['acao', 'projeto', 'responsavel', 'equipe', 'tempo_estimado_dias', 'data_inicio', 'data_fim', 'status'].forEach(field => {
                 const currentValue = form.find(`[name="${field}"]`).val();
                 if (formOriginalData[field] != currentValue) {
                     hasChanges = true;
@@ -172,9 +182,9 @@
                 success: function(response) {
                     if (response.success && response.data) {
                         var acao = response.data;
-                        var dadosAtuais = `Ação: ${acao.acao}\nDescrição: ${acao.descricao}\nProjeto Vinculado: ${acao.projeto_vinculado}\nEixo: ${acao.id_eixo}\nResponsáveis: ${acao.responsaveis}`;
+                        var dadosAtuais = `Ação: ${acao.acao}\nProjeto: ${acao.projeto}\nResponsável: ${acao.responsavel}\nEquipe: ${acao.equipe}\nTempo Estimado: ${acao.tempo_estimado_dias} dias\nData Início: ${acao.data_inicio}\nData Fim: ${acao.data_fim}\nStatus: ${acao.status}`;
 
-                        $('#solicitarExclusaoId').val(acao.id);
+                        $('#solicitarExclusaoId').val(acao.id_acao);
                         $('#acaoNameToRequestDelete').text(acaoName);
                         $('#solicitarExclusaoDadosAtuais').val(dadosAtuais);
                         $('#solicitarExclusaoModal').modal('show');
@@ -282,7 +292,7 @@
 
             $.ajax({
                 type: "POST",
-                url: '<?= site_url("acoes/filtrar/$idPlano") ?>',
+                url: '<?= site_url("acoes/filtrar/$tipo/$idVinculo") ?>',
                 data: $('#formFiltros').serialize(),
                 dataType: "json",
                 beforeSend: function() {
@@ -294,19 +304,30 @@
                         $('#dataTable tbody').empty();
 
                         $.each(response.data, function(index, acao) {
-                            var id = acao.id + '-' + acao.acao.toLowerCase().replace(/\s+/g, '-');
+                            var id = acao.id_acao + '-' + acao.acao.toLowerCase().replace(/\s+/g, '-');
+
+                            var badge_class = '';
+                            switch (acao.status) {
+                                case 'Em andamento':
+                                    badge_class = 'badge-primary';
+                                    break;
+                                case 'Finalizado':
+                                    badge_class = 'badge-success';
+                                    break;
+                                case 'Paralisado':
+                                    badge_class = 'badge-warning';
+                                    break;
+                                case 'Não iniciado':
+                                    badge_class = 'badge-secondary';
+                                    break;
+                            }
+
                             var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
                             var actionButtons = '';
 
                             if (isAdmin) {
                                 actionButtons = `
                                     <div class="d-inline-flex">
-                                        <a href="<?= site_url('metas/') ?>${acao.id}" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Metas">
-                                            <i class="fas fa-bullseye"></i>
-                                        </a>
-                                        <a href="<?= site_url('etapas/') ?>${acao.id}" class="btn btn-secondary btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Etapas">
-                                            <i class="fas fa-tasks"></i>
-                                        </a>
                                         <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
                                             <i class="fas fa-edit"></i>
                                         </button>
@@ -317,12 +338,6 @@
                             } else {
                                 actionButtons = `
                                     <div class="d-inline-flex">
-                                        <a href="<?= site_url('metas/') ?>${acao.id}" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Metas">
-                                            <i class="fas fa-bullseye"></i>
-                                        </a>
-                                        <a href="<?= site_url('etapas/') ?>${acao.id}" class="btn btn-secondary btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Etapas">
-                                            <i class="fas fa-tasks"></i>
-                                        </a>
                                         <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
                                             <i class="fas fa-edit"></i>
                                         </button>
@@ -335,9 +350,13 @@
                             var row = `
                                 <tr>
                                     <td class="text-wrap align-middle">${acao.acao}</td>
-                                    <td class="text-wrap align-middle">${acao.descricao || ''}</td>
-                                    <td class="text-wrap align-middle">${acao.projeto_vinculado || ''}</td>
-                                    <td class="text-wrap align-middle">${acao.responsaveis || ''}</td>
+                                    <td class="text-wrap align-middle">${acao.projeto}</td>
+                                    <td class="text-center align-middle">${acao.responsavel}</td>
+                                    <td class="text-wrap align-middle">${acao.equipe}</td>
+                                    <td class="text-center align-middle">${acao.tempo_estimado_dias ? acao.tempo_estimado_dias + ' dias' : ''}</td>
+                                    <td class="text-center align-middle">${acao.data_inicio ? formatDate(acao.data_inicio) : ''}</td>
+                                    <td class="text-center align-middle">${acao.data_fim ? formatDate(acao.data_fim) : ''}</td>
+                                    <td class="text-center align-middle"><span class="badge ${badge_class}">${acao.status}</span></td>
                                     <td class="text-center align-middle">${actionButtons}</td>
                                 </tr>`;
 
@@ -366,6 +385,16 @@
                     $('#dataTable').css('opacity', '1');
                 }
             });
+        }
+
+        // Função para formatar data
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
         }
 
         // Funções para exibir alertas

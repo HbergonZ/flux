@@ -7,37 +7,52 @@ use CodeIgniter\Model;
 class AcoesModel extends Model
 {
     protected $table = 'acoes';
-    protected $primaryKey = 'id';
-
-    protected $useAutoIncrement = true; // Ativar auto-incremento
-
+    protected $primaryKey = 'id_acao';
     protected $allowedFields = [
-        'identificador',
         'acao',
-        'descricao',
-        'projeto_vinculado',
-        'id_eixo',
-        'id_plano',
-        'responsaveis'
+        'projeto',
+        'responsavel',
+        'equipe',
+        'tempo_estimado_dias',
+        'inicio_estimado',
+        'fim_estimado',
+        'data_inicio',
+        'data_fim',
+        'status',
+        'id_projeto',
+        'ordem',
+        'id_etapa'
     ];
-
-    protected $useTimestamps = true;
-    protected $createdField = 'data_criacao';
-    protected $updatedField = 'data_atualizacao';
     protected $returnType = 'array';
+    protected $useTimestamps = true;
+    protected $createdField = 'created_at';
+    protected $updatedField = 'updated_at';
 
-    // Garantir que o ID não seja enviado em inserções
-    protected $beforeInsert = ['removerID'];
-
-    protected function removerID(array $data)
+    public function getAcoesByProjeto($idProjeto)
     {
-        if (isset($data['data']['id'])) {
-            unset($data['data']['id']);
+        return $this->where('id_projeto', $idProjeto)
+            ->orderBy('data_inicio', 'ASC')
+            ->findAll();
+    }
+
+    public function getAcoesByEtapa($idEtapa)
+    {
+        return $this->where('id_etapa', $idEtapa)
+            ->orderBy('data_inicio', 'ASC')
+            ->findAll();
+    }
+
+    protected $beforeInsert = ['emptyStringToNull'];
+
+    protected function emptyStringToNull(array $data)
+    {
+        if (array_key_exists('data', $data)) {
+            foreach ($data['data'] as $key => $value) {
+                if ($value === '') {
+                    $data['data'][$key] = null;
+                }
+            }
         }
         return $data;
-    }
-    public function getAcoesByPlano($idPlano)
-    {
-        return $this->where('id_plano', $idPlano)->findAll();
     }
 }
