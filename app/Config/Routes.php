@@ -20,6 +20,9 @@ $routes->group('', function ($routes) {
     $routes->get('projetos/(:num)/etapas', 'Etapas::index/$1');
     $routes->get('etapas/(:num)/acoes', 'Acoes::index/$1');
 
+    // Acesso direto às ações do projeto (corrigido)
+    $routes->get('projetos/(:num)/acoes', 'Projetos::acoes/$1');
+
     // Rotas alternativas para compatibilidade
     $routes->get('projetos/(:num)', 'Projetos::index/$1');
     $routes->get('etapas/(:num)', 'Etapas::index/$1');
@@ -45,11 +48,11 @@ $routes->group('', function ($routes) {
     $routes->post('etapas/filtrar/(:num)', 'Etapas::filtrar/$1');
 
     // Ações
-    $routes->post('acoes/cadastrar/(:num)', 'Acoes::cadastrar/$1');
-    $routes->get('acoes/editar/(:num)', 'Acoes::editar/$1');
-    $routes->post('acoes/atualizar/(:num)', 'Acoes::atualizar/$1');
-    $routes->post('acoes/excluir/(:num)', 'Acoes::excluir/$1');
     $routes->post('acoes/filtrar/(:num)', 'Acoes::filtrar/$1');
+    $routes->get('acoes/dados-acao/(:num)', 'Acoes::dadosAcao/$1');
+    $routes->post('acoes/solicitar-edicao', 'Acoes::solicitarEdicao');
+    $routes->post('acoes/solicitar-exclusao', 'Acoes::solicitarExclusao');
+    $routes->post('acoes/solicitar-inclusao', 'Acoes::solicitarInclusao');
 
     // Solicitações
     $routes->get('minhas-solicitacoes', 'MinhasSolicitacoes::index');
@@ -70,8 +73,6 @@ $routes->group('', function ($routes) {
     $routes->post('planos/solicitar-exclusao', 'Planos::solicitarExclusao');
     $routes->post('planos/solicitar-inclusao', 'Planos::solicitarInclusao');
     $routes->get('planos/dados-plano/(:num)', 'Planos::dadosPlano/$1');
-
-    $routes->get('projetos/(:num)/acoes', 'Projetos::acoes/$1');
 });
 
 // Rotas administrativas
@@ -95,9 +96,6 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
     $routes->post('etapas/excluir/(:num)', 'Etapas::excluir/$1');
 
     // Ações
-
-
-    // No grupo administrativo
     $routes->post('acoes/cadastrar/(:num)', 'Acoes::cadastrar/$1');
     $routes->get('acoes/editar/(:num)', 'Acoes::editar/$1');
     $routes->post('acoes/atualizar/(:num)', 'Acoes::atualizar/$1');

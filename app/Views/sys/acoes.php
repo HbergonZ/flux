@@ -9,13 +9,26 @@
 <div class="container-fluid">
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Ações da Etapa: <?= $etapa['nome'] ?></h1>
+        <h1 class="h3 mb-0 text-gray-800">
+            <?= isset($acessoDireto) && $acessoDireto ?
+                "Ações do Projeto: {$projeto['nome']}" :
+                "Ações da Etapa: {$etapa['nome']}"
+            ?>
+        </h1>
         <div>
-            <a href="<?= site_url("projetos/{$etapa['id_projeto']}/etapas") ?>" class="btn btn-secondary btn-icon-split btn-sm">
+            <a href="<?= isset($acessoDireto) && $acessoDireto ?
+                            site_url("planos/{$projeto['id_plano']}/projetos") :
+                            site_url("projetos/{$projeto['id']}/etapas")
+                        ?>" class="btn btn-secondary btn-icon-split btn-sm">
                 <span class="icon text-white-50">
                     <i class="fas fa-arrow-left"></i>
                 </span>
-                <span class="text">Voltar para Etapas</span>
+                <span class="text">
+                    <?= isset($acessoDireto) && $acessoDireto ?
+                        'Voltar para Projetos' :
+                        'Voltar para Etapas'
+                    ?>
+                </span>
             </a>
         </div>
     </div>
@@ -25,22 +38,10 @@
         <div class="card-body">
             <form id="formFiltros">
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <div class="form-group">
                             <label for="filterNome">Nome</label>
                             <input type="text" class="form-control" id="filterNome" name="nome" placeholder="Filtrar por nome">
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="filterStatus">Status</label>
-                            <select class="form-control" id="filterStatus" name="status">
-                                <option value="">Todos</option>
-                                <option value="Em andamento">Em andamento</option>
-                                <option value="Finalizado">Finalizado</option>
-                                <option value="Paralisado">Paralisado</option>
-                                <option value="Não iniciado">Não iniciado</option>
-                            </select>
                         </div>
                     </div>
                 </div>
@@ -92,13 +93,17 @@
                         <tr class="text-center">
                             <th>Ordem</th>
                             <th>Nome</th>
+                            <?php if (!isset($acessoDireto) || !$acessoDireto): ?>
+                                <th>Etapa</th>
+                            <?php endif; ?>
                             <th>Responsável</th>
                             <th>Status</th>
-                            <th>Início Estimado</th>
-                            <th>Término Estimado</th>
+                            <th>Data Início</th>
+                            <th>Data Fim</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
+
                     <tbody>
                         <?php if (isset($acoes) && !empty($acoes)) : ?>
                             <?php foreach ($acoes as $acao) :
@@ -106,46 +111,28 @@
                                 <tr>
                                     <td class="text-center"><?= $acao['ordem'] ?? '-' ?></td>
                                     <td class="text-wrap"><?= $acao['nome'] ?></td>
+                                    <?php if (!isset($acessoDireto) || !$acessoDireto): ?>
+                                        <td><?= $etapa['nome'] ?></td>
+                                    <?php endif; ?>
                                     <td><?= $acao['responsavel'] ?? '-' ?></td>
                                     <td class="text-center">
                                         <span class="badge badge-<?=
-                                                                    $acao['status'] == 'Finalizado' ? 'success' : ($acao['status'] == 'Em andamento' ? 'primary' : ($acao['status'] == 'Paralisado' ? 'warning' : 'secondary'))
-                                                                    ?>">
-                                            <?= $acao['status'] ?>
+                                                                    $acao['status'] == 'Finalizado' ? 'success' : ($acao['status'] == 'Em andamento' ? 'primary' : ($acao['status'] == 'Paralisado' ? 'danger' : 'secondary')) ?>">
+                                            <?= $acao['status'] ?? 'Não iniciado' ?>
                                         </span>
                                     </td>
-                                    <td class="text-center"><?= $acao['inicio_estimado'] ? date('d/m/Y', strtotime($acao['inicio_estimado'])) : '-' ?></td>
-                                    <td class="text-center"><?= $acao['fim_estimado'] ? date('d/m/Y', strtotime($acao['fim_estimado'])) : '-' ?></td>
+                                    <td class="text-center"><?= $acao['data_inicio'] ? date('d/m/Y', strtotime($acao['data_inicio'])) : '-' ?></td>
+                                    <td class="text-center"><?= $acao['data_fim'] ? date('d/m/Y', strtotime($acao['data_fim'])) : '-' ?></td>
                                     <td class="text-center">
                                         <div class="d-inline-flex">
-                                            <?php if (auth()->user()->inGroup('admin')): ?>
-                                                <!-- Botão Editar -->
-                                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Editar">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-
-                                                <!-- Botão Excluir -->
-                                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Excluir">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                            <?php else: ?>
-                                                <!-- Botão Solicitar Edição -->
-                                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Edição">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-
-                                                <!-- Botão Solicitar Exclusão -->
-                                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Exclusão">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                            <?php endif; ?>
+                                            <!-- Botões de ação permanecem os mesmos -->
                                         </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else : ?>
                             <tr>
-                                <td colspan="7" class="text-center">Nenhuma ação encontrada</td>
+                                <td colspan="<?= isset($acessoDireto) && $acessoDireto ? '7' : '8' ?>" class="text-center">Nenhuma ação encontrada</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>

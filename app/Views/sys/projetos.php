@@ -130,9 +130,9 @@
                                                 <i class="fas fa-tasks"></i>
                                             </a>
 
-                                            <!-- NOVO Botão Acessar Ações Diretamente -->
-                                            <a href="<?= site_url("projetos/{$projeto['id']}/acoes") ?>" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Acessar Ações Diretamente">
-                                                <i class="fas fa-list-check"></i>
+                                            <!-- Botão Acessar Ações -->
+                                            <a href="<?= site_url("projetos/{$projeto['id']}/acoes") ?>" class="btn btn-info btn-sm mx-1" title="Acessar Ações">
+                                                <i class="fas fa-tasks"></i>
                                             </a>
 
                                             <?php if (auth()->user()->inGroup('admin')): ?>

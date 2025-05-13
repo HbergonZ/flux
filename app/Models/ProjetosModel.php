@@ -48,4 +48,14 @@ class ProjetosModel extends Model
             ->orderBy('ordem', 'ASC')
             ->findAll();
     }
+    // Adicione este método ao seu ProjetosModel
+    public function getPlanoByProjeto($idProjeto)
+    {
+        return $this->db->table('projetos')
+            ->select('planos.*')
+            ->join('planos', 'planos.id = projetos.id_plano') // Assumindo que a chave em planos também é 'id'
+            ->where('projetos.id', $idProjeto) // Corrigido para usar 'id' em vez de 'id_projeto'
+            ->get()
+            ->getRowArray();
+    }
 }

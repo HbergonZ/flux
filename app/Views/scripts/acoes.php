@@ -35,10 +35,7 @@
             "responsive": true,
             "autoWidth": false,
             "lengthMenu": [5, 10, 25, 50, 100],
-            "pageLength": 10,
-            "order": [
-                [0, 'asc']
-            ]
+            "pageLength": 10
         });
 
         // Configuração do AJAX
@@ -68,18 +65,17 @@
                 dataType: 'json',
                 success: function(response) {
                     if (response.success && response.data) {
-                        var acao = response.data;
-
-                        // Preenche os campos do formulário
-                        $('#editId').val(acao.id_acao);
-                        $('#editNome').val(acao.nome);
-                        $('#editResponsavel').val(acao.responsavel || '');
-                        $('#editInicioEstimado').val(acao.inicio_estimado || '');
-                        $('#editFimEstimado').val(acao.fim_estimado || '');
-                        $('#editTempoEstimado').val(acao.tempo_estimado_dias || '');
-                        $('#editStatus').val(acao.status || 'Não iniciado');
-                        $('#editOrdem').val(acao.ordem || '');
-
+                        $('#editAcaoId').val(response.data.id_acao);
+                        $('#editAcaoNome').val(response.data.nome);
+                        $('#editAcaoResponsavel').val(response.data.responsavel);
+                        $('#editAcaoEquipe').val(response.data.equipe);
+                        $('#editAcaoStatus').val(response.data.status || 'Não iniciado');
+                        $('#editAcaoTempoEstimado').val(response.data.tempo_estimado_dias);
+                        $('#editAcaoInicioEstimado').val(response.data.inicio_estimado);
+                        $('#editAcaoFimEstimado').val(response.data.fim_estimado);
+                        $('#editAcaoDataInicio').val(response.data.data_inicio);
+                        $('#editAcaoDataFim').val(response.data.data_fim);
+                        $('#editAcaoOrdem').val(response.data.ordem);
                         $('#editAcaoModal').modal('show');
                     } else {
                         showErrorAlert(response.message || "Erro ao carregar ação");
@@ -105,18 +101,30 @@
                     if (response.success && response.data) {
                         var acao = response.data;
 
-                        // Preenche os campos do formulário de solicitação
+                        // Preenche os campos do formulário
                         $('#solicitarEdicaoId').val(acao.id_acao);
                         $('#solicitarEdicaoNome').val(acao.nome);
-                        $('#solicitarEdicaoResponsavel').val(acao.responsavel || '');
+                        $('#solicitarEdicaoResponsavel').val(acao.responsavel);
+                        $('#solicitarEdicaoEquipe').val(acao.equipe);
                         $('#solicitarEdicaoStatus').val(acao.status || 'Não iniciado');
-                        $('#solicitarEdicaoOrdem').val(acao.ordem || '');
+                        $('#solicitarEdicaoTempoEstimado').val(acao.tempo_estimado_dias);
+                        $('#solicitarEdicaoInicioEstimado').val(acao.inicio_estimado);
+                        $('#solicitarEdicaoFimEstimado').val(acao.fim_estimado);
+                        $('#solicitarEdicaoDataInicio').val(acao.data_inicio);
+                        $('#solicitarEdicaoDataFim').val(acao.data_fim);
+                        $('#solicitarEdicaoOrdem').val(acao.ordem);
 
                         // Armazena os valores originais para comparação
                         formOriginalData = {
                             nome: acao.nome,
                             responsavel: acao.responsavel,
+                            equipe: acao.equipe,
                             status: acao.status,
+                            tempo_estimado_dias: acao.tempo_estimado_dias,
+                            inicio_estimado: acao.inicio_estimado,
+                            fim_estimado: acao.fim_estimado,
+                            data_inicio: acao.data_inicio,
+                            data_fim: acao.data_fim,
                             ordem: acao.ordem
                         };
 
@@ -143,7 +151,9 @@
             let hasChanges = false;
             const form = $('#formSolicitarEdicao');
 
-            ['nome', 'responsavel', 'status', 'ordem'].forEach(field => {
+            ['nome', 'responsavel', 'equipe', 'status', 'tempo_estimado_dias',
+                'inicio_estimado', 'fim_estimado', 'data_inicio', 'data_fim', 'ordem'
+            ].forEach(field => {
                 const currentValue = form.find(`[name="${field}"]`).val();
                 if (formOriginalData[field] != currentValue) {
                     hasChanges = true;
@@ -179,7 +189,7 @@
                 success: function(response) {
                     if (response.success && response.data) {
                         var acao = response.data;
-                        var dadosAtuais = `Nome: ${acao.nome}\nResponsável: ${acao.responsavel || '-'}\nStatus: ${acao.status}\nEtapa: ${acao.id_etapa}`;
+                        var dadosAtuais = `Nome: ${acao.nome}\nResponsável: ${acao.responsavel}\nEquipe: ${acao.equipe}\nStatus: ${acao.status}\nEtapa: ${acao.id_etapa}\nProjeto: ${acao.id_projeto}`;
 
                         $('#solicitarExclusaoId').val(acao.id_acao);
                         $('#acaoNameToRequestDelete').text(acaoName);
@@ -326,22 +336,33 @@
                                     </div>`;
                             }
 
+                            var statusBadge = '';
+                            switch (acao.status) {
+                                case 'Finalizado':
+                                    statusBadge = 'badge-success';
+                                    break;
+                                case 'Em andamento':
+                                    statusBadge = 'badge-primary';
+                                    break;
+                                case 'Paralisado':
+                                    statusBadge = 'badge-danger';
+                                    break;
+                                default:
+                                    statusBadge = 'badge-secondary';
+                            }
+
                             var row = `
                                 <tr>
                                     <td class="text-center">${acao.ordem || '-'}</td>
                                     <td class="text-wrap">${acao.nome}</td>
                                     <td>${acao.responsavel || '-'}</td>
                                     <td class="text-center">
-                                        <span class="badge badge-${
-                                            acao.status == 'Finalizado' ? 'success' :
-                                            (acao.status == 'Em andamento' ? 'primary' :
-                                            (acao.status == 'Paralisado' ? 'warning' : 'secondary'))
-                                        }">
-                                            ${acao.status}
+                                        <span class="badge ${statusBadge}">
+                                            ${acao.status || 'Não iniciado'}
                                         </span>
                                     </td>
-                                    <td class="text-center">${acao.inicio_estimado ? formatDate(acao.inicio_estimado) : '-'}</td>
-                                    <td class="text-center">${acao.fim_estimado ? formatDate(acao.fim_estimado) : '-'}</td>
+                                    <td class="text-center">${acao.data_inicio ? formatDate(acao.data_inicio) : '-'}</td>
+                                    <td class="text-center">${acao.data_fim ? formatDate(acao.data_fim) : '-'}</td>
                                     <td class="text-center">${actionButtons}</td>
                                 </tr>`;
 

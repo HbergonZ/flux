@@ -34,13 +34,16 @@ class Acoes extends BaseController
         }
 
         $projeto = $this->projetosModel->find($etapa['id_projeto']);
-        $acoes = $this->acoesModel->getAcoesByEtapa($idEtapa);
+        $acoes = $this->acoesModel->where('id_etapa', $idEtapa)
+            ->orderBy('ordem', 'ASC')
+            ->findAll();
 
         $data = [
             'etapa' => $etapa,
             'projeto' => $projeto,
             'acoes' => $acoes,
-            'idEtapa' => $idEtapa
+            'idEtapa' => $idEtapa,
+            'acessoDireto' => false
         ];
 
         $this->content_data['content'] = view('sys/acoes', $data);
@@ -57,7 +60,14 @@ class Acoes extends BaseController
 
         $rules = [
             'nome' => 'required|min_length[3]|max_length[255]',
-            'status' => 'required|in_list[Não iniciado,Em andamento,Paralisado,Finalizado]',
+            'responsavel' => 'permit_empty|max_length[255]',
+            'equipe' => 'permit_empty|max_length[255]',
+            'tempo_estimado_dias' => 'permit_empty|integer',
+            'inicio_estimado' => 'permit_empty|valid_date',
+            'fim_estimado' => 'permit_empty|valid_date',
+            'data_inicio' => 'permit_empty|valid_date',
+            'data_fim' => 'permit_empty|valid_date',
+            'status' => 'permit_empty|in_list[Em andamento,Finalizado,Paralisado,Não iniciado]',
             'ordem' => 'permit_empty|integer'
         ];
 
@@ -72,13 +82,16 @@ class Acoes extends BaseController
                 $data = [
                     'nome' => $this->request->getPost('nome'),
                     'responsavel' => $this->request->getPost('responsavel'),
-                    'status' => $this->request->getPost('status'),
+                    'equipe' => $this->request->getPost('equipe'),
+                    'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias'),
                     'inicio_estimado' => $this->request->getPost('inicio_estimado'),
                     'fim_estimado' => $this->request->getPost('fim_estimado'),
-                    'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias'),
+                    'data_inicio' => $this->request->getPost('data_inicio'),
+                    'data_fim' => $this->request->getPost('data_fim'),
+                    'status' => $this->request->getPost('status'),
                     'ordem' => $this->request->getPost('ordem'),
-                    'id_etapa' => $idEtapa,
-                    'id_projeto' => $etapa['id_projeto']
+                    'id_projeto' => $etapa['id_projeto'],
+                    'id_etapa' => $idEtapa
                 ];
 
                 $this->acoesModel->insert($data);
@@ -124,7 +137,14 @@ class Acoes extends BaseController
         $rules = [
             'id_acao' => 'required',
             'nome' => 'required|min_length[3]|max_length[255]',
-            'status' => 'required|in_list[Não iniciado,Em andamento,Paralisado,Finalizado]',
+            'responsavel' => 'permit_empty|max_length[255]',
+            'equipe' => 'permit_empty|max_length[255]',
+            'tempo_estimado_dias' => 'permit_empty|integer',
+            'inicio_estimado' => 'permit_empty|valid_date',
+            'fim_estimado' => 'permit_empty|valid_date',
+            'data_inicio' => 'permit_empty|valid_date',
+            'data_fim' => 'permit_empty|valid_date',
+            'status' => 'permit_empty|in_list[Em andamento,Finalizado,Paralisado,Não iniciado]',
             'ordem' => 'permit_empty|integer'
         ];
 
@@ -134,10 +154,13 @@ class Acoes extends BaseController
                     'id_acao' => $this->request->getPost('id_acao'),
                     'nome' => $this->request->getPost('nome'),
                     'responsavel' => $this->request->getPost('responsavel'),
-                    'status' => $this->request->getPost('status'),
+                    'equipe' => $this->request->getPost('equipe'),
+                    'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias'),
                     'inicio_estimado' => $this->request->getPost('inicio_estimado'),
                     'fim_estimado' => $this->request->getPost('fim_estimado'),
-                    'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias'),
+                    'data_inicio' => $this->request->getPost('data_inicio'),
+                    'data_fim' => $this->request->getPost('data_fim'),
+                    'status' => $this->request->getPost('status'),
                     'ordem' => $this->request->getPost('ordem')
                 ];
 
@@ -183,17 +206,12 @@ class Acoes extends BaseController
             return redirect()->to("/etapas/$idEtapa/acoes");
         }
 
-        $filtroNome = $this->request->getPost('nome');
-        $filtroStatus = $this->request->getPost('status');
+        $filtro = $this->request->getPost('nome');
 
         $builder = $this->acoesModel->where('id_etapa', $idEtapa);
 
-        if (!empty($filtroNome)) {
-            $builder->like('nome', $filtroNome);
-        }
-
-        if (!empty($filtroStatus)) {
-            $builder->where('status', $filtroStatus);
+        if (!empty($filtro)) {
+            $builder->like('nome', $filtro);
         }
 
         $acoes = $builder->orderBy('ordem', 'ASC')->findAll();
@@ -242,7 +260,18 @@ class Acoes extends BaseController
                 }
 
                 $alteracoes = [];
-                $camposEditaveis = ['nome', 'responsavel', 'status', 'inicio_estimado', 'fim_estimado', 'tempo_estimado_dias', 'ordem'];
+                $camposEditaveis = [
+                    'nome',
+                    'responsavel',
+                    'equipe',
+                    'tempo_estimado_dias',
+                    'inicio_estimado',
+                    'fim_estimado',
+                    'data_inicio',
+                    'data_fim',
+                    'status',
+                    'ordem'
+                ];
 
                 foreach ($camposEditaveis as $campo) {
                     if (isset($postData[$campo]) && $postData[$campo] != $acaoAtual[$campo]) {
@@ -311,11 +340,8 @@ class Acoes extends BaseController
                 $dadosAtuais = [
                     'nome' => $acao['nome'],
                     'responsavel' => $acao['responsavel'],
+                    'equipe' => $acao['equipe'],
                     'status' => $acao['status'],
-                    'inicio_estimado' => $acao['inicio_estimado'],
-                    'fim_estimado' => $acao['fim_estimado'],
-                    'tempo_estimado_dias' => $acao['tempo_estimado_dias'],
-                    'ordem' => $acao['ordem'],
                     'id_etapa' => $acao['id_etapa'],
                     'id_projeto' => $acao['id_projeto']
                 ];
@@ -358,7 +384,6 @@ class Acoes extends BaseController
 
         $rules = [
             'nome' => 'required|min_length[3]|max_length[255]',
-            'status' => 'required|in_list[Não iniciado,Em andamento,Paralisado,Finalizado]',
             'justificativa' => 'required'
         ];
 
@@ -373,13 +398,16 @@ class Acoes extends BaseController
                 $dadosAlterados = [
                     'nome' => $postData['nome'],
                     'responsavel' => $postData['responsavel'] ?? null,
-                    'status' => $postData['status'],
+                    'equipe' => $postData['equipe'] ?? null,
+                    'tempo_estimado_dias' => $postData['tempo_estimado_dias'] ?? null,
                     'inicio_estimado' => $postData['inicio_estimado'] ?? null,
                     'fim_estimado' => $postData['fim_estimado'] ?? null,
-                    'tempo_estimado_dias' => $postData['tempo_estimado_dias'] ?? null,
+                    'data_inicio' => $postData['data_inicio'] ?? null,
+                    'data_fim' => $postData['data_fim'] ?? null,
+                    'status' => $postData['status'] ?? 'Não iniciado',
                     'ordem' => $postData['ordem'] ?? null,
-                    'id_etapa' => $postData['id_etapa'],
-                    'id_projeto' => $etapa['id_projeto']
+                    'id_projeto' => $etapa['id_projeto'],
+                    'id_etapa' => $postData['id_etapa']
                 ];
 
                 $data = [
@@ -406,5 +434,27 @@ class Acoes extends BaseController
         }
 
         return $this->response->setJSON($response);
+    }
+    public function acoesProjeto($idProjeto)
+    {
+        $projeto = $this->projetosModel->find($idProjeto);
+        if (!$projeto) {
+            return redirect()->back();
+        }
+
+        $acoes = $this->acoesModel->where('id_projeto', $idProjeto)
+            ->where('id_etapa IS NULL')
+            ->orderBy('ordem', 'ASC')
+            ->findAll();
+
+        $data = [
+            'projeto' => $projeto,
+            'acoes' => $acoes,
+            'idProjeto' => $idProjeto,
+            'acessoDireto' => true
+        ];
+
+        $this->content_data['content'] = view('sys/acoes', $data);
+        return view('layout', $this->content_data);
     }
 }

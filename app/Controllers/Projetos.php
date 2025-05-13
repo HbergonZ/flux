@@ -421,19 +421,22 @@ class Projetos extends BaseController
             return redirect()->back();
         }
 
-        // Carrega as ações diretamente vinculadas ao projeto (sem etapa)
+        $plano = $this->planosModel->find($projeto['id_plano']);
         $acoesModel = new \App\Models\AcoesModel();
+
+        // Busca todas as ações do projeto
         $acoes = $acoesModel->where('id_projeto', $idProjeto)
-            ->where('id_etapa IS NULL')
+            ->orderBy('ordem', 'ASC')
             ->findAll();
 
         $data = [
             'projeto' => $projeto,
+            'plano' => $plano,
             'acoes' => $acoes,
-            'acesso_direto' => true // Flag para identificar que veio direto do projeto
+            'idProjeto' => $idProjeto,
+            'acessoDireto' => true
         ];
 
-        $this->content_data['content'] = view('sys/acoes', $data);
-        return view('layout', $this->content_data);
+        return view('sys/acoes', $data);
     }
 }

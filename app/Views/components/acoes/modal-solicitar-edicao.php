@@ -10,7 +10,9 @@
             <form id="formSolicitarEdicao" method="post" action="<?= site_url('acoes/solicitar-edicao') ?>">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                 <input type="hidden" name="id_acao" id="solicitarEdicaoId">
-                <input type="hidden" name="id_projeto" value="<?= $idProjeto ?>">
+                <input type="hidden" name="tipo" value="edicao">
+                <input type="hidden" name="id_etapa" value="<?= $idEtapa ?>">
+                <input type="hidden" name="id_projeto" value="<?= $projeto['id'] ?>">
 
                 <div class="modal-body">
                     <div id="alertNenhumaAlteracao" class="alert alert-warning d-none">
@@ -18,10 +20,16 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <div class="form-group">
-                                <label for="solicitarEdicaoNome">Nome da Ação*</label>
-                                <input type="text" class="form-control" id="solicitarEdicaoNome" name="nome" required maxlength="255">
+                                <label for="solicitarEdicaoNome">Nome*</label>
+                                <input type="text" class="form-control" id="solicitarEdicaoNome" name="nome" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="solicitarEdicaoResponsavel">Responsável</label>
+                                <input type="text" class="form-control" id="solicitarEdicaoResponsavel" name="responsavel">
                             </div>
                         </div>
                     </div>
@@ -29,16 +37,62 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="solicitarEdicaoResponsavel">Responsável*</label>
-                                <input type="text" class="form-control" id="solicitarEdicaoResponsavel" name="responsavel" required maxlength="255">
+                                <label for="solicitarEdicaoEquipe">Equipe</label>
+                                <input type="text" class="form-control" id="solicitarEdicaoEquipe" name="equipe">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="solicitarEdicaoEquipe">Equipe</label>
-                                <input type="text" class="form-control" id="solicitarEdicaoEquipe" name="equipe" maxlength="255">
+                                <label for="solicitarEdicaoStatus">Status</label>
+                                <select class="form-control" id="solicitarEdicaoStatus" name="status">
+                                    <option value="Não iniciado">Não iniciado</option>
+                                    <option value="Em andamento">Em andamento</option>
+                                    <option value="Paralisado">Paralisado</option>
+                                    <option value="Finalizado">Finalizado</option>
+                                </select>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="solicitarEdicaoTempoEstimado">Tempo Estimado (dias)</label>
+                                <input type="number" class="form-control" id="solicitarEdicaoTempoEstimado" name="tempo_estimado_dias" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="solicitarEdicaoInicioEstimado">Início Estimado</label>
+                                <input type="date" class="form-control" id="solicitarEdicaoInicioEstimado" name="inicio_estimado">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="solicitarEdicaoFimEstimado">Fim Estimado</label>
+                                <input type="date" class="form-control" id="solicitarEdicaoFimEstimado" name="fim_estimado">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="solicitarEdicaoDataInicio">Data Início Real</label>
+                                <input type="date" class="form-control" id="solicitarEdicaoDataInicio" name="data_inicio">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="solicitarEdicaoDataFim">Data Fim Real</label>
+                                <input type="date" class="form-control" id="solicitarEdicaoDataFim" name="data_fim">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="solicitarEdicaoOrdem">Ordem</label>
+                        <input type="number" class="form-control" id="solicitarEdicaoOrdem" name="ordem" min="1">
                     </div>
 
                     <div class="form-group">
