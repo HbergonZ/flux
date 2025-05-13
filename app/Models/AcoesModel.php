@@ -8,9 +8,11 @@ class AcoesModel extends Model
 {
     protected $table = 'acoes';
     protected $primaryKey = 'id_acao';
+
+    protected $useAutoIncrement = true;
+
     protected $allowedFields = [
-        'acao',
-        'projeto',
+        'nome',
         'responsavel',
         'equipe',
         'tempo_estimado_dias',
@@ -19,40 +21,30 @@ class AcoesModel extends Model
         'data_inicio',
         'data_fim',
         'status',
-        'id_projeto',
         'ordem',
+        'id_projeto',
         'id_etapa'
     ];
-    protected $returnType = 'array';
+
     protected $useTimestamps = true;
     protected $createdField = 'created_at';
     protected $updatedField = 'updated_at';
+    protected $returnType = 'array';
 
-    public function getAcoesByProjeto($idProjeto)
+    protected $beforeInsert = ['removerID'];
+
+    protected function removerID(array $data)
     {
-        return $this->where('id_projeto', $idProjeto)
-            ->orderBy('data_inicio', 'ASC')
-            ->findAll();
+        if (isset($data['data']['id_acao'])) {
+            unset($data['data']['id_acao']);
+        }
+        return $data;
     }
 
     public function getAcoesByEtapa($idEtapa)
     {
         return $this->where('id_etapa', $idEtapa)
-            ->orderBy('data_inicio', 'ASC')
+            ->orderBy('ordem', 'ASC')
             ->findAll();
-    }
-
-    protected $beforeInsert = ['emptyStringToNull'];
-
-    protected function emptyStringToNull(array $data)
-    {
-        if (array_key_exists('data', $data)) {
-            foreach ($data['data'] as $key => $value) {
-                if ($value === '') {
-                    $data['data'][$key] = null;
-                }
-            }
-        }
-        return $data;
     }
 }

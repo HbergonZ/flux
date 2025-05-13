@@ -35,7 +35,10 @@
             "responsive": true,
             "autoWidth": false,
             "lengthMenu": [5, 10, 25, 50, 100],
-            "pageLength": 10
+            "pageLength": 10,
+            "order": [
+                [0, 'asc']
+            ]
         });
 
         // Configuração do AJAX
@@ -49,7 +52,7 @@
         // Armazenar dados originais do formulário
         let formOriginalData = {};
 
-        // Cadastrar nova ação
+        // Cadastrar nova ação (apenas admin)
         $('#formAddAcao').submit(function(e) {
             e.preventDefault();
             submitForm($(this), '#addAcaoModal');
@@ -65,15 +68,18 @@
                 dataType: 'json',
                 success: function(response) {
                     if (response.success && response.data) {
-                        $('#editAcaoId').val(response.data.id_acao);
-                        $('#editAcaoNome').val(response.data.acao);
-                        $('#editAcaoProjeto').val(response.data.projeto);
-                        $('#editAcaoResponsavel').val(response.data.responsavel);
-                        $('#editAcaoEquipe').val(response.data.equipe);
-                        $('#editAcaoTempoEstimado').val(response.data.tempo_estimado_dias);
-                        $('#editAcaoDataInicio').val(response.data.data_inicio);
-                        $('#editAcaoDataFim').val(response.data.data_fim);
-                        $('#editAcaoStatus').val(response.data.status);
+                        var acao = response.data;
+
+                        // Preenche os campos do formulário
+                        $('#editId').val(acao.id_acao);
+                        $('#editNome').val(acao.nome);
+                        $('#editResponsavel').val(acao.responsavel || '');
+                        $('#editInicioEstimado').val(acao.inicio_estimado || '');
+                        $('#editFimEstimado').val(acao.fim_estimado || '');
+                        $('#editTempoEstimado').val(acao.tempo_estimado_dias || '');
+                        $('#editStatus').val(acao.status || 'Não iniciado');
+                        $('#editOrdem').val(acao.ordem || '');
+
                         $('#editAcaoModal').modal('show');
                     } else {
                         showErrorAlert(response.message || "Erro ao carregar ação");
@@ -88,7 +94,6 @@
         // Solicitar edição de ação - Abrir modal (para não-admins)
         $(document).on('click', '.btn-primary[title="Solicitar Edição"]', function() {
             var acaoId = $(this).data('id').split('-')[0];
-            var acaoRow = $(this).closest('tr');
             var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
             var url = isAdmin ? '<?= site_url('acoes/editar/') ?>' : '<?= site_url('acoes/dados-acao/') ?>';
 
@@ -100,27 +105,19 @@
                     if (response.success && response.data) {
                         var acao = response.data;
 
-                        // Preenche os campos do formulário
+                        // Preenche os campos do formulário de solicitação
                         $('#solicitarEdicaoId').val(acao.id_acao);
-                        $('#solicitarEdicaoAcao').val(acao.acao);
-                        $('#solicitarEdicaoProjeto').val(acao.projeto);
-                        $('#solicitarEdicaoResponsavel').val(acao.responsavel);
-                        $('#solicitarEdicaoEquipe').val(acao.equipe);
-                        $('#solicitarEdicaoTempoEstimado').val(acao.tempo_estimado_dias);
-                        $('#solicitarEdicaoDataInicio').val(acao.data_inicio);
-                        $('#solicitarEdicaoDataFim').val(acao.data_fim);
-                        $('#solicitarEdicaoStatus').val(acao.status);
+                        $('#solicitarEdicaoNome').val(acao.nome);
+                        $('#solicitarEdicaoResponsavel').val(acao.responsavel || '');
+                        $('#solicitarEdicaoStatus').val(acao.status || 'Não iniciado');
+                        $('#solicitarEdicaoOrdem').val(acao.ordem || '');
 
                         // Armazena os valores originais para comparação
                         formOriginalData = {
-                            acao: acao.acao,
-                            projeto: acao.projeto,
+                            nome: acao.nome,
                             responsavel: acao.responsavel,
-                            equipe: acao.equipe,
-                            tempo_estimado_dias: acao.tempo_estimado_dias,
-                            data_inicio: acao.data_inicio,
-                            data_fim: acao.data_fim,
-                            status: acao.status
+                            status: acao.status,
+                            ordem: acao.ordem
                         };
 
                         $('#solicitarEdicaoModal').modal('show');
@@ -146,7 +143,7 @@
             let hasChanges = false;
             const form = $('#formSolicitarEdicao');
 
-            ['acao', 'projeto', 'responsavel', 'equipe', 'tempo_estimado_dias', 'data_inicio', 'data_fim', 'status'].forEach(field => {
+            ['nome', 'responsavel', 'status', 'ordem'].forEach(field => {
                 const currentValue = form.find(`[name="${field}"]`).val();
                 if (formOriginalData[field] != currentValue) {
                     hasChanges = true;
@@ -171,7 +168,7 @@
         // Solicitar exclusão de ação - Abrir modal (para não-admins)
         $(document).on('click', '.btn-danger[title="Solicitar Exclusão"]', function() {
             var acaoId = $(this).data('id').split('-')[0];
-            var acaoName = $(this).closest('tr').find('td:first').text();
+            var acaoName = $(this).closest('tr').find('td:nth-child(2)').text();
             var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
             var url = isAdmin ? '<?= site_url('acoes/editar/') ?>' : '<?= site_url('acoes/dados-acao/') ?>';
 
@@ -182,7 +179,7 @@
                 success: function(response) {
                     if (response.success && response.data) {
                         var acao = response.data;
-                        var dadosAtuais = `Ação: ${acao.acao}\nProjeto: ${acao.projeto}\nResponsável: ${acao.responsavel}\nEquipe: ${acao.equipe}\nTempo Estimado: ${acao.tempo_estimado_dias} dias\nData Início: ${acao.data_inicio}\nData Fim: ${acao.data_fim}\nStatus: ${acao.status}`;
+                        var dadosAtuais = `Nome: ${acao.nome}\nResponsável: ${acao.responsavel || '-'}\nStatus: ${acao.status}\nEtapa: ${acao.id_etapa}`;
 
                         $('#solicitarExclusaoId').val(acao.id_acao);
                         $('#acaoNameToRequestDelete').text(acaoName);
@@ -219,7 +216,7 @@
         // Excluir ação - Abrir modal de confirmação (apenas admin)
         $(document).on('click', '.btn-danger[title="Excluir"]', function() {
             var acaoId = $(this).data('id').split('-')[0];
-            var acaoName = $(this).closest('tr').find('td:first').text();
+            var acaoName = $(this).closest('tr').find('td:nth-child(2)').text();
 
             $('#deleteAcaoId').val(acaoId);
             $('#acaoNameToDelete').text(acaoName);
@@ -263,7 +260,6 @@
                         }
                         showSuccessAlert(successMessage || response.message || 'Operação realizada com sucesso!');
 
-                        // Recarregar a página apenas se for uma operação que altera dados
                         if (!modalId || (modalId !== '#solicitarEdicaoModal' && modalId !== '#solicitarExclusaoModal' && modalId !== '#solicitarInclusaoModal')) {
                             setTimeout(() => location.reload(), 1500);
                         }
@@ -292,7 +288,7 @@
 
             $.ajax({
                 type: "POST",
-                url: '<?= site_url("acoes/filtrar/$tipo/$idVinculo") ?>',
+                url: '<?= site_url("acoes/filtrar/$idEtapa") ?>',
                 data: $('#formFiltros').serialize(),
                 dataType: "json",
                 beforeSend: function() {
@@ -304,24 +300,7 @@
                         $('#dataTable tbody').empty();
 
                         $.each(response.data, function(index, acao) {
-                            var id = acao.id_acao + '-' + acao.acao.toLowerCase().replace(/\s+/g, '-');
-
-                            var badge_class = '';
-                            switch (acao.status) {
-                                case 'Em andamento':
-                                    badge_class = 'badge-primary';
-                                    break;
-                                case 'Finalizado':
-                                    badge_class = 'badge-success';
-                                    break;
-                                case 'Paralisado':
-                                    badge_class = 'badge-warning';
-                                    break;
-                                case 'Não iniciado':
-                                    badge_class = 'badge-secondary';
-                                    break;
-                            }
-
+                            var id = acao.id_acao + '-' + acao.nome.toLowerCase().replace(/\s+/g, '-');
                             var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
                             var actionButtons = '';
 
@@ -349,15 +328,21 @@
 
                             var row = `
                                 <tr>
-                                    <td class="text-wrap align-middle">${acao.acao}</td>
-                                    <td class="text-wrap align-middle">${acao.projeto}</td>
-                                    <td class="text-center align-middle">${acao.responsavel}</td>
-                                    <td class="text-wrap align-middle">${acao.equipe}</td>
-                                    <td class="text-center align-middle">${acao.tempo_estimado_dias ? acao.tempo_estimado_dias + ' dias' : ''}</td>
-                                    <td class="text-center align-middle">${acao.data_inicio ? formatDate(acao.data_inicio) : ''}</td>
-                                    <td class="text-center align-middle">${acao.data_fim ? formatDate(acao.data_fim) : ''}</td>
-                                    <td class="text-center align-middle"><span class="badge ${badge_class}">${acao.status}</span></td>
-                                    <td class="text-center align-middle">${actionButtons}</td>
+                                    <td class="text-center">${acao.ordem || '-'}</td>
+                                    <td class="text-wrap">${acao.nome}</td>
+                                    <td>${acao.responsavel || '-'}</td>
+                                    <td class="text-center">
+                                        <span class="badge badge-${
+                                            acao.status == 'Finalizado' ? 'success' :
+                                            (acao.status == 'Em andamento' ? 'primary' :
+                                            (acao.status == 'Paralisado' ? 'warning' : 'secondary'))
+                                        }">
+                                            ${acao.status}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">${acao.inicio_estimado ? formatDate(acao.inicio_estimado) : '-'}</td>
+                                    <td class="text-center">${acao.fim_estimado ? formatDate(acao.fim_estimado) : '-'}</td>
+                                    <td class="text-center">${actionButtons}</td>
                                 </tr>`;
 
                             $('#dataTable tbody').append(row);
@@ -372,7 +357,10 @@
                             "responsive": true,
                             "autoWidth": false,
                             "lengthMenu": [5, 10, 25, 50, 100],
-                            "pageLength": 10
+                            "pageLength": 10,
+                            "order": [
+                                [0, 'asc']
+                            ]
                         });
                     } else {
                         showErrorAlert('Erro ao filtrar ações: ' + response.message);
@@ -389,12 +377,9 @@
 
         // Função para formatar data
         function formatDate(dateString) {
-            if (!dateString) return '';
+            if (!dateString) return '-';
             const date = new Date(dateString);
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
-            return `${day}/${month}/${year}`;
+            return date.toLocaleDateString('pt-BR');
         }
 
         // Funções para exibir alertas

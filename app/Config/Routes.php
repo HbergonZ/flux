@@ -45,11 +45,11 @@ $routes->group('', function ($routes) {
     $routes->post('etapas/filtrar/(:num)', 'Etapas::filtrar/$1');
 
     // Ações
+    $routes->post('acoes/cadastrar/(:num)', 'Acoes::cadastrar/$1');
+    $routes->get('acoes/editar/(:num)', 'Acoes::editar/$1');
+    $routes->post('acoes/atualizar/(:num)', 'Acoes::atualizar/$1');
+    $routes->post('acoes/excluir/(:num)', 'Acoes::excluir/$1');
     $routes->post('acoes/filtrar/(:num)', 'Acoes::filtrar/$1');
-    $routes->post('acoes/solicitar-edicao', 'Acoes::solicitarEdicao');
-    $routes->post('acoes/solicitar-exclusao', 'Acoes::solicitarExclusao');
-    $routes->post('acoes/solicitar-inclusao', 'Acoes::solicitarInclusao');
-    $routes->get('acoes/dados-acao/(:num)', 'Acoes::dadosAcao/$1');
 
     // Solicitações
     $routes->get('minhas-solicitacoes', 'MinhasSolicitacoes::index');
@@ -95,13 +95,13 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
     $routes->post('etapas/excluir/(:num)', 'Etapas::excluir/$1');
 
     // Ações
-    $routes->post('acoes/cadastrar/projeto/(:num)', 'Acoes::cadastrar/projeto/$1');
+
+
+    // No grupo administrativo
+    $routes->post('acoes/cadastrar/(:num)', 'Acoes::cadastrar/$1');
     $routes->get('acoes/editar/(:num)', 'Acoes::editar/$1');
-    $routes->post('acoes/atualizar/projeto/(:num)', 'Acoes::atualizar/projeto/$1');
-    $routes->post('acoes/excluir/projeto/(:num)', 'Acoes::excluir/projeto/$1');
-    $routes->post('acoes/cadastrar/etapa/(:num)', 'Acoes::cadastrar/etapa/$1');
-    $routes->post('acoes/atualizar/etapa/(:num)', 'Acoes::atualizar/etapa/$1');
-    $routes->post('acoes/excluir/etapa/(:num)', 'Acoes::excluir/etapa/$1');
+    $routes->post('acoes/atualizar/(:num)', 'Acoes::atualizar/$1');
+    $routes->post('acoes/excluir/(:num)', 'Acoes::excluir/$1');
 
     // Solicitações
     $routes->get('solicitacoes', 'Solicitacoes::index');
