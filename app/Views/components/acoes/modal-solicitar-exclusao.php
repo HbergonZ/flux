@@ -10,9 +10,8 @@
             <form id="formSolicitarExclusao" method="post" action="<?= site_url('acoes/solicitar-exclusao') ?>">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                 <input type="hidden" name="id_acao" id="solicitarExclusaoId">
-                <input type="hidden" name="tipo" value="exclusao">
-                <input type="hidden" name="id_etapa" value="<?= $idEtapa ?>">
-                <input type="hidden" name="id_projeto" value="<?= $projeto['id'] ?>">
+                <input type="hidden" name="id_etapa" value="<?= $tipoOrigem === 'etapa' ? $idOrigem : '' ?>">
+                <input type="hidden" name="id_projeto" value="<?= $tipoOrigem === 'projeto' ? $idOrigem : ($tipoOrigem === 'etapa' ? $etapa['id_projeto'] : '') ?>">
 
                 <div class="modal-body">
                     <p>Você está solicitando a exclusão da ação: <strong id="acaoNameToRequestDelete"></strong></p>

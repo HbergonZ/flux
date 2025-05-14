@@ -9,42 +9,26 @@
             </div>
             <form id="formSolicitarInclusao" method="post" action="<?= site_url('acoes/solicitar-inclusao') ?>">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
-                <input type="hidden" name="tipo" value="inclusao">
-                <input type="hidden" name="id_etapa" value="<?= $idEtapa ?>">
-                <input type="hidden" name="id_projeto" value="<?= $projeto['id'] ?>">
+                <input type="hidden" name="id_etapa" value="<?= $tipoOrigem === 'etapa' ? $idOrigem : '' ?>">
+                <input type="hidden" name="id_projeto" value="<?= $tipoOrigem === 'projeto' ? $idOrigem : ($tipoOrigem === 'etapa' ? $etapa['id_projeto'] : '') ?>">
 
                 <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="solicitarInclusaoNome">Nome*</label>
-                                <input type="text" class="form-control" id="solicitarInclusaoNome" name="nome" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="solicitarInclusaoResponsavel">Responsável</label>
-                                <input type="text" class="form-control" id="solicitarInclusaoResponsavel" name="responsavel">
-                            </div>
-                        </div>
+                    <div class="form-group">
+                        <label for="solicitarInclusaoNome">Nome*</label>
+                        <input type="text" class="form-control" id="solicitarInclusaoNome" name="nome" required maxlength="255">
                     </div>
 
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="solicitarInclusaoEquipe">Equipe</label>
-                                <input type="text" class="form-control" id="solicitarInclusaoEquipe" name="equipe">
+                                <label for="solicitarInclusaoResponsavel">Responsável</label>
+                                <input type="text" class="form-control" id="solicitarInclusaoResponsavel" name="responsavel" maxlength="255">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="solicitarInclusaoStatus">Status</label>
-                                <select class="form-control" id="solicitarInclusaoStatus" name="status">
-                                    <option value="Não iniciado">Não iniciado</option>
-                                    <option value="Em andamento">Em andamento</option>
-                                    <option value="Paralisado">Paralisado</option>
-                                    <option value="Finalizado">Finalizado</option>
-                                </select>
+                                <label for="solicitarInclusaoEquipe">Equipe</label>
+                                <input type="text" class="form-control" id="solicitarInclusaoEquipe" name="equipe" maxlength="255">
                             </div>
                         </div>
                     </div>
@@ -53,7 +37,7 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="solicitarInclusaoTempoEstimado">Tempo Estimado (dias)</label>
-                                <input type="number" class="form-control" id="solicitarInclusaoTempoEstimado" name="tempo_estimado_dias" min="0">
+                                <input type="number" class="form-control" id="solicitarInclusaoTempoEstimado" name="tempo_estimado_dias">
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -86,8 +70,18 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="solicitarInclusaoStatus">Status</label>
+                        <select class="form-control" id="solicitarInclusaoStatus" name="status">
+                            <option value="Não iniciado">Não iniciado</option>
+                            <option value="Em andamento">Em andamento</option>
+                            <option value="Paralisado">Paralisado</option>
+                            <option value="Finalizado">Finalizado</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
                         <label for="solicitarInclusaoOrdem">Ordem</label>
-                        <input type="number" class="form-control" id="solicitarInclusaoOrdem" name="ordem" min="1">
+                        <input type="number" class="form-control" id="solicitarInclusaoOrdem" name="ordem">
                     </div>
 
                     <div class="form-group">

@@ -27,7 +27,6 @@ $routes->group('', function ($routes) {
 
     // Rotas alternativas para compatibilidade
     $routes->get('projetos/(:num)', 'Projetos::index/$1');
-    $routes->get('etapas/(:num)', 'Etapas::index/$1');
 
     // Visão Geral
     $routes->get('visao-geral', 'VisaoGeral::index');
@@ -99,7 +98,7 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
     $routes->post('etapas/excluir/(:num)', 'Etapas::excluir/$1');
 
     // Ações
-    $routes->post('acoes/cadastrar/(:num)', 'Acoes::cadastrar/$1');
+    $routes->post('acoes/cadastrar/(:num)/(:segment)', 'Acoes::cadastrar/$1/$2');
     $routes->get('acoes/editar/(:num)', 'Acoes::editar/$1');
     $routes->post('acoes/atualizar/(:num)', 'Acoes::atualizar/$1');
     $routes->post('acoes/excluir/(:num)', 'Acoes::excluir/$1');

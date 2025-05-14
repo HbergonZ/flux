@@ -35,7 +35,10 @@
             "responsive": true,
             "autoWidth": false,
             "lengthMenu": [5, 10, 25, 50, 100],
-            "pageLength": 10
+            "pageLength": 10,
+            "order": [
+                [0, 'asc']
+            ] // Ordena pela coluna de ordem
         });
 
         // Configuração do AJAX
@@ -352,19 +355,20 @@
                             }
 
                             var row = `
-                                <tr>
-                                    <td class="text-center">${acao.ordem || '-'}</td>
-                                    <td class="text-wrap">${acao.nome}</td>
-                                    <td>${acao.responsavel || '-'}</td>
-                                    <td class="text-center">
-                                        <span class="badge ${statusBadge}">
-                                            ${acao.status || 'Não iniciado'}
-                                        </span>
-                                    </td>
-                                    <td class="text-center">${acao.data_inicio ? formatDate(acao.data_inicio) : '-'}</td>
-                                    <td class="text-center">${acao.data_fim ? formatDate(acao.data_fim) : '-'}</td>
-                                    <td class="text-center">${actionButtons}</td>
-                                </tr>`;
+    <tr>
+        <td class="text-center">${acao.ordem || '-'}</td>
+        <td class="text-wrap">${acao.nome}</td>
+        ${(!acessoDireto) ? `<td>${acao.id_etapa ? acao.id_etapa : etapaNome}</td>` : ''}
+        <td>${acao.responsavel || '-'}</td>
+        <td class="text-center">
+            <span class="badge ${statusBadge}">
+                ${acao.status || 'Não iniciado'}
+            </span>
+        </td>
+        <td class="text-center">${acao.data_inicio ? formatDate(acao.data_inicio) : '-'}</td>
+        <td class="text-center">${acao.data_fim ? formatDate(acao.data_fim) : '-'}</td>
+        <td class="text-center">${actionButtons}</td>
+    </tr>`;
 
                             $('#dataTable tbody').append(row);
                         });
@@ -400,7 +404,10 @@
         function formatDate(dateString) {
             if (!dateString) return '-';
             const date = new Date(dateString);
-            return date.toLocaleDateString('pt-BR');
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
         }
 
         // Funções para exibir alertas

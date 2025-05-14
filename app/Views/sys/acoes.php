@@ -1,5 +1,10 @@
 <!-- Importação de Modais -->
-
+<?php echo view('components/acoes/modal-editar-acao.php'); ?>
+<?php echo view('components/acoes/modal-confirmar-exclusao.php'); ?>
+<?php echo view('components/acoes/modal-adicionar-acao.php'); ?>
+<?php echo view('components/acoes/modal-solicitar-edicao.php'); ?>
+<?php echo view('components/acoes/modal-solicitar-exclusao.php'); ?>
+<?php echo view('components/acoes/modal-solicitar-inclusao.php'); ?>
 
 <div class="container-fluid">
     <!-- Page Heading -->
@@ -120,7 +125,27 @@
                                     <td class="text-center"><?= $acao['data_fim'] ? date('d/m/Y', strtotime($acao['data_fim'])) : '-' ?></td>
                                     <td class="text-center">
                                         <div class="d-inline-flex">
-                                            <!-- Botões de ação permanecem os mesmos -->
+                                            <?php if (auth()->user()->inGroup('admin')): ?>
+                                                <!-- Botão Editar (admin) -->
+                                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Editar">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+
+                                                <!-- Botão Excluir (admin) -->
+                                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Excluir">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            <?php else: ?>
+                                                <!-- Botão Solicitar Edição (usuário comum) -->
+                                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Edição">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+
+                                                <!-- Botão Solicitar Exclusão (usuário comum) -->
+                                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Exclusão">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
