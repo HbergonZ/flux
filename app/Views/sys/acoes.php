@@ -1,10 +1,5 @@
 <!-- Importação de Modais -->
-<?php echo view('components/acoes/modal-editar-acao.php'); ?>
-<?php echo view('components/acoes/modal-confirmar-exclusao.php'); ?>
-<?php echo view('components/acoes/modal-adicionar-acao.php'); ?>
-<?php echo view('components/acoes/modal-solicitar-edicao.php'); ?>
-<?php echo view('components/acoes/modal-solicitar-exclusao.php'); ?>
-<?php echo view('components/acoes/modal-solicitar-inclusao.php'); ?>
+
 
 <div class="container-fluid">
     <!-- Page Heading -->

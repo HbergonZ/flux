@@ -298,7 +298,7 @@
 
             $.ajax({
                 type: "POST",
-                url: '<?= site_url("acoes/filtrar/$idEtapa") ?>',
+                url: '<?= site_url("acoes/filtrar/$idOrigem/$tipoOrigem") ?>',
                 data: $('#formFiltros').serialize(),
                 dataType: "json",
                 beforeSend: function() {

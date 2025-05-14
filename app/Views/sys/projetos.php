@@ -9,7 +9,7 @@
 <div class="container-fluid">
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Projetos do Plano: <?= $plano['nome'] ?></h1>
+        <h1 class="h3 mb-0 text-gray-800">Projetos do <?= $plano['nome'] ?></h1>
         <a href="<?= site_url('planos') ?>" class="btn btn-secondary btn-icon-split btn-sm">
             <span class="icon text-white-50">
                 <i class="fas fa-arrow-left"></i>
@@ -132,7 +132,7 @@
 
                                             <!-- Botão Acessar Ações -->
                                             <a href="<?= site_url("projetos/{$projeto['id']}/acoes") ?>" class="btn btn-info btn-sm mx-1" title="Acessar Ações">
-                                                <i class="fas fa-tasks"></i>
+                                                <i class="fas fa-th-list"></i>
                                             </a>
 
                                             <?php if (auth()->user()->inGroup('admin')): ?>

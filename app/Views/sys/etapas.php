@@ -98,7 +98,7 @@
                                         <div class="d-inline-flex">
                                             <!-- Botão Visualizar Ações -->
                                             <a href="<?= site_url("etapas/{$etapa['id']}/acoes") ?>" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Ações">
-                                                <i class="fas fa-tasks"></i>
+                                                <i class="fas fa-th-list"></i>
                                             </a>
 
                                             <?php if (auth()->user()->inGroup('admin')): ?>

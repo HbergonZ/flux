@@ -7,7 +7,7 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="formAddAcao" action="<?= site_url("acoes/cadastrar/$idEtapa") ?>" method="post">
+            <form id="formAddAcao" action="<?= isset($acessoDireto) && $acessoDireto ? site_url("projetos/cadastrar-acao-direta/{$idProjeto}") : site_url("acoes/cadastrar/$idEtapa") ?>" method="post">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
 
                 <div class="modal-body">

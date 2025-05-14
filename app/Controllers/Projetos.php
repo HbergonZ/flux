@@ -424,7 +424,7 @@ class Projetos extends BaseController
         $plano = $this->planosModel->find($projeto['id_plano']);
         $acoesModel = new \App\Models\AcoesModel();
 
-        // Busca todas as ações do projeto
+        // Busca todas as ações do projeto (tanto diretas quanto de etapas)
         $acoes = $acoesModel->where('id_projeto', $idProjeto)
             ->orderBy('ordem', 'ASC')
             ->findAll();
@@ -437,6 +437,64 @@ class Projetos extends BaseController
             'acessoDireto' => true
         ];
 
-        return view('sys/acoes', $data);
+        $this->content_data['content'] = view('sys/acoes', $data);
+        return view('layout', $this->content_data);
+    }
+    public function cadastrarAcaoDireta($idProjeto)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->to("/projetos/$idProjeto/acoes");
+        }
+
+        $response = ['success' => false, 'message' => ''];
+
+        $rules = [
+            'nome' => 'required|min_length[3]|max_length[255]',
+            'responsavel' => 'permit_empty|max_length[255]',
+            'equipe' => 'permit_empty|max_length[255]',
+            'tempo_estimado_dias' => 'permit_empty|integer',
+            'inicio_estimado' => 'permit_empty|valid_date',
+            'fim_estimado' => 'permit_empty|valid_date',
+            'data_inicio' => 'permit_empty|valid_date',
+            'data_fim' => 'permit_empty|valid_date',
+            'status' => 'permit_empty|in_list[Em andamento,Finalizado,Paralisado,Não iniciado]',
+            'ordem' => 'permit_empty|integer'
+        ];
+
+        if ($this->validate($rules)) {
+            try {
+                $projeto = $this->projetosModel->find($idProjeto);
+                if (!$projeto) {
+                    $response['message'] = 'Projeto não encontrado';
+                    return $this->response->setJSON($response);
+                }
+
+                $data = [
+                    'nome' => $this->request->getPost('nome'),
+                    'responsavel' => $this->request->getPost('responsavel'),
+                    'equipe' => $this->request->getPost('equipe'),
+                    'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias'),
+                    'inicio_estimado' => $this->request->getPost('inicio_estimado'),
+                    'fim_estimado' => $this->request->getPost('fim_estimado'),
+                    'data_inicio' => $this->request->getPost('data_inicio'),
+                    'data_fim' => $this->request->getPost('data_fim'),
+                    'status' => $this->request->getPost('status'),
+                    'ordem' => $this->request->getPost('ordem'),
+                    'id_projeto' => $idProjeto,
+                    'id_etapa' => null // Ação direta do projeto, não vinculada a etapa
+                ];
+
+                $acoesModel = new \App\Models\AcoesModel();
+                $acoesModel->insert($data);
+                $response['success'] = true;
+                $response['message'] = 'Ação cadastrada com sucesso!';
+            } catch (\Exception $e) {
+                $response['message'] = 'Erro ao cadastrar ação: ' . $e->getMessage();
+            }
+        } else {
+            $response['message'] = implode('<br>', $this->validator->getErrors());
+        }
+
+        return $this->response->setJSON($response);
     }
 }

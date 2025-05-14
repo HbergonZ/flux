@@ -22,29 +22,53 @@ class Acoes extends BaseController
         $this->solicitacoesModel = new SolicitacoesModel();
     }
 
-    public function index($idEtapa = null)
+    public function index($idOrigem = null, $tipoOrigem = 'etapa')
     {
-        if (empty($idEtapa)) {
+        if (empty($idOrigem)) {
             return redirect()->back();
         }
 
-        $etapa = $this->etapasModel->find($idEtapa);
-        if (!$etapa) {
-            return redirect()->back();
+        $data = [];
+
+        if ($tipoOrigem === 'etapa') {
+            // Lógica para ações de etapa
+            $etapa = $this->etapasModel->find($idOrigem);
+            if (!$etapa) {
+                return redirect()->back();
+            }
+
+            $projeto = $this->projetosModel->find($etapa['id_projeto']);
+            $acoes = $this->acoesModel->where('id_etapa', $idOrigem)
+                ->orderBy('ordem', 'ASC')
+                ->findAll();
+
+            $data = [
+                'etapa' => $etapa,
+                'projeto' => $projeto,
+                'acoes' => $acoes,
+                'idOrigem' => $idOrigem,
+                'tipoOrigem' => 'etapa',
+                'acessoDireto' => false
+            ];
+        } else {
+            // Lógica para ações diretas de projeto
+            $projeto = $this->projetosModel->find($idOrigem);
+            if (!$projeto) {
+                return redirect()->back();
+            }
+
+            $acoes = $this->acoesModel->where('id_projeto', $idOrigem)
+                ->orderBy('ordem', 'ASC')
+                ->findAll();
+
+            $data = [
+                'projeto' => $projeto,
+                'acoes' => $acoes,
+                'idOrigem' => $idOrigem,
+                'tipoOrigem' => 'projeto',
+                'acessoDireto' => true
+            ];
         }
-
-        $projeto = $this->projetosModel->find($etapa['id_projeto']);
-        $acoes = $this->acoesModel->where('id_etapa', $idEtapa)
-            ->orderBy('ordem', 'ASC')
-            ->findAll();
-
-        $data = [
-            'etapa' => $etapa,
-            'projeto' => $projeto,
-            'acoes' => $acoes,
-            'idEtapa' => $idEtapa,
-            'acessoDireto' => false
-        ];
 
         $this->content_data['content'] = view('sys/acoes', $data);
         return view('layout', $this->content_data);
@@ -200,15 +224,22 @@ class Acoes extends BaseController
         return $this->response->setJSON($response);
     }
 
-    public function filtrar($idEtapa)
+    public function filtrar($idOrigem, $tipoOrigem)
     {
         if (!$this->request->isAJAX()) {
-            return redirect()->to("/etapas/$idEtapa/acoes");
+            return redirect()->back();
         }
 
         $filtro = $this->request->getPost('nome');
 
-        $builder = $this->acoesModel->where('id_etapa', $idEtapa);
+        $builder = $this->acoesModel;
+
+        if ($tipoOrigem === 'etapa') {
+            $builder->where('id_etapa', $idOrigem);
+        } else {
+            $builder->where('id_projeto', $idOrigem)
+                ->where('id_etapa IS NULL');
+        }
 
         if (!empty($filtro)) {
             $builder->like('nome', $filtro);

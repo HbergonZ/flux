@@ -21,7 +21,9 @@ $routes->group('', function ($routes) {
     $routes->get('etapas/(:num)/acoes', 'Acoes::index/$1');
 
     // Acesso direto às ações do projeto (corrigido)
-    $routes->get('projetos/(:num)/acoes', 'Projetos::acoes/$1');
+    // Rotas para ações
+    $routes->get('etapas/(:num)/acoes', 'Acoes::index/$1/etapa');
+    $routes->get('projetos/(:num)/acoes', 'Acoes::index/$1/projeto');
 
     // Rotas alternativas para compatibilidade
     $routes->get('projetos/(:num)', 'Projetos::index/$1');
@@ -88,6 +90,7 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
     $routes->get('projetos/editar/(:num)', 'Projetos::editar/$1');
     $routes->post('projetos/atualizar/(:num)', 'Projetos::atualizar/$1');
     $routes->post('projetos/excluir/(:num)', 'Projetos::excluir/$1');
+    $routes->post('projetos/cadastrar-acao-direta/(:num)', 'Projetos::cadastrarAcaoDireta/$1');
 
     // Etapas
     $routes->post('etapas/cadastrar/(:num)', 'Etapas::cadastrar/$1');
