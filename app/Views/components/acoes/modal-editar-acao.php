@@ -38,19 +38,19 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="editAcaoTempoEstimado">Tempo Estimado (dias)</label>
-                                <input type="number" class="form-control" id="editAcaoTempoEstimado" name="tempo_estimado_dias">
+                                <input type="number" class="form-control" id="editAcaoTempoEstimado" name="tempo_estimado_dias" min="0">
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="editAcaoInicioEstimado">Início Estimado</label>
-                                <input type="date" class="form-control" id="editAcaoInicioEstimado" name="inicio_estimado">
+                                <input type="date" class="form-control" id="editAcaoInicioEstimado" name="inicio_estimado" onchange="validarData(this)">
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="editAcaoFimEstimado">Fim Estimado</label>
-                                <input type="date" class="form-control" id="editAcaoFimEstimado" name="fim_estimado">
+                                <input type="date" class="form-control" id="editAcaoFimEstimado" name="fim_estimado" onchange="validarData(this)">
                             </div>
                         </div>
                     </div>
@@ -59,13 +59,13 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="editAcaoDataInicio">Data Início Real</label>
-                                <input type="date" class="form-control" id="editAcaoDataInicio" name="data_inicio">
+                                <input type="date" class="form-control" id="editAcaoDataInicio" name="data_inicio" onchange="validarData(this)">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="editAcaoDataFim">Data Fim Real</label>
-                                <input type="date" class="form-control" id="editAcaoDataFim" name="data_fim">
+                                <input type="date" class="form-control" id="editAcaoDataFim" name="data_fim" onchange="validarData(this)">
                             </div>
                         </div>
                     </div>
@@ -82,7 +82,7 @@
 
                     <div class="form-group">
                         <label for="editAcaoOrdem">Ordem</label>
-                        <input type="number" class="form-control" id="editAcaoOrdem" name="ordem">
+                        <input type="number" class="form-control" id="editAcaoOrdem" name="ordem" min="1" readonly>
                     </div>
                 </div>
                 <div class="modal-footer">

@@ -18,9 +18,7 @@ $routes->group('', function ($routes) {
     // Hierarquia completa
     $routes->get('planos/(:num)/projetos', 'Projetos::index/$1');
     $routes->get('projetos/(:num)/etapas', 'Etapas::index/$1');
-    $routes->get('etapas/(:num)/acoes', 'Acoes::index/$1');
 
-    // Acesso direto às ações do projeto (corrigido)
     // Rotas para ações
     $routes->get('etapas/(:num)/acoes', 'Acoes::index/$1/etapa');
     $routes->get('projetos/(:num)/acoes', 'Acoes::index/$1/projeto');
@@ -49,7 +47,7 @@ $routes->group('', function ($routes) {
     $routes->post('etapas/filtrar/(:num)', 'Etapas::filtrar/$1');
 
     // Ações
-    $routes->post('acoes/filtrar/(:num)', 'Acoes::filtrar/$1');
+    $routes->post('acoes/filtrar/(:num)/(:segment)', 'Acoes::filtrar/$1/$2');
     $routes->get('acoes/dados-acao/(:num)', 'Acoes::dadosAcao/$1');
     $routes->post('acoes/solicitar-edicao', 'Acoes::solicitarEdicao');
     $routes->post('acoes/solicitar-exclusao', 'Acoes::solicitarExclusao');
@@ -99,9 +97,10 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
 
     // Ações
     $routes->post('acoes/cadastrar/(:num)/(:segment)', 'Acoes::cadastrar/$1/$2');
+    $routes->post('acoes/salvar-ordem/(:num)/(:segment)', 'Acoes::salvarOrdem/$1/$2');
     $routes->get('acoes/editar/(:num)', 'Acoes::editar/$1');
-    $routes->post('acoes/atualizar/(:num)', 'Acoes::atualizar/$1');
-    $routes->post('acoes/excluir/(:num)', 'Acoes::excluir/$1');
+    $routes->post('acoes/atualizar/(:num)/(:segment)', 'Acoes::atualizar/$1/$2');
+    $routes->post('acoes/excluir/(:num)/(:segment)', 'Acoes::excluir/$1/$2');
 
     // Solicitações
     $routes->get('solicitacoes', 'Solicitacoes::index');

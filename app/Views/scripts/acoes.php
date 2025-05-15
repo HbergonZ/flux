@@ -1,5 +1,10 @@
+<!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- DataTables -->
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap4.min.css" />
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap4.min.js"></script>
@@ -38,7 +43,7 @@
             "pageLength": 10,
             "order": [
                 [0, 'asc']
-            ] // Ordena pela coluna de ordem
+            ]
         });
 
         // Configuração do AJAX
@@ -49,105 +54,97 @@
             }
         });
 
-        // Armazenar dados originais do formulário
-        let formOriginalData = {};
-
-        // Cadastrar nova ação (apenas admin)
+        // Handler para o formulário de inclusão
         $('#formAddAcao').submit(function(e) {
             e.preventDefault();
-            submitForm($(this), '#addAcaoModal');
+            submitForm($(this), '#addAcaoModal', 'Ação cadastrada com sucesso!');
         });
+
+        // Carregar próxima ordem ao abrir o modal de adição
+        $('#addAcaoModal').on('show.bs.modal', function() {
+            calcularProximaOrdem();
+        });
+
+        // Função para calcular a próxima ordem
+        function calcularProximaOrdem() {
+            var maxOrdem = 0;
+
+            $('#dataTable tbody tr').each(function() {
+                var ordemText = $(this).find('td:first').text().trim();
+                var ordem = parseInt(ordemText) || 0;
+
+                if (ordem > maxOrdem) {
+                    maxOrdem = ordem;
+                }
+            });
+
+            $('#acaoOrdem').val(maxOrdem + 1);
+        }
 
         // Editar ação - Abrir modal (apenas admin)
         $(document).on('click', '.btn-primary[title="Editar"]', function() {
             var acaoId = $(this).data('id').split('-')[0];
-
-            $.ajax({
-                url: '<?= site_url('acoes/editar/') ?>' + acaoId,
-                type: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success && response.data) {
-                        $('#editAcaoId').val(response.data.id_acao);
-                        $('#editAcaoNome').val(response.data.nome);
-                        $('#editAcaoResponsavel').val(response.data.responsavel);
-                        $('#editAcaoEquipe').val(response.data.equipe);
-                        $('#editAcaoStatus').val(response.data.status || 'Não iniciado');
-                        $('#editAcaoTempoEstimado').val(response.data.tempo_estimado_dias);
-                        $('#editAcaoInicioEstimado').val(response.data.inicio_estimado);
-                        $('#editAcaoFimEstimado').val(response.data.fim_estimado);
-                        $('#editAcaoDataInicio').val(response.data.data_inicio);
-                        $('#editAcaoDataFim').val(response.data.data_fim);
-                        $('#editAcaoOrdem').val(response.data.ordem);
-                        $('#editAcaoModal').modal('show');
-                    } else {
-                        showErrorAlert(response.message || "Erro ao carregar ação");
-                    }
-                },
-                error: function(xhr, status, error) {
-                    showErrorAlert("Falha na comunicação com o servidor.");
-                }
-            });
+            loadAcaoData(acaoId, '#editAcaoModal', 'editar');
         });
 
         // Solicitar edição de ação - Abrir modal (para não-admins)
         $(document).on('click', '.btn-primary[title="Solicitar Edição"]', function() {
             var acaoId = $(this).data('id').split('-')[0];
-            var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
-            var url = isAdmin ? '<?= site_url('acoes/editar/') ?>' : '<?= site_url('acoes/dados-acao/') ?>';
+            loadAcaoData(acaoId, '#solicitarEdicaoModal', 'dados-acao');
+        });
 
+        // Função para carregar dados da ação
+        function loadAcaoData(acaoId, modalId, endpoint) {
             $.ajax({
-                url: url + acaoId,
+                url: `<?= site_url('acoes/') ?>${endpoint}/${acaoId}`,
                 type: 'GET',
                 dataType: 'json',
                 success: function(response) {
                     if (response.success && response.data) {
-                        var acao = response.data;
+                        const acao = response.data;
+                        const prefix = modalId.replace('#', '').replace('Modal', '');
 
-                        // Preenche os campos do formulário
-                        $('#solicitarEdicaoId').val(acao.id_acao);
-                        $('#solicitarEdicaoNome').val(acao.nome);
-                        $('#solicitarEdicaoResponsavel').val(acao.responsavel);
-                        $('#solicitarEdicaoEquipe').val(acao.equipe);
-                        $('#solicitarEdicaoStatus').val(acao.status || 'Não iniciado');
-                        $('#solicitarEdicaoTempoEstimado').val(acao.tempo_estimado_dias);
-                        $('#solicitarEdicaoInicioEstimado').val(acao.inicio_estimado);
-                        $('#solicitarEdicaoFimEstimado').val(acao.fim_estimado);
-                        $('#solicitarEdicaoDataInicio').val(acao.data_inicio);
-                        $('#solicitarEdicaoDataFim').val(acao.data_fim);
-                        $('#solicitarEdicaoOrdem').val(acao.ordem);
+                        $(`#${prefix}Id`).val(acao.id_acao);
+                        $(`#${prefix}Nome`).val(acao.nome);
+                        $(`#${prefix}Responsavel`).val(acao.responsavel);
+                        $(`#${prefix}Equipe`).val(acao.equipe);
+                        $(`#${prefix}Status`).val(acao.status || 'Não iniciado');
+                        $(`#${prefix}TempoEstimado`).val(acao.tempo_estimado_dias);
 
-                        // Armazena os valores originais para comparação
-                        formOriginalData = {
-                            nome: acao.nome,
-                            responsavel: acao.responsavel,
-                            equipe: acao.equipe,
-                            status: acao.status,
-                            tempo_estimado_dias: acao.tempo_estimado_dias,
-                            inicio_estimado: acao.inicio_estimado,
-                            fim_estimado: acao.fim_estimado,
-                            data_inicio: acao.data_inicio,
-                            data_fim: acao.data_fim,
-                            ordem: acao.ordem
+                        // Tratamento de datas
+                        const setDateValue = (field, value) => {
+                            if (value) {
+                                const datePart = value.split(' ')[0];
+                                $(`#${prefix}${field}`).val(isValidDate(datePart) ? datePart : '');
+                            } else {
+                                $(`#${prefix}${field}`).val('');
+                            }
                         };
 
-                        $('#solicitarEdicaoModal').modal('show');
-                        $('#alertNenhumaAlteracao').addClass('d-none');
+                        setDateValue('InicioEstimado', acao.inicio_estimado);
+                        setDateValue('FimEstimado', acao.fim_estimado);
+                        setDateValue('DataInicio', acao.data_inicio);
+                        setDateValue('DataFim', acao.data_fim);
+
+                        $(`#${prefix}Ordem`).val(acao.ordem);
+                        $(modalId).modal('show');
+
+                        if (modalId === '#solicitarEdicaoModal') {
+                            $('#alertNenhumaAlteracao').addClass('d-none');
+                        }
                     } else {
                         showErrorAlert(response.message || "Erro ao carregar ação");
                     }
                 },
-                error: function(xhr, status, error) {
+                error: function() {
                     showErrorAlert("Falha na comunicação com o servidor.");
                 }
             });
-        });
+        }
 
-        // Verificar alterações em tempo real no modal de edição
+        // Verificar alterações no modal de edição
         $('#solicitarEdicaoModal').on('shown.bs.modal', function() {
-            $('#formSolicitarEdicao').on('input change', function() {
-                checkForChanges();
-            });
+            $('#formSolicitarEdicao').on('input change', checkForChanges);
         });
 
         function checkForChanges() {
@@ -182,17 +179,33 @@
         $(document).on('click', '.btn-danger[title="Solicitar Exclusão"]', function() {
             var acaoId = $(this).data('id').split('-')[0];
             var acaoName = $(this).closest('tr').find('td:nth-child(2)').text();
-            var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
-            var url = isAdmin ? '<?= site_url('acoes/editar/') ?>' : '<?= site_url('acoes/dados-acao/') ?>';
+
+            loadAcaoForRequest(acaoId, acaoName, '#solicitarExclusaoModal');
+        });
+
+        // Excluir ação - Abrir modal de confirmação (apenas admin)
+        $(document).on('click', '.btn-danger[title="Excluir"]', function() {
+            var acaoId = $(this).data('id').split('-')[0];
+            var acaoName = $(this).closest('tr').find('td:nth-child(2)').text();
+
+            $('#deleteAcaoId').val(acaoId);
+            $('#acaoNameToDelete').text(acaoName);
+            $('#deleteAcaoModal').modal('show');
+        });
+
+        // Função para carregar dados para solicitação
+        function loadAcaoForRequest(acaoId, acaoName, modalId) {
+            const isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
+            const endpoint = isAdmin ? 'editar' : 'dados-acao';
 
             $.ajax({
-                url: url + acaoId,
+                url: `<?= site_url('acoes/') ?>${endpoint}/${acaoId}`,
                 type: 'GET',
                 dataType: 'json',
                 success: function(response) {
                     if (response.success && response.data) {
-                        var acao = response.data;
-                        var dadosAtuais = `Nome: ${acao.nome}\nResponsável: ${acao.responsavel}\nEquipe: ${acao.equipe}\nStatus: ${acao.status}\nEtapa: ${acao.id_etapa}\nProjeto: ${acao.id_projeto}`;
+                        const acao = response.data;
+                        const dadosAtuais = `Nome: ${acao.nome}\nResponsável: ${acao.responsavel}\nEquipe: ${acao.equipe}\nStatus: ${acao.status}\nEtapa: ${acao.id_etapa}\nProjeto: ${acao.id_projeto}`;
 
                         $('#solicitarExclusaoId').val(acao.id_acao);
                         $('#acaoNameToRequestDelete').text(acaoName);
@@ -202,11 +215,11 @@
                         showErrorAlert(response.message || "Erro ao carregar ação");
                     }
                 },
-                error: function(xhr, status, error) {
+                error: function() {
                     showErrorAlert("Falha na comunicação com o servidor.");
                 }
             });
-        });
+        }
 
         // Enviar solicitação de exclusão
         $('#formSolicitarExclusao').submit(function(e) {
@@ -224,16 +237,6 @@
         $('#formEditAcao').submit(function(e) {
             e.preventDefault();
             submitForm($(this), '#editAcaoModal');
-        });
-
-        // Excluir ação - Abrir modal de confirmação (apenas admin)
-        $(document).on('click', '.btn-danger[title="Excluir"]', function() {
-            var acaoId = $(this).data('id').split('-')[0];
-            var acaoName = $(this).closest('tr').find('td:nth-child(2)').text();
-
-            $('#deleteAcaoId').val(acaoId);
-            $('#acaoNameToDelete').text(acaoName);
-            $('#deleteAcaoModal').modal('show');
         });
 
         // Confirmar exclusão (apenas admin)
@@ -261,6 +264,13 @@
 
             submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...');
 
+            // Limpar datas inválidas antes do envio
+            form.find('input[type="date"]').each(function() {
+                if (this.value && !isValidDate(this.value)) {
+                    this.value = '';
+                }
+            });
+
             $.ajax({
                 type: "POST",
                 url: form.attr('action'),
@@ -280,9 +290,9 @@
                         showErrorAlert(response.message || 'Ocorreu um erro durante a operação.');
                     }
                 },
-                error: function(xhr, status, error) {
+                error: function(xhr) {
                     console.error(xhr.responseText);
-                    showErrorAlert('Erro na comunicação com o servidor: ' + error);
+                    showErrorAlert('Erro na comunicação com o servidor.');
                 },
                 complete: function() {
                     submitBtn.prop('disabled', false).html(originalBtnText);
@@ -313,33 +323,30 @@
                         $('#dataTable tbody').empty();
 
                         $.each(response.data, function(index, acao) {
-                            var id = acao.id_acao + '-' + acao.nome.toLowerCase().replace(/\s+/g, '-');
-                            var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
-                            var actionButtons = '';
+                            const id = acao.id_acao + '-' + acao.nome.toLowerCase().replace(/\s+/g, '-');
+                            const isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
 
-                            if (isAdmin) {
-                                actionButtons = `
-                                    <div class="d-inline-flex">
-                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </div>`;
-                            } else {
-                                actionButtons = `
-                                    <div class="d-inline-flex">
-                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </div>`;
-                            }
+                            // Determina os botões de ação
+                            const actionButtons = isAdmin ? `
+                                <div class="d-inline-flex">
+                                    <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>` : `
+                                <div class="d-inline-flex">
+                                    <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>`;
 
-                            var statusBadge = '';
+                            // Determina a classe do badge de status
+                            let statusBadge = 'badge-secondary';
                             switch (acao.status) {
                                 case 'Finalizado':
                                     statusBadge = 'badge-success';
@@ -350,29 +357,29 @@
                                 case 'Paralisado':
                                     statusBadge = 'badge-danger';
                                     break;
-                                default:
-                                    statusBadge = 'badge-secondary';
                             }
 
-                            var row = `
-    <tr>
-        <td class="text-center">${acao.ordem || '-'}</td>
-        <td class="text-wrap">${acao.nome}</td>
-        ${(!acessoDireto) ? `<td>${acao.id_etapa ? acao.id_etapa : etapaNome}</td>` : ''}
-        <td>${acao.responsavel || '-'}</td>
-        <td class="text-center">
-            <span class="badge ${statusBadge}">
-                ${acao.status || 'Não iniciado'}
-            </span>
-        </td>
-        <td class="text-center">${acao.data_inicio ? formatDate(acao.data_inicio) : '-'}</td>
-        <td class="text-center">${acao.data_fim ? formatDate(acao.data_fim) : '-'}</td>
-        <td class="text-center">${actionButtons}</td>
-    </tr>`;
+                            // Monta a linha da tabela
+                            const row = `
+                            <tr>
+                                <td class="text-center">${acao.ordem || ''}</td>
+                                <td class="text-wrap">${acao.nome}</td>
+                                ${(!acessoDireto) ? `<td>${acao.id_etapa ? acao.id_etapa : etapaNome}</td>` : ''}
+                                <td>${acao.responsavel || ''}</td>
+                                <td class="text-center">
+                                    <span class="badge ${statusBadge}">
+                                        ${acao.status || 'Não iniciado'}
+                                    </span>
+                                </td>
+                                <td class="text-center">${acao.data_inicio ? formatDate(acao.data_inicio) : ''}</td>
+                                <td class="text-center">${acao.data_fim ? formatDate(acao.data_fim) : ''}</td>
+                                <td class="text-center">${actionButtons}</td>
+                            </tr>`;
 
                             $('#dataTable tbody').append(row);
                         });
 
+                        // Re-inicializa o DataTable
                         dataTable = $('#dataTable').DataTable({
                             "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
                             "language": {
@@ -387,12 +394,17 @@
                                 [0, 'asc']
                             ]
                         });
+
+                        // Recalcula a ordem se o modal de adição estiver aberto
+                        if ($('#addAcaoModal').hasClass('show')) {
+                            calcularProximaOrdem();
+                        }
                     } else {
                         showErrorAlert('Erro ao filtrar ações: ' + response.message);
                     }
                 },
-                error: function(xhr, status, error) {
-                    showErrorAlert('Erro na requisição: ' + error);
+                error: function(xhr) {
+                    showErrorAlert('Erro na requisição.');
                 },
                 complete: function() {
                     $('#dataTable').css('opacity', '1');
@@ -400,9 +412,17 @@
             });
         }
 
+        // Função para validar datas
+        function isValidDate(dateString) {
+            if (!dateString || dateString === '0000-00-00') return false;
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return false;
+            const date = new Date(dateString);
+            return !isNaN(date.getTime()) && date.toISOString().slice(0, 10) === dateString;
+        }
+
         // Função para formatar data
         function formatDate(dateString) {
-            if (!dateString) return '-';
+            if (!dateString || !isValidDate(dateString)) return '';
             const date = new Date(dateString);
             const day = String(date.getDate()).padStart(2, '0');
             const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -429,5 +449,94 @@
                 confirmButtonText: 'Entendi'
             });
         }
+
+        // ==================================================
+        // IMPLEMENTAÇÃO DA TROCA DE POSIÇÕES COM SELECT
+        // ==================================================
+
+        // Variável para armazenar os selects de ordem
+        let ordemSelects = [];
+
+        // Quando o modal de ordenação é aberto
+        $('#ordenarAcoesModal').on('shown.bs.modal', function() {
+            // Armazena todos os selects em um array para fácil acesso
+            ordemSelects = $('.ordem-select').toArray();
+
+            // Inicializa o valor atual de cada select
+            $('.ordem-select').each(function() {
+                $(this).data('current', $(this).val());
+            });
+        });
+
+        // Quando um select de ordem é alterado
+        $(document).on('change', '.ordem-select', function() {
+            const $this = $(this);
+            const selectedValue = parseInt($this.val());
+            const currentValue = parseInt($this.data('current'));
+
+            // Se não houve mudança real, ignora
+            if (selectedValue === currentValue) return;
+
+            // Encontra o select que está na posição selecionada
+            const $targetSelect = $(ordemSelects.find(select =>
+                parseInt($(select).val()) === selectedValue
+            ));
+
+            if ($targetSelect.length) {
+                // Troca os valores entre os selects
+                $targetSelect.val(currentValue).trigger('change');
+                $targetSelect.data('current', currentValue);
+
+                $this.data('current', selectedValue);
+
+                // Atualiza a exibição da posição atual na tabela
+                $this.closest('tr').find('td:nth-child(2)').text(selectedValue);
+                $targetSelect.closest('tr').find('td:nth-child(2)').text(currentValue);
+
+                // Atualiza os valores nos selects para refletir a troca
+                $this.find('option[value="' + selectedValue + '"]').prop('selected', true);
+                $targetSelect.find('option[value="' + currentValue + '"]').prop('selected', true);
+            }
+        });
+
+        // Envio do formulário de ordenação
+        $('#formOrdenarAcoes').submit(function(e) {
+            e.preventDefault();
+
+            const submitBtn = $(this).find('button[type="submit"]');
+            const originalText = submitBtn.html();
+
+            submitBtn.prop('disabled', true)
+                .html('<span class="spinner-border spinner-border-sm"></span> Salvando...');
+
+            // Atualiza os valores dos inputs hidden com as posições corretas
+            $('tr[data-id]').each(function() {
+                const id = $(this).data('id');
+                const newPosition = $(this).find('td:nth-child(2)').text();
+                $(`input[name="ordem[${id}]"]`).val(newPosition);
+            });
+
+            $.ajax({
+                type: "POST",
+                url: $(this).attr('action'),
+                data: $(this).serialize(),
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        $('#ordenarAcoesModal').modal('hide');
+                        showSuccessAlert('Ordem das ações atualizada com sucesso!');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showErrorAlert(response.message || 'Erro ao salvar a ordem');
+                    }
+                },
+                error: function() {
+                    showErrorAlert('Falha na comunicação com o servidor');
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).html(originalText);
+                }
+            });
+        });
     });
 </script>

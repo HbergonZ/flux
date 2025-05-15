@@ -81,7 +81,7 @@
 
                     <div class="form-group">
                         <label for="acaoOrdem">Ordem</label>
-                        <input type="number" class="form-control" id="acaoOrdem" name="ordem">
+                        <input type="number" class="form-control" id="acaoOrdem" name="ordem" min="1" readonly>
                     </div>
                 </div>
                 <div class="modal-footer">

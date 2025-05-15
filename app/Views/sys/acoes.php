@@ -5,6 +5,7 @@
 <?php echo view('components/acoes/modal-solicitar-edicao.php'); ?>
 <?php echo view('components/acoes/modal-solicitar-exclusao.php'); ?>
 <?php echo view('components/acoes/modal-solicitar-inclusao.php'); ?>
+<?php echo view('components/acoes/modal-ordenar-acoes.php'); ?>
 
 <div class="container-fluid">
     <!-- Page Heading -->
@@ -71,6 +72,12 @@
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Lista de Ações</h6>
             <?php if (auth()->user()->inGroup('admin')): ?>
+                <button type="button" class="btn btn-info btn-icon-split btn-sm mr-2" data-toggle="modal" data-target="#ordenarAcoesModal">
+                    <span class="icon text-white-50">
+                        <i class="fas fa-sort"></i>
+                    </span>
+                    <span class="text">Alterar Ordem</span>
+                </button>
                 <a href="#" class="btn btn-primary btn-icon-split btn-sm" data-toggle="modal" data-target="#addAcaoModal">
                     <span class="icon text-white-50">
                         <i class="fas fa-plus"></i>
@@ -107,22 +114,22 @@
                     <tbody>
                         <?php if (isset($acoes) && !empty($acoes)) : ?>
                             <?php foreach ($acoes as $acao) :
-                                $id = $acao['id_acao'] . '-' . str_replace(' ', '-', strtolower($acao['nome'])); ?>
+                                $id = $acao['id_acao'] . '-' . str_replace(' ', '', strtolower($acao['nome'])); ?>
                                 <tr>
-                                    <td class="text-center"><?= $acao['ordem'] ?? '-' ?></td>
+                                    <td class="text-center"><?= $acao['ordem'] ?? '' ?></td>
                                     <td class="text-wrap"><?= $acao['nome'] ?></td>
                                     <?php if (!isset($acessoDireto) || !$acessoDireto): ?>
                                         <td><?= $etapa['nome'] ?></td>
                                     <?php endif; ?>
-                                    <td><?= $acao['responsavel'] ?? '-' ?></td>
+                                    <td><?= $acao['responsavel'] ?? '' ?></td>
                                     <td class="text-center">
                                         <span class="badge badge-<?=
                                                                     $acao['status'] == 'Finalizado' ? 'success' : ($acao['status'] == 'Em andamento' ? 'primary' : ($acao['status'] == 'Paralisado' ? 'danger' : 'secondary')) ?>">
                                             <?= $acao['status'] ?? 'Não iniciado' ?>
                                         </span>
                                     </td>
-                                    <td class="text-center"><?= $acao['data_inicio'] ? date('d/m/Y', strtotime($acao['data_inicio'])) : '-' ?></td>
-                                    <td class="text-center"><?= $acao['data_fim'] ? date('d/m/Y', strtotime($acao['data_fim'])) : '-' ?></td>
+                                    <td class="text-center"><?= $acao['data_inicio'] ? date('d/m/Y', strtotime($acao['data_inicio'])) : '' ?></td>
+                                    <td class="text-center"><?= $acao['data_fim'] ? date('d/m/Y', strtotime($acao['data_fim'])) : '' ?></td>
                                     <td class="text-center">
                                         <div class="d-inline-flex">
                                             <?php if (auth()->user()->inGroup('admin')): ?>

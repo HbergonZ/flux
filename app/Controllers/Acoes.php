@@ -31,7 +31,6 @@ class Acoes extends BaseController
         $data = [];
 
         if ($tipoOrigem === 'etapa') {
-            // Lógica para ações de etapa
             $etapa = $this->etapasModel->find($idOrigem);
             if (!$etapa) {
                 return redirect()->back();
@@ -51,13 +50,13 @@ class Acoes extends BaseController
                 'acessoDireto' => false
             ];
         } else {
-            // Lógica para ações diretas de projeto
             $projeto = $this->projetosModel->find($idOrigem);
             if (!$projeto) {
                 return redirect()->back();
             }
 
             $acoes = $this->acoesModel->where('id_projeto', $idOrigem)
+                ->where('id_etapa IS NULL')
                 ->orderBy('ordem', 'ASC')
                 ->findAll();
 
@@ -74,16 +73,17 @@ class Acoes extends BaseController
         return view('layout', $this->content_data);
     }
 
-    public function cadastrar($idEtapa)
+    public function cadastrar($idOrigem, $tipoOrigem = 'etapa')
     {
         if (!$this->request->isAJAX()) {
-            return redirect()->to("/etapas/$idEtapa/acoes");
+            return redirect()->back();
         }
 
         $response = ['success' => false, 'message' => ''];
 
         $rules = [
             'nome' => 'required|min_length[3]|max_length[255]',
+            'ordem' => 'required|integer',
             'responsavel' => 'permit_empty|max_length[255]',
             'equipe' => 'permit_empty|max_length[255]',
             'tempo_estimado_dias' => 'permit_empty|integer',
@@ -91,32 +91,41 @@ class Acoes extends BaseController
             'fim_estimado' => 'permit_empty|valid_date',
             'data_inicio' => 'permit_empty|valid_date',
             'data_fim' => 'permit_empty|valid_date',
-            'status' => 'permit_empty|in_list[Em andamento,Finalizado,Paralisado,Não iniciado]',
-            'ordem' => 'permit_empty|integer'
+            'status' => 'permit_empty|in_list[Em andamento,Finalizado,Paralisado,Não iniciado]'
         ];
 
         if ($this->validate($rules)) {
             try {
-                $etapa = $this->etapasModel->find($idEtapa);
-                if (!$etapa) {
-                    $response['message'] = 'Etapa não encontrada';
-                    return $this->response->setJSON($response);
-                }
-
                 $data = [
                     'nome' => $this->request->getPost('nome'),
+                    'ordem' => $this->request->getPost('ordem'),
                     'responsavel' => $this->request->getPost('responsavel'),
                     'equipe' => $this->request->getPost('equipe'),
                     'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias'),
-                    'inicio_estimado' => $this->request->getPost('inicio_estimado'),
-                    'fim_estimado' => $this->request->getPost('fim_estimado'),
-                    'data_inicio' => $this->request->getPost('data_inicio'),
-                    'data_fim' => $this->request->getPost('data_fim'),
-                    'status' => $this->request->getPost('status'),
-                    'ordem' => $this->request->getPost('ordem'),
-                    'id_projeto' => $etapa['id_projeto'],
-                    'id_etapa' => $idEtapa
+                    'inicio_estimado' => $this->request->getPost('inicio_estimado') ?: null,
+                    'fim_estimado' => $this->request->getPost('fim_estimado') ?: null,
+                    'data_inicio' => $this->request->getPost('data_inicio') ?: null,
+                    'data_fim' => $this->request->getPost('data_fim') ?: null,
+                    'status' => $this->request->getPost('status') ?? 'Não iniciado'
                 ];
+
+                if ($tipoOrigem === 'projeto') {
+                    $projeto = $this->projetosModel->find($idOrigem);
+                    if (!$projeto) {
+                        $response['message'] = 'Projeto não encontrado';
+                        return $this->response->setJSON($response);
+                    }
+                    $data['id_projeto'] = $idOrigem;
+                    $data['id_etapa'] = null;
+                } else {
+                    $etapa = $this->etapasModel->find($idOrigem);
+                    if (!$etapa) {
+                        $response['message'] = 'Etapa não encontrada';
+                        return $this->response->setJSON($response);
+                    }
+                    $data['id_projeto'] = $etapa['id_projeto'];
+                    $data['id_etapa'] = $idOrigem;
+                }
 
                 $this->acoesModel->insert($data);
                 $response['success'] = true;
@@ -150,10 +159,10 @@ class Acoes extends BaseController
         return $this->response->setJSON($response);
     }
 
-    public function atualizar($idEtapa)
+    public function atualizar($idOrigem, $tipoOrigem = 'etapa')
     {
         if (!$this->request->isAJAX()) {
-            return redirect()->to("/etapas/$idEtapa/acoes");
+            return redirect()->back();
         }
 
         $response = ['success' => false, 'message' => ''];
@@ -161,6 +170,7 @@ class Acoes extends BaseController
         $rules = [
             'id_acao' => 'required',
             'nome' => 'required|min_length[3]|max_length[255]',
+            'ordem' => 'required|integer',
             'responsavel' => 'permit_empty|max_length[255]',
             'equipe' => 'permit_empty|max_length[255]',
             'tempo_estimado_dias' => 'permit_empty|integer',
@@ -168,8 +178,7 @@ class Acoes extends BaseController
             'fim_estimado' => 'permit_empty|valid_date',
             'data_inicio' => 'permit_empty|valid_date',
             'data_fim' => 'permit_empty|valid_date',
-            'status' => 'permit_empty|in_list[Em andamento,Finalizado,Paralisado,Não iniciado]',
-            'ordem' => 'permit_empty|integer'
+            'status' => 'permit_empty|in_list[Em andamento,Finalizado,Paralisado,Não iniciado]'
         ];
 
         if ($this->validate($rules)) {
@@ -177,16 +186,23 @@ class Acoes extends BaseController
                 $data = [
                     'id_acao' => $this->request->getPost('id_acao'),
                     'nome' => $this->request->getPost('nome'),
+                    'ordem' => $this->request->getPost('ordem'),
                     'responsavel' => $this->request->getPost('responsavel'),
                     'equipe' => $this->request->getPost('equipe'),
                     'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias'),
-                    'inicio_estimado' => $this->request->getPost('inicio_estimado'),
-                    'fim_estimado' => $this->request->getPost('fim_estimado'),
-                    'data_inicio' => $this->request->getPost('data_inicio'),
-                    'data_fim' => $this->request->getPost('data_fim'),
-                    'status' => $this->request->getPost('status'),
-                    'ordem' => $this->request->getPost('ordem')
+                    'inicio_estimado' => $this->request->getPost('inicio_estimado') ?: null,
+                    'fim_estimado' => $this->request->getPost('fim_estimado') ?: null,
+                    'data_inicio' => $this->request->getPost('data_inicio') ?: null,
+                    'data_fim' => $this->request->getPost('data_fim') ?: null,
+                    'status' => $this->request->getPost('status') ?? 'Não iniciado'
                 ];
+
+                if ($tipoOrigem === 'projeto') {
+                    $data['id_etapa'] = null;
+                    $data['id_projeto'] = $idOrigem;
+                } else {
+                    $data['id_etapa'] = $idOrigem;
+                }
 
                 $this->acoesModel->save($data);
                 $response['success'] = true;
@@ -201,10 +217,10 @@ class Acoes extends BaseController
         return $this->response->setJSON($response);
     }
 
-    public function excluir($idEtapa)
+    public function excluir($idOrigem, $tipoOrigem = 'etapa')
     {
         if (!$this->request->isAJAX()) {
-            return redirect()->to("/etapas/$idEtapa/acoes");
+            return redirect()->back();
         }
 
         $response = ['success' => false, 'message' => ''];
@@ -305,11 +321,16 @@ class Acoes extends BaseController
                 ];
 
                 foreach ($camposEditaveis as $campo) {
-                    if (isset($postData[$campo]) && $postData[$campo] != $acaoAtual[$campo]) {
-                        $alteracoes[$campo] = [
-                            'de' => $acaoAtual[$campo],
-                            'para' => $postData[$campo]
-                        ];
+                    if (isset($postData[$campo])) {
+                        $valorAtual = $acaoAtual[$campo] ?? null;
+                        $valorNovo = $postData[$campo] ?? null;
+
+                        if ($valorAtual != $valorNovo) {
+                            $alteracoes[$campo] = [
+                                'de' => $valorAtual,
+                                'para' => $valorNovo
+                            ];
+                        }
                     }
                 }
 
@@ -466,6 +487,7 @@ class Acoes extends BaseController
 
         return $this->response->setJSON($response);
     }
+
     public function acoesProjeto($idProjeto)
     {
         $projeto = $this->projetosModel->find($idProjeto);
@@ -487,5 +509,42 @@ class Acoes extends BaseController
 
         $this->content_data['content'] = view('sys/acoes', $data);
         return view('layout', $this->content_data);
+    }
+    public function salvarOrdem($idOrigem, $tipoOrigem = 'etapa')
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $response = ['success' => false, 'message' => ''];
+        $ordens = $this->request->getPost('ordem');
+
+        if (empty($ordens) || !is_array($ordens)) {
+            $response['message'] = 'Nenhuma ordem foi enviada';
+            return $this->response->setJSON($response);
+        }
+
+        try {
+            // Usando a instância do Model para transação
+            $this->acoesModel->transStart();
+
+            foreach ($ordens as $idAcao => $ordem) {
+                $this->acoesModel->update($idAcao, ['ordem' => (int)$ordem]);
+            }
+
+            $this->acoesModel->transComplete();
+
+            if ($this->acoesModel->transStatus() === false) {
+                throw new \Exception('Erro ao atualizar ordens no banco de dados');
+            }
+
+            $response['success'] = true;
+            $response['message'] = 'Ordem das ações atualizada com sucesso!';
+        } catch (\Exception $e) {
+            log_message('error', 'Erro ao salvar ordem: ' . $e->getMessage());
+            $response['message'] = 'Erro ao salvar ordem: ' . $e->getMessage();
+        }
+
+        return $this->response->setJSON($response);
     }
 }
