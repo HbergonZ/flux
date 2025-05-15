@@ -8,28 +8,28 @@
             <form id="formOrdenarAcoes" action="<?= site_url("acoes/salvar-ordem/$idOrigem/$tipoOrigem") ?>">
                 <div class="modal-body">
                     <div class="alert alert-info mb-3">
-                        Selecione a nova posição para cada ação (os itens trocarão de lugar)
+                        Selecione a nova posição para cada ação (a posição atual permanecerá visível como referência)
                     </div>
 
                     <table class="table table-bordered">
                         <thead>
                             <tr>
                                 <th>Ação</th>
-                                <th style="width: 120px;">Posição Atual</th>
-                                <th style="width: 120px;">Nova Posição</th>
+                                <th style="width: 120px;">Ordem atual</th>
+                                <th style="width: 120px;">Nova ordem</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($acoes as $index => $acao): ?>
                                 <tr data-id="<?= $acao['id_acao'] ?>">
                                     <td><?= $acao['nome'] ?></td>
-                                    <td class="text-center"><?= $index + 1 ?></td>
+                                    <td class="text-center"><?= $acao['ordem'] ?></td>
                                     <td>
                                         <select name="ordem[<?= $acao['id_acao'] ?>]"
                                             class="form-control form-control-sm ordem-select"
-                                            data-current="<?= $index + 1 ?>">
+                                            data-original="<?= $acao['ordem'] ?>">
                                             <?php for ($i = 1; $i <= count($acoes); $i++): ?>
-                                                <option value="<?= $i ?>" <?= $i == ($index + 1) ? 'selected' : '' ?>>
+                                                <option value="<?= $i ?>" <?= $i == $acao['ordem'] ? 'selected' : '' ?>>
                                                     <?= $i ?>
                                                 </option>
                                             <?php endfor; ?>

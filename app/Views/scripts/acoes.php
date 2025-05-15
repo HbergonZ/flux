@@ -451,52 +451,79 @@
         }
 
         // ==================================================
-        // IMPLEMENTAÇÃO DA TROCA DE POSIÇÕES COM SELECT
+        // IMPLEMENTAÇÃO COM POSIÇÃO ATUAL ESTÁTICA
         // ==================================================
 
-        // Variável para armazenar os selects de ordem
-        let ordemSelects = [];
+        // Variáveis para controle das posições
+        let posicoesOriginais = {};
+        let selectsPorPosicao = {};
+        let selectsPorId = {};
 
         // Quando o modal de ordenação é aberto
         $('#ordenarAcoesModal').on('shown.bs.modal', function() {
-            // Armazena todos os selects em um array para fácil acesso
-            ordemSelects = $('.ordem-select').toArray();
+            // Inicializa as estruturas de controle
+            posicoesOriginais = {};
+            selectsPorPosicao = {};
+            selectsPorId = {};
 
-            // Inicializa o valor atual de cada select
             $('.ordem-select').each(function() {
-                $(this).data('current', $(this).val());
+                const id = $(this).closest('tr').data('id');
+                const posicaoOriginal = parseInt($(this).closest('tr').find('td:nth-child(2)').text());
+
+                // Armazena a posição original (estática)
+                posicoesOriginais[id] = posicaoOriginal;
+
+                // Armazena os selects por posição atual e por ID
+                const posicaoAtual = parseInt($(this).val());
+                selectsPorPosicao[posicaoAtual] = {
+                    select: $(this),
+                    id: id
+                };
+                selectsPorId[id] = {
+                    select: $(this),
+                    posicaoAtual: posicaoAtual
+                };
             });
         });
 
         // Quando um select de ordem é alterado
         $(document).on('change', '.ordem-select', function() {
-            const $this = $(this);
-            const selectedValue = parseInt($this.val());
-            const currentValue = parseInt($this.data('current'));
+            const $selectAtual = $(this);
+            const idAtual = $selectAtual.closest('tr').data('id');
+            const novaPosicao = parseInt($selectAtual.val());
+            const posicaoAtual = selectsPorId[idAtual].posicaoAtual;
 
-            // Se não houve mudança real, ignora
-            if (selectedValue === currentValue) return;
+            // Se não houve mudança, ignora
+            if (novaPosicao === posicaoAtual) return;
 
-            // Encontra o select que está na posição selecionada
-            const $targetSelect = $(ordemSelects.find(select =>
-                parseInt($(select).val()) === selectedValue
-            ));
+            // Verifica se a nova posição já está ocupada
+            if (selectsPorPosicao[novaPosicao]) {
+                const $selectAlvo = selectsPorPosicao[novaPosicao].select;
+                const idAlvo = selectsPorPosicao[novaPosicao].id;
 
-            if ($targetSelect.length) {
-                // Troca os valores entre os selects
-                $targetSelect.val(currentValue).trigger('change');
-                $targetSelect.data('current', currentValue);
+                // 1. Move o select alvo para a posição atual
+                $selectAlvo.val(posicaoAtual);
+                selectsPorId[idAlvo].posicaoAtual = posicaoAtual;
+                selectsPorPosicao[posicaoAtual] = {
+                    select: $selectAlvo,
+                    id: idAlvo
+                };
 
-                $this.data('current', selectedValue);
-
-                // Atualiza a exibição da posição atual na tabela
-                $this.closest('tr').find('td:nth-child(2)').text(selectedValue);
-                $targetSelect.closest('tr').find('td:nth-child(2)').text(currentValue);
-
-                // Atualiza os valores nos selects para refletir a troca
-                $this.find('option[value="' + selectedValue + '"]').prop('selected', true);
-                $targetSelect.find('option[value="' + currentValue + '"]').prop('selected', true);
+                // Atualiza visualmente o select alvo
+                $selectAlvo.find('option').prop('selected', false);
+                $selectAlvo.find('option[value="' + posicaoAtual + '"]').prop('selected', true);
             }
+
+            // 2. Move o select atual para a nova posição
+            selectsPorId[idAtual].posicaoAtual = novaPosicao;
+            selectsPorPosicao[novaPosicao] = {
+                select: $selectAtual,
+                id: idAtual
+            };
+
+            // Atualiza visualmente o select atual
+            $selectAtual.find('option').prop('selected', false);
+            $selectAtual.find('option[value="' + novaPosicao + '"]').prop('selected', true);
         });
 
         // Envio do formulário de ordenação
@@ -509,10 +536,10 @@
             submitBtn.prop('disabled', true)
                 .html('<span class="spinner-border spinner-border-sm"></span> Salvando...');
 
-            // Atualiza os valores dos inputs hidden com as posições corretas
+            // Atualiza os valores dos inputs hidden com as novas posições
             $('tr[data-id]').each(function() {
                 const id = $(this).data('id');
-                const newPosition = $(this).find('td:nth-child(2)').text();
+                const newPosition = selectsPorId[id].posicaoAtual;
                 $(`input[name="ordem[${id}]"]`).val(newPosition);
             });
 
@@ -538,5 +565,6 @@
                 }
             });
         });
+
     });
 </script>

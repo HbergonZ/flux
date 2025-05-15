@@ -30,11 +30,6 @@ $routes->group('', function ($routes) {
     $routes->get('visao-geral', 'VisaoGeral::index');
     $routes->post('visao-geral/filtrar', 'VisaoGeral::filtrar');
 
-    // Visão Projeto
-    $routes->get('visao-projeto/(:num)', 'VisaoProjeto::index/$1');
-    $routes->post('visao-projeto/filtrar/(:num)', 'VisaoProjeto::filtrar/$1');
-    $routes->get('visao-projeto/dados-etapa/(:num)/(:any)', 'VisaoProjeto::dadosEtapa/$1/$2');
-    $routes->post('visao-projeto/solicitar-edicao', 'VisaoProjeto::solicitarEdicao');
 
     // Planos
     $routes->get('planos', 'Planos::index');
