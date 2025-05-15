@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Models\AcoesModel;
 use App\Models\EtapasModel;
 use App\Models\ProjetosModel;
+use App\Models\PlanosModel;
 use App\Models\SolicitacoesModel;
 
 class Acoes extends BaseController
@@ -12,6 +13,7 @@ class Acoes extends BaseController
     protected $acoesModel;
     protected $etapasModel;
     protected $projetosModel;
+    protected $planosModel;
     protected $solicitacoesModel;
 
     public function __construct()
@@ -19,6 +21,7 @@ class Acoes extends BaseController
         $this->acoesModel = new AcoesModel();
         $this->etapasModel = new EtapasModel();
         $this->projetosModel = new ProjetosModel();
+        $this->planosModel = new PlanosModel();
         $this->solicitacoesModel = new SolicitacoesModel();
     }
 
@@ -246,7 +249,7 @@ class Acoes extends BaseController
             return redirect()->back();
         }
 
-        $filtro = $this->request->getPost('nome');
+        $filters = $this->request->getPost();
 
         $builder = $this->acoesModel;
 
@@ -257,11 +260,33 @@ class Acoes extends BaseController
                 ->where('id_etapa IS NULL');
         }
 
-        if (!empty($filtro)) {
-            $builder->like('nome', $filtro);
+        // Aplicar filtros
+        if (!empty($filters['nome'])) {
+            $builder->like('nome', $filters['nome']);
+        }
+
+        if (!empty($filters['responsavel'])) {
+            $builder->like('responsavel', $filters['responsavel']);
+        }
+
+        if (!empty($filters['status'])) {
+            $builder->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['data_inicio_inicio'])) {
+            $builder->where('data_inicio >=', $filters['data_inicio_inicio']);
+        }
+
+        if (!empty($filters['data_inicio_fim'])) {
+            $builder->where('data_inicio <=', $filters['data_inicio_fim']);
+        }
+
+        if (!empty($filters['data_fim_fim'])) {
+            $builder->where('data_fim <=', $filters['data_fim_fim']);
         }
 
         $acoes = $builder->orderBy('ordem', 'ASC')->findAll();
+
         return $this->response->setJSON(['success' => true, 'data' => $acoes]);
     }
 
@@ -306,6 +331,16 @@ class Acoes extends BaseController
                     return $this->response->setJSON($response);
                 }
 
+                // Obter o projeto e plano relacionados
+                $projeto = $this->projetosModel->find($acaoAtual['id_projeto']);
+                if (!$projeto) {
+                    $response['message'] = 'Projeto relacionado não encontrado';
+                    return $this->response->setJSON($response);
+                }
+
+                // Remover campos não necessários dos dados atuais
+                unset($acaoAtual['id_acao'], $acaoAtual['created_at'], $acaoAtual['updated_at']);
+
                 $alteracoes = [];
                 $camposEditaveis = [
                     'nome',
@@ -341,14 +376,15 @@ class Acoes extends BaseController
 
                 $data = [
                     'nivel' => 'acao',
-                    'id_acao' => $postData['id_acao'],
-                    'id_etapa' => $acaoAtual['id_etapa'],
+                    'id_solicitante' => auth()->id(),
+                    'id_plano' => $projeto['id_plano'],
                     'id_projeto' => $acaoAtual['id_projeto'],
+                    'id_etapa' => $acaoAtual['id_etapa'],
+                    'id_acao' => $postData['id_acao'],
                     'tipo' => 'Edição',
-                    'dados_atuais' => json_encode($acaoAtual),
-                    'dados_alterados' => json_encode($alteracoes),
+                    'dados_atuais' => json_encode($acaoAtual, JSON_UNESCAPED_UNICODE),
+                    'dados_alterados' => json_encode($alteracoes, JSON_UNESCAPED_UNICODE),
                     'justificativa_solicitante' => $postData['justificativa'],
-                    'solicitante' => auth()->user()->username,
                     'status' => 'pendente',
                     'data_solicitacao' => date('Y-m-d H:i:s')
                 ];
@@ -389,6 +425,13 @@ class Acoes extends BaseController
                     return $this->response->setJSON($response);
                 }
 
+                // Obter o projeto e plano relacionados
+                $projeto = $this->projetosModel->find($acao['id_projeto']);
+                if (!$projeto) {
+                    $response['message'] = 'Projeto relacionado não encontrado';
+                    return $this->response->setJSON($response);
+                }
+
                 $dadosAtuais = [
                     'nome' => $acao['nome'],
                     'responsavel' => $acao['responsavel'],
@@ -400,13 +443,14 @@ class Acoes extends BaseController
 
                 $data = [
                     'nivel' => 'acao',
-                    'id_acao' => $postData['id_acao'],
-                    'id_etapa' => $acao['id_etapa'],
+                    'id_solicitante' => auth()->id(),
+                    'id_plano' => $projeto['id_plano'],
                     'id_projeto' => $acao['id_projeto'],
+                    'id_etapa' => $acao['id_etapa'],
+                    'id_acao' => $postData['id_acao'],
                     'tipo' => 'Exclusão',
-                    'dados_atuais' => json_encode($dadosAtuais),
+                    'dados_atuais' => json_encode($dadosAtuais, JSON_UNESCAPED_UNICODE),
                     'justificativa_solicitante' => $postData['justificativa'],
-                    'solicitante' => auth()->user()->username,
                     'status' => 'pendente',
                     'data_solicitacao' => date('Y-m-d H:i:s')
                 ];
@@ -441,12 +485,6 @@ class Acoes extends BaseController
 
         if ($this->validate($rules)) {
             try {
-                $etapa = $this->etapasModel->find($postData['id_etapa']);
-                if (!$etapa) {
-                    $response['message'] = 'Etapa não encontrada';
-                    return $this->response->setJSON($response);
-                }
-
                 $dadosAlterados = [
                     'nome' => $postData['nome'],
                     'responsavel' => $postData['responsavel'] ?? null,
@@ -457,19 +495,59 @@ class Acoes extends BaseController
                     'data_inicio' => $postData['data_inicio'] ?? null,
                     'data_fim' => $postData['data_fim'] ?? null,
                     'status' => $postData['status'] ?? 'Não iniciado',
-                    'ordem' => $postData['ordem'] ?? null,
-                    'id_projeto' => $etapa['id_projeto'],
-                    'id_etapa' => $postData['id_etapa']
+                    'ordem' => $postData['ordem'] ?? null
                 ];
+
+                $idPlano = null;
+                $idProjeto = null;
+                $idEtapa = null;
+
+                // Verifica se é para uma etapa ou projeto
+                if (isset($postData['id_etapa']) && !empty($postData['id_etapa'])) {
+                    $etapa = $this->etapasModel->find($postData['id_etapa']);
+                    if (!$etapa) {
+                        $response['message'] = 'Etapa não encontrada';
+                        return $this->response->setJSON($response);
+                    }
+
+                    $projeto = $this->projetosModel->find($etapa['id_projeto']);
+                    if (!$projeto) {
+                        $response['message'] = 'Projeto relacionado não encontrado';
+                        return $this->response->setJSON($response);
+                    }
+
+                    $idPlano = $projeto['id_plano'];
+                    $idProjeto = $etapa['id_projeto'];
+                    $idEtapa = $postData['id_etapa'];
+
+                    $dadosAlterados['id_projeto'] = $idProjeto;
+                    $dadosAlterados['id_etapa'] = $idEtapa;
+                } elseif (isset($postData['id_projeto']) && !empty($postData['id_projeto'])) {
+                    $projeto = $this->projetosModel->find($postData['id_projeto']);
+                    if (!$projeto) {
+                        $response['message'] = 'Projeto não encontrado';
+                        return $this->response->setJSON($response);
+                    }
+
+                    $idPlano = $projeto['id_plano'];
+                    $idProjeto = $postData['id_projeto'];
+
+                    $dadosAlterados['id_projeto'] = $idProjeto;
+                    $dadosAlterados['id_etapa'] = null;
+                } else {
+                    $response['message'] = 'Nenhum projeto ou etapa especificado';
+                    return $this->response->setJSON($response);
+                }
 
                 $data = [
                     'nivel' => 'acao',
-                    'id_etapa' => $postData['id_etapa'],
-                    'id_projeto' => $etapa['id_projeto'],
+                    'id_solicitante' => auth()->id(),
+                    'id_plano' => $idPlano,
+                    'id_projeto' => $idProjeto,
+                    'id_etapa' => $idEtapa,
                     'tipo' => 'Inclusão',
-                    'dados_alterados' => json_encode($dadosAlterados),
+                    'dados_alterados' => json_encode($dadosAlterados, JSON_UNESCAPED_UNICODE),
                     'justificativa_solicitante' => $postData['justificativa'],
-                    'solicitante' => auth()->user()->username,
                     'status' => 'pendente',
                     'data_solicitacao' => date('Y-m-d H:i:s')
                 ];

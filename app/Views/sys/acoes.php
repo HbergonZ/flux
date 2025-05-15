@@ -39,10 +39,49 @@
         <div class="card-body">
             <form id="formFiltros">
                 <div class="row">
-                    <div class="col-md-12">
+                    <div class="col-md-4">
                         <div class="form-group">
                             <label for="filterNome">Nome</label>
                             <input type="text" class="form-control" id="filterNome" name="nome" placeholder="Filtrar por nome">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="filterResponsavel">Responsável</label>
+                            <input type="text" class="form-control" id="filterResponsavel" name="responsavel" placeholder="Filtrar por responsável">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="filterStatus">Status</label>
+                            <select class="form-control" id="filterStatus" name="status">
+                                <option value="">Todos</option>
+                                <option value="Não iniciado">Não iniciado</option>
+                                <option value="Em andamento">Em andamento</option>
+                                <option value="Paralisado">Paralisado</option>
+                                <option value="Finalizado">Finalizado</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="filterDataInicioInicio">Data Início (De)</label>
+                            <input type="date" class="form-control" id="filterDataInicioInicio" name="data_inicio_inicio">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="filterDataInicioFim">Data Início (Até)</label>
+                            <input type="date" class="form-control" id="filterDataInicioFim" name="data_inicio_fim">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="filterDataFimFim">Data Fim (Até)</label>
+                            <input type="date" class="form-control" id="filterDataFimFim" name="data_fim_fim">
                         </div>
                     </div>
                 </div>
