@@ -7,6 +7,18 @@
 <?php echo view('components/etapas/modal-solicitar-inclusao.php'); ?>
 
 <div class="container-fluid">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="<?= site_url('/') ?>">Início</a></li>
+            <li class="breadcrumb-item"><a href="<?= site_url('planos') ?>"><?= $projeto['plano_nome'] ?? $plano['nome'] ?? 'Plano' ?></a></li>
+            <li class="breadcrumb-item"><a href="<?= site_url("planos/{$projeto['id_plano']}/projetos") ?>"><?= $projeto['nome'] ?></a></li>
+            <li class="breadcrumb-item active" aria-current="page">Etapas</li>
+        </ol>
+    </nav>
+
+
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Etapas do Projeto: <?= $projeto['nome'] ?></h1>
