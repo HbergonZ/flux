@@ -7,7 +7,7 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="formDeleteProjeto" action="<?= site_url("projetos/excluir/$idPlano") ?>" method="post">
+            <form id="formDeleteProjeto" method="post">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                 <input type="hidden" name="id" id="deleteProjetoId">
 

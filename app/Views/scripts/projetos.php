@@ -70,7 +70,6 @@
                         $('#editProjetoNome').val(response.data.nome);
                         $('#editProjetoDescricao').val(response.data.descricao);
                         $('#editProjetoVinculado').val(response.data.projeto_vinculado);
-                        $('#editProjetoPriorizacao').val(response.data.priorizacao_gab || '0');
                         $('#editProjetoEixo').val(response.data.id_eixo);
                         $('#editProjetoResponsaveis').val(response.data.responsaveis);
                         $('#editProjetoModal').modal('show');
@@ -104,7 +103,6 @@
                         $('#solicitarEdicaoNome').val(projeto.nome);
                         $('#solicitarEdicaoDescricao').val(projeto.descricao);
                         $('#solicitarEdicaoVinculado').val(projeto.projeto_vinculado);
-                        $('#solicitarEdicaoPriorizacao').val(projeto.priorizacao_gab || '0');
                         $('#solicitarEdicaoEixo').val(projeto.id_eixo);
                         $('#solicitarEdicaoResponsaveis').val(projeto.responsaveis);
 
@@ -114,7 +112,6 @@
                             nome: projeto.nome,
                             descricao: projeto.descricao,
                             projeto_vinculado: projeto.projeto_vinculado,
-                            priorizacao_gab: projeto.priorizacao_gab || '0',
                             id_eixo: projeto.id_eixo,
                             responsaveis: projeto.responsaveis
                         };
@@ -142,7 +139,7 @@
             let hasChanges = false;
             const form = $('#formSolicitarEdicao');
 
-            ['identificador', 'nome', 'descricao', 'projeto_vinculado', 'priorizacao_gab', 'id_eixo', 'responsaveis'].forEach(field => {
+            ['identificador', 'nome', 'descricao', 'projeto_vinculado', 'id_eixo', 'responsaveis'].forEach(field => {
                 const currentValue = form.find(`[name="${field}"]`).val();
                 if (formOriginalData[field] != currentValue) {
                     hasChanges = true;
@@ -178,13 +175,7 @@
                 success: function(response) {
                     if (response.success && response.data) {
                         var projeto = response.data;
-                        var dadosAtuais = `Identificador: ${projeto.identificador || 'N/A'}\n` +
-                            `Nome: ${projeto.nome}\n` +
-                            `Descrição: ${projeto.descricao || 'N/A'}\n` +
-                            `Projeto Vinculado: ${projeto.projeto_vinculado || 'Nenhum'}\n` +
-                            `Priorização GAB: ${projeto.priorizacao_gab ? 'Sim' : 'Não'}\n` +
-                            `Eixo: ${projeto.id_eixo ? $('#filterEixo option[value="' + projeto.id_eixo + '"]').text() || projeto.id_eixo : 'Não definido'}\n` +
-                            `Responsáveis: ${projeto.responsaveis || 'Não definido'}`;
+                        var dadosAtuais = `Identificador: ${projeto.identificador}\nNome: ${projeto.nome}\nDescrição: ${projeto.descricao}\nProjeto Vinculado: ${projeto.projeto_vinculado}\nEixo: ${projeto.id_eixo}\nResponsáveis: ${projeto.responsaveis}`;
 
                         $('#solicitarExclusaoId').val(projeto.id);
                         $('#projetoNameToRequestDelete').text(projetoName);
@@ -198,6 +189,20 @@
                     showErrorAlert("Falha na comunicação com o servidor.");
                 }
             });
+        });
+
+        // Excluir projeto - Abrir modal de confirmação (apenas admin)
+        $(document).on('click', '.btn-danger[title="Excluir"]', function() {
+            var projetoId = $(this).data('id').split('-')[0];
+            var projetoName = $(this).closest('tr').find('td:nth-child(2)').text();
+
+            $('#deleteProjetoId').val(projetoId);
+            $('#projetoNameToDelete').text(projetoName);
+
+            // Atualiza o action do formulário corretamente
+            $('#formDeleteProjeto').attr('action', '<?= site_url("projetos/excluir/$idPlano") ?>');
+
+            $('#deleteProjetoModal').modal('show');
         });
 
         // Enviar solicitação de exclusão
@@ -218,20 +223,38 @@
             submitForm($(this), '#editProjetoModal');
         });
 
-        // Excluir projeto - Abrir modal de confirmação (apenas admin)
-        $(document).on('click', '.btn-danger[title="Excluir"]', function() {
-            var projetoId = $(this).data('id').split('-')[0];
-            var projetoName = $(this).closest('tr').find('td:nth-child(2)').text();
-
-            $('#deleteProjetoId').val(projetoId);
-            $('#projetoNameToDelete').text(projetoName);
-            $('#deleteProjetoModal').modal('show');
-        });
-
         // Confirmar exclusão (apenas admin)
         $('#formDeleteProjeto').submit(function(e) {
             e.preventDefault();
-            submitForm($(this), '#deleteProjetoModal');
+
+            var form = $(this);
+            var submitBtn = form.find('button[type="submit"]');
+            var originalBtnText = submitBtn.html();
+
+            submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...');
+
+            $.ajax({
+                type: "POST",
+                url: form.attr('action'),
+                data: form.serialize(),
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        $('#deleteProjetoModal').modal('hide');
+                        showSuccessAlert(response.message || 'Projeto excluído com sucesso!');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showErrorAlert(response.message || 'Ocorreu um erro durante a exclusão.');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error(xhr.responseText);
+                    showErrorAlert('Erro na comunicação com o servidor: ' + error);
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).html(originalBtnText);
+                }
+            });
         });
 
         // Aplicar filtros
@@ -304,65 +327,52 @@
                         dataTable.destroy();
                         $('#dataTable tbody').empty();
 
-                        if (response.data && response.data.length > 0) {
-                            $.each(response.data, function(index, projeto) {
-                                var id = projeto.id + '-' + projeto.nome.toLowerCase().replace(/\s+/g, '-');
-                                var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
-                                var actionButtons = '';
+                        $.each(response.data, function(index, projeto) {
+                            var id = projeto.id + '-' + projeto.nome.toLowerCase().replace(/\s+/g, '-');
+                            var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
+                            var actionButtons = '';
 
-                                // Botões comuns
-                                var commonButtons = `
-                                    <a href="<?= site_url('projetos/') ?>${projeto.id}/etapas" class="btn btn-secondary btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Etapas">
-                                        <i class="fas fa-tasks"></i>
-                                    </a>
-                                    <a href="<?= site_url('projetos/') ?>${projeto.id}/acoes" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Acessar Ações">
-                                        <i class="fas fa-th-list"></i>
-                                    </a>`;
+                            if (isAdmin) {
+                                actionButtons = `
+                                    <div class="d-inline-flex">
+                                        <a href="<?= site_url('projetos/') ?>${projeto.id}/etapas" class="btn btn-secondary btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Etapas">
+                                            <i class="fas fa-tasks"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>`;
+                            } else {
+                                actionButtons = `
+                                    <div class="d-inline-flex">
+                                        <a href="<?= site_url('projetos/') ?>${projeto.id}/etapas" class="btn btn-secondary btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Etapas">
+                                            <i class="fas fa-tasks"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>`;
+                            }
 
-                                if (isAdmin) {
-                                    actionButtons = `
-                                        <div class="d-inline-flex">
-                                            ${commonButtons}
-                                            <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
-                                        </div>`;
-                                } else {
-                                    actionButtons = `
-                                        <div class="d-inline-flex">
-                                            ${commonButtons}
-                                            <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
-                                        </div>`;
-                                }
-
-                                var row = `
-                                    <tr>
-                                        <td class="text-wrap align-middle">${projeto.identificador || ''}</td>
-                                        <td class="text-wrap align-middle">${projeto.nome}</td>
-                                        <td class="text-wrap align-middle">${projeto.descricao || ''}</td>
-                                        <td class="text-wrap align-middle">${projeto.projeto_vinculado || ''}</td>
-                                        <td class="text-wrap align-middle">${projeto.responsaveis || ''}</td>
-                                        <td class="text-center align-middle">${actionButtons}</td>
-                                    </tr>`;
-
-                                $('#dataTable tbody').append(row);
-                            });
-                        } else {
-                            $('#dataTable tbody').append(`
+                            var row = `
                                 <tr>
-                                    <td colspan="6" class="text-center">Nenhum projeto encontrado com os filtros aplicados</td>
-                                </tr>`);
-                        }
+                                    <td class="text-wrap align-middle">${projeto.identificador || ''}</td>
+                                    <td class="text-wrap align-middle">${projeto.nome}</td>
+                                    <td class="text-wrap align-middle">${projeto.descricao || ''}</td>
+                                    <td class="text-wrap align-middle">${projeto.projeto_vinculado || ''}</td>
+                                    <td class="text-wrap align-middle">${projeto.responsaveis || ''}</td>
+                                    <td class="text-center align-middle">${actionButtons}</td>
+                                </tr>`;
 
-                        // Re-inicializa o DataTable
+                            $('#dataTable tbody').append(row);
+                        });
+
                         dataTable = $('#dataTable').DataTable({
                             "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
                             "language": {
@@ -375,7 +385,7 @@
                             "pageLength": 10
                         });
                     } else {
-                        showErrorAlert('Erro ao filtrar projetos: ' + (response.message || 'Erro desconhecido'));
+                        showErrorAlert('Erro ao filtrar projetos: ' + response.message);
                     }
                 },
                 error: function(xhr, status, error) {

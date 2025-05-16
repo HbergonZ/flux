@@ -181,7 +181,7 @@ class Projetos extends BaseController
         return $this->response->setJSON($response);
     }
 
-    public function excluir($idPlano)
+    public function excluir($idPlano, $idProjeto = null)
     {
         if (!$this->request->isAJAX()) {
             return redirect()->to("/planos/$idPlano/projetos");
@@ -194,15 +194,16 @@ class Projetos extends BaseController
             return $this->response->setJSON($response);
         }
 
-        $id = $this->request->getPost('id');
+        // Se $idProjeto é null, tenta pegar do POST
+        $idProjeto = $idProjeto ?? $this->request->getPost('id');
 
-        if (empty($id)) {
+        if (empty($idProjeto)) {
             $response['message'] = 'ID do projeto não fornecido';
             return $this->response->setJSON($response);
         }
 
         try {
-            $projeto = $this->projetosModel->find($id);
+            $projeto = $this->projetosModel->find($idProjeto);
             if (!$projeto || $projeto['id_plano'] != $idPlano) {
                 $response['message'] = 'Projeto não encontrado ou não pertence a este plano';
                 return $this->response->setJSON($response);
@@ -213,14 +214,14 @@ class Projetos extends BaseController
             $acoesModel = new \App\Models\AcoesModel();
 
             if (
-                $etapasModel->where('id_projeto', $id)->countAllResults() > 0 ||
-                $acoesModel->where('id_projeto', $id)->where('id_etapa', null)->countAllResults() > 0
+                $etapasModel->where('id_projeto', $idProjeto)->countAllResults() > 0 ||
+                $acoesModel->where('id_projeto', $idProjeto)->where('id_etapa', null)->countAllResults() > 0
             ) {
                 $response['message'] = 'Não é possível excluir o projeto pois existem etapas ou ações vinculadas';
                 return $this->response->setJSON($response);
             }
 
-            if ($this->projetosModel->delete($id)) {
+            if ($this->projetosModel->delete($idProjeto)) {
                 $response['success'] = true;
                 $response['message'] = 'Projeto excluído com sucesso!';
             } else {
