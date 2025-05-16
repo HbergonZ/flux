@@ -1,38 +1,48 @@
-<div class="modal fade" id="editAcaoModal" tabindex="-1" role="dialog" aria-labelledby="editAcaoModalLabel" aria-hidden="true">
+<div class="modal fade" id="editProjetoModal" tabindex="-1" role="dialog" aria-labelledby="editProjetoModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="editAcaoModalLabel">Editar Ação</h5>
+                <h5 class="modal-title" id="editProjetoModalLabel">Editar Projeto</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="formEditAcao" method="post" action="<?= site_url("acoes/atualizar/$idPlano") ?>">
+            <form id="formEditProjeto" method="post" action="<?= site_url("projetos/atualizar/$idPlano") ?>">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
-                <input type="hidden" name="id" id="editAcaoId">
+                <input type="hidden" name="id" id="editProjetoId">
 
                 <div class="modal-body">
-                    <div class="form-group">
-                        <label for="editAcaoNome">Ação*</label>
-                        <input type="text" class="form-control" id="editAcaoNome" name="acao" required maxlength="255">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="editProjetoIdentificador">Identificador*</label>
+                                <input type="text" class="form-control" id="editProjetoIdentificador" name="identificador" required maxlength="10">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="editProjetoNome">Nome*</label>
+                                <input type="text" class="form-control" id="editProjetoNome" name="nome" required maxlength="255">
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="editAcaoDescricao">Descrição</label>
-                        <textarea class="form-control" id="editAcaoDescricao" name="descricao" rows="3"></textarea>
+                        <label for="editProjetoDescricao">Descrição</label>
+                        <textarea class="form-control" id="editProjetoDescricao" name="descricao" rows="3"></textarea>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="editAcaoProjetoVinculado">Projeto Vinculado</label>
-                                <input type="text" class="form-control" id="editAcaoProjetoVinculado" name="projeto_vinculado" maxlength="255">
+                                <label for="editProjetoVinculado">Projeto Vinculado</label>
+                                <input type="text" class="form-control" id="editProjetoVinculado" name="projeto_vinculado" maxlength="255">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="editAcaoEixo">Eixo</label>
-                                <select class="form-control" id="editAcaoEixo" name="id_eixo">
+                                <label for="editProjetoEixo">Eixo</label>
+                                <select class="form-control" id="editProjetoEixo" name="id_eixo">
                                     <option value="">Selecione um eixo</option>
                                     <?php foreach ($eixos as $eixo): ?>
                                         <option value="<?= $eixo['id'] ?>"><?= $eixo['nome'] ?></option>
@@ -42,9 +52,21 @@
                         </div>
                     </div>
 
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="editProjetoPriorizacao">Priorização GAB</label>
+                                <select class="form-control" id="editProjetoPriorizacao" name="priorizacao_gab">
+                                    <option value="0">Não</option>
+                                    <option value="1">Sim</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="form-group">
-                        <label for="editAcaoResponsaveis">Responsáveis</label>
-                        <textarea class="form-control" id="editAcaoResponsaveis" name="responsaveis" rows="2"></textarea>
+                        <label for="editProjetoResponsaveis">Responsáveis</label>
+                        <textarea class="form-control" id="editProjetoResponsaveis" name="responsaveis" rows="2"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">

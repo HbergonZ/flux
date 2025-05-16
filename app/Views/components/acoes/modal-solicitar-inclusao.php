@@ -42,14 +42,8 @@
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label for="solicitarInclusaoInicioEstimado">Início Estimado</label>
-                                <input type="date" class="form-control" id="solicitarInclusaoInicioEstimado" name="inicio_estimado">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="solicitarInclusaoFimEstimado">Fim Estimado</label>
-                                <input type="date" class="form-control" id="solicitarInclusaoFimEstimado" name="fim_estimado">
+                                <label for="solicitarInclusaoEntregaEstimada">Entrega Estimada</label>
+                                <input type="date" class="form-control" id="solicitarInclusaoEntregaEstimada" name="entrega_estimada">
                             </div>
                         </div>
                     </div>
@@ -77,11 +71,6 @@
                             <option value="Paralisado">Paralisado</option>
                             <option value="Finalizado">Finalizado</option>
                         </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="solicitarInclusaoOrdem">Ordem</label>
-                        <input type="number" class="form-control" id="solicitarInclusaoOrdem" name="ordem">
                     </div>
 
                     <div class="form-group">

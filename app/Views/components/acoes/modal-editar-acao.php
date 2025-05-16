@@ -43,14 +43,8 @@
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label for="editAcaoInicioEstimado">Início Estimado</label>
-                                <input type="date" class="form-control" id="editAcaoInicioEstimado" name="inicio_estimado" onchange="validarData(this)">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="editAcaoFimEstimado">Fim Estimado</label>
-                                <input type="date" class="form-control" id="editAcaoFimEstimado" name="fim_estimado" onchange="validarData(this)">
+                                <label for="editAcaoEntregaEstimada">Entrega Estimada</label>
+                                <input type="date" class="form-control" id="editAcaoEntregaEstimada" name="entrega_estimada" onchange="validarData(this)">
                             </div>
                         </div>
                     </div>

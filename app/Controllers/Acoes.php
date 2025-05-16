@@ -34,6 +34,7 @@ class Acoes extends BaseController
         $data = [];
 
         if ($tipoOrigem === 'etapa') {
+            // Código existente para visualização por etapa
             $etapa = $this->etapasModel->find($idOrigem);
             if (!$etapa) {
                 return redirect()->back();
@@ -53,19 +54,25 @@ class Acoes extends BaseController
                 'acessoDireto' => false
             ];
         } else {
+            // Código modificado para visualização por projeto (inclui ações de etapas)
             $projeto = $this->projetosModel->find($idOrigem);
             if (!$projeto) {
                 return redirect()->back();
             }
 
+            // Busca todas as ações do projeto (diretas e de etapas)
             $acoes = $this->acoesModel->where('id_projeto', $idOrigem)
-                ->where('id_etapa IS NULL')
                 ->orderBy('ordem', 'ASC')
+                ->findAll();
+
+            // Busca as etapas para exibição na view
+            $etapas = $this->etapasModel->where('id_projeto', $idOrigem)
                 ->findAll();
 
             $data = [
                 'projeto' => $projeto,
                 'acoes' => $acoes,
+                'etapas' => $etapas,
                 'idOrigem' => $idOrigem,
                 'tipoOrigem' => 'projeto',
                 'acessoDireto' => true
@@ -90,8 +97,7 @@ class Acoes extends BaseController
             'responsavel' => 'permit_empty|max_length[255]',
             'equipe' => 'permit_empty|max_length[255]',
             'tempo_estimado_dias' => 'permit_empty|integer',
-            'inicio_estimado' => 'permit_empty|valid_date',
-            'fim_estimado' => 'permit_empty|valid_date',
+            'entrega_estimada' => 'permit_empty|valid_date',
             'data_inicio' => 'permit_empty|valid_date',
             'data_fim' => 'permit_empty|valid_date',
             'status' => 'permit_empty|in_list[Em andamento,Finalizado,Paralisado,Não iniciado]'
@@ -105,8 +111,7 @@ class Acoes extends BaseController
                     'responsavel' => $this->request->getPost('responsavel'),
                     'equipe' => $this->request->getPost('equipe'),
                     'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias'),
-                    'inicio_estimado' => $this->request->getPost('inicio_estimado') ?: null,
-                    'fim_estimado' => $this->request->getPost('fim_estimado') ?: null,
+                    'entrega_estimada' => $this->request->getPost('entrega_estimada') ?: null,
                     'data_inicio' => $this->request->getPost('data_inicio') ?: null,
                     'data_fim' => $this->request->getPost('data_fim') ?: null,
                     'status' => $this->request->getPost('status') ?? 'Não iniciado'
@@ -177,8 +182,7 @@ class Acoes extends BaseController
             'responsavel' => 'permit_empty|max_length[255]',
             'equipe' => 'permit_empty|max_length[255]',
             'tempo_estimado_dias' => 'permit_empty|integer',
-            'inicio_estimado' => 'permit_empty|valid_date',
-            'fim_estimado' => 'permit_empty|valid_date',
+            'entrega_estimada' => 'permit_empty|valid_date',
             'data_inicio' => 'permit_empty|valid_date',
             'data_fim' => 'permit_empty|valid_date',
             'status' => 'permit_empty|in_list[Em andamento,Finalizado,Paralisado,Não iniciado]'
@@ -193,8 +197,7 @@ class Acoes extends BaseController
                     'responsavel' => $this->request->getPost('responsavel'),
                     'equipe' => $this->request->getPost('equipe'),
                     'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias'),
-                    'inicio_estimado' => $this->request->getPost('inicio_estimado') ?: null,
-                    'fim_estimado' => $this->request->getPost('fim_estimado') ?: null,
+                    'entrega_estimada' => $this->request->getPost('entrega_estimada') ?: null,
                     'data_inicio' => $this->request->getPost('data_inicio') ?: null,
                     'data_fim' => $this->request->getPost('data_fim') ?: null,
                     'status' => $this->request->getPost('status') ?? 'Não iniciado'
@@ -269,23 +272,29 @@ class Acoes extends BaseController
             $builder->like('responsavel', $filters['responsavel']);
         }
 
+        if (!empty($filters['equipe'])) {
+            $builder->like('equipe', $filters['equipe']);
+        }
+
         if (!empty($filters['status'])) {
             $builder->where('status', $filters['status']);
         }
 
-        if (!empty($filters['data_inicio_inicio'])) {
-            $builder->where('data_inicio >=', $filters['data_inicio_inicio']);
+        if (!empty($filters['data_filtro'])) {
+            $dataFiltro = $filters['data_filtro'];
+
+            // Filtro para ações onde a data_filtro está entre data_inicio e data_fim
+            // OU se data_fim é nulo e data_filtro é após data_inicio
+            $builder->groupStart()
+                ->where('data_inicio <=', $dataFiltro)
+                ->groupStart()
+                ->where('data_fim >=', $dataFiltro)
+                ->orWhere('data_fim IS NULL')
+                ->groupEnd()
+                ->groupEnd();
         }
 
-        if (!empty($filters['data_inicio_fim'])) {
-            $builder->where('data_inicio <=', $filters['data_inicio_fim']);
-        }
-
-        if (!empty($filters['data_fim_fim'])) {
-            $builder->where('data_fim <=', $filters['data_fim_fim']);
-        }
-
-        $acoes = $builder->orderBy('ordem', 'ASC')->findAll();
+        $acoes = $builder->orderBy('data_inicio', 'ASC')->findAll();
 
         return $this->response->setJSON(['success' => true, 'data' => $acoes]);
     }
@@ -331,14 +340,12 @@ class Acoes extends BaseController
                     return $this->response->setJSON($response);
                 }
 
-                // Obter o projeto e plano relacionados
                 $projeto = $this->projetosModel->find($acaoAtual['id_projeto']);
                 if (!$projeto) {
                     $response['message'] = 'Projeto relacionado não encontrado';
                     return $this->response->setJSON($response);
                 }
 
-                // Remover campos não necessários dos dados atuais
                 unset($acaoAtual['id_acao'], $acaoAtual['created_at'], $acaoAtual['updated_at']);
 
                 $alteracoes = [];
@@ -347,8 +354,7 @@ class Acoes extends BaseController
                     'responsavel',
                     'equipe',
                     'tempo_estimado_dias',
-                    'inicio_estimado',
-                    'fim_estimado',
+                    'entrega_estimada',
                     'data_inicio',
                     'data_fim',
                     'status',
@@ -425,7 +431,6 @@ class Acoes extends BaseController
                     return $this->response->setJSON($response);
                 }
 
-                // Obter o projeto e plano relacionados
                 $projeto = $this->projetosModel->find($acao['id_projeto']);
                 if (!$projeto) {
                     $response['message'] = 'Projeto relacionado não encontrado';
@@ -437,6 +442,9 @@ class Acoes extends BaseController
                     'responsavel' => $acao['responsavel'],
                     'equipe' => $acao['equipe'],
                     'status' => $acao['status'],
+                    'entrega_estimada' => $acao['entrega_estimada'],
+                    'data_inicio' => $acao['data_inicio'],
+                    'data_fim' => $acao['data_fim'],
                     'id_etapa' => $acao['id_etapa'],
                     'id_projeto' => $acao['id_projeto']
                 ];
@@ -490,8 +498,7 @@ class Acoes extends BaseController
                     'responsavel' => $postData['responsavel'] ?? null,
                     'equipe' => $postData['equipe'] ?? null,
                     'tempo_estimado_dias' => $postData['tempo_estimado_dias'] ?? null,
-                    'inicio_estimado' => $postData['inicio_estimado'] ?? null,
-                    'fim_estimado' => $postData['fim_estimado'] ?? null,
+                    'entrega_estimada' => $postData['entrega_estimada'] ?? null,
                     'data_inicio' => $postData['data_inicio'] ?? null,
                     'data_fim' => $postData['data_fim'] ?? null,
                     'status' => $postData['status'] ?? 'Não iniciado',
@@ -502,7 +509,6 @@ class Acoes extends BaseController
                 $idProjeto = null;
                 $idEtapa = null;
 
-                // Verifica se é para uma etapa ou projeto
                 if (isset($postData['id_etapa']) && !empty($postData['id_etapa'])) {
                     $etapa = $this->etapasModel->find($postData['id_etapa']);
                     if (!$etapa) {
@@ -566,28 +572,6 @@ class Acoes extends BaseController
         return $this->response->setJSON($response);
     }
 
-    public function acoesProjeto($idProjeto)
-    {
-        $projeto = $this->projetosModel->find($idProjeto);
-        if (!$projeto) {
-            return redirect()->back();
-        }
-
-        $acoes = $this->acoesModel->where('id_projeto', $idProjeto)
-            ->where('id_etapa IS NULL')
-            ->orderBy('ordem', 'ASC')
-            ->findAll();
-
-        $data = [
-            'projeto' => $projeto,
-            'acoes' => $acoes,
-            'idProjeto' => $idProjeto,
-            'acessoDireto' => true
-        ];
-
-        $this->content_data['content'] = view('sys/acoes', $data);
-        return view('layout', $this->content_data);
-    }
     public function salvarOrdem($idOrigem, $tipoOrigem = 'etapa')
     {
         if (!$this->request->isAJAX()) {
@@ -603,7 +587,6 @@ class Acoes extends BaseController
         }
 
         try {
-            // Usando a instância do Model para transação
             $this->acoesModel->transStart();
 
             foreach ($ordens as $idAcao => $ordem) {

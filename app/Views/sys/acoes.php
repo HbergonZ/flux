@@ -39,19 +39,25 @@
         <div class="card-body">
             <form id="formFiltros">
                 <div class="row">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="form-group">
                             <label for="filterNome">Nome</label>
                             <input type="text" class="form-control" id="filterNome" name="nome" placeholder="Filtrar por nome">
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="form-group">
                             <label for="filterResponsavel">Responsável</label>
                             <input type="text" class="form-control" id="filterResponsavel" name="responsavel" placeholder="Filtrar por responsável">
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="filterEquipe">Equipe</label>
+                            <input type="text" class="form-control" id="filterEquipe" name="equipe" placeholder="Filtrar por equipe">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
                         <div class="form-group">
                             <label for="filterStatus">Status</label>
                             <select class="form-control" id="filterStatus" name="status">
@@ -68,20 +74,8 @@
                 <div class="row mt-3">
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label for="filterDataInicioInicio">Data Início (De)</label>
-                            <input type="date" class="form-control" id="filterDataInicioInicio" name="data_inicio_inicio">
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label for="filterDataInicioFim">Data Início (Até)</label>
-                            <input type="date" class="form-control" id="filterDataInicioFim" name="data_inicio_fim">
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label for="filterDataFimFim">Data Fim (Até)</label>
-                            <input type="date" class="form-control" id="filterDataFimFim" name="data_fim_fim">
+                            <label for="filterData">Data</label>
+                            <input type="date" class="form-control" id="filterData" name="data_filtro">
                         </div>
                     </div>
                 </div>
@@ -141,15 +135,17 @@
                 <table class="table table-bordered align-middle" id="dataTable" cellspacing="0">
                     <thead>
                         <tr class="text-center">
-                            <th>Ordem</th>
+                            <!-- Removido: <th>Ordem</th> -->
                             <th>Nome</th>
                             <?php if (!isset($acessoDireto) || !$acessoDireto): ?>
                                 <th>Etapa</th>
                             <?php endif; ?>
                             <th>Responsável</th>
-                            <th>Status</th>
+                            <th>Equipe</th> <!-- Nova coluna adicionada -->
+                            <th>Entrega Estimada</th>
                             <th>Data Início</th>
                             <th>Data Fim</th>
+                            <th>Status</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
@@ -159,20 +155,22 @@
                             <?php foreach ($acoes as $acao) :
                                 $id = $acao['id_acao'] . '-' . str_replace(' ', '', strtolower($acao['nome'])); ?>
                                 <tr>
-                                    <td class="text-center"><?= $acao['ordem'] ?? '' ?></td>
+                                    <!-- Removido: <td class="text-center"><?= $acao['ordem'] ?? '' ?></td> -->
                                     <td class="text-wrap"><?= $acao['nome'] ?></td>
                                     <?php if (!isset($acessoDireto) || !$acessoDireto): ?>
                                         <td><?= $etapa['nome'] ?></td>
                                     <?php endif; ?>
                                     <td><?= $acao['responsavel'] ?? '' ?></td>
+                                    <td><?= $acao['equipe'] ?? '' ?></td> <!-- Nova coluna adicionada -->
+                                    <td class="text-center"><?= $acao['entrega_estimada'] ? date('d/m/Y', strtotime($acao['entrega_estimada'])) : '' ?></td>
+                                    <td class="text-center"><?= $acao['data_inicio'] ? date('d/m/Y', strtotime($acao['data_inicio'])) : '' ?></td>
+                                    <td class="text-center"><?= $acao['data_fim'] ? date('d/m/Y', strtotime($acao['data_fim'])) : '' ?></td>
                                     <td class="text-center">
                                         <span class="badge badge-<?=
                                                                     $acao['status'] == 'Finalizado' ? 'success' : ($acao['status'] == 'Em andamento' ? 'primary' : ($acao['status'] == 'Paralisado' ? 'danger' : 'secondary')) ?>">
                                             <?= $acao['status'] ?? 'Não iniciado' ?>
                                         </span>
                                     </td>
-                                    <td class="text-center"><?= $acao['data_inicio'] ? date('d/m/Y', strtotime($acao['data_inicio'])) : '' ?></td>
-                                    <td class="text-center"><?= $acao['data_fim'] ? date('d/m/Y', strtotime($acao['data_fim'])) : '' ?></td>
                                     <td class="text-center">
                                         <div class="d-inline-flex">
                                             <?php if (auth()->user()->inGroup('admin')): ?>
@@ -202,7 +200,7 @@
                             <?php endforeach; ?>
                         <?php else : ?>
                             <tr>
-                                <td colspan="<?= isset($acessoDireto) && $acessoDireto ? '7' : '8' ?>" class="text-center">Nenhuma ação encontrada</td>
+                                <td colspan="<?= isset($acessoDireto) && $acessoDireto ? '8' : '9' ?>" class="text-center">Nenhuma ação encontrada</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>

@@ -42,14 +42,8 @@
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label for="acaoInicioEstimado">Início Estimado</label>
-                                <input type="date" class="form-control" id="acaoInicioEstimado" name="inicio_estimado">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="acaoFimEstimado">Fim Estimado</label>
-                                <input type="date" class="form-control" id="acaoFimEstimado" name="fim_estimado">
+                                <label for="acaoEntregaEstimada">Entrega Estimada*</label>
+                                <input type="date" class="form-control" id="acaoEntregaEstimada" name="entrega_estimada" required>
                             </div>
                         </div>
                     </div>

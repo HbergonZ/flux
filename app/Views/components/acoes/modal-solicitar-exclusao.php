@@ -18,7 +18,7 @@
 
                     <div class="form-group">
                         <label for="solicitarExclusaoDadosAtuais">Dados Atuais</label>
-                        <textarea class="form-control" id="solicitarExclusaoDadosAtuais" name="dados_atuais" rows="4" readonly></textarea>
+                        <textarea class="form-control" id="solicitarExclusaoDadosAtuais" name="dados_atuais" rows="6" readonly></textarea>
                     </div>
 
                     <div class="form-group">

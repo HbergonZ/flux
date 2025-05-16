@@ -60,10 +60,17 @@ class Projetos extends BaseController
 
         $response = ['success' => false, 'message' => ''];
 
+        if (!auth()->user()->inGroup('admin')) {
+            $response['message'] = 'Você não tem permissão para esta ação';
+            return $this->response->setJSON($response);
+        }
+
         $rules = [
-            'acao' => 'required|max_length[255]',
+            'identificador' => 'required|max_length[10]',
+            'nome' => 'required|max_length[255]',
             'descricao' => 'permit_empty',
             'projeto_vinculado' => 'permit_empty|max_length[255]',
+            'priorizacao_gab' => 'permit_empty|in_list[0,1]',
             'id_eixo' => 'permit_empty|integer',
             'responsaveis' => 'permit_empty'
         ];
@@ -71,13 +78,17 @@ class Projetos extends BaseController
         if ($this->validate($rules)) {
             try {
                 $data = [
-                    'acao' => $this->request->getPost('acao'),
+                    'identificador' => $this->request->getPost('identificador'),
+                    'nome' => $this->request->getPost('nome'),
                     'descricao' => $this->request->getPost('descricao'),
                     'projeto_vinculado' => $this->request->getPost('projeto_vinculado'),
-                    'id_eixo' => $this->request->getPost('id_eixo'),
+                    'priorizacao_gab' => $this->request->getPost('priorizacao_gab') ?? 0,
                     'id_plano' => $idPlano,
                     'responsaveis' => $this->request->getPost('responsaveis')
                 ];
+
+                $idEixo = $this->request->getPost('id_eixo');
+                $data['id_eixo'] = !empty($idEixo) ? $idEixo : null;
 
                 $this->projetosModel->insert($data);
                 $response['success'] = true;
@@ -119,23 +130,40 @@ class Projetos extends BaseController
 
         $response = ['success' => false, 'message' => ''];
 
+        if (!auth()->user()->inGroup('admin')) {
+            $response['message'] = 'Você não tem permissão para esta ação';
+            return $this->response->setJSON($response);
+        }
+
         $rules = [
             'id' => 'required',
-            'acao' => 'required|max_length[255]',
+            'identificador' => 'required|max_length[10]',
+            'nome' => 'required|max_length[255]',
             'descricao' => 'permit_empty',
             'projeto_vinculado' => 'permit_empty|max_length[255]',
+            'priorizacao_gab' => 'permit_empty|in_list[0,1]',
             'id_eixo' => 'permit_empty|integer',
             'responsaveis' => 'permit_empty'
         ];
 
         if ($this->validate($rules)) {
             try {
+                $id = $this->request->getPost('id');
+                $projeto = $this->projetosModel->find($id);
+
+                if (!$projeto || $projeto['id_plano'] != $idPlano) {
+                    $response['message'] = 'Projeto não encontrado ou não pertence a este plano';
+                    return $this->response->setJSON($response);
+                }
+
                 $data = [
-                    'id' => $this->request->getPost('id'),
-                    'acao' => $this->request->getPost('acao'),
+                    'id' => $id,
+                    'identificador' => $this->request->getPost('identificador'),
+                    'nome' => $this->request->getPost('nome'),
                     'descricao' => $this->request->getPost('descricao'),
                     'projeto_vinculado' => $this->request->getPost('projeto_vinculado'),
-                    'id_eixo' => $this->request->getPost('id_eixo'),
+                    'priorizacao_gab' => $this->request->getPost('priorizacao_gab') ?? 0,
+                    'id_eixo' => $this->request->getPost('id_eixo') ?: null,
                     'responsaveis' => $this->request->getPost('responsaveis')
                 ];
 
@@ -143,6 +171,7 @@ class Projetos extends BaseController
                 $response['success'] = true;
                 $response['message'] = 'Projeto atualizado com sucesso!';
             } catch (\Exception $e) {
+                log_message('error', 'Erro ao atualizar projeto: ' . $e->getMessage());
                 $response['message'] = 'Erro ao atualizar projeto: ' . $e->getMessage();
             }
         } else {
@@ -159,6 +188,12 @@ class Projetos extends BaseController
         }
 
         $response = ['success' => false, 'message' => ''];
+
+        if (!auth()->user()->inGroup('admin')) {
+            $response['message'] = 'Você não tem permissão para esta ação';
+            return $this->response->setJSON($response);
+        }
+
         $id = $this->request->getPost('id');
 
         if (empty($id)) {
@@ -167,11 +202,29 @@ class Projetos extends BaseController
         }
 
         try {
+            $projeto = $this->projetosModel->find($id);
+            if (!$projeto || $projeto['id_plano'] != $idPlano) {
+                $response['message'] = 'Projeto não encontrado ou não pertence a este plano';
+                return $this->response->setJSON($response);
+            }
+
+            // Verificar dependências
+            $etapasModel = new \App\Models\EtapasModel();
+            $acoesModel = new \App\Models\AcoesModel();
+
+            if (
+                $etapasModel->where('id_projeto', $id)->countAllResults() > 0 ||
+                $acoesModel->where('id_projeto', $id)->where('id_etapa', null)->countAllResults() > 0
+            ) {
+                $response['message'] = 'Não é possível excluir o projeto pois existem etapas ou ações vinculadas';
+                return $this->response->setJSON($response);
+            }
+
             if ($this->projetosModel->delete($id)) {
                 $response['success'] = true;
                 $response['message'] = 'Projeto excluído com sucesso!';
             } else {
-                $response['message'] = 'Erro ao excluir projeto: registro não encontrado';
+                $response['message'] = 'Erro ao excluir projeto';
             }
         } catch (\Exception $e) {
             $response['message'] = 'Erro ao excluir projeto: ' . $e->getMessage();
@@ -187,26 +240,12 @@ class Projetos extends BaseController
         }
 
         $filtros = [
-            'acao' => $this->request->getPost('acao'),
+            'nome' => $this->request->getPost('nome'),
             'projeto_vinculado' => $this->request->getPost('projeto_vinculado'),
             'id_eixo' => $this->request->getPost('id_eixo')
         ];
 
-        $builder = $this->projetosModel->where('id_plano', $idPlano);
-
-        if (!empty($filtros['acao'])) {
-            $builder->like('acao', $filtros['acao']);
-        }
-
-        if (!empty($filtros['projeto_vinculado'])) {
-            $builder->like('projeto_vinculado', $filtros['projeto_vinculado']);
-        }
-
-        if (!empty($filtros['id_eixo'])) {
-            $builder->where('id_eixo', $filtros['id_eixo']);
-        }
-
-        $projetos = $builder->findAll();
+        $projetos = $this->projetosModel->getProjetosFiltrados($idPlano, $filtros);
         return $this->response->setJSON(['success' => true, 'data' => $projetos]);
     }
 
@@ -252,7 +291,7 @@ class Projetos extends BaseController
                 }
 
                 $alteracoes = [];
-                $camposEditaveis = ['acao', 'descricao', 'projeto_vinculado', 'id_eixo', 'responsaveis'];
+                $camposEditaveis = ['identificador', 'nome', 'descricao', 'projeto_vinculado', 'priorizacao_gab', 'id_eixo', 'responsaveis'];
 
                 foreach ($camposEditaveis as $campo) {
                     if (isset($postData[$campo]) && $postData[$campo] != $projetoAtual[$campo]) {
@@ -271,7 +310,7 @@ class Projetos extends BaseController
                 $data = [
                     'nivel' => 'projeto',
                     'id_projeto' => $postData['id_projeto'],
-                    'id_plano' => $postData['id_plano'],
+                    'id_plano' => $projetoAtual['id_plano'],
                     'tipo' => 'Edição',
                     'dados_atuais' => json_encode($projetoAtual),
                     'dados_alterados' => json_encode($alteracoes),
@@ -318,9 +357,11 @@ class Projetos extends BaseController
                 }
 
                 $dadosAtuais = [
-                    'acao' => $projeto['acao'],
+                    'identificador' => $projeto['identificador'],
+                    'nome' => $projeto['nome'],
                     'descricao' => $projeto['descricao'],
                     'projeto_vinculado' => $projeto['projeto_vinculado'],
+                    'priorizacao_gab' => $projeto['priorizacao_gab'],
                     'id_eixo' => $projeto['id_eixo'],
                     'responsaveis' => $projeto['responsaveis'],
                     'id_plano' => $projeto['id_plano']
@@ -362,16 +403,19 @@ class Projetos extends BaseController
         $postData = $this->request->getPost();
 
         $rules = [
-            'acao' => 'required|max_length[255]',
+            'identificador' => 'required|max_length[10]',
+            'nome' => 'required|max_length[255]',
             'justificativa' => 'required'
         ];
 
         if ($this->validate($rules)) {
             try {
                 $dadosAlterados = [
-                    'acao' => $postData['acao'],
+                    'identificador' => $postData['identificador'],
+                    'nome' => $postData['nome'],
                     'descricao' => $postData['descricao'] ?? null,
                     'projeto_vinculado' => $postData['projeto_vinculado'] ?? null,
+                    'priorizacao_gab' => $postData['priorizacao_gab'] ?? 0,
                     'id_eixo' => $postData['id_eixo'] ?? null,
                     'responsaveis' => $postData['responsaveis'] ?? null,
                     'id_plano' => $postData['id_plano']
@@ -402,9 +446,6 @@ class Projetos extends BaseController
         return $this->response->setJSON($response);
     }
 
-    /**
-     * Método para redirecionamento de rotas antigas
-     */
     public function etapas($idProjeto)
     {
         return redirect()->to(site_url("projetos/$idProjeto/etapas"));
@@ -424,7 +465,6 @@ class Projetos extends BaseController
         $plano = $this->planosModel->find($projeto['id_plano']);
         $acoesModel = new \App\Models\AcoesModel();
 
-        // Busca todas as ações do projeto (tanto diretas quanto de etapas)
         $acoes = $acoesModel->where('id_projeto', $idProjeto)
             ->orderBy('ordem', 'ASC')
             ->findAll();
@@ -440,6 +480,7 @@ class Projetos extends BaseController
         $this->content_data['content'] = view('sys/acoes', $data);
         return view('layout', $this->content_data);
     }
+
     public function cadastrarAcaoDireta($idProjeto)
     {
         if (!$this->request->isAJAX()) {
@@ -481,7 +522,7 @@ class Projetos extends BaseController
                     'status' => $this->request->getPost('status'),
                     'ordem' => $this->request->getPost('ordem'),
                     'id_projeto' => $idProjeto,
-                    'id_etapa' => null // Ação direta do projeto, não vinculada a etapa
+                    'id_etapa' => null
                 ];
 
                 $acoesModel = new \App\Models\AcoesModel();

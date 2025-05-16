@@ -133,8 +133,7 @@
                             }
                         };
 
-                        setDateValue('InicioEstimado', acao.inicio_estimado);
-                        setDateValue('FimEstimado', acao.fim_estimado);
+                        setDateValue('EntregaEstimada', acao.entrega_estimada);
                         setDateValue('DataInicio', acao.data_inicio);
                         setDateValue('DataFim', acao.data_fim);
 
@@ -149,8 +148,7 @@
                                 equipe: acao.equipe,
                                 status: acao.status || 'Não iniciado',
                                 tempo_estimado_dias: acao.tempo_estimado_dias,
-                                inicio_estimado: acao.inicio_estimado ? acao.inicio_estimado.split(' ')[0] : '',
-                                fim_estimado: acao.fim_estimado ? acao.fim_estimado.split(' ')[0] : '',
+                                entrega_estimada: acao.entrega_estimada ? acao.entrega_estimada.split(' ')[0] : '',
                                 data_inicio: acao.data_inicio ? acao.data_inicio.split(' ')[0] : '',
                                 data_fim: acao.data_fim ? acao.data_fim.split(' ')[0] : '',
                                 ordem: acao.ordem
@@ -178,7 +176,7 @@
             const form = $('#formSolicitarEdicao');
 
             ['nome', 'responsavel', 'equipe', 'status', 'tempo_estimado_dias',
-                'inicio_estimado', 'fim_estimado', 'data_inicio', 'data_fim', 'ordem'
+                'entrega_estimada', 'data_inicio', 'data_fim', 'ordem'
             ].forEach(field => {
                 const currentValue = form.find(`[name="${field}"]`).val();
                 if (formOriginalData[field] != currentValue) {
@@ -231,7 +229,7 @@
                 success: function(response) {
                     if (response.success && response.data) {
                         const acao = response.data;
-                        const dadosAtuais = `Nome: ${acao.nome}\nResponsável: ${acao.responsavel}\nEquipe: ${acao.equipe}\nStatus: ${acao.status}\nEtapa: ${acao.id_etapa}\nProjeto: ${acao.id_projeto}`;
+                        const dadosAtuais = `Nome: ${acao.nome}\nResponsável: ${acao.responsavel}\nEquipe: ${acao.equipe}\nStatus: ${acao.status}\nEntrega Estimada: ${acao.entrega_estimada}\nData Início: ${acao.data_inicio}\nData Fim: ${acao.data_fim}\nEtapa: ${acao.id_etapa}\nProjeto: ${acao.id_projeto}`;
 
                         $('#solicitarExclusaoId').val(acao.id_acao);
                         $('#acaoNameToRequestDelete').text(acaoName);
@@ -326,12 +324,12 @@
             $('#dataTable tbody').empty();
 
             if (acoes.length === 0) {
-                const colCount = acessoDireto ? 7 : 8;
+                const colCount = acessoDireto ? 8 : 9;
                 $('#dataTable tbody').append(`
-                    <tr>
-                        <td colspan="${colCount}" class="text-center">Nenhuma ação encontrada com os filtros aplicados</td>
-                    </tr>
-                `);
+            <tr>
+                <td colspan="${colCount}" class="text-center">Nenhuma ação encontrada com os filtros aplicados</td>
+            </tr>
+        `);
             } else {
                 $.each(acoes, function(index, acao) {
                     const id = acao.id_acao + '-' + acao.nome.toLowerCase().replace(/\s+/g, '-');
@@ -351,40 +349,41 @@
                             break;
                     }
 
-                    // Monta a linha da tabela
+                    // Monta a linha da tabela com as novas alterações
                     const row = `
-                    <tr>
-                        <td class="text-center">${acao.ordem || ''}</td>
-                        <td class="text-wrap">${acao.nome}</td>
-                        ${(!acessoDireto) ? `<td>${etapaNome}</td>` : ''}
-                        <td>${acao.responsavel || ''}</td>
-                        <td class="text-center">
-                            <span class="badge ${statusBadge}">
-                                ${acao.status || 'Não iniciado'}
-                            </span>
-                        </td>
-                        <td class="text-center">${acao.data_inicio ? formatDate(acao.data_inicio) : ''}</td>
-                        <td class="text-center">${acao.data_fim ? formatDate(acao.data_fim) : ''}</td>
-                        <td class="text-center">
-                            <div class="d-inline-flex">
-                                ${isAdmin ? `
-                                    <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                ` : `
-                                    <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                `}
-                            </div>
-                        </td>
-                    </tr>`;
+            <tr>
+                <td class="text-wrap">${acao.nome}</td>
+                ${(!acessoDireto) ? `<td>${etapaNome}</td>` : ''}
+                <td>${acao.responsavel || ''}</td>
+                <td>${acao.equipe || ''}</td>
+                <td class="text-center">${acao.entrega_estimada ? formatDate(acao.entrega_estimada) : ''}</td>
+                <td class="text-center">${acao.data_inicio ? formatDate(acao.data_inicio) : ''}</td>
+                <td class="text-center">${acao.data_fim ? formatDate(acao.data_fim) : ''}</td>
+                <td class="text-center">
+                    <span class="badge ${statusBadge}">
+                        ${acao.status || 'Não iniciado'}
+                    </span>
+                </td>
+                <td class="text-center">
+                    <div class="d-inline-flex">
+                        ${isAdmin ? `
+                            <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        ` : `
+                            <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        `}
+                    </div>
+                </td>
+            </tr>`;
 
                     $('#dataTable tbody').append(row);
                 });
@@ -392,11 +391,6 @@
 
             // Re-inicializa o DataTable
             dataTable = initializeDataTable();
-
-            // Recalcula a ordem se o modal de adição estiver aberto
-            if ($('#addAcaoModal').hasClass('show')) {
-                calcularProximaOrdem();
-            }
         }
 
         // Função genérica para enviar formulários
