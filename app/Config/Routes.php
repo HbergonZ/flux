@@ -81,7 +81,7 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
     $routes->post('projetos/cadastrar/(:num)', 'Projetos::cadastrar/$1');
     $routes->get('projetos/editar/(:num)', 'Projetos::editar/$1');
     $routes->post('projetos/atualizar/(:num)', 'Projetos::atualizar/$1');
-    $routes->post('projetos/excluir/(:num)/(:num)', 'Projetos::excluir/$1/$2');
+    $routes->post('projetos/excluir/(:num)', 'Projetos::excluir/$1');
     $routes->post('projetos/cadastrar-acao-direta/(:num)', 'Projetos::cadastrarAcaoDireta/$1');
 
     // Etapas

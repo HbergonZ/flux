@@ -66,6 +66,14 @@ class Planos extends BaseController
             return redirect()->to('/planos');
         }
 
+        // Verificar permissões
+        if (!auth()->user()->inGroup('admin')) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Você não tem permissão para esta ação'
+            ]);
+        }
+
         $response = ['success' => false, 'message' => '', 'data' => null];
         $plano = $this->planoModel->find($id);
 
@@ -83,6 +91,14 @@ class Planos extends BaseController
     {
         if (!$this->request->isAJAX()) {
             return redirect()->to('/planos');
+        }
+
+        // Verificar permissões
+        if (!auth()->user()->inGroup('admin')) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Você não tem permissão para esta ação'
+            ]);
         }
 
         $response = ['success' => false, 'message' => ''];
@@ -107,6 +123,7 @@ class Planos extends BaseController
                 $response['success'] = true;
                 $response['message'] = 'Plano atualizado com sucesso!';
             } catch (\Exception $e) {
+                log_message('error', 'Erro ao atualizar plano: ' . $e->getMessage());
                 $response['message'] = 'Erro ao atualizar plano: ' . $e->getMessage();
             }
         } else {
@@ -116,20 +133,43 @@ class Planos extends BaseController
         return $this->response->setJSON($response);
     }
 
+
     public function excluir()
     {
         if (!$this->request->isAJAX()) {
             return redirect()->to('/planos');
         }
 
+        // Verificar permissões
+        if (!auth()->user()->inGroup('admin')) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Você não tem permissão para esta ação'
+            ]);
+        }
+
         $response = ['success' => false, 'message' => ''];
         $id = $this->request->getPost('id');
 
-        if ($this->planoModel->delete($id)) {
-            $response['success'] = true;
-            $response['message'] = 'Plano excluído com sucesso!';
-        } else {
-            $response['message'] = 'Erro ao excluir plano';
+        try {
+            // Verificar se existem projetos associados a este plano
+            $projetosModel = new \App\Models\ProjetosModel();
+            $projetosAssociados = $projetosModel->where('id_plano', $id)->countAllResults();
+
+            if ($projetosAssociados > 0) {
+                $response['message'] = 'Não é possível excluir este plano pois existem projetos associados a ele.';
+                return $this->response->setJSON($response);
+            }
+
+            if ($this->planoModel->delete($id)) {
+                $response['success'] = true;
+                $response['message'] = 'Plano excluído com sucesso!';
+            } else {
+                $response['message'] = 'Erro ao excluir plano';
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Erro ao excluir plano: ' . $e->getMessage());
+            $response['message'] = 'Erro ao excluir plano: ' . $e->getMessage();
         }
 
         return $this->response->setJSON($response);
@@ -228,8 +268,8 @@ class Planos extends BaseController
                     'nivel' => 'plano',
                     'id_plano' => $postData['id_plano'],
                     'tipo' => 'Edição',
-                    'dados_atuais' => json_encode($planoAtual),
-                    'dados_alterados' => json_encode($alteracoes),
+                    'dados_atuais' => json_encode($planoAtual, JSON_UNESCAPED_UNICODE),
+                    'dados_alterados' => json_encode($alteracoes, JSON_UNESCAPED_UNICODE),
                     'justificativa_solicitante' => $postData['justificativa'],
                     'solicitante' => auth()->user()->username,
                     'status' => 'pendente',
@@ -276,7 +316,7 @@ class Planos extends BaseController
                     'nivel' => 'plano',
                     'id_plano' => $postData['id_plano'],
                     'tipo' => 'Exclusão',
-                    'dados_atuais' => json_encode($plano),
+                    'dados_atuais' => json_encode($plano, JSON_UNESCAPED_UNICODE),
                     'justificativa_solicitante' => $postData['justificativa'],
                     'solicitante' => auth()->user()->username,
                     'status' => 'pendente',
@@ -324,7 +364,7 @@ class Planos extends BaseController
                 $data = [
                     'nivel' => 'plano',
                     'tipo' => 'Inclusão',
-                    'dados_alterados' => json_encode($dadosAlterados),
+                    'dados_alterados' => json_encode($dadosAlterados, JSON_UNESCAPED_UNICODE),
                     'justificativa_solicitante' => $postData['justificativa'],
                     'solicitante' => auth()->user()->username,
                     'status' => 'pendente',

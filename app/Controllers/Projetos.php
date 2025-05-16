@@ -181,7 +181,7 @@ class Projetos extends BaseController
         return $this->response->setJSON($response);
     }
 
-    public function excluir($idPlano, $idProjeto = null)
+    public function excluir($idPlano)
     {
         if (!$this->request->isAJAX()) {
             return redirect()->to("/planos/$idPlano/projetos");
@@ -194,8 +194,7 @@ class Projetos extends BaseController
             return $this->response->setJSON($response);
         }
 
-        // Se $idProjeto é null, tenta pegar do POST
-        $idProjeto = $idProjeto ?? $this->request->getPost('id');
+        $idProjeto = $this->request->getPost('id'); // Obtém o ID do projeto do POST
 
         if (empty($idProjeto)) {
             $response['message'] = 'ID do projeto não fornecido';
@@ -313,8 +312,8 @@ class Projetos extends BaseController
                     'id_projeto' => $postData['id_projeto'],
                     'id_plano' => $projetoAtual['id_plano'],
                     'tipo' => 'Edição',
-                    'dados_atuais' => json_encode($projetoAtual),
-                    'dados_alterados' => json_encode($alteracoes),
+                    'dados_atuais' => json_encode($projetoAtual, JSON_UNESCAPED_UNICODE),
+                    'dados_alterados' => json_encode($alteracoes, JSON_UNESCAPED_UNICODE),
                     'justificativa_solicitante' => $postData['justificativa'],
                     'solicitante' => auth()->user()->username,
                     'status' => 'pendente',
@@ -373,7 +372,7 @@ class Projetos extends BaseController
                     'id_projeto' => $postData['id_projeto'],
                     'id_plano' => $postData['id_plano'],
                     'tipo' => 'Exclusão',
-                    'dados_atuais' => json_encode($dadosAtuais),
+                    'dados_atuais' => json_encode($dadosAtuais, JSON_UNESCAPED_UNICODE),
                     'justificativa_solicitante' => $postData['justificativa'],
                     'solicitante' => auth()->user()->username,
                     'status' => 'pendente',
@@ -426,7 +425,7 @@ class Projetos extends BaseController
                     'nivel' => 'projeto',
                     'id_plano' => $postData['id_plano'],
                     'tipo' => 'Inclusão',
-                    'dados_alterados' => json_encode($dadosAlterados),
+                    'dados_alterados' => json_encode($dadosAlterados, JSON_UNESCAPED_UNICODE),
                     'justificativa_solicitante' => $postData['justificativa'],
                     'solicitante' => auth()->user()->username,
                     'status' => 'pendente',
