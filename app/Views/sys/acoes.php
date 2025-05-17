@@ -8,6 +8,21 @@
 <?php echo view('components/acoes/modal-ordenar-acoes.php'); ?>
 
 <div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="<?= site_url('/') ?>">Início</a></li>
+            <li class="breadcrumb-item"><a href="<?= site_url('planos') ?>"><?= $plano['nome'] ?></a></li>
+            <li class="breadcrumb-item"><a href="<?= site_url("planos/{$projeto['id_plano']}/projetos") ?>"><?= $projeto['nome'] ?></a></li>
+
+            <?php if (!isset($acessoDireto) || !$acessoDireto): ?>
+                <li class="breadcrumb-item"><a href="<?= site_url("projetos/{$projeto['id']}/etapas") ?>"><?= $etapa['nome'] ?></a></li>
+            <?php endif; ?>
+
+            <li class="breadcrumb-item active" aria-current="page">Ações</li>
+        </ol>
+    </nav>
+
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">

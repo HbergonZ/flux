@@ -12,7 +12,7 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="<?= site_url('/') ?>">Início</a></li>
-            <li class="breadcrumb-item"><a href="<?= site_url('planos') ?>"><?= $projeto['plano_nome'] ?? $plano['nome'] ?? 'Plano' ?></a></li>
+            <li class="breadcrumb-item"><a href="<?= site_url('planos') ?>"><?= $plano['nome'] ?></a></li>
             <li class="breadcrumb-item"><a href="<?= site_url("planos/{$projeto['id_plano']}/projetos") ?>"><?= $projeto['nome'] ?></a></li>
             <li class="breadcrumb-item active" aria-current="page">Etapas</li>
         </ol>

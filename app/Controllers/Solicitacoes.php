@@ -5,24 +5,27 @@ namespace App\Controllers;
 use App\Models\SolicitacoesModel;
 use App\Models\EtapasModel;
 use App\Models\AcoesModel;
-use App\Models\MetasModel;
+use App\Models\ProjetosModel;
 use App\Models\PlanosModel;
+use CodeIgniter\Shield\Models\UserModel;
 
 class Solicitacoes extends BaseController
 {
     protected $solicitacoesModel;
     protected $etapasModel;
     protected $acoesModel;
-    protected $metasModel;
+    protected $projetosModel;
     protected $planosModel;
+    protected $userModel;
 
     public function __construct()
     {
         $this->solicitacoesModel = new SolicitacoesModel();
         $this->etapasModel = new EtapasModel();
         $this->acoesModel = new AcoesModel();
-        $this->metasModel = new MetasModel();
+        $this->projetosModel = new ProjetosModel();
         $this->planosModel = new PlanosModel();
+        $this->userModel = new UserModel();
     }
 
     public function index()
@@ -31,12 +34,49 @@ class Solicitacoes extends BaseController
 
         foreach ($solicitacoes as &$solicitacao) {
             $dados = json_decode($solicitacao['dados_atuais'] ?? '{}', true);
-            $solicitacao['nome'] = $dados['etapa'] ?? $dados['acao'] ?? $dados['nome'] ?? 'Nova Solicitação';
+
+            // Define o nome baseado no nível da solicitação
+            switch ($solicitacao['nivel']) {
+                case 'plano':
+                    $solicitacao['nome'] = $dados['nome'] ?? 'Novo Plano';
+                    break;
+                case 'projeto':
+                    $solicitacao['nome'] = $dados['nome'] ?? $dados['identificador'] ?? 'Novo Projeto';
+                    break;
+                case 'etapa':
+                    $solicitacao['nome'] = $dados['nome'] ?? 'Nova Etapa';
+                    break;
+                case 'acao':
+                    $solicitacao['nome'] = $dados['nome'] ?? 'Nova Ação';
+                    break;
+                default:
+                    $solicitacao['nome'] = 'Nova Solicitação';
+            }
+
+            $solicitacao['solicitante'] = $this->getSolicitanteName($solicitacao['id_solicitante']);
         }
 
-        $data = ['solicitacoes' => $solicitacoes];
+        $data = [
+            'title' => 'Solicitações Pendentes',
+            'solicitacoes' => $solicitacoes
+        ];
+
         $this->content_data['content'] = view('sys/solicitacoes', $data);
         return view('layout', $this->content_data);
+    }
+
+    protected function getSolicitanteName($id)
+    {
+        if (empty($id)) {
+            return 'Sistema';
+        }
+
+        try {
+            $user = $this->userModel->findById($id);
+            return $user ? $user->username : 'Usuário #' . $id;
+        } catch (\Exception $e) {
+            return 'Usuário #' . $id;
+        }
     }
 
     public function avaliar($id)
@@ -50,12 +90,8 @@ class Solicitacoes extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Solicitação não encontrada']);
         }
 
-        $dadosAtuais = json_decode($solicitacao['dados_atuais'], true);
-        $dadosAlterados = json_decode($solicitacao['dados_alterados'], true);
-
-        // Para inclusão, os dados_alterados contêm diretamente os valores
-        // Para edição, os dados_alterados contêm {de: valor_antigo, para: valor_novo}
-        // Para exclusão, só precisamos dos dados_atuais
+        $dadosAtuais = json_decode($solicitacao['dados_atuais'], true) ?? [];
+        $dadosAlterados = json_decode($solicitacao['dados_alterados'], true) ?? [];
 
         return $this->response->setJSON([
             'success' => true,
@@ -110,21 +146,7 @@ class Solicitacoes extends BaseController
         }
 
         if ($acao === 'aceitar') {
-            $resultado = false;
-            switch ($solicitacao['nivel']) {
-                case 'etapa':
-                    $resultado = $this->processarEtapa($solicitacao);
-                    break;
-                case 'acao':
-                    $resultado = $this->processarAcao($solicitacao);
-                    break;
-                case 'meta':
-                    $resultado = $this->processarMeta($solicitacao);
-                    break;
-                case 'plano':
-                    $resultado = $this->processarPlano($solicitacao);
-                    break;
-            }
+            $resultado = $this->processarSolicitacao($solicitacao);
 
             if (!$resultado) {
                 return $this->response->setJSON([
@@ -141,95 +163,45 @@ class Solicitacoes extends BaseController
         ]);
     }
 
-    protected function processarEtapa($solicitacao)
+    protected function processarSolicitacao($solicitacao)
     {
-        $dados = json_decode($solicitacao['dados_alterados'], true);
+        $dadosAlterados = json_decode($solicitacao['dados_alterados'], true) ?? [];
 
-        if ($solicitacao['tipo'] == 'edição') {
-            $atualizacao = [];
-            foreach ($dados as $campo => $valores) {
-                $atualizacao[$campo] = $valores['para'];
-            }
-            return $this->etapasModel->update($solicitacao['id_etapa'], $atualizacao);
+        switch ($solicitacao['nivel']) {
+            case 'plano':
+                return $this->processarRegistro($solicitacao, $this->planosModel, 'id_plano');
+            case 'projeto':
+                return $this->processarRegistro($solicitacao, $this->projetosModel, 'id_projeto');
+            case 'etapa':
+                return $this->processarRegistro($solicitacao, $this->etapasModel, 'id_etapa');
+            case 'acao':
+                return $this->processarRegistro($solicitacao, $this->acoesModel, 'id_acao');
+            default:
+                return false;
         }
-
-        if ($solicitacao['tipo'] == 'inclusão') {
-            return $this->etapasModel->insert($dados);
-        }
-
-        if ($solicitacao['tipo'] == 'exclusão') {
-            return $this->etapasModel->delete($solicitacao['id_etapa']);
-        }
-
-        return false;
     }
 
-    protected function processarAcao($solicitacao)
+    protected function processarRegistro($solicitacao, $model, $idField)
     {
-        $dados = json_decode($solicitacao['dados_alterados'], true);
+        $dadosAlterados = json_decode($solicitacao['dados_alterados'], true) ?? [];
+        $idRegistro = $solicitacao[$idField];
 
-        if ($solicitacao['tipo'] == 'edição') {
-            $atualizacao = [];
-            foreach ($dados as $campo => $valores) {
-                $atualizacao[$campo] = $valores['para'];
-            }
-            return $this->acoesModel->update($solicitacao['id_acao'], $atualizacao);
+        switch ($solicitacao['tipo']) {
+            case 'edição':
+                $atualizacao = [];
+                foreach ($dadosAlterados as $campo => $valores) {
+                    $atualizacao[$campo] = is_array($valores) ? $valores['para'] : $valores;
+                }
+                return $model->update($idRegistro, $atualizacao);
+
+            case 'inclusão':
+                return $model->insert($dadosAlterados);
+
+            case 'exclusão':
+                return $model->delete($idRegistro);
+
+            default:
+                return false;
         }
-
-        if ($solicitacao['tipo'] == 'inclusão') {
-            return $this->acoesModel->insert($dados);
-        }
-
-        if ($solicitacao['tipo'] == 'exclusão') {
-            return $this->acoesModel->delete($solicitacao['id_acao']);
-        }
-
-        return false;
-    }
-
-    protected function processarMeta($solicitacao)
-    {
-        $dados = json_decode($solicitacao['dados_alterados'], true);
-
-        if ($solicitacao['tipo'] == 'edição') {
-            $atualizacao = [];
-            foreach ($dados as $campo => $valores) {
-                $atualizacao[$campo] = $valores['para'];
-            }
-            return $this->metasModel->update($solicitacao['id_meta'], $atualizacao);
-        }
-
-        if ($solicitacao['tipo'] == 'inclusão') {
-            return $this->metasModel->insert($dados);
-        }
-
-        if ($solicitacao['tipo'] == 'exclusão') {
-            return $this->metasModel->delete($solicitacao['id_meta']);
-        }
-
-        return false;
-    }
-
-    protected function processarPlano($solicitacao)
-    {
-        $dados = json_decode($solicitacao['dados_alterados'], true);
-
-        if ($solicitacao['tipo'] == 'edição') {
-            $atualizacao = [];
-            foreach ($dados as $campo => $valores) {
-                $atualizacao[$campo] = $valores['para'];
-            }
-            return $this->planosModel->update($solicitacao['id_plano'], $atualizacao);
-        }
-
-        if ($solicitacao['tipo'] == 'inclusão') {
-            return $this->planosModel->insert($dados);
-        }
-
-        if ($solicitacao['tipo'] == 'exclusão') {
-            return $this->planosModel->delete($solicitacao['id_plano']);
-        }
-
-        return false;
     }
 }

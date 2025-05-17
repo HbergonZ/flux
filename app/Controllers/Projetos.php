@@ -309,13 +309,13 @@ class Projetos extends BaseController
 
                 $data = [
                     'nivel' => 'projeto',
+                    'id_solicitante' => auth()->id(),
                     'id_projeto' => $postData['id_projeto'],
                     'id_plano' => $projetoAtual['id_plano'],
                     'tipo' => 'Edição',
                     'dados_atuais' => json_encode($projetoAtual, JSON_UNESCAPED_UNICODE),
                     'dados_alterados' => json_encode($alteracoes, JSON_UNESCAPED_UNICODE),
                     'justificativa_solicitante' => $postData['justificativa'],
-                    'solicitante' => auth()->user()->username,
                     'status' => 'pendente',
                     'data_solicitacao' => date('Y-m-d H:i:s')
                 ];
@@ -369,12 +369,12 @@ class Projetos extends BaseController
 
                 $data = [
                     'nivel' => 'projeto',
+                    'id_solicitante' => auth()->id(),
                     'id_projeto' => $postData['id_projeto'],
                     'id_plano' => $postData['id_plano'],
                     'tipo' => 'Exclusão',
                     'dados_atuais' => json_encode($dadosAtuais, JSON_UNESCAPED_UNICODE),
                     'justificativa_solicitante' => $postData['justificativa'],
-                    'solicitante' => auth()->user()->username,
                     'status' => 'pendente',
                     'data_solicitacao' => date('Y-m-d H:i:s')
                 ];
@@ -423,11 +423,11 @@ class Projetos extends BaseController
 
                 $data = [
                     'nivel' => 'projeto',
+                    'id_solicitante' => auth()->id(),
                     'id_plano' => $postData['id_plano'],
                     'tipo' => 'Inclusão',
                     'dados_alterados' => json_encode($dadosAlterados, JSON_UNESCAPED_UNICODE),
                     'justificativa_solicitante' => $postData['justificativa'],
-                    'solicitante' => auth()->user()->username,
                     'status' => 'pendente',
                     'data_solicitacao' => date('Y-m-d H:i:s')
                 ];

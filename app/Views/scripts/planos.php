@@ -350,7 +350,7 @@
                             if (isAdmin) {
                                 actionButtons = `
                                     <div class="d-inline-flex">
-                                        <a href="<?= site_url('projetos/') ?>${plano.id}" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Ações">
+                                        <a href="<?= site_url('projetos/') ?>${plano.id}" class="btn btn-info btn-sm mx-1 d-flex justify-content-center align-items-center" style="width: 32px; height: 32px;" title="Visualizar Ações">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
@@ -363,7 +363,7 @@
                             } else {
                                 actionButtons = `
                                     <div class="d-inline-flex">
-                                        <a href="<?= site_url('projetos/') ?>${plano.id}" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Ações">
+                                        <a href="<?= site_url('projetos/') ?>${plano.id}" class="btn btn-info btn-sm mx-1 " style="width: 32px; height: 32px;" title="Visualizar Ações">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">

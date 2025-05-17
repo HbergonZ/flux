@@ -3,12 +3,14 @@
 namespace App\Controllers;
 
 use App\Models\EtapasModel;
+use App\Models\PlanosModel;
 use App\Models\ProjetosModel;
 use App\Models\SolicitacoesModel;
 
 class Etapas extends BaseController
 {
     protected $etapasModel;
+    protected $planosModel;
     protected $projetosModel;
     protected $solicitacoesModel;
 
@@ -16,6 +18,7 @@ class Etapas extends BaseController
     {
         $this->etapasModel = new EtapasModel();
         $this->projetosModel = new ProjetosModel();
+        $this->planosModel = new PlanosModel();
         $this->solicitacoesModel = new SolicitacoesModel();
     }
 
@@ -30,10 +33,16 @@ class Etapas extends BaseController
             return redirect()->back();
         }
 
+        $plano = $this->planosModel->find($projeto['id_plano']);
+        if (!$plano) {
+            return redirect()->back();
+        }
+
         $etapas = $this->etapasModel->getEtapasByProjeto($idProjeto);
 
         $data = [
             'projeto' => $projeto,
+            'plano' => $plano,
             'etapas' => $etapas,
             'idProjeto' => $idProjeto
         ];

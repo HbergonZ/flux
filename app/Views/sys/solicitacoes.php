@@ -26,8 +26,8 @@
                             <tr>
                                 <td class="text-center"><?= ucfirst($solicitacao['tipo']) ?></td>
                                 <td class="text-center"><?= ucfirst($solicitacao['nivel']) ?></td>
-                                <td><?= $solicitacao['nome'] ?></td>
-                                <td class="text-center"><?= $solicitacao['solicitante'] ?></td>
+                                <td><?= esc($solicitacao['nome']) ?></td>
+                                <td class="text-center"><?= esc($solicitacao['solicitante']) ?></td>
                                 <td class="text-center"><?= date('d/m/Y H:i', strtotime($solicitacao['data_solicitacao'])) ?></td>
                                 <td class="text-center">
                                     <span class="badge badge-warning"><?= ucfirst($solicitacao['status']) ?></span>
@@ -65,61 +65,63 @@
                         <i class="fas fa-spinner fa-spin fa-3x"></i>
                         <p class="mt-2">Carregando dados da solicitação...</p>
                     </div>
-                    <div class="card mb-4">
-                        <div class="card-header bg-light">
-                            <h6 class="m-0 font-weight-bold text-primary">Dados da Solicitação</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6 class="font-weight-bold">Dados Atuais no Momento da Solicitação</h6>
-                                    <div class="table-responsive">
-                                        <table class="table table-sm table-bordered" id="tabelaDadosAtuais"></table>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6 class="font-weight-bold">Alterações Solicitadas</h6>
-                                    <div class="table-responsive">
-                                        <table class="table table-sm table-bordered" id="tabelaDadosAlterados"></table>
-                                    </div>
-                                </div>
+                    <div id="modalContent" style="display: none;">
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="m-0 font-weight-bold text-primary">Dados da Solicitação</h6>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Seção do Solicitante -->
-                    <div class="card mb-4">
-                        <div class="card-header bg-light">
-                            <h6 class="m-0 font-weight-bold text-primary">Informações do Solicitante</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label class="font-weight-bold">Solicitante:</label>
-                                        <p id="nomeSolicitante">-</p>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="font-weight-bold">Dados Atuais no Momento da Solicitação</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-bordered" id="tabelaDadosAtuais"></table>
+                                        </div>
                                     </div>
-                                    <div class="form-group">
-                                        <label class="font-weight-bold">Data da Solicitação:</label>
-                                        <p id="dataSolicitacao">-</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label class="font-weight-bold">Justificativa:</label>
-                                        <div class="p-3 bg-light rounded border" id="justificativaSolicitacao">
-                                            <em class="text-muted">Nenhuma justificativa fornecida.</em>
+                                    <div class="col-md-6">
+                                        <h6 class="font-weight-bold">Alterações Solicitadas</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-bordered" id="tabelaDadosAlterados"></table>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <div class="form-group">
-                            <label for="justificativa-avaliador">Justificativa do Avaliador (Opcional)</label>
-                            <textarea class="form-control" id="justificativa-avaliador" name="justificativa" rows="3" placeholder="Adicione uma justificativa para sua decisão..."></textarea>
+                        <!-- Seção do Solicitante -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="m-0 font-weight-bold text-primary">Informações do Solicitante</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="font-weight-bold">Solicitante:</label>
+                                            <p id="nomeSolicitante">-</p>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="font-weight-bold">Data da Solicitação:</label>
+                                            <p id="dataSolicitacao">-</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="font-weight-bold">Justificativa:</label>
+                                            <div class="p-3 bg-light rounded border" id="justificativaSolicitacao">
+                                                <em class="text-muted">Nenhuma justificativa fornecida.</em>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="form-group">
+                                <label for="justificativa-avaliador">Justificativa do Avaliador (Opcional)</label>
+                                <textarea class="form-control" id="justificativa-avaliador" name="justificativa" rows="3" placeholder="Adicione uma justificativa para sua decisão..."></textarea>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -140,7 +142,6 @@
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap4.min.css" />
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap4.min.js"></script>
-<!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
@@ -170,7 +171,6 @@
                     "sortDescending": ": ativar para ordenar coluna descendente"
                 }
             },
-            "searching": false,
             "responsive": true,
             "autoWidth": false,
             "lengthMenu": [5, 10, 25, 50, 100],
@@ -231,18 +231,27 @@
                         // Formatadores para melhor exibição
                         function formatFieldName(name) {
                             const names = {
-                                'etapa': 'Etapa',
-                                'acao': 'Ação',
+                                'id': 'ID',
                                 'nome': 'Nome',
+                                'sigla': 'Sigla',
+                                'descricao': 'Descrição',
+                                'identificador': 'Identificador',
+                                'projeto_vinculado': 'Projeto Vinculado',
+                                'priorizacao_gab': 'Priorização GAB',
+                                'id_eixo': 'Eixo',
+                                'id_plano': 'Plano',
+                                'responsaveis': 'Responsáveis',
+                                'projeto': 'Projeto',
                                 'responsavel': 'Responsável',
                                 'equipe': 'Equipe',
                                 'tempo_estimado_dias': 'Tempo Estimado (dias)',
+                                'entrega_estimada': 'Entrega Estimada',
                                 'data_inicio': 'Data Início',
                                 'data_fim': 'Data Fim',
                                 'status': 'Status',
-                                'descricao': 'Descrição',
-                                'prioridade': 'Prioridade',
-                                'orcamento': 'Orçamento'
+                                'ordem': 'Ordem',
+                                'id_projeto': 'Projeto',
+                                'id_etapa': 'Etapa'
                             };
                             return names[name] || name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                         }
@@ -259,6 +268,9 @@
                                 const [year, month, day] = date.split('-');
                                 return `${day}/${month}/${year} ${time}`;
                             }
+                            if (typeof value === 'boolean') {
+                                return value ? 'Sim' : 'Não';
+                            }
                             return value;
                         }
 
@@ -273,29 +285,29 @@
 
                         if (isInclusao) {
                             htmlAtuais = `
-                        <tr>
-                            <th width="30%">Tipo</th>
-                            <td>Novo(a) ${nivelFormatado}</td>
-                        </tr>
-                        <tr>
-                            <th width="30%">Status</th>
-                            <td><span class="badge badge-info">Novo Registro</span></td>
-                        </tr>`;
+                                <tr>
+                                    <th width="30%">Tipo</th>
+                                    <td>Novo(a) ${nivelFormatado}</td>
+                                </tr>
+                                <tr>
+                                    <th width="30%">Status</th>
+                                    <td><span class="badge badge-info">Novo Registro</span></td>
+                                </tr>`;
                         } else if (isExclusao) {
                             for (let key in response.dados_atuais) {
                                 htmlAtuais += `
-                        <tr>
-                            <th width="30%">${formatFieldName(key)}</th>
-                            <td>${formatFieldValue(response.dados_atuais[key])}</td>
-                        </tr>`;
+                                <tr>
+                                    <th width="30%">${formatFieldName(key)}</th>
+                                    <td>${formatFieldValue(response.dados_atuais[key])}</td>
+                                </tr>`;
                             }
                         } else {
                             for (let key in response.dados_atuais) {
                                 htmlAtuais += `
-                        <tr>
-                            <th width="30%">${formatFieldName(key)}</th>
-                            <td>${formatFieldValue(response.dados_atuais[key])}</td>
-                        </tr>`;
+                                <tr>
+                                    <th width="30%">${formatFieldName(key)}</th>
+                                    <td>${formatFieldValue(response.dados_atuais[key])}</td>
+                                </tr>`;
                             }
                         }
                         $('#tabelaDadosAtuais').html(htmlAtuais);
@@ -304,54 +316,50 @@
                         let htmlAlterados = '';
 
                         if (isInclusao) {
-                            // Para inclusão, response.dados_alterados contém os campos diretamente
                             for (let key in response.dados_alterados) {
                                 htmlAlterados += `
-                        <tr>
-                            <th width="30%">${formatFieldName(key)}</th>
-                            <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key])}</strong></td>
-                        </tr>`;
+                                <tr>
+                                    <th width="30%">${formatFieldName(key)}</th>
+                                    <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key])}</strong></td>
+                                </tr>`;
                             }
                         } else if (isExclusao) {
                             htmlAlterados = `
-                        <tr>
-                            <th width="30%">Tipo</th>
-                            <td class="text-danger"><strong>Exclusão de ${nivelFormatado}</strong></td>
-                        </tr>
-                        <tr>
-                            <th width="30%">Status</th>
-                            <td><span class="badge badge-danger">Registro será removido</span></td>
-                        </tr>`;
+                                <tr>
+                                    <th width="30%">Tipo</th>
+                                    <td class="text-danger"><strong>Exclusão de ${nivelFormatado}</strong></td>
+                                </tr>
+                                <tr>
+                                    <th width="30%">Status</th>
+                                    <td><span class="badge badge-danger">Registro será removido</span></td>
+                                </tr>`;
                         } else {
-                            // Para edição, response.dados_alterados contém {de: valor_antigo, para: valor_novo}
                             for (let key in response.dados_alterados) {
-                                // Verifica se é um objeto com propriedades 'de' e 'para'
                                 if (response.dados_alterados[key] && typeof response.dados_alterados[key] === 'object') {
                                     htmlAlterados += `
-                            <tr>
-                                <th width="30%">${formatFieldName(key)}</th>
-                                <td>
-                                    <div class="text-danger mb-1"><small>Atual:</small><br><s>${formatFieldValue(response.dados_alterados[key].de)}</s></div>
-                                    <div class="text-success"><small>Novo:</small><br><strong>${formatFieldValue(response.dados_alterados[key].para)}</strong></div>
-                                </td>
-                            </tr>`;
+                                    <tr>
+                                        <th width="30%">${formatFieldName(key)}</th>
+                                        <td>
+                                            <div class="text-danger mb-1"><small>Atual:</small><br><s>${formatFieldValue(response.dados_alterados[key].de)}</s></div>
+                                            <div class="text-success"><small>Novo:</small><br><strong>${formatFieldValue(response.dados_alterados[key].para)}</strong></div>
+                                        </td>
+                                    </tr>`;
                                 } else {
-                                    // Caso não esteja no formato esperado, mostra o valor diretamente
                                     htmlAlterados += `
-                            <tr>
-                                <th width="30%">${formatFieldName(key)}</th>
-                                <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key])}</strong></td>
-                            </tr>`;
+                                    <tr>
+                                        <th width="30%">${formatFieldName(key)}</th>
+                                        <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key])}</strong></td>
+                                    </tr>`;
                                 }
                             }
 
                             if (htmlAlterados === '') {
                                 htmlAlterados = `
-                            <tr>
-                                <td colspan="2" class="text-center text-muted">
-                                    Nenhuma alteração detectada nos campos
-                                </td>
-                            </tr>`;
+                                <tr>
+                                    <td colspan="2" class="text-center text-muted">
+                                        Nenhuma alteração detectada nos campos
+                                    </td>
+                                </tr>`;
                             }
                         }
                         $('#tabelaDadosAlterados').html(htmlAlterados);

@@ -34,13 +34,22 @@ class Acoes extends BaseController
         $data = [];
 
         if ($tipoOrigem === 'etapa') {
-            // Código existente para visualização por etapa
+            // Visualização por etapa
             $etapa = $this->etapasModel->find($idOrigem);
             if (!$etapa) {
                 return redirect()->back();
             }
 
             $projeto = $this->projetosModel->find($etapa['id_projeto']);
+            if (!$projeto) {
+                return redirect()->back();
+            }
+
+            $plano = $this->planosModel->find($projeto['id_plano']);
+            if (!$plano) {
+                return redirect()->back();
+            }
+
             $acoes = $this->acoesModel->where('id_etapa', $idOrigem)
                 ->orderBy('ordem', 'ASC')
                 ->findAll();
@@ -48,15 +57,21 @@ class Acoes extends BaseController
             $data = [
                 'etapa' => $etapa,
                 'projeto' => $projeto,
+                'plano' => $plano, // Adicionando os dados do plano
                 'acoes' => $acoes,
                 'idOrigem' => $idOrigem,
                 'tipoOrigem' => 'etapa',
                 'acessoDireto' => false
             ];
         } else {
-            // Código modificado para visualização por projeto (inclui ações de etapas)
+            // Visualização por projeto
             $projeto = $this->projetosModel->find($idOrigem);
             if (!$projeto) {
+                return redirect()->back();
+            }
+
+            $plano = $this->planosModel->find($projeto['id_plano']);
+            if (!$plano) {
                 return redirect()->back();
             }
 
@@ -71,6 +86,7 @@ class Acoes extends BaseController
 
             $data = [
                 'projeto' => $projeto,
+                'plano' => $plano, // Adicionando os dados do plano
                 'acoes' => $acoes,
                 'etapas' => $etapas,
                 'idOrigem' => $idOrigem,
@@ -381,7 +397,7 @@ class Acoes extends BaseController
                 }
 
                 $data = [
-                    'nivel' => 'acao',
+                    'nivel' => 'ação',
                     'id_solicitante' => auth()->id(),
                     'id_plano' => $projeto['id_plano'],
                     'id_projeto' => $acaoAtual['id_projeto'],
@@ -450,7 +466,7 @@ class Acoes extends BaseController
                 ];
 
                 $data = [
-                    'nivel' => 'acao',
+                    'nivel' => 'ação',
                     'id_solicitante' => auth()->id(),
                     'id_plano' => $projeto['id_plano'],
                     'id_projeto' => $acao['id_projeto'],
@@ -546,7 +562,7 @@ class Acoes extends BaseController
                 }
 
                 $data = [
-                    'nivel' => 'acao',
+                    'nivel' => 'ação',
                     'id_solicitante' => auth()->id(),
                     'id_plano' => $idPlano,
                     'id_projeto' => $idProjeto,

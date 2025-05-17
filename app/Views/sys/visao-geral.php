@@ -45,19 +45,6 @@
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="filterMeta">Meta</label>
-                            <select class="form-control" id="filterMeta" name="meta">
-                                <option value="">Todos</option>
-                                <?php foreach ($filtros['metas'] as $meta) : ?>
-                                    <option value="<?= esc($meta['meta']) ?>"><?= esc($meta['meta']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-3">
-                        <div class="form-group">
                             <label for="filterStatus">Status</label>
                             <select class="form-control" id="filterStatus" name="status">
                                 <option value="">Todos</option>
@@ -67,6 +54,8 @@
                             </select>
                         </div>
                     </div>
+                </div>
+                <div class="row">
                     <div class="col-md-3">
                         <div class="form-group">
                             <label for="filterEtapa">Etapa</label>
@@ -90,8 +79,6 @@
                             <input type="text" class="form-control" id="filterEquipe" name="equipe" placeholder="Filtrar por equipe">
                         </div>
                     </div>
-                </div>
-                <div class="row">
                     <div class="col-md-3">
                         <div class="form-group">
                             <label for="filterStartDate">Período</label>
@@ -138,15 +125,15 @@
                         <tr class="text-center">
                             <th class="text-center align-middle">Priorização</th>
                             <th class="align-middle">Plano</th>
-                            <th class="align-middle">Ação</th>
-                            <th class="align-middle">Meta</th>
-                            <th class="align-middle">Ordem</th>
+                            <th class="align-middle">Projeto</th>
                             <th class="align-middle">Etapa</th>
+                            <th class="align-middle">Ação</th>
                             <th class="align-middle">Responsável</th>
                             <th class="align-middle">Equipe</th>
+                            <th class="align-middle">Entrega Estimada</th>
+                            <th class="align-middle">Data Inicial</th>
+                            <th class="align-middle">Data Final</th>
                             <th class="text-center align-middle">Status</th>
-                            <th class="align-middle">Início</th>
-                            <th class="align-middle">Término</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -159,12 +146,14 @@
                                             '<i class="far fa-star text-secondary fa-lg" data-toggle="tooltip" title="Não priorizada"></i>' ?>
                                     </td>
                                     <td class="text-wrap align-middle"><?= esc($registro['plano']) ?></td>
-                                    <td class="text-wrap align-middle"><?= esc($registro['acao']) ?></td>
-                                    <td class="text-wrap align-middle"><?= esc($registro['meta']) ?></td>
-                                    <td class="text-center align-middle"><?= esc($registro['ordem']) ?></td>
+                                    <td class="text-wrap align-middle"><?= esc($registro['nome_projeto']) ?></td>
                                     <td class="text-wrap align-middle"><?= esc($registro['etapa']) ?></td>
+                                    <td class="text-wrap align-middle"><?= esc($registro['acao']) ?></td>
                                     <td class="text-wrap align-middle"><?= esc($registro['responsavel']) ?></td>
                                     <td class="text-wrap align-middle"><?= esc($registro['equipe']) ?></td>
+                                    <td class="text-center align-middle"><?= !empty($registro['entrega_estimada_formatada']) ? esc($registro['entrega_estimada_formatada']) : '-' ?></td>
+                                    <td class="text-center align-middle"><?= !empty($registro['data_inicio_formatada']) ? esc($registro['data_inicio_formatada']) : '-' ?></td>
+                                    <td class="text-center align-middle"><?= !empty($registro['data_fim_formatada']) ? esc($registro['data_fim_formatada']) : '-' ?></td>
                                     <td class="text-center align-middle">
                                         <?php
                                         $badge_class = '';
@@ -189,8 +178,6 @@
                                             <?= esc($registro['status']) ?>
                                         </span>
                                     </td>
-                                    <td class="text-center align-middle"><?= esc($registro['data_inicio_formatada']) ?></td>
-                                    <td class="text-center align-middle"><?= esc($registro['data_fim_formatada']) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else : ?>
@@ -219,48 +206,48 @@
                         <div class="form-group">
                             <label>Selecione os campos a serem exibidos:</label>
                             <div class="form-check">
-                                <input class="form-check-input campo-visivel" type="checkbox" value="priorizacao" id="campoPriorizacao">
-                                <label class="form-check-label" for="campoPriorizacao">Priorização</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input campo-visivel" type="checkbox" value="plano" id="campoPlano">
+                                <input class="form-check-input campo-visivel" type="checkbox" value="plano" id="campoPlano" checked>
                                 <label class="form-check-label" for="campoPlano">Plano</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input campo-visivel" type="checkbox" value="acao" id="campoAcao">
-                                <label class="form-check-label" for="campoAcao">Ação</label>
+                                <input class="form-check-input campo-visivel" type="checkbox" value="projeto" id="campoProjeto" checked>
+                                <label class="form-check-label" for="campoProjeto">Projeto</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input campo-visivel" type="checkbox" value="meta" id="campoMeta">
-                                <label class="form-check-label" for="campoMeta">Meta</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input campo-visivel" type="checkbox" value="ordem" id="campoOrdem">
-                                <label class="form-check-label" for="campoOrdem">Ordem</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input campo-visivel" type="checkbox" value="etapa" id="campoEtapa">
+                                <input class="form-check-input campo-visivel" type="checkbox" value="etapa" id="campoEtapa" checked>
                                 <label class="form-check-label" for="campoEtapa">Etapa</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input campo-visivel" type="checkbox" value="responsavel" id="campoResponsavel">
+                                <input class="form-check-input campo-visivel" type="checkbox" value="acao" id="campoAcao" checked>
+                                <label class="form-check-label" for="campoAcao">Ação</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input campo-visivel" type="checkbox" value="responsavel" id="campoResponsavel" checked>
                                 <label class="form-check-label" for="campoResponsavel">Responsável</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input campo-visivel" type="checkbox" value="equipe" id="campoEquipe">
+                                <input class="form-check-input campo-visivel" type="checkbox" value="equipe" id="campoEquipe" checked>
                                 <label class="form-check-label" for="campoEquipe">Equipe</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input campo-visivel" type="checkbox" value="status" id="campoStatus">
-                                <label class="form-check-label" for="campoStatus">Status</label>
+                                <input class="form-check-input campo-visivel" type="checkbox" value="entrega_estimada" id="campoEntregaEstimada" checked>
+                                <label class="form-check-label" for="campoEntregaEstimada">Entrega Estimada</label>
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input campo-visivel" type="checkbox" value="data_inicio" id="campoDataInicio" checked>
-                                <label class="form-check-label" for="campoDataInicio">Início</label>
+                                <label class="form-check-label" for="campoDataInicio">Data Inicial</label>
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input campo-visivel" type="checkbox" value="data_fim" id="campoDataFim" checked>
-                                <label class="form-check-label" for="campoDataFim">Término</label>
+                                <label class="form-check-label" for="campoDataFim">Data Final</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input campo-visivel" type="checkbox" value="status" id="campoStatus" checked>
+                                <label class="form-check-label" for="campoStatus">Status</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input campo-visivel" type="checkbox" value="priorizacao" id="campoPriorizacao" checked>
+                                <label class="form-check-label" for="campoPriorizacao">Priorização</label>
                             </div>
                         </div>
                     </form>

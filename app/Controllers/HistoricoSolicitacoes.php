@@ -18,7 +18,7 @@ class HistoricoSolicitacoes extends BaseController
 
     public function index()
     {
-        // Busca solicitações que não estão pendentes
+        // Busca todas as solicitações avaliadas (não pendentes)
         $solicitacoes = $this->solicitacoesModel
             ->where('status !=', 'pendente')
             ->orderBy('data_avaliacao', 'DESC')
@@ -26,28 +26,48 @@ class HistoricoSolicitacoes extends BaseController
 
         // Processa os dados para a view
         foreach ($solicitacoes as &$solicitacao) {
-            $dados = json_decode($solicitacao['dados_atuais'] ?? '{}', true);
+            $dadosAtuais = json_decode($solicitacao['dados_atuais'] ?? '{}', true);
+            $dadosAlterados = json_decode($solicitacao['dados_alterados'] ?? '{}', true);
 
-            // Para solicitações de inclusão, pega o nome dos dados alterados
-            if ($solicitacao['tipo'] == 'inclusão' && !empty($solicitacao['dados_alterados'])) {
-                $dadosAlterados = json_decode($solicitacao['dados_alterados'], true);
-                $solicitacao['nome'] = $dadosAlterados['etapa'] ?? $dadosAlterados['acao'] ?? $dadosAlterados['nome'] ?? 'Nova Solicitação';
+            // Define o nome baseado no nível e tipo da solicitação
+            if ($solicitacao['tipo'] == 'inclusão' && !empty($dadosAlterados)) {
+                // Para inclusões, pega o nome dos dados alterados
+                $solicitacao['nome'] = $dadosAlterados['nome'] ??
+                    $dadosAlterados['etapa'] ??
+                    $dadosAlterados['acao'] ??
+                    'Nova Solicitação';
             } else {
-                $solicitacao['nome'] = $dados['etapa'] ?? $dados['acao'] ?? $dados['nome'] ?? 'Solicitação';
+                // Para edições/exclusões, pega o nome dos dados atuais
+                $solicitacao['nome'] = $dadosAtuais['nome'] ??
+                    $dadosAtuais['etapa'] ??
+                    $dadosAtuais['acao'] ??
+                    'Solicitação';
             }
 
-            // Obtém username do avaliador
-            if (!empty($solicitacao['id_avaliador'])) {
-                $avaliador = $this->userModel->find($solicitacao['id_avaliador']);
-                $solicitacao['avaliador_username'] = $avaliador->username ?? 'Desconhecido';
-            } else {
-                $solicitacao['avaliador_username'] = 'Sistema';
-            }
+            // Obtém nome do solicitante
+            $solicitacao['solicitante'] = $this->getUserName($solicitacao['id_solicitante']);
+
+            // Obtém nome do avaliador
+            $solicitacao['avaliador_username'] = $this->getUserName($solicitacao['id_avaliador']);
         }
 
         $data = ['solicitacoes' => $solicitacoes];
         $this->content_data['content'] = view('sys/historico-solicitacoes', $data);
         return view('layout', $this->content_data);
+    }
+
+    protected function getUserName($userId)
+    {
+        if (empty($userId)) {
+            return 'Sistema';
+        }
+
+        try {
+            $user = $this->userModel->find($userId);
+            return $user ? $user->username : 'Usuário #' . $userId;
+        } catch (\Exception $e) {
+            return 'Usuário #' . $userId;
+        }
     }
 
     public function detalhes($id)
@@ -63,23 +83,20 @@ class HistoricoSolicitacoes extends BaseController
             }
 
             // Busca o nome do avaliador
-            $avaliadorNome = 'Sistema';
-            if ($solicitacao['id_avaliador']) {
-                $user = $this->userModel->find($solicitacao['id_avaliador']);
-                $avaliadorNome = $user ? $user->username : 'Usuário removido';
-            }
+            $avaliadorNome = $this->getUserName($solicitacao['id_avaliador']);
+
+            // Busca o nome do solicitante
+            $solicitanteNome = $this->getUserName($solicitacao['id_solicitante']);
 
             // Processa os dados JSON
             $dadosAtuais = json_decode($solicitacao['dados_atuais'], true) ?: [];
             $dadosAlterados = json_decode($solicitacao['dados_alterados'], true) ?: [];
 
-            // Log para depuração (remova em produção)
-            log_message('debug', 'Dados da solicitação: ' . print_r($solicitacao, true));
-
             return $this->response->setJSON([
                 'success' => true,
                 'data' => array_merge($solicitacao, [
                     'avaliador_nome' => $avaliadorNome,
+                    'solicitante' => $solicitanteNome,
                     'tipo' => $solicitacao['tipo'],
                     'nivel' => $solicitacao['nivel']
                 ]),

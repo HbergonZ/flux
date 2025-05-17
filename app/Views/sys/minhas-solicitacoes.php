@@ -3,62 +3,126 @@
         <h1 class="h3 mb-0 text-gray-800">Minhas Solicitações</h1>
     </div>
 
+    <!-- Card para Solicitações Pendentes -->
     <div class="card shadow mb-4 mx-md-5 mx-3">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Histórico das Minhas Solicitações</h6>
+        <div class="card-header py-3 bg-warning">
+            <h6 class="m-0 font-weight-bold text-white">
+                Solicitações Pendentes (<?= count(array_filter($solicitacoes, fn($s) => strtolower($s['status']) == 'pendente')) ?>)
+            </h6>
         </div>
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                    <thead class="text-center">
-                        <tr>
-                            <th>Tipo Solicitação</th>
-                            <th>Nível</th>
-                            <th>Nome</th>
-                            <th>Status</th>
-                            <th>Data Solicitação</th>
-                            <th>Data Avaliação</th>
-                            <th>Avaliador</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($solicitacoes as $solicitacao) : ?>
+            <?php if (count(array_filter($solicitacoes, fn($s) => strtolower($s['status']) == 'pendente')) > 0) : ?>
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="pendentesTable" width="100%" cellspacing="0">
+                        <thead class="text-center">
                             <tr>
-                                <td class="text-center"><?= ucfirst($solicitacao['tipo']) ?></td>
-                                <td class="text-center"><?= $solicitacao['nivel'] ?></td>
-                                <td><?= $solicitacao['nome'] ?></td>
-                                <td class="text-center align-middle">
-                                    <?php if (strtolower($solicitacao['status']) == 'aprovada') : ?>
-                                        <span class="badge badge-success"><?= ucfirst($solicitacao['status']) ?></span>
-                                    <?php elseif (strtolower($solicitacao['status']) == 'rejeitada') : ?>
-                                        <span class="badge badge-danger"><?= ucfirst($solicitacao['status']) ?></span>
-                                    <?php else : ?>
-                                        <span class="badge badge-warning"><?= ucfirst($solicitacao['status']) ?></span>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="text-center"><?= date('d/m/Y H:i', strtotime($solicitacao['data_solicitacao'])) ?></td>
-                                <td class="text-center">
-                                    <?= $solicitacao['data_avaliacao'] ? date('d/m/Y H:i', strtotime($solicitacao['data_avaliacao'])) : '-' ?>
-                                </td>
-                                <td class="text-center"><?= $solicitacao['avaliador_username'] ?></td>
-                                <td class="text-center">
-                                    <button class="btn btn-info btn-sm visualizar-btn"
-                                        data-id="<?= $solicitacao['id'] ?>"
-                                        title="Visualizar Solicitação">
-                                        <i class="fas fa-eye"></i> Visualizar
-                                    </button>
-                                </td>
+                                <th>Tipo Solicitação</th>
+                                <th>Nível</th>
+                                <th>Nome</th>
+                                <th>Status</th>
+                                <th>Data Solicitação</th>
+                                <th>Ações</th>
                             </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($solicitacoes as $solicitacao) : ?>
+                                <?php if (strtolower($solicitacao['status']) == 'pendente') : ?>
+                                    <tr>
+                                        <td class="text-center"><?= ucfirst($solicitacao['tipo']) ?></td>
+                                        <td class="text-center"><?= ucfirst($solicitacao['nivel']) ?></td>
+                                        <td><?= $solicitacao['nome'] ?></td>
+                                        <td class="text-center align-middle">
+                                            <span class="badge badge-warning">Pendente</span>
+                                        </td>
+                                        <td class="text-center"><?= date('d/m/Y H:i', strtotime($solicitacao['data_solicitacao'])) ?></td>
+                                        <td class="text-center">
+                                            <button class="btn btn-info btn-sm visualizar-btn"
+                                                data-id="<?= $solicitacao['id'] ?>"
+                                                title="Visualizar Solicitação">
+                                                <i class="fas fa-eye"></i> Visualizar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php else : ?>
+                <div class="alert alert-info text-center mb-0">
+                    Nenhuma solicitação pendente encontrada.
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Card para Histórico de Solicitações -->
+    <div class="card shadow mb-4 mx-md-5 mx-3">
+        <div class="card-header py-3 bg-primary">
+            <h6 class="m-0 font-weight-bold text-white">
+                Histórico de Solicitações (<?= count(array_filter($solicitacoes, fn($s) => strtolower($s['status']) != 'pendente')) ?>)
+            </h6>
+        </div>
+        <div class="card-body">
+            <?php if (count(array_filter($solicitacoes, fn($s) => strtolower($s['status']) != 'pendente')) > 0) : ?>
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="historicoTable" width="100%" cellspacing="0">
+                        <thead class="text-center">
+                            <tr>
+                                <th>Tipo Solicitação</th>
+                                <th>Nível</th>
+                                <th>Nome</th>
+                                <th>Status</th>
+                                <th>Data Solicitação</th>
+                                <th>Data Avaliação</th>
+                                <th>Avaliador</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($solicitacoes as $solicitacao) : ?>
+                                <?php if (strtolower($solicitacao['status']) != 'pendente') : ?>
+                                    <tr>
+                                        <td class="text-center"><?= ucfirst($solicitacao['tipo']) ?></td>
+                                        <td class="text-center"><?= ucfirst($solicitacao['nivel']) ?></td>
+                                        <td><?= $solicitacao['nome'] ?></td>
+                                        <td class="text-center align-middle">
+                                            <?php if (strtolower($solicitacao['status']) == 'aprovada') : ?>
+                                                <span class="badge badge-success">Aprovada</span>
+                                            <?php elseif (strtolower($solicitacao['status']) == 'rejeitada') : ?>
+                                                <span class="badge badge-danger">Rejeitada</span>
+                                            <?php else : ?>
+                                                <span class="badge badge-secondary"><?= ucfirst($solicitacao['status']) ?></span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="text-center"><?= date('d/m/Y H:i', strtotime($solicitacao['data_solicitacao'])) ?></td>
+                                        <td class="text-center">
+                                            <?= $solicitacao['data_avaliacao'] ? date('d/m/Y H:i', strtotime($solicitacao['data_avaliacao'])) : '-' ?>
+                                        </td>
+                                        <td class="text-center"><?= $solicitacao['avaliador_username'] ?></td>
+                                        <td class="text-center">
+                                            <button class="btn btn-info btn-sm visualizar-btn"
+                                                data-id="<?= $solicitacao['id'] ?>"
+                                                title="Visualizar Solicitação">
+                                                <i class="fas fa-eye"></i> Visualizar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php else : ?>
+                <div class="alert alert-info text-center mb-0">
+                    Nenhuma solicitação no histórico.
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
 
-<!-- Modal de Visualização (mesmo modal da página de histórico) -->
+<!-- Modal de Visualização -->
 <div class="modal fade" id="visualizarModal" tabindex="-1" role="dialog" aria-labelledby="visualizarModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -166,6 +230,7 @@
     </div>
 </div>
 
+<!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap4.min.css" />
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
@@ -174,8 +239,8 @@
 
 <script>
     $(document).ready(function() {
-        // Inicialização do DataTable
-        $('#dataTable').DataTable({
+        // Inicialização do DataTable para pendentes
+        $('#pendentesTable').DataTable({
             "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             "language": {
                 "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json"
@@ -184,9 +249,50 @@
             "responsive": true,
             "autoWidth": false,
             "lengthMenu": [5, 10, 25, 50, 100],
-            "pageLength": 10,
+            "pageLength": 5,
             "order": [
-                [4, 'desc'] // Ordena por data de solicitação (coluna 4)
+                [4, 'desc']
+            ],
+            "columnDefs": [{
+                    responsivePriority: 1,
+                    targets: 0
+                },
+                {
+                    responsivePriority: 2,
+                    targets: 5
+                },
+                {
+                    responsivePriority: 3,
+                    targets: 3
+                },
+                {
+                    responsivePriority: 4,
+                    targets: 4
+                },
+                {
+                    responsivePriority: 5,
+                    targets: 2
+                },
+                {
+                    responsivePriority: 6,
+                    targets: 1
+                }
+            ]
+        });
+
+        // Inicialização do DataTable para histórico
+        $('#historicoTable').DataTable({
+            "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json"
+            },
+            "searching": true,
+            "responsive": true,
+            "autoWidth": false,
+            "lengthMenu": [5, 10, 25, 50, 100],
+            "pageLength": 5,
+            "order": [
+                [4, 'desc']
             ],
             "columnDefs": [{
                     responsivePriority: 1,

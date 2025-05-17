@@ -18,25 +18,16 @@ class MinhasSolicitacoes extends BaseController
 
     public function index()
     {
-        // Obtém o USERNAME do usuário logado (busca atual por username)
-        $userName = auth()->user()->username;
+        // Obtém o ID do usuário logado
+        $userId = auth()->id();
 
-        // Busca solicitações pelo username do usuário logado
+        // Busca solicitações pelo id_solicitante do usuário logado
         $solicitacoes = $this->solicitacoesModel
-            ->where('solicitante', $userName) // Filtro por username
+            ->where('id_solicitante', $userId)
             ->orderBy('data_solicitacao', 'DESC')
             ->findAll();
 
-        /*
-        // CÓDIGO ALTERNATIVO (para quando migrar para salvar user_id):
-        // $userId = auth()->id();
-        // $solicitacoes = $this->solicitacoesModel
-        //     ->where('solicitante', $userId) // Filtro por user_id
-        //     ->orderBy('data_solicitacao', 'DESC')
-        //     ->findAll();
-        */
-
-        // Processa os dados para a view (mantém o username na exibição)
+        // Processa os dados para a view
         foreach ($solicitacoes as &$solicitacao) {
             $dados = json_decode($solicitacao['dados_atuais'] ?? '{}', true);
 
@@ -47,6 +38,10 @@ class MinhasSolicitacoes extends BaseController
                 $solicitacao['nome'] = $dados['etapa'] ?? $dados['acao'] ?? $dados['nome'] ?? 'Solicitação';
             }
 
+            // Obtém username do solicitante
+            $solicitante = $this->userModel->find($solicitacao['id_solicitante']);
+            $solicitacao['solicitante_username'] = $solicitante->username ?? 'Usuário removido';
+
             // Obtém username do avaliador (se existir)
             if (!empty($solicitacao['id_avaliador'])) {
                 $avaliador = $this->userModel->find($solicitacao['id_avaliador']);
@@ -54,9 +49,6 @@ class MinhasSolicitacoes extends BaseController
             } else {
                 $solicitacao['avaliador_username'] = $solicitacao['status'] === 'pendente' ? 'Aguardando avaliação' : 'Sistema';
             }
-
-            // Já está salvando o username, então não precisa buscar
-            $solicitacao['solicitante'] = $userName; // Exibe o username diretamente
         }
 
         $data = ['solicitacoes' => $solicitacoes];
@@ -71,25 +63,20 @@ class MinhasSolicitacoes extends BaseController
         }
 
         try {
-            // Verifica se a solicitação pertence ao usuário logado (por username)
-            $userName = auth()->user()->username;
+            // Verifica se a solicitação pertence ao usuário logado (por id_solicitante)
+            $userId = auth()->id();
             $solicitacao = $this->solicitacoesModel
                 ->where('id', $id)
-                ->where('solicitante', $userName) // Filtro por username
+                ->where('id_solicitante', $userId)
                 ->first();
-
-            /*
-            // CÓDIGO ALTERNATIVO (para quando migrar para user_id):
-            // $userId = auth()->id();
-            // $solicitacao = $this->solicitacoesModel
-            //     ->where('id', $id)
-            //     ->where('solicitante', $userId) // Filtro por user_id
-            //     ->first();
-            */
 
             if (!$solicitacao) {
                 throw new \Exception('Solicitação não encontrada ou não pertence ao usuário');
             }
+
+            // Busca o nome do solicitante
+            $solicitante = $this->userModel->find($solicitacao['id_solicitante']);
+            $solicitanteNome = $solicitante ? $solicitante->username : 'Usuário removido';
 
             // Busca o nome do avaliador (se existir)
             $avaliadorNome = 'Sistema';
@@ -105,6 +92,7 @@ class MinhasSolicitacoes extends BaseController
             return $this->response->setJSON([
                 'success' => true,
                 'data' => array_merge($solicitacao, [
+                    'solicitante_nome' => $solicitanteNome,
                     'avaliador_nome' => $avaliadorNome,
                     'tipo' => $solicitacao['tipo'],
                     'nivel' => $solicitacao['nivel']

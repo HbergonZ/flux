@@ -6,30 +6,40 @@ use CodeIgniter\Model;
 
 class VisaoGeralModel extends Model
 {
-    protected $table = 'etapas'; // Tabela base
-    protected $primaryKey = 'id_etapa';
+    protected $table = 'acoes';
+    protected $primaryKey = 'id_acao';
     protected $returnType = 'array';
     protected $useTimestamps = true;
     protected $createdField = 'created_at';
     protected $updatedField = 'updated_at';
-    protected $allowedFields = ['etapa', 'responsavel', 'equipe', 'tempo_estimado_dias', 'data_inicio', 'data_fim', 'status', 'id_acao', 'ordem', 'id_meta'];
+    protected $allowedFields = [
+        'nome',
+        'projeto',
+        'responsavel',
+        'equipe',
+        'tempo_estimado_dias',
+        'entrega_estimada',
+        'data_inicio',
+        'data_fim',
+        'status',
+        'id_projeto',
+        'ordem',
+        'id_etapa'
+    ];
 
     public function getVisaoGeral(array $filtros = [])
     {
-        $builder = $this->builder();
+        $builder = $this->db->table('acoes');
 
         // Seleciona todos os campos necessários com joins
-        $builder->select('etapas.*,
-                        acoes.id as acao_id, acoes.identificador, acoes.acao, acoes.priorizacao_gab,
-                        acoes.id_eixo, acoes.id_plano, acoes.responsaveis as responsaveis_acao,
-                        metas.id as meta_id, metas.nome as meta_nome,
-                        eixos.nome as nome_eixo,
-                        planos.nome as plano_nome, planos.sigla as sigla_plano')
-            ->join('acoes', 'acoes.id = etapas.id_acao')
-            ->join('metas', 'metas.id = etapas.id_meta', 'left')
-            ->join('eixos', 'eixos.id = acoes.id_eixo', 'left')
-            ->join('planos', 'planos.id = acoes.id_plano', 'left')
-            ->orderBy('acoes.acao, etapas.ordem', 'ASC');
+        $builder->select('acoes.*,
+                    projetos.nome as nome_projeto, projetos.identificador, projetos.priorizacao_gab,
+                    etapas.nome as nome_etapa,
+                    planos.nome as nome_plano, planos.sigla as sigla_plano')
+            ->join('projetos', 'projetos.id = acoes.id_projeto', 'left')
+            ->join('etapas', 'etapas.id = acoes.id_etapa', 'left')
+            ->join('planos', 'planos.id = projetos.id_plano', 'left')
+            ->orderBy('planos.nome, projetos.nome, etapas.nome, acoes.ordem', 'ASC');
 
         // Aplica filtros
         $this->aplicarFiltros($builder, $filtros);
@@ -39,35 +49,41 @@ class VisaoGeralModel extends Model
         // Formata os dados
         return array_map(function ($item) {
             return [
-                'plano' => $item['plano_nome'] ?? '',
-                'sigla_plano' => $item['sigla_plano'] ?? '',
-                'acao_id' => $item['acao_id'] ?? null,
-                'acao' => $item['acao'] ?? '',
-                'nome_eixo' => $item['nome_eixo'] ?? '',
-                'responsaveis_acao' => $item['responsaveis_acao'] ?? '',
-                'meta_id' => $item['meta_id'] ?? null,
-                'meta' => $item['meta_nome'] ?? '',
-                'id_etapa' => $item['id_etapa'],
-                'etapa' => $item['etapa'],
-                'ordem' => $item['ordem'],
+                'id_acao' => $item['id_acao'],
+                'nome' => $item['nome'],
+                'projeto' => $item['projeto'] ?? '',
                 'responsavel' => $item['responsavel'],
                 'equipe' => $item['equipe'],
                 'tempo_estimado_dias' => $item['tempo_estimado_dias'],
+                'entrega_estimada' => $item['entrega_estimada'],
                 'data_inicio' => $item['data_inicio'],
                 'data_fim' => $item['data_fim'],
                 'status' => $item['status'],
+                'id_projeto' => $item['id_projeto'],
+                'ordem' => $item['ordem'],
+                'id_etapa' => $item['id_etapa'],
+
+                // Campos para exibição
+                'plano' => $item['nome_plano'] ?? '',
+                'sigla_plano' => $item['sigla_plano'] ?? '',
+                'acao' => $item['nome'] ?? '',
+                'nome_projeto' => $item['nome_projeto'] ?? '',
+                'identificador_projeto' => $item['identificador'] ?? '',
+                'etapa' => $item['nome_etapa'] ?? '',
                 'priorizacao_gab' => $item['priorizacao_gab'] ?? 0,
+
+                // Datas formatadas
+                'entrega_estimada_formatada' => !empty($item['entrega_estimada']) ? date('d/m/Y', strtotime($item['entrega_estimada'])) : '',
                 'data_inicio_formatada' => !empty($item['data_inicio']) ? date('d/m/Y', strtotime($item['data_inicio'])) : '',
                 'data_fim_formatada' => !empty($item['data_fim']) ? date('d/m/Y', strtotime($item['data_fim'])) : ''
             ];
         }, $result);
     }
-
     protected function aplicarFiltros(&$builder, array $filtros)
     {
         // Priorização
         if (isset($filtros['priorizacao_gab']) && $filtros['priorizacao_gab'] !== '') {
-            $builder->where('acoes.priorizacao_gab', $filtros['priorizacao_gab']);
+            $builder->where('projetos.priorizacao_gab', $filtros['priorizacao_gab']);
         }
 
         // Plano
@@ -77,136 +93,114 @@ class VisaoGeralModel extends Model
 
         // Ação
         if (!empty($filtros['acao'])) {
-            $builder->where('acoes.acao', $filtros['acao']);
-        }
-
-        // Meta
-        if (!empty($filtros['meta'])) {
-            $builder->where('metas.nome', $filtros['meta']);
+            $builder->where('acoes.nome', $filtros['acao']);
         }
 
         // Etapa
         if (!empty($filtros['etapa'])) {
-            $builder->where('etapas.etapa', $filtros['etapa']);
+            $builder->where('etapas.nome', $filtros['etapa']);
         }
 
         // Responsável
         if (!empty($filtros['responsavel'])) {
-            $builder->where('etapas.responsavel', $filtros['responsavel']);
+            $builder->where('acoes.responsavel', $filtros['responsavel']);
         }
 
         // Equipe
         if (!empty($filtros['equipe'])) {
-            $builder->like('etapas.equipe', $filtros['equipe']);
+            $builder->like('acoes.equipe', $filtros['equipe']);
         }
 
         // Status
         if (!empty($filtros['status'])) {
-            $builder->where('etapas.status', $filtros['status']);
+            $builder->where('acoes.status', $filtros['status']);
         }
 
         // Data início
         if (!empty($filtros['data_inicio'])) {
-            $builder->where('etapas.data_inicio >=', $filtros['data_inicio']);
+            $builder->where('acoes.data_inicio >=', $filtros['data_inicio']);
         }
 
         // Data fim
         if (!empty($filtros['data_fim'])) {
-            $builder->where('etapas.data_fim <=', $filtros['data_fim']);
+            $builder->where('acoes.data_fim <=', $filtros['data_fim']);
         }
     }
 
     public function getFiltrosDistinct()
     {
-        $builder = $this->builder();
+        $db = $this->db;
 
         // Consulta para planos
-        $planos = $this->builder()
+        $planos = $db->table('planos')
             ->select('planos.nome as plano')
-            ->join('acoes', 'acoes.id = etapas.id_acao')
-            ->join('planos', 'planos.id = acoes.id_plano', 'left')
+            ->join('projetos', 'projetos.id_plano = planos.id', 'left')
+            ->join('acoes', 'acoes.id_projeto = projetos.id', 'left')
             ->groupBy('planos.nome')
             ->orderBy('planos.nome')
             ->get()
             ->getResultArray();
 
         // Consulta para ações
-        $acoes = $this->builder()
-            ->select('acoes.acao')
-            ->join('acoes', 'acoes.id = etapas.id_acao')
-            ->groupBy('acoes.acao')
-            ->orderBy('acoes.acao')
-            ->get()
-            ->getResultArray();
-
-        // Consulta para metas
-        $metas = $this->builder()
-            ->select('metas.nome as meta')
-            ->join('metas', 'metas.id = etapas.id_meta', 'left')
-            ->groupBy('metas.nome')
-            ->orderBy('metas.nome')
+        $acoes = $db->table('acoes')
+            ->select('acoes.nome as acao')
+            ->groupBy('acoes.nome')
+            ->orderBy('acoes.nome')
             ->get()
             ->getResultArray();
 
         // Consulta para etapas
-        $etapas = $this->builder()
-            ->select('etapas.etapa')
-            ->groupBy('etapas.etapa')
-            ->orderBy('etapas.etapa')
+        $etapas = $db->table('etapas')
+            ->select('etapas.nome as etapa')
+            ->groupBy('etapas.nome')
+            ->orderBy('etapas.nome')
             ->get()
             ->getResultArray();
 
         // Consulta para responsáveis
-        $responsaveis = $this->builder()
-            ->select('etapas.responsavel')
-            ->groupBy('etapas.responsavel')
-            ->orderBy('etapas.responsavel')
+        $responsaveis = $db->table('acoes')
+            ->select('acoes.responsavel')
+            ->groupBy('acoes.responsavel')
+            ->orderBy('acoes.responsavel')
+            ->get()
+            ->getResultArray();
+
+        // Consulta para equipes
+        $equipes = $db->table('acoes')
+            ->select('acoes.equipe')
+            ->groupBy('acoes.equipe')
+            ->orderBy('acoes.equipe')
             ->get()
             ->getResultArray();
 
         // Consulta para status
-        $status = $this->builder()
-            ->select('etapas.status')
-            ->groupBy('etapas.status')
-            ->orderBy('etapas.status')
+        $status = $db->table('acoes')
+            ->select('acoes.status')
+            ->groupBy('acoes.status')
+            ->orderBy('acoes.status')
             ->get()
             ->getResultArray();
 
         // Processa os resultados para obter valores distintos
-        $filtros = [
-            'planos' => array_values(array_unique(array_column($planos, 'plano'))),
-            'acoes' => array_values(array_unique(array_column($acoes, 'acao'))),
-            'metas' => array_values(array_unique(array_column($metas, 'meta'))),
-            'etapas' => array_values(array_unique(array_column($etapas, 'etapa'))),
-            'responsavel' => array_values(array_unique(array_column($responsaveis, 'responsavel'))),
-            'status' => array_values(array_unique(array_column($status, 'status')))
+        return [
+            'planos' => array_map(function ($item) {
+                return ['plano' => $item['plano']];
+            }, $planos),
+            'acoes' => array_map(function ($item) {
+                return ['acao' => $item['acao']];
+            }, $acoes),
+            'etapas' => array_map(function ($item) {
+                return ['etapa' => $item['etapa']];
+            }, $etapas),
+            'responsaveis' => array_map(function ($item) {
+                return ['responsavel' => $item['responsavel']];
+            }, $responsaveis),
+            'equipes' => array_map(function ($item) {
+                return ['equipe' => $item['equipe']];
+            }, $equipes),
+            'status' => array_map(function ($item) {
+                return ['status' => $item['status']];
+            }, $status)
         ];
-
-        // Converte para o formato esperado (array de arrays associativos)
-        $filtros['planos'] = array_map(function ($item) {
-            return ['plano' => $item];
-        }, $filtros['planos']);
-
-        $filtros['acoes'] = array_map(function ($item) {
-            return ['acao' => $item];
-        }, $filtros['acoes']);
-
-        $filtros['metas'] = array_map(function ($item) {
-            return ['meta' => $item];
-        }, $filtros['metas']);
-
-        $filtros['etapas'] = array_map(function ($item) {
-            return ['etapa' => $item];
-        }, $filtros['etapas']);
-
-        $filtros['responsavel'] = array_map(function ($item) {
-            return ['responsavel' => $item];
-        }, $filtros['responsavel']);
-
-        $filtros['status'] = array_map(function ($item) {
-            return ['status' => $item];
-        }, $filtros['status']);
-
-        return $filtros;
     }
 }

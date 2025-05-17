@@ -9,30 +9,30 @@
         var camposVisiveis = {
             'priorizacao': true,
             'plano': true,
-            'acao': true,
-            'meta': true,
-            'ordem': true,
+            'projeto': true,
             'etapa': true,
+            'acao': true,
             'responsavel': true,
             'equipe': true,
-            'status': true,
+            'entrega_estimada': true,
             'data_inicio': true,
-            'data_fim': true
+            'data_fim': true,
+            'status': true
         };
 
         // Mapeamento de colunas
         var mapeamentoColunas = {
             'priorizacao': 0,
             'plano': 1,
-            'acao': 2,
-            'meta': 3,
-            'ordem': 4,
-            'etapa': 5,
-            'responsavel': 6,
-            'equipe': 7,
-            'status': 8,
-            'data_inicio': 9,
-            'data_fim': 10
+            'projeto': 2,
+            'etapa': 3,
+            'acao': 4,
+            'responsavel': 5,
+            'equipe': 6,
+            'entrega_estimada': 7,
+            'data_inicio': 8,
+            'data_fim': 9,
+            'status': 10
         };
 
         // Adiciona a legenda antes da tabela (após os filtros)
@@ -66,6 +66,12 @@
             "autoWidth": false,
             "lengthMenu": [5, 10, 25, 50, 100],
             "pageLength": 10,
+            "order": [
+                [1, 'asc'],
+                [2, 'asc'],
+                [3, 'asc'],
+                [4, 'asc']
+            ], // Ordena por Plano, Projeto, Etapa, Ação
             "columns": [{
                     "data": "priorizacao_gab",
                     "className": "text-center align-middle",
@@ -84,19 +90,15 @@
                     "className": "align-middle"
                 },
                 {
-                    "data": "acao",
+                    "data": "nome_projeto",
                     "className": "align-middle"
-                },
-                {
-                    "data": "meta",
-                    "className": "align-middle"
-                },
-                {
-                    "data": "ordem",
-                    "className": "text-center align-middle"
                 },
                 {
                     "data": "etapa",
+                    "className": "align-middle"
+                },
+                {
+                    "data": "acao",
                     "className": "align-middle"
                 },
                 {
@@ -106,6 +108,18 @@
                 {
                     "data": "equipe",
                     "className": "align-middle"
+                },
+                {
+                    "data": "entrega_estimada_formatada",
+                    "className": "text-center align-middle"
+                },
+                {
+                    "data": "data_inicio_formatada",
+                    "className": "text-center align-middle"
+                },
+                {
+                    "data": "data_fim_formatada",
+                    "className": "text-center align-middle"
                 },
                 {
                     "data": "status",
@@ -130,14 +144,6 @@
                         }
                         return '<span class="badge badge-pill ' + badge_class + ' py-2" style="min-width: 110px; display: inline-block; text-align: center;">' + data + '</span>';
                     }
-                },
-                {
-                    "data": "data_inicio_formatada",
-                    "className": "text-center align-middle"
-                },
-                {
-                    "data": "data_fim_formatada",
-                    "className": "text-center align-middle"
                 }
             ],
             "data": <?= json_encode($dados) ?>
@@ -203,7 +209,6 @@
                 'priorizacao_gab': $('#filterPriorizacao').val(),
                 'plano': $('#filterPlano').val(),
                 'acao': $('#filterAcao').val(),
-                'meta': $('#filterMeta').val(),
                 'etapa': $('#filterEtapa').val(),
                 'responsavel': $('#filterResponsavel').val(),
                 'equipe': $('#filterEquipe').val(),
