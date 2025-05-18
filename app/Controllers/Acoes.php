@@ -7,9 +7,11 @@ use App\Models\EtapasModel;
 use App\Models\ProjetosModel;
 use App\Models\PlanosModel;
 use App\Models\SolicitacoesModel;
+use App\Controllers\LogController;
 
 class Acoes extends BaseController
 {
+    protected $logController;
     protected $acoesModel;
     protected $etapasModel;
     protected $projetosModel;
@@ -23,6 +25,7 @@ class Acoes extends BaseController
         $this->projetosModel = new ProjetosModel();
         $this->planosModel = new PlanosModel();
         $this->solicitacoesModel = new SolicitacoesModel();
+        $this->logController = new LogController();
     }
 
     public function index($idOrigem = null, $tipoOrigem = 'etapa')
@@ -133,6 +136,7 @@ class Acoes extends BaseController
                     'status' => $this->request->getPost('status') ?? 'Não iniciado'
                 ];
 
+                // Determina os relacionamentos
                 if ($tipoOrigem === 'projeto') {
                     $projeto = $this->projetosModel->find($idOrigem);
                     if (!$projeto) {
@@ -141,6 +145,7 @@ class Acoes extends BaseController
                     }
                     $data['id_projeto'] = $idOrigem;
                     $data['id_etapa'] = null;
+                    $idPlano = $projeto['id_plano'];
                 } else {
                     $etapa = $this->etapasModel->find($idOrigem);
                     if (!$etapa) {
@@ -149,13 +154,36 @@ class Acoes extends BaseController
                     }
                     $data['id_projeto'] = $etapa['id_projeto'];
                     $data['id_etapa'] = $idOrigem;
+                    $projeto = $this->projetosModel->find($etapa['id_projeto']);
+                    $idPlano = $projeto['id_plano'];
                 }
 
-                $this->acoesModel->insert($data);
+                // Inicia transação
+                $this->acoesModel->transStart();
+
+                // Insere a ação
+                $insertId = $this->acoesModel->insert($data);
+
+                if (!$insertId) {
+                    throw new \Exception('Falha ao inserir ação no banco de dados');
+                }
+
+                // Registra o log
+                $acaoCompleta = array_merge(['id_acao' => $insertId], $data);
+                if (!$this->logController->registrarCriacao('acao', $acaoCompleta, 'Cadastro inicial da ação')) {
+                    throw new \Exception('Falha ao registrar log de criação');
+                }
+
+                // Commit da transação
+                $this->acoesModel->transComplete();
+
                 $response['success'] = true;
                 $response['message'] = 'Ação cadastrada com sucesso!';
+                $response['id_acao'] = $insertId;
             } catch (\Exception $e) {
+                $this->acoesModel->transRollback();
                 $response['message'] = 'Erro ao cadastrar ação: ' . $e->getMessage();
+                log_message('error', 'Erro no cadastro de ação: ' . $e->getMessage());
             }
         } else {
             $response['message'] = implode('<br>', $this->validator->getErrors());
@@ -206,8 +234,18 @@ class Acoes extends BaseController
 
         if ($this->validate($rules)) {
             try {
+                $idAcao = $this->request->getPost('id_acao');
+
+                // Obtém os dados atuais antes da atualização
+                $acaoAntiga = $this->acoesModel->find($idAcao);
+                if (!$acaoAntiga) {
+                    $response['message'] = 'Ação não encontrada';
+                    return $this->response->setJSON($response);
+                }
+
+                // Prepara os novos dados
                 $data = [
-                    'id_acao' => $this->request->getPost('id_acao'),
+                    'id_acao' => $idAcao,
                     'nome' => $this->request->getPost('nome'),
                     'ordem' => $this->request->getPost('ordem'),
                     'responsavel' => $this->request->getPost('responsavel'),
@@ -219,6 +257,7 @@ class Acoes extends BaseController
                     'status' => $this->request->getPost('status') ?? 'Não iniciado'
                 ];
 
+                // Define os relacionamentos
                 if ($tipoOrigem === 'projeto') {
                     $data['id_etapa'] = null;
                     $data['id_projeto'] = $idOrigem;
@@ -226,11 +265,33 @@ class Acoes extends BaseController
                     $data['id_etapa'] = $idOrigem;
                 }
 
-                $this->acoesModel->save($data);
+                // Inicia transação
+                $this->acoesModel->transStart();
+
+                // Atualiza a ação
+                $updated = $this->acoesModel->save($data);
+
+                if (!$updated) {
+                    throw new \Exception('Falha ao atualizar ação no banco de dados');
+                }
+
+                // Obtém os dados atualizados
+                $acaoAtualizada = $this->acoesModel->find($idAcao);
+
+                // Registra o log
+                if (!$this->logController->registrarEdicao('acao', $acaoAntiga, $acaoAtualizada, 'Edição realizada via interface')) {
+                    throw new \Exception('Falha ao registrar log de edição');
+                }
+
+                // Commit da transação
+                $this->acoesModel->transComplete();
+
                 $response['success'] = true;
                 $response['message'] = 'Ação atualizada com sucesso!';
             } catch (\Exception $e) {
+                $this->acoesModel->transRollback();
                 $response['message'] = 'Erro ao atualizar ação: ' . $e->getMessage();
+                log_message('error', 'Erro na atualização de ação: ' . $e->getMessage());
             }
         } else {
             $response['message'] = implode('<br>', $this->validator->getErrors());
@@ -249,14 +310,38 @@ class Acoes extends BaseController
         $id = $this->request->getPost('id_acao');
 
         try {
-            if ($this->acoesModel->delete($id)) {
-                $response['success'] = true;
-                $response['message'] = 'Ação excluída com sucesso!';
-            } else {
-                $response['message'] = 'Erro ao excluir ação: registro não encontrado';
+            // Obtém os dados antes de excluir
+            $acao = $this->acoesModel->find($id);
+
+            if (!$acao) {
+                $response['message'] = 'Ação não encontrada';
+                return $this->response->setJSON($response);
             }
+
+            // Inicia transação
+            $this->acoesModel->transStart();
+
+            // Registra o log antes da exclusão
+            if (!$this->logController->registrarExclusao('acao', $acao, 'Exclusão realizada via interface')) {
+                throw new \Exception('Falha ao registrar log de exclusão');
+            }
+
+            // Executa a exclusão
+            $excluido = $this->acoesModel->delete($id);
+
+            if (!$excluido) {
+                throw new \Exception('Falha ao excluir ação no banco de dados');
+            }
+
+            // Commit da transação
+            $this->acoesModel->transComplete();
+
+            $response['success'] = true;
+            $response['message'] = 'Ação excluída com sucesso!';
         } catch (\Exception $e) {
+            $this->acoesModel->transRollback();
             $response['message'] = 'Erro ao excluir ação: ' . $e->getMessage();
+            log_message('error', 'Erro na exclusão de ação: ' . $e->getMessage());
         }
 
         return $this->response->setJSON($response);
