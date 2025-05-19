@@ -28,6 +28,45 @@ class Acoes extends BaseController
         $this->logController = new LogController();
     }
 
+    private function getProximaOrdem($idOrigem, $tipoOrigem)
+    {
+        $builder = $this->acoesModel;
+
+        if ($tipoOrigem === 'etapa') {
+            $builder->where('id_etapa', $idOrigem);
+        } else {
+            $builder->where('id_projeto', $idOrigem)
+                ->where('id_etapa IS NULL');
+        }
+
+        $builder->selectMax('ordem');
+        $query = $builder->get();
+        $result = $query->getRowArray();
+
+        return ($result['ordem'] ?? 0) + 1;
+    }
+
+    public function proximaOrdem($idOrigem, $tipoOrigem = 'etapa')
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $proximaOrdem = $this->getProximaOrdem($idOrigem, $tipoOrigem);
+            return $this->response->setJSON([
+                'success' => true,
+                'proximaOrdem' => $proximaOrdem
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Erro ao calcular próxima ordem: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Erro ao calcular próxima ordem'
+            ]);
+        }
+    }
+
     public function index($idOrigem = null, $tipoOrigem = 'etapa')
     {
         if (empty($idOrigem)) {
@@ -37,7 +76,6 @@ class Acoes extends BaseController
         $data = [];
 
         if ($tipoOrigem === 'etapa') {
-            // Visualização por etapa
             $etapa = $this->etapasModel->find($idOrigem);
             if (!$etapa) {
                 return redirect()->back();
@@ -60,14 +98,13 @@ class Acoes extends BaseController
             $data = [
                 'etapa' => $etapa,
                 'projeto' => $projeto,
-                'plano' => $plano, // Adicionando os dados do plano
+                'plano' => $plano,
                 'acoes' => $acoes,
                 'idOrigem' => $idOrigem,
                 'tipoOrigem' => 'etapa',
                 'acessoDireto' => false
             ];
         } else {
-            // Visualização por projeto
             $projeto = $this->projetosModel->find($idOrigem);
             if (!$projeto) {
                 return redirect()->back();
@@ -78,18 +115,16 @@ class Acoes extends BaseController
                 return redirect()->back();
             }
 
-            // Busca todas as ações do projeto (diretas e de etapas)
             $acoes = $this->acoesModel->where('id_projeto', $idOrigem)
                 ->orderBy('ordem', 'ASC')
                 ->findAll();
 
-            // Busca as etapas para exibição na view
             $etapas = $this->etapasModel->where('id_projeto', $idOrigem)
                 ->findAll();
 
             $data = [
                 'projeto' => $projeto,
-                'plano' => $plano, // Adicionando os dados do plano
+                'plano' => $plano,
                 'acoes' => $acoes,
                 'etapas' => $etapas,
                 'idOrigem' => $idOrigem,
@@ -112,7 +147,6 @@ class Acoes extends BaseController
 
         $rules = [
             'nome' => 'required|min_length[3]|max_length[255]',
-            'ordem' => 'required|integer',
             'responsavel' => 'permit_empty|max_length[255]',
             'equipe' => 'permit_empty|max_length[255]',
             'tempo_estimado_dias' => 'permit_empty|integer',
@@ -124,9 +158,11 @@ class Acoes extends BaseController
 
         if ($this->validate($rules)) {
             try {
+                $proximaOrdem = $this->getProximaOrdem($idOrigem, $tipoOrigem);
+
                 $data = [
                     'nome' => $this->request->getPost('nome'),
-                    'ordem' => $this->request->getPost('ordem'),
+                    'ordem' => $proximaOrdem,
                     'responsavel' => $this->request->getPost('responsavel'),
                     'equipe' => $this->request->getPost('equipe'),
                     'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias'),
@@ -136,7 +172,6 @@ class Acoes extends BaseController
                     'status' => $this->request->getPost('status') ?? 'Não iniciado'
                 ];
 
-                // Determina os relacionamentos
                 if ($tipoOrigem === 'projeto') {
                     $projeto = $this->projetosModel->find($idOrigem);
                     if (!$projeto) {
@@ -158,28 +193,23 @@ class Acoes extends BaseController
                     $idPlano = $projeto['id_plano'];
                 }
 
-                // Inicia transação
                 $this->acoesModel->transStart();
-
-                // Insere a ação
                 $insertId = $this->acoesModel->insert($data);
 
                 if (!$insertId) {
                     throw new \Exception('Falha ao inserir ação no banco de dados');
                 }
 
-                // Registra o log
-                $acaoCompleta = array_merge(['id_acao' => $insertId], $data);
+                $acaoCompleta = array_merge(['id' => $insertId], $data);
                 if (!$this->logController->registrarCriacao('acao', $acaoCompleta, 'Cadastro inicial da ação')) {
                     throw new \Exception('Falha ao registrar log de criação');
                 }
 
-                // Commit da transação
                 $this->acoesModel->transComplete();
 
                 $response['success'] = true;
                 $response['message'] = 'Ação cadastrada com sucesso!';
-                $response['id_acao'] = $insertId;
+                $response['id'] = $insertId;
             } catch (\Exception $e) {
                 $this->acoesModel->transRollback();
                 $response['message'] = 'Erro ao cadastrar ação: ' . $e->getMessage();
@@ -192,14 +222,14 @@ class Acoes extends BaseController
         return $this->response->setJSON($response);
     }
 
-    public function editar($idAcao = null)
+    public function editar($id = null)
     {
         if (!$this->request->isAJAX()) {
             return redirect()->back();
         }
 
         $response = ['success' => false, 'message' => '', 'data' => null];
-        $acao = $this->acoesModel->find($idAcao);
+        $acao = $this->acoesModel->find($id);
 
         if ($acao) {
             $response['success'] = true;
@@ -220,7 +250,7 @@ class Acoes extends BaseController
         $response = ['success' => false, 'message' => ''];
 
         $rules = [
-            'id_acao' => 'required',
+            'id' => 'required',
             'nome' => 'required|min_length[3]|max_length[255]',
             'ordem' => 'required|integer',
             'responsavel' => 'permit_empty|max_length[255]',
@@ -234,18 +264,15 @@ class Acoes extends BaseController
 
         if ($this->validate($rules)) {
             try {
-                $idAcao = $this->request->getPost('id_acao');
-
-                // Obtém os dados atuais antes da atualização
-                $acaoAntiga = $this->acoesModel->find($idAcao);
+                $id = $this->request->getPost('id');
+                $acaoAntiga = $this->acoesModel->find($id);
                 if (!$acaoAntiga) {
                     $response['message'] = 'Ação não encontrada';
                     return $this->response->setJSON($response);
                 }
 
-                // Prepara os novos dados
                 $data = [
-                    'id_acao' => $idAcao,
+                    'id' => $id,
                     'nome' => $this->request->getPost('nome'),
                     'ordem' => $this->request->getPost('ordem'),
                     'responsavel' => $this->request->getPost('responsavel'),
@@ -257,7 +284,6 @@ class Acoes extends BaseController
                     'status' => $this->request->getPost('status') ?? 'Não iniciado'
                 ];
 
-                // Define os relacionamentos
                 if ($tipoOrigem === 'projeto') {
                     $data['id_etapa'] = null;
                     $data['id_projeto'] = $idOrigem;
@@ -265,25 +291,19 @@ class Acoes extends BaseController
                     $data['id_etapa'] = $idOrigem;
                 }
 
-                // Inicia transação
                 $this->acoesModel->transStart();
-
-                // Atualiza a ação
                 $updated = $this->acoesModel->save($data);
 
                 if (!$updated) {
                     throw new \Exception('Falha ao atualizar ação no banco de dados');
                 }
 
-                // Obtém os dados atualizados
-                $acaoAtualizada = $this->acoesModel->find($idAcao);
+                $acaoAtualizada = $this->acoesModel->find($id);
 
-                // Registra o log
                 if (!$this->logController->registrarEdicao('acao', $acaoAntiga, $acaoAtualizada, 'Edição realizada via interface')) {
                     throw new \Exception('Falha ao registrar log de edição');
                 }
 
-                // Commit da transação
                 $this->acoesModel->transComplete();
 
                 $response['success'] = true;
@@ -307,10 +327,9 @@ class Acoes extends BaseController
         }
 
         $response = ['success' => false, 'message' => ''];
-        $id = $this->request->getPost('id_acao');
+        $id = $this->request->getPost('id');
 
         try {
-            // Obtém os dados antes de excluir
             $acao = $this->acoesModel->find($id);
 
             if (!$acao) {
@@ -318,22 +337,19 @@ class Acoes extends BaseController
                 return $this->response->setJSON($response);
             }
 
-            // Inicia transação
             $this->acoesModel->transStart();
 
-            // Registra o log antes da exclusão
             if (!$this->logController->registrarExclusao('acao', $acao, 'Exclusão realizada via interface')) {
                 throw new \Exception('Falha ao registrar log de exclusão');
             }
 
-            // Executa a exclusão
-            $excluido = $this->acoesModel->delete($id);
+            // Correção: Adicionar cláusula where explícita
+            $excluido = $this->acoesModel->where('id', $id)->delete();
 
             if (!$excluido) {
                 throw new \Exception('Falha ao excluir ação no banco de dados');
             }
 
-            // Commit da transação
             $this->acoesModel->transComplete();
 
             $response['success'] = true;
@@ -364,7 +380,6 @@ class Acoes extends BaseController
                 ->where('id_etapa IS NULL');
         }
 
-        // Aplicar filtros
         if (!empty($filters['nome'])) {
             $builder->like('nome', $filters['nome']);
         }
@@ -383,9 +398,6 @@ class Acoes extends BaseController
 
         if (!empty($filters['data_filtro'])) {
             $dataFiltro = $filters['data_filtro'];
-
-            // Filtro para ações onde a data_filtro está entre data_inicio e data_fim
-            // OU se data_fim é nulo e data_filtro é após data_inicio
             $builder->groupStart()
                 ->where('data_inicio <=', $dataFiltro)
                 ->groupStart()
@@ -395,19 +407,19 @@ class Acoes extends BaseController
                 ->groupEnd();
         }
 
-        $acoes = $builder->orderBy('data_inicio', 'ASC')->findAll();
+        $acoes = $builder->orderBy('ordem', 'ASC')->findAll();
 
         return $this->response->setJSON(['success' => true, 'data' => $acoes]);
     }
 
-    public function dadosAcao($idAcao = null)
+    public function dadosAcao($id = null)
     {
         if (!$this->request->isAJAX()) {
             return redirect()->back();
         }
 
         $response = ['success' => false, 'message' => '', 'data' => null];
-        $acao = $this->acoesModel->find($idAcao);
+        $acao = $this->acoesModel->find($id);
 
         if ($acao) {
             $response['success'] = true;
@@ -429,13 +441,13 @@ class Acoes extends BaseController
         $postData = $this->request->getPost();
 
         $rules = [
-            'id_acao' => 'required',
+            'id' => 'required',
             'justificativa' => 'required'
         ];
 
         if ($this->validate($rules)) {
             try {
-                $acaoAtual = $this->acoesModel->find($postData['id_acao']);
+                $acaoAtual = $this->acoesModel->find($postData['id']);
                 if (!$acaoAtual) {
                     $response['message'] = 'Ação não encontrada';
                     return $this->response->setJSON($response);
@@ -447,7 +459,7 @@ class Acoes extends BaseController
                     return $this->response->setJSON($response);
                 }
 
-                unset($acaoAtual['id_acao'], $acaoAtual['created_at'], $acaoAtual['updated_at']);
+                unset($acaoAtual['id'], $acaoAtual['created_at'], $acaoAtual['updated_at']);
 
                 $alteracoes = [];
                 $camposEditaveis = [
@@ -487,7 +499,7 @@ class Acoes extends BaseController
                     'id_plano' => $projeto['id_plano'],
                     'id_projeto' => $acaoAtual['id_projeto'],
                     'id_etapa' => $acaoAtual['id_etapa'],
-                    'id_acao' => $postData['id_acao'],
+                    'id_acao' => $postData['id'],
                     'tipo' => 'Edição',
                     'dados_atuais' => json_encode($acaoAtual, JSON_UNESCAPED_UNICODE),
                     'dados_alterados' => json_encode($alteracoes, JSON_UNESCAPED_UNICODE),
@@ -520,13 +532,13 @@ class Acoes extends BaseController
         $postData = $this->request->getPost();
 
         $rules = [
-            'id_acao' => 'required',
+            'id' => 'required',
             'justificativa' => 'required'
         ];
 
         if ($this->validate($rules)) {
             try {
-                $acao = $this->acoesModel->find($postData['id_acao']);
+                $acao = $this->acoesModel->find($postData['id']);
                 if (!$acao) {
                     $response['message'] = 'Ação não encontrada';
                     return $this->response->setJSON($response);
@@ -556,7 +568,7 @@ class Acoes extends BaseController
                     'id_plano' => $projeto['id_plano'],
                     'id_projeto' => $acao['id_projeto'],
                     'id_etapa' => $acao['id_etapa'],
-                    'id_acao' => $postData['id_acao'],
+                    'id_acao' => $postData['id'],
                     'tipo' => 'Exclusão',
                     'dados_atuais' => json_encode($dadosAtuais, JSON_UNESCAPED_UNICODE),
                     'justificativa_solicitante' => $postData['justificativa'],
@@ -594,6 +606,11 @@ class Acoes extends BaseController
 
         if ($this->validate($rules)) {
             try {
+                $proximaOrdem = $this->getProximaOrdem(
+                    $postData['id_etapa'] ?? $postData['id_projeto'],
+                    isset($postData['id_etapa']) ? 'etapa' : 'projeto'
+                );
+
                 $dadosAlterados = [
                     'nome' => $postData['nome'],
                     'responsavel' => $postData['responsavel'] ?? null,
@@ -603,7 +620,7 @@ class Acoes extends BaseController
                     'data_inicio' => $postData['data_inicio'] ?? null,
                     'data_fim' => $postData['data_fim'] ?? null,
                     'status' => $postData['status'] ?? 'Não iniciado',
-                    'ordem' => $postData['ordem'] ?? null
+                    'ordem' => $proximaOrdem
                 ];
 
                 $idPlano = null;
@@ -690,8 +707,8 @@ class Acoes extends BaseController
         try {
             $this->acoesModel->transStart();
 
-            foreach ($ordens as $idAcao => $ordem) {
-                $this->acoesModel->update($idAcao, ['ordem' => (int)$ordem]);
+            foreach ($ordens as $id => $ordem) {
+                $this->acoesModel->update($id, ['ordem' => (int)$ordem]);
             }
 
             $this->acoesModel->transComplete();

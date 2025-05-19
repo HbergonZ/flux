@@ -21,10 +21,10 @@ class Planos extends BaseController
         $planos = $this->planoModel->findAll();
         $data['planos'] = $planos;
 
+
         $this->content_data['content'] = view('sys/planos', $data);
         return view('layout', $this->content_data);
     }
-
     public function cadastrar()
     {
         if (!$this->request->isAJAX()) {

@@ -9,7 +9,7 @@
             </div>
             <form id="formEditAcao" method="post" action="<?= site_url("acoes/atualizar/$idOrigem/$tipoOrigem") ?>">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
-                <input type="hidden" name="id_acao" id="editAcaoId">
+                <input type="hidden" name="id" id="editAcaoId">
                 <input type="hidden" name="id_etapa" value="<?= $tipoOrigem === 'etapa' ? $idOrigem : '' ?>">
                 <input type="hidden" name="id_projeto" value="<?= $tipoOrigem === 'projeto' ? $idOrigem : ($tipoOrigem === 'etapa' ? $etapa['id_projeto'] : '') ?>">
 

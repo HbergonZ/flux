@@ -9,7 +9,7 @@
             </div>
             <form id="formDeleteAcao" method="post" action="<?= site_url("acoes/excluir/$idOrigem/$tipoOrigem") ?>">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
-                <input type="hidden" name="id_acao" id="deleteAcaoId">
+                <input type="hidden" name="id" id="deleteAcaoId">
 
                 <div class="modal-body">
                     <p>Tem certeza que deseja excluir esta ação? Esta ação não pode ser desfeita.</p>

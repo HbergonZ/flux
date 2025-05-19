@@ -17,7 +17,7 @@
         let etapaNome = '<?= isset($etapa) ? $etapa["nome"] : "" ?>';
         let formOriginalData = {};
 
-        // Inicializa o DataTable
+        // Inicializa o DataTable com ordenação pela coluna oculta (ordem)
         function initializeDataTable() {
             return $('#dataTable').DataTable({
                 "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
@@ -48,9 +48,14 @@
                 "autoWidth": false,
                 "lengthMenu": [5, 10, 25, 50, 100],
                 "pageLength": 10,
+                "columnDefs": [{
+                    "targets": [0], // Coluna de ordem (oculta)
+                    "visible": false,
+                    "searchable": false
+                }],
                 "order": [
                     [0, 'asc']
-                ]
+                ] // Ordena pela coluna 0 (ordem) ascendente
             });
         }
 
@@ -65,33 +70,61 @@
             }
         });
 
-        // Handler para o formulário de inclusão
-        $('#formAddAcao').submit(function(e) {
-            e.preventDefault();
-            submitForm($(this), '#addAcaoModal', 'Ação cadastrada com sucesso!');
-        });
+        // Função para calcular a próxima ordem
+        function calcularProximaOrdem() {
+            $.ajax({
+                url: `<?= site_url("acoes/proxima-ordem/$idOrigem/$tipoOrigem") ?>`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        $('#acaoOrdem').val(response.proximaOrdem);
+                        $('#solicitarInclusaoOrdem').val(response.proximaOrdem);
+                    } else {
+                        console.error('Erro ao calcular próxima ordem:', response.message);
+                        // Fallback: calcular no cliente
+                        var maxOrdem = 0;
+                        $('#dataTable tbody tr').each(function() {
+                            var ordem = parseInt($(this).find('td:eq(0)').text()) || 0;
+                            if (ordem > maxOrdem) {
+                                maxOrdem = ordem;
+                            }
+                        });
+                        $('#acaoOrdem').val(maxOrdem + 1);
+                        $('#solicitarInclusaoOrdem').val(maxOrdem + 1);
+                    }
+                },
+                error: function() {
+                    console.error('Falha ao calcular próxima ordem via AJAX');
+                    // Fallback: calcular no cliente
+                    var maxOrdem = 0;
+                    $('#dataTable tbody tr').each(function() {
+                        var ordem = parseInt($(this).find('td:eq(0)').text()) || 0;
+                        if (ordem > maxOrdem) {
+                            maxOrdem = ordem;
+                        }
+                    });
+                    $('#acaoOrdem').val(maxOrdem + 1);
+                    $('#solicitarInclusaoOrdem').val(maxOrdem + 1);
+                }
+            });
+        }
 
         // Carregar próxima ordem ao abrir o modal de adição
         $('#addAcaoModal').on('show.bs.modal', function() {
             calcularProximaOrdem();
         });
 
-        // Função para calcular a próxima ordem
-        function calcularProximaOrdem() {
-            var maxOrdem = 0;
+        // Carregar próxima ordem ao abrir o modal de solicitação de inclusão
+        $('#solicitarInclusaoModal').on('show.bs.modal', function() {
+            calcularProximaOrdem();
+        });
 
-            $('#dataTable tbody tr').each(function() {
-                var ordemText = $(this).find('td:first').text().trim();
-                var ordem = parseInt(ordemText) || 0;
-
-                if (ordem > maxOrdem) {
-                    maxOrdem = ordem;
-                }
-            });
-
-            $('#acaoOrdem').val(maxOrdem + 1);
-            $('#solicitarInclusaoOrdem').val(maxOrdem + 1);
-        }
+        // Handler para o formulário de inclusão
+        $('#formAddAcao').submit(function(e) {
+            e.preventDefault();
+            submitForm($(this), '#addAcaoModal', 'Ação cadastrada com sucesso!');
+        });
 
         // Editar ação - Abrir modal (apenas admin)
         $(document).on('click', '.btn-primary[title="Editar"]', function() {
@@ -116,7 +149,7 @@
                         const acao = response.data;
                         const prefix = modalId.replace('#', '').replace('Modal', '');
 
-                        $(`#${prefix}Id`).val(acao.id_acao);
+                        $(`#${prefix}Id`).val(acao.id);
                         $(`#${prefix}Nome`).val(acao.nome);
                         $(`#${prefix}Responsavel`).val(acao.responsavel);
                         $(`#${prefix}Equipe`).val(acao.equipe);
@@ -231,7 +264,7 @@
                         const acao = response.data;
                         const dadosAtuais = `Nome: ${acao.nome}\nResponsável: ${acao.responsavel}\nEquipe: ${acao.equipe}\nStatus: ${acao.status}\nEntrega Estimada: ${acao.entrega_estimada}\nData Início: ${acao.data_inicio}\nData Fim: ${acao.data_fim}\nEtapa: ${acao.id_etapa}\nProjeto: ${acao.id_projeto}`;
 
-                        $('#solicitarExclusaoId').val(acao.id_acao);
+                        $('#solicitarExclusaoId').val(acao.id);
                         $('#acaoNameToRequestDelete').text(acaoName);
                         $('#solicitarExclusaoDadosAtuais').val(dadosAtuais);
                         $('#solicitarExclusaoModal').modal('show');
@@ -266,7 +299,15 @@
         // Confirmar exclusão (apenas admin)
         $('#formDeleteAcao').submit(function(e) {
             e.preventDefault();
-            submitForm($(this), '#deleteAcaoModal');
+
+            // Validação adicional para exclusão
+            const acaoId = $('#deleteAcaoId').val();
+            if (!acaoId) {
+                showErrorAlert('ID da ação não encontrado');
+                return;
+            }
+
+            submitForm($(this), '#deleteAcaoModal', 'Ação excluída com sucesso!');
         });
 
         // Aplicar filtros
@@ -324,15 +365,15 @@
             $('#dataTable tbody').empty();
 
             if (acoes.length === 0) {
-                const colCount = acessoDireto ? 8 : 9;
+                const colCount = acessoDireto ? 9 : 10; // Ajustado para coluna oculta
                 $('#dataTable tbody').append(`
-            <tr>
-                <td colspan="${colCount}" class="text-center">Nenhuma ação encontrada com os filtros aplicados</td>
-            </tr>
-        `);
+                    <tr>
+                        <td colspan="${colCount}" class="text-center">Nenhuma ação encontrada com os filtros aplicados</td>
+                    </tr>
+                `);
             } else {
                 $.each(acoes, function(index, acao) {
-                    const id = acao.id_acao + '-' + acao.nome.toLowerCase().replace(/\s+/g, '-');
+                    const id = acao.id + '-' + acao.nome.toLowerCase().replace(/\s+/g, '-');
                     const isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
 
                     // Determina a classe do badge de status
@@ -349,47 +390,48 @@
                             break;
                     }
 
-                    // Monta a linha da tabela com as novas alterações
+                    // Monta a linha da tabela incluindo a coluna oculta
                     const row = `
-            <tr>
-                <td class="text-wrap">${acao.nome}</td>
-                ${(!acessoDireto) ? `<td>${etapaNome}</td>` : ''}
-                <td>${acao.responsavel || ''}</td>
-                <td>${acao.equipe || ''}</td>
-                <td class="text-center">${acao.entrega_estimada ? formatDate(acao.entrega_estimada) : ''}</td>
-                <td class="text-center">${acao.data_inicio ? formatDate(acao.data_inicio) : ''}</td>
-                <td class="text-center">${acao.data_fim ? formatDate(acao.data_fim) : ''}</td>
-                <td class="text-center">
-                    <span class="badge ${statusBadge}">
-                        ${acao.status || 'Não iniciado'}
-                    </span>
-                </td>
-                <td class="text-center">
-                    <div class="d-inline-flex">
-                        ${isAdmin ? `
-                            <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        ` : `
-                            <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        `}
-                    </div>
-                </td>
-            </tr>`;
+                        <tr>
+                            <td>${acao.ordem}</td> <!-- Coluna oculta -->
+                            <td class="text-wrap">${acao.nome}</td>
+                            ${(!acessoDireto) ? `<td>${etapaNome}</td>` : ''}
+                            <td>${acao.responsavel || ''}</td>
+                            <td>${acao.equipe || ''}</td>
+                            <td class="text-center">${acao.entrega_estimada ? formatDate(acao.entrega_estimada) : ''}</td>
+                            <td class="text-center">${acao.data_inicio ? formatDate(acao.data_inicio) : ''}</td>
+                            <td class="text-center">${acao.data_fim ? formatDate(acao.data_fim) : ''}</td>
+                            <td class="text-center">
+                                <span class="badge ${statusBadge}">
+                                    ${acao.status || 'Não iniciado'}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <div class="d-inline-flex">
+                                    ${isAdmin ? `
+                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    ` : `
+                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    `}
+                                </div>
+                            </td>
+                        </tr>`;
 
                     $('#dataTable tbody').append(row);
                 });
             }
 
-            // Re-inicializa o DataTable
+            // Re-inicializa o DataTable mantendo a ordenação pela coluna oculta
             dataTable = initializeDataTable();
         }
 
@@ -399,6 +441,16 @@
             const originalBtnText = submitBtn.html();
 
             submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...');
+
+            // Verificação adicional para formulário de exclusão
+            if (form.attr('id') === 'formDeleteAcao') {
+                const acaoId = form.find('input[name="id"]').val();
+                if (!acaoId) {
+                    showErrorAlert('ID da ação não especificado');
+                    submitBtn.prop('disabled', false).html(originalBtnText);
+                    return;
+                }
+            }
 
             // Limpar datas inválidas antes do envio
             form.find('input[type="date"]').each(function() {

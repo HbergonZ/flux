@@ -448,30 +448,42 @@ class Projetos extends BaseController
 
     public function etapas($idProjeto)
     {
-        return redirect()->to(site_url("projetos/$idProjeto/etapas"));
+        // Remova o redirecionamento e implemente a lógica para mostrar etapas
+        $projeto = $this->projetosModel->find($idProjeto);
+        if (!$projeto) {
+            return redirect()->back()->with('error', 'Projeto não encontrado');
+        }
+
+        $etapasModel = new \App\Models\EtapasModel();
+        $etapas = $etapasModel->where('id_projeto', $idProjeto)->findAll();
+
+        $data = [
+            'projeto' => $projeto,
+            'etapas' => $etapas,
+            'idProjeto' => $idProjeto,
+            'plano' => $this->planosModel->find($projeto['id_plano'])
+        ];
+
+        $this->content_data['content'] = view('sys/etapas', $data);
+        return view('layout', $this->content_data);
     }
 
     public function acoes($idProjeto)
     {
-        if (empty($idProjeto)) {
-            return redirect()->back();
-        }
-
         $projeto = $this->projetosModel->find($idProjeto);
         if (!$projeto) {
-            return redirect()->back();
+            return redirect()->back()->with('error', 'Projeto não encontrado');
         }
 
-        $plano = $this->planosModel->find($projeto['id_plano']);
         $acoesModel = new \App\Models\AcoesModel();
-
         $acoes = $acoesModel->where('id_projeto', $idProjeto)
+            ->where('id_etapa', null) // Ações diretas do projeto
             ->orderBy('ordem', 'ASC')
             ->findAll();
 
         $data = [
             'projeto' => $projeto,
-            'plano' => $plano,
+            'plano' => $this->planosModel->find($projeto['id_plano']),
             'acoes' => $acoes,
             'idProjeto' => $idProjeto,
             'acessoDireto' => true

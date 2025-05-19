@@ -7,11 +7,12 @@ use CodeIgniter\Model;
 class AcoesModel extends Model
 {
     protected $table = 'acoes';
-    protected $primaryKey = 'id_acao';
+    protected $primaryKey = 'id';
 
     protected $useAutoIncrement = true;
 
     protected $allowedFields = [
+        'id',
         'nome',
         'responsavel',
         'equipe',
@@ -34,8 +35,8 @@ class AcoesModel extends Model
 
     protected function removerID(array $data)
     {
-        if (isset($data['data']['id_acao'])) {
-            unset($data['data']['id_acao']);
+        if (isset($data['data']['id'])) {
+            unset($data['data']['id']);
         }
         return $data;
     }

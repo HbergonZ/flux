@@ -21,11 +21,11 @@
                         </thead>
                         <tbody>
                             <?php foreach ($acoes as $index => $acao): ?>
-                                <tr data-id="<?= $acao['id_acao'] ?>">
+                                <tr data-id="<?= $acao['id'] ?>">
                                     <td><?= $acao['nome'] ?></td>
                                     <td class="text-center"><?= $acao['ordem'] ?></td>
                                     <td>
-                                        <select name="ordem[<?= $acao['id_acao'] ?>]"
+                                        <select name="ordem[<?= $acao['id'] ?>]"
                                             class="form-control form-control-sm ordem-select"
                                             data-original="<?= $acao['ordem'] ?>">
                                             <?php for ($i = 1; $i <= count($acoes); $i++): ?>

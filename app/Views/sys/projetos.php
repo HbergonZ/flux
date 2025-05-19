@@ -135,12 +135,12 @@
                                     <td class="text-center align-middle">
                                         <div class="d-inline-flex">
                                             <!-- Botão Visualizar Etapas -->
-                                            <a href="<?= site_url("projetos/{$projeto['id']}/etapas") ?>" class="btn btn-secondary btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Etapas">
+                                            <a href="<?= site_url("planos/{$plano['id']}/projetos/{$projeto['id']}/etapas") ?>" class="btn btn-secondary btn-sm mx-1" title="Visualizar Etapas">
                                                 <i class="fas fa-tasks"></i>
                                             </a>
 
                                             <!-- Botão Acessar Ações -->
-                                            <a href="<?= site_url("projetos/{$projeto['id']}/acoes") ?>" class="btn btn-info btn-sm mx-1" title="Acessar Ações">
+                                            <a href="<?= site_url("planos/{$plano['id']}/projetos/{$projeto['id']}/acoes") ?>" class="btn btn-info btn-sm mx-1" title="Acessar Ações">
                                                 <i class="fas fa-th-list"></i>
                                             </a>
 

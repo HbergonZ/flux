@@ -150,13 +150,13 @@
                 <table class="table table-bordered align-middle" id="dataTable" cellspacing="0">
                     <thead>
                         <tr class="text-center">
-                            <!-- Removido: <th>Ordem</th> -->
+                            <th>Ordem</th> <!-- Coluna oculta -->
                             <th>Nome</th>
                             <?php if (!isset($acessoDireto) || !$acessoDireto): ?>
                                 <th>Etapa</th>
                             <?php endif; ?>
                             <th>Responsável</th>
-                            <th>Equipe</th> <!-- Nova coluna adicionada -->
+                            <th>Equipe</th>
                             <th>Entrega Estimada</th>
                             <th>Data Início</th>
                             <th>Data Fim</th>
@@ -164,19 +164,18 @@
                             <th>Ações</th>
                         </tr>
                     </thead>
-
                     <tbody>
                         <?php if (isset($acoes) && !empty($acoes)) : ?>
                             <?php foreach ($acoes as $acao) :
-                                $id = $acao['id_acao'] . '-' . str_replace(' ', '', strtolower($acao['nome'])); ?>
+                                $id = $acao['id'] . '-' . str_replace(' ', '', strtolower($acao['nome'])); ?>
                                 <tr>
-                                    <!-- Removido: <td class="text-center"><?= $acao['ordem'] ?? '' ?></td> -->
+                                    <td><?= $acao['ordem'] ?></td> <!-- Coluna oculta -->
                                     <td class="text-wrap"><?= $acao['nome'] ?></td>
                                     <?php if (!isset($acessoDireto) || !$acessoDireto): ?>
                                         <td><?= $etapa['nome'] ?></td>
                                     <?php endif; ?>
                                     <td><?= $acao['responsavel'] ?? '' ?></td>
-                                    <td><?= $acao['equipe'] ?? '' ?></td> <!-- Nova coluna adicionada -->
+                                    <td><?= $acao['equipe'] ?? '' ?></td>
                                     <td class="text-center"><?= $acao['entrega_estimada'] ? date('d/m/Y', strtotime($acao['entrega_estimada'])) : '' ?></td>
                                     <td class="text-center"><?= $acao['data_inicio'] ? date('d/m/Y', strtotime($acao['data_inicio'])) : '' ?></td>
                                     <td class="text-center"><?= $acao['data_fim'] ? date('d/m/Y', strtotime($acao['data_fim'])) : '' ?></td>
@@ -189,22 +188,16 @@
                                     <td class="text-center">
                                         <div class="d-inline-flex">
                                             <?php if (auth()->user()->inGroup('admin')): ?>
-                                                <!-- Botão Editar (admin) -->
                                                 <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Editar">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
-
-                                                <!-- Botão Excluir (admin) -->
                                                 <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Excluir">
                                                     <i class="fas fa-trash-alt"></i>
                                                 </button>
                                             <?php else: ?>
-                                                <!-- Botão Solicitar Edição (usuário comum) -->
                                                 <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Edição">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
-
-                                                <!-- Botão Solicitar Exclusão (usuário comum) -->
                                                 <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Exclusão">
                                                     <i class="fas fa-trash-alt"></i>
                                                 </button>
@@ -215,7 +208,7 @@
                             <?php endforeach; ?>
                         <?php else : ?>
                             <tr>
-                                <td colspan="<?= isset($acessoDireto) && $acessoDireto ? '8' : '9' ?>" class="text-center">Nenhuma ação encontrada</td>
+                                <td colspan="<?= (isset($acessoDireto) && $acessoDireto ? '9' : '10') ?>" class="text-center">Nenhuma ação encontrada</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
