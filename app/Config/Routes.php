@@ -75,6 +75,7 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
     $routes->get('planos/editar/(:num)', 'Planos::editar/$1');
     $routes->post('planos/atualizar', 'Planos::atualizar');
     $routes->post('planos/excluir', 'Planos::excluir');
+    $routes->get('planos/verificar-relacionamentos/(:num)', 'Planos::verificarRelacionamentos/$1');
 
     // Projetos
     $routes->post('projetos/cadastrar/(:num)', 'Projetos::cadastrar/$1');

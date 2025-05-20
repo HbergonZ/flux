@@ -31,6 +31,50 @@ class Planos extends BaseController
         return view('layout', $this->content_data);
     }
 
+    public function verificarRelacionamentos($id)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->to('/planos');
+        }
+
+        $response = ['success' => false, 'message' => '', 'contagem' => [
+            'projetos' => 0,
+            'etapas' => 0,
+            'acoes' => 0
+        ]];
+
+        try {
+            $projetosModel = new ProjetosModel();
+            $etapasModel = new EtapasModel();
+            $acoesModel = new AcoesModel();
+
+            $projetos = $projetosModel->where('id_plano', $id)->findAll();
+            $response['contagem']['projetos'] = count($projetos);
+
+            foreach ($projetos as $projeto) {
+                $etapas = $etapasModel->where('id_projeto', $projeto['id'])->findAll();
+                $response['contagem']['etapas'] += count($etapas);
+
+                foreach ($etapas as $etapa) {
+                    $acoes = $acoesModel->where('id_etapa', $etapa['id'])->findAll();
+                    $response['contagem']['acoes'] += count($acoes);
+                }
+
+                $acoesDiretas = $acoesModel->where('id_projeto', $projeto['id'])
+                    ->where('id_etapa IS NULL')
+                    ->findAll();
+                $response['contagem']['acoes'] += count($acoesDiretas);
+            }
+
+            $response['success'] = true;
+        } catch (\Exception $e) {
+            log_message('error', 'Erro ao verificar relacionamentos: ' . $e->getMessage());
+            $response['message'] = 'Erro ao verificar relacionamentos: ' . $e->getMessage();
+        }
+
+        return $this->response->setJSON($response);
+    }
+
     public function cadastrar()
     {
         if (!$this->request->isAJAX()) {
@@ -53,25 +97,19 @@ class Planos extends BaseController
                     'descricao' => $this->request->getPost('descricao')
                 ];
 
-                // Iniciar transação
                 $this->planoModel->transStart();
-
-                // Inserir o plano
                 $insertId = $this->planoModel->insert($data);
 
                 if (!$insertId) {
                     throw new \Exception('Falha ao inserir plano no banco de dados');
                 }
 
-                // Obter dados completos do plano inserido
                 $planoCompleto = array_merge(['id' => $insertId], $data);
 
-                // Registrar log de criação
                 if (!$this->logController->registrarCriacao('plano', $planoCompleto, 'Cadastro inicial do plano')) {
                     throw new \Exception('Falha ao registrar log de criação');
                 }
 
-                // Finalizar transação
                 $this->planoModel->transComplete();
 
                 $response['success'] = true;
@@ -140,8 +178,6 @@ class Planos extends BaseController
         if ($this->validate($rules)) {
             try {
                 $id = $this->request->getPost('id');
-
-                // Obter dados atuais antes da edição
                 $planoAntigo = $this->planoModel->find($id);
                 if (!$planoAntigo) {
                     $response['message'] = 'Plano não encontrado';
@@ -155,25 +191,19 @@ class Planos extends BaseController
                     'descricao' => $this->request->getPost('descricao')
                 ];
 
-                // Iniciar transação
                 $this->planoModel->transStart();
-
-                // Atualizar o plano
                 $updated = $this->planoModel->save($data);
 
                 if (!$updated) {
                     throw new \Exception('Falha ao atualizar plano no banco de dados');
                 }
 
-                // Obter dados atualizados do plano
                 $planoAtualizado = $this->planoModel->find($id);
 
-                // Registrar log de edição
                 if (!$this->logController->registrarEdicao('plano', $planoAntigo, $planoAtualizado, 'Edição realizada via interface')) {
                     throw new \Exception('Falha ao registrar log de edição');
                 }
 
-                // Finalizar transação
                 $this->planoModel->transComplete();
 
                 $response['success'] = true;
@@ -206,46 +236,44 @@ class Planos extends BaseController
         $response = ['success' => false, 'message' => ''];
         $id = $this->request->getPost('id');
 
-        // Carregar todos os models usando a mesma instância do banco de dados
         $db = \Config\Database::connect();
         $projetosModel = new ProjetosModel($db);
         $etapasModel = new EtapasModel($db);
         $acoesModel = new AcoesModel($db);
 
         try {
-            // Iniciar transação única para todas as operações
             $db->transStart();
 
-            // 1. Obter o plano que será excluído
             $plano = $this->planoModel->find($id);
             if (!$plano) {
                 throw new \Exception('Plano não encontrado');
             }
 
-            // 2. Obter todos os projetos relacionados
             $projetos = $projetosModel->where('id_plano', $id)->findAll();
+            $contagem = [
+                'projetos' => count($projetos),
+                'etapas' => 0,
+                'acoes' => 0
+            ];
 
             foreach ($projetos as $projeto) {
-                // 3. Obter todas as etapas do projeto
                 $etapas = $etapasModel->where('id_projeto', $projeto['id'])->findAll();
+                $contagem['etapas'] += count($etapas);
 
                 foreach ($etapas as $etapa) {
-                    // 4. Excluir todas as ações da etapa
                     $acoes = $acoesModel->where('id_etapa', $etapa['id'])->findAll();
+                    $contagem['acoes'] += count($acoes);
 
                     foreach ($acoes as $acao) {
-                        // Registrar log antes de excluir
                         if (!$this->logController->registrarExclusao('acao', $acao, 'Exclusão em cascata do plano')) {
                             throw new \Exception('Falha ao registrar log de exclusão da ação');
                         }
 
-                        // Excluir ação
                         if (!$acoesModel->where('id', $acao['id'])->delete()) {
                             throw new \Exception("Falha ao excluir ação ID: {$acao['id']}");
                         }
                     }
 
-                    // Registrar log e excluir etapa
                     if (!$this->logController->registrarExclusao('etapa', $etapa, 'Exclusão em cascata do plano')) {
                         throw new \Exception('Falha ao registrar log de exclusão da etapa');
                     }
@@ -255,10 +283,10 @@ class Planos extends BaseController
                     }
                 }
 
-                // 5. Excluir ações diretas do projeto (sem etapa)
                 $acoesDiretas = $acoesModel->where('id_projeto', $projeto['id'])
                     ->where('id_etapa IS NULL')
                     ->findAll();
+                $contagem['acoes'] += count($acoesDiretas);
 
                 foreach ($acoesDiretas as $acao) {
                     if (!$this->logController->registrarExclusao('acao', $acao, 'Exclusão em cascata do plano')) {
@@ -270,7 +298,6 @@ class Planos extends BaseController
                     }
                 }
 
-                // Registrar log e excluir projeto
                 if (!$this->logController->registrarExclusao('projeto', $projeto, 'Exclusão em cascata do plano')) {
                     throw new \Exception('Falha ao registrar log de exclusão do projeto');
                 }
@@ -280,7 +307,6 @@ class Planos extends BaseController
                 }
             }
 
-            // Registrar log e excluir o plano
             if (!$this->logController->registrarExclusao('plano', $plano, 'Exclusão realizada via interface')) {
                 throw new \Exception('Falha ao registrar log de exclusão do plano');
             }
@@ -289,7 +315,6 @@ class Planos extends BaseController
                 throw new \Exception('Falha ao excluir plano');
             }
 
-            // Verificar se todas as exclusões foram bem sucedidas
             $db->transComplete();
 
             if ($db->transStatus() === false) {
@@ -298,6 +323,7 @@ class Planos extends BaseController
 
             $response['success'] = true;
             $response['message'] = 'Plano e todos os seus relacionamentos foram excluídos com sucesso!';
+            $response['contagem'] = $contagem;
         } catch (\Exception $e) {
             $db->transRollback();
             log_message('error', 'Erro ao excluir plano: ' . $e->getMessage());
@@ -378,7 +404,6 @@ class Planos extends BaseController
                     return $this->response->setJSON($response);
                 }
 
-                // Verificar alterações
                 $alteracoes = [];
                 $camposEditaveis = ['nome', 'sigla', 'descricao'];
 
@@ -396,7 +421,6 @@ class Planos extends BaseController
                     return $this->response->setJSON($response);
                 }
 
-                // Preparar dados para a solicitação
                 $data = [
                     'nivel' => 'plano',
                     'id_plano' => $postData['id_plano'],
