@@ -359,5 +359,80 @@
                 confirmButtonText: 'Entendi'
             });
         }
+
+    });
+    // Abrir modal de edição quando clicar no botão de edição
+    $(document).on('click', '.btn-primary[title="Editar"], .btn-primary[title="Solicitar Edição"]', function() {
+        var btn = $(this);
+        var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
+        var planoId = btn.data('id').split('-')[0];
+
+        if (isAdmin) {
+            // Carregar dados do plano para edição
+            $.ajax({
+                url: '<?= site_url('planos/editar/') ?>' + planoId,
+                type: 'GET',
+                dataType: 'json',
+                beforeSend: function() {
+                    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
+                },
+                complete: function() {
+                    btn.prop('disabled', false).html('<i class="fas fa-edit"></i>');
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Preencher o modal de edição com os dados do plano
+                        $('#editPlanoId').val(response.data.id);
+                        $('#editPlanoName').val(response.data.nome);
+                        $('#editPlanoSigla').val(response.data.sigla);
+                        $('#editPlanoDescription').val(response.data.descricao);
+
+                        // Configurar o formulário de edição
+                        $('#formEditPlano').attr('action', '<?= site_url('planos/atualizar') ?>');
+
+                        // Mostrar o modal
+                        $('#editPlanoModal').modal('show');
+                    } else {
+                        Swal.fire('Erro', response.message || 'Erro ao carregar dados do plano', 'error');
+                    }
+                },
+                error: function(xhr) {
+                    Swal.fire('Erro', 'Falha na comunicação com o servidor', 'error');
+                }
+            });
+        } else {
+            // Carregar dados do plano para solicitação de edição
+            $.ajax({
+                url: '<?= site_url('planos/dados-plano/') ?>' + planoId,
+                type: 'GET',
+                dataType: 'json',
+                beforeSend: function() {
+                    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
+                },
+                complete: function() {
+                    btn.prop('disabled', false).html('<i class="fas fa-edit"></i>');
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Preencher o modal de solicitação de edição
+                        $('#solicitarEdicaoId').val(response.data.id);
+                        $('#solicitarEdicaoNome').val(response.data.nome);
+                        $('#solicitarEdicaoSigla').val(response.data.sigla);
+                        $('#solicitarEdicaoDescricao').val(response.data.descricao);
+
+                        // Limpar a justificativa
+                        $('#solicitarEdicaoJustificativa').val('');
+
+                        // Mostrar o modal
+                        $('#solicitarEdicaoModal').modal('show');
+                    } else {
+                        Swal.fire('Erro', response.message || 'Erro ao carregar dados do plano', 'error');
+                    }
+                },
+                error: function(xhr) {
+                    Swal.fire('Erro', 'Falha na comunicação com o servidor', 'error');
+                }
+            });
+        }
     });
 </script>

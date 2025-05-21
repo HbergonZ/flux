@@ -1,4 +1,3 @@
-<!-- Importação de Modais -->
 <?php echo view('components/projetos/modal-editar-projeto.php'); ?>
 <?php echo view('components/projetos/modal-confirmar-exclusao.php'); ?>
 <?php echo view('components/projetos/modal-adicionar-projeto.php'); ?>
@@ -111,7 +110,7 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered align-middle" id="dataTable" cellspacing="0">
+                <table class="table table-bordered align-middle" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr class="text-center">
                             <th>Identificador</th>

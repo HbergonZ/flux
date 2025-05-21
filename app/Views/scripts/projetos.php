@@ -1,42 +1,47 @@
+<!-- Scripts da página -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap4.min.css" />
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
     $(document).ready(function() {
+        console.log('Documento pronto, inicializando DataTable');
+
         // Inicializa o DataTable
-        var dataTable = $('#dataTable').DataTable({
-            "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-            "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json",
-                "emptyTable": "Nenhum dado disponível na tabela",
-                "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
-                "infoEmpty": "Mostrando 0 a 0 de 0 registros",
-                "infoFiltered": "(filtrado de _MAX_ registros no total)",
-                "lengthMenu": "Mostrar _MENU_ registros por página",
-                "loadingRecords": "Carregando...",
-                "processing": "Processando...",
-                "search": "Pesquisar:",
-                "zeroRecords": "Nenhum registro correspondente encontrado",
-                "paginate": {
-                    "first": "Primeira",
-                    "last": "Última",
-                    "next": "Próxima",
-                    "previous": "Anterior"
+        var dataTable;
+        try {
+            dataTable = $('#dataTable').DataTable({
+                "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                "language": {
+                    "url": "https://cdn.datatables.net/plug-ins/1.13.1/i18n/pt-BR.json",
+                    "emptyTable": "Nenhum dado disponível na tabela",
+                    "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
+                    "infoEmpty": "Mostrando 0 a 0 de 0 registros",
+                    "infoFiltered": "(filtrado de _MAX_ registros no total)",
+                    "lengthMenu": "Mostrar _MENU_ registros por página",
+                    "loadingRecords": "Carregando...",
+                    "processing": "Processando...",
+                    "search": "Pesquisar:",
+                    "zeroRecords": "Nenhum registro correspondente encontrado",
+                    "paginate": {
+                        "first": "Primeira",
+                        "last": "Última",
+                        "next": "Próxima",
+                        "previous": "Anterior"
+                    }
                 },
-                "aria": {
-                    "sortAscending": ": ativar para ordenar coluna ascendente",
-                    "sortDescending": ": ativar para ordenar coluna descendente"
-                }
-            },
-            "searching": false,
-            "responsive": true,
-            "autoWidth": false,
-            "lengthMenu": [5, 10, 25, 50, 100],
-            "pageLength": 10
-        });
+                "responsive": true,
+                "autoWidth": false,
+                "lengthMenu": [5, 10, 25, 50, 100],
+                "pageLength": 10,
+                "destroy": true
+            });
+            console.log('DataTable inicializado com sucesso');
+        } catch (e) {
+            console.error('Erro ao inicializar DataTable:', e);
+        }
 
         // Configuração do AJAX
         $.ajaxSetup({
@@ -52,11 +57,13 @@
         // Cadastrar novo projeto (apenas admin)
         $('#formAddProjeto').submit(function(e) {
             e.preventDefault();
-            submitForm($(this), '#addProjetoModal');
+            console.log('Formulário de adição de projeto submetido');
+            submitForm($(this), '#addProjetoModal', 'Projeto cadastrado com sucesso!', true);
         });
 
         // Editar projeto - Abrir modal (apenas admin)
         $(document).on('click', '.btn-primary[title="Editar"]', function() {
+            console.log('Botão Editar clicado');
             var projetoId = $(this).data('id').split('-')[0];
 
             $.ajax({
@@ -64,6 +71,7 @@
                 type: 'GET',
                 dataType: 'json',
                 success: function(response) {
+                    console.log('Resposta de edição recebida:', response);
                     if (response.success && response.data) {
                         $('#editProjetoId').val(response.data.id);
                         $('#editProjetoIdentificador').val(response.data.identificador);
@@ -74,10 +82,12 @@
                         $('#editProjetoResponsaveis').val(response.data.responsaveis);
                         $('#editProjetoModal').modal('show');
                     } else {
+                        console.error('Erro ao carregar projeto:', response.message);
                         showErrorAlert(response.message || "Erro ao carregar projeto");
                     }
                 },
                 error: function(xhr, status, error) {
+                    console.error('Erro na requisição de edição:', error, xhr.responseText);
                     showErrorAlert("Falha na comunicação com o servidor.");
                 }
             });
@@ -85,6 +95,7 @@
 
         // Solicitar edição de projeto - Abrir modal (para não-admins)
         $(document).on('click', '.btn-primary[title="Solicitar Edição"]', function() {
+            console.log('Botão Solicitar Edição clicado');
             var projetoId = $(this).data('id').split('-')[0];
             var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
             var url = isAdmin ? '<?= site_url('projetos/editar/') ?>' : '<?= site_url('projetos/dados-projeto/') ?>';
@@ -94,6 +105,7 @@
                 type: 'GET',
                 dataType: 'json',
                 success: function(response) {
+                    console.log('Resposta de dados do projeto recebida:', response);
                     if (response.success && response.data) {
                         var projeto = response.data;
 
@@ -119,10 +131,12 @@
                         $('#solicitarEdicaoModal').modal('show');
                         $('#alertNenhumaAlteracao').addClass('d-none');
                     } else {
+                        console.error('Erro ao carregar projeto:', response.message);
                         showErrorAlert(response.message || "Erro ao carregar projeto");
                     }
                 },
                 error: function(xhr, status, error) {
+                    console.error('Erro na requisição de dados do projeto:', error, xhr.responseText);
                     showErrorAlert("Falha na comunicação com o servidor.");
                 }
             });
@@ -158,11 +172,13 @@
         // Enviar solicitação de edição
         $('#formSolicitarEdicao').submit(function(e) {
             e.preventDefault();
+            console.log('Formulário de solicitação de edição submetido');
             submitForm($(this), '#solicitarEdicaoModal', 'Solicitação de edição enviada com sucesso!');
         });
 
         // Solicitar exclusão de projeto - Abrir modal (para não-admins)
         $(document).on('click', '.btn-danger[title="Solicitar Exclusão"]', function() {
+            console.log('Botão Solicitar Exclusão clicado');
             var projetoId = $(this).data('id').split('-')[0];
             var projetoName = $(this).closest('tr').find('td:nth-child(2)').text();
             var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
@@ -173,6 +189,7 @@
                 type: 'GET',
                 dataType: 'json',
                 success: function(response) {
+                    console.log('Resposta de dados do projeto para exclusão recebida:', response);
                     if (response.success && response.data) {
                         var projeto = response.data;
                         var dadosAtuais = `Identificador: ${projeto.identificador}\nNome: ${projeto.nome}\nDescrição: ${projeto.descricao}\nProjeto Vinculado: ${projeto.projeto_vinculado}\nEixo: ${projeto.id_eixo}\nResponsáveis: ${projeto.responsaveis}`;
@@ -182,10 +199,12 @@
                         $('#solicitarExclusaoDadosAtuais').val(dadosAtuais);
                         $('#solicitarExclusaoModal').modal('show');
                     } else {
+                        console.error('Erro ao carregar projeto para exclusão:', response.message);
                         showErrorAlert(response.message || "Erro ao carregar projeto");
                     }
                 },
                 error: function(xhr, status, error) {
+                    console.error('Erro na requisição de dados do projeto para exclusão:', error, xhr.responseText);
                     showErrorAlert("Falha na comunicação com o servidor.");
                 }
             });
@@ -193,6 +212,7 @@
 
         // Excluir projeto - Abrir modal de confirmação (apenas admin)
         $(document).on('click', '.btn-danger[title="Excluir"]', function() {
+            console.log('Botão Excluir clicado');
             var projetoId = $(this).data('id').split('-')[0];
             var projetoName = $(this).closest('tr').find('td:nth-child(2)').text();
 
@@ -208,24 +228,28 @@
         // Enviar solicitação de exclusão
         $('#formSolicitarExclusao').submit(function(e) {
             e.preventDefault();
+            console.log('Formulário de solicitação de exclusão submetido');
             submitForm($(this), '#solicitarExclusaoModal', 'Solicitação de exclusão enviada com sucesso!');
         });
 
         // Enviar solicitação de inclusão
         $('#formSolicitarInclusao').submit(function(e) {
             e.preventDefault();
+            console.log('Formulário de solicitação de inclusão submetido');
             submitForm($(this), '#solicitarInclusaoModal', 'Solicitação de inclusão enviada com sucesso!');
         });
 
         // Atualizar projeto (apenas admin)
         $('#formEditProjeto').submit(function(e) {
             e.preventDefault();
-            submitForm($(this), '#editProjetoModal');
+            console.log('Formulário de edição de projeto submetido');
+            submitForm($(this), '#editProjetoModal', 'Projeto atualizado com sucesso!', true);
         });
 
         // Confirmar exclusão (apenas admin)
         $('#formDeleteProjeto').submit(function(e) {
             e.preventDefault();
+            console.log('Formulário de exclusão de projeto submetido');
 
             var form = $(this);
             var submitBtn = form.find('button[type="submit"]');
@@ -239,16 +263,18 @@
                 data: form.serialize(),
                 dataType: "json",
                 success: function(response) {
+                    console.log('Resposta de exclusão recebida:', response);
                     if (response.success) {
                         $('#deleteProjetoModal').modal('hide');
                         showSuccessAlert(response.message || 'Projeto excluído com sucesso!');
                         setTimeout(() => location.reload(), 1500);
                     } else {
+                        console.error('Erro ao excluir projeto:', response.message);
                         showErrorAlert(response.message || 'Ocorreu um erro durante a exclusão.');
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.error(xhr.responseText);
+                    console.error('Erro na requisição de exclusão:', error, xhr.responseText);
                     showErrorAlert('Erro na comunicação com o servidor: ' + error);
                 },
                 complete: function() {
@@ -260,17 +286,20 @@
         // Aplicar filtros
         $('#formFiltros').submit(function(e) {
             e.preventDefault();
+            console.log('Formulário de filtros submetido');
             applyFilters();
         });
 
         // Limpar filtros
         $('#btnLimparFiltros').click(function() {
+            console.log('Botão Limpar Filtros clicado');
             $('#formFiltros')[0].reset();
             applyFilters();
         });
 
         // Função genérica para enviar formulários
-        function submitForm(form, modalId, successMessage = null) {
+        function submitForm(form, modalId, successMessage = null, reloadTable = false) {
+            console.log('Executando submitForm para:', form.attr('id'));
             const submitBtn = form.find('button[type="submit"]');
             const originalBtnText = submitBtn.html();
 
@@ -282,21 +311,109 @@
                 data: form.serialize(),
                 dataType: "json",
                 success: function(response) {
+                    console.log('Resposta recebida:', response);
                     if (response.success) {
                         if (modalId) {
                             $(modalId).modal('hide');
+                            form[0].reset();
                         }
                         showSuccessAlert(successMessage || response.message || 'Operação realizada com sucesso!');
 
-                        if (!modalId || (modalId !== '#solicitarEdicaoModal' && modalId !== '#solicitarExclusaoModal' && modalId !== '#solicitarInclusaoModal')) {
-                            setTimeout(() => location.reload(), 1500);
+                        if (reloadTable) {
+                            console.log('Recarregando tabela...');
+                            // Recarrega os dados da tabela sem recarregar a página
+                            $.ajax({
+                                url: '<?= site_url("projetos/filtrar/$idPlano") ?>',
+                                type: "POST",
+                                data: $('#formFiltros').serialize(),
+                                success: function(filterResponse) {
+                                    console.log('Resposta de filtro recebida:', filterResponse);
+                                    if (filterResponse.success) {
+                                        try {
+                                            dataTable.clear().destroy();
+                                            $('#dataTable tbody').empty();
+
+                                            if (filterResponse.data && filterResponse.data.length > 0) {
+                                                console.log('Adicionando ' + filterResponse.data.length + ' projetos à tabela');
+                                                $.each(filterResponse.data, function(index, projeto) {
+                                                    var id = projeto.id + '-' + projeto.nome.toLowerCase().replace(/\s+/g, '-');
+                                                    var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
+                                                    var actionButtons = '';
+
+                                                    if (isAdmin) {
+                                                        actionButtons = `
+                                                            <div class="d-inline-flex">
+                                                                <a href="<?= site_url('projetos/') ?>${projeto.id}/etapas" class="btn btn-secondary btn-sm mx-1" title="Visualizar Etapas">
+                                                                    <i class="fas fa-tasks"></i>
+                                                                </a>
+                                                                <button type="button" class="btn btn-primary btn-sm mx-1" data-id="${id}" title="Editar">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </button>
+                                                                <button type="button" class="btn btn-danger btn-sm mx-1" data-id="${id}" title="Excluir">
+                                                                    <i class="fas fa-trash-alt"></i>
+                                                                </button>
+                                                            </div>`;
+                                                    } else {
+                                                        actionButtons = `
+                                                            <div class="d-inline-flex">
+                                                                <a href="<?= site_url('projetos/') ?>${projeto.id}/etapas" class="btn btn-secondary btn-sm mx-1" title="Visualizar Etapas">
+                                                                    <i class="fas fa-tasks"></i>
+                                                                </a>
+                                                                <button type="button" class="btn btn-primary btn-sm mx-1" data-id="${id}" title="Solicitar Edição">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </button>
+                                                                <button type="button" class="btn btn-danger btn-sm mx-1" data-id="${id}" title="Solicitar Exclusão">
+                                                                    <i class="fas fa-trash-alt"></i>
+                                                                </button>
+                                                            </div>`;
+                                                    }
+
+                                                    var row = `
+                                                        <tr>
+                                                            <td class="text-wrap align-middle">${projeto.identificador || ''}</td>
+                                                            <td class="text-wrap align-middle">${projeto.nome}</td>
+                                                            <td class="text-wrap align-middle">${projeto.descricao || ''}</td>
+                                                            <td class="text-wrap align-middle">${projeto.projeto_vinculado || ''}</td>
+                                                            <td class="text-wrap align-middle">${projeto.responsaveis || ''}</td>
+                                                            <td class="text-center align-middle">${actionButtons}</td>
+                                                        </tr>`;
+
+                                                    $('#dataTable tbody').append(row);
+                                                });
+                                            } else {
+                                                $('#dataTable tbody').append('<tr><td colspan="6" class="text-center">Nenhum projeto encontrado</td></tr>');
+                                            }
+
+                                            // Re-inicializa o DataTable
+                                            dataTable = $('#dataTable').DataTable({
+                                                "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                                                "language": {
+                                                    "url": "https://cdn.datatables.net/plug-ins/1.13.1/i18n/pt-BR.json"
+                                                },
+                                                "responsive": true,
+                                                "autoWidth": false,
+                                                "lengthMenu": [5, 10, 25, 50, 100],
+                                                "pageLength": 10,
+                                                "destroy": true
+                                            });
+                                            console.log('Tabela recarregada com sucesso');
+                                        } catch (e) {
+                                            console.error('Erro ao recarregar tabela:', e);
+                                        }
+                                    }
+                                },
+                                error: function(xhr, status, error) {
+                                    console.error('Erro ao filtrar projetos:', error, xhr.responseText);
+                                }
+                            });
                         }
                     } else {
+                        console.error('Erro na operação:', response.message);
                         showErrorAlert(response.message || 'Ocorreu um erro durante a operação.');
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.error(xhr.responseText);
+                    console.error('Erro na requisição AJAX:', error, xhr.responseText);
                     showErrorAlert('Erro na comunicação com o servidor: ' + error);
                 },
                 complete: function() {
@@ -307,9 +424,11 @@
 
         // Aplicar filtros na tabela
         function applyFilters() {
+            console.log('Aplicando filtros...');
             const hasFilters = $('#formFiltros').find('input, select').toArray().some(el => $(el).val() !== '' && $(el).val() !== null);
 
             if (!hasFilters) {
+                console.log('Nenhum filtro aplicado, recarregando página...');
                 location.reload();
                 return;
             }
@@ -320,75 +439,90 @@
                 data: $('#formFiltros').serialize(),
                 dataType: "json",
                 beforeSend: function() {
+                    console.log('Enviando requisição de filtro...');
                     $('#dataTable').css('opacity', '0.5');
                 },
                 success: function(response) {
+                    console.log('Resposta de filtro recebida:', response);
                     if (response.success) {
-                        dataTable.destroy();
-                        $('#dataTable tbody').empty();
+                        try {
+                            dataTable.clear().destroy();
+                            $('#dataTable tbody').empty();
 
-                        $.each(response.data, function(index, projeto) {
-                            var id = projeto.id + '-' + projeto.nome.toLowerCase().replace(/\s+/g, '-');
-                            var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
-                            var actionButtons = '';
+                            if (response.data && response.data.length > 0) {
+                                console.log('Adicionando ' + response.data.length + ' projetos filtrados à tabela');
+                                $.each(response.data, function(index, projeto) {
+                                    var id = projeto.id + '-' + projeto.nome.toLowerCase().replace(/\s+/g, '-');
+                                    var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
+                                    var actionButtons = '';
 
-                            if (isAdmin) {
-                                actionButtons = `
-                                    <div class="d-inline-flex">
-                                        <a href="<?= site_url('projetos/') ?>${projeto.id}/etapas" class="btn btn-secondary btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Etapas">
-                                            <i class="fas fa-tasks"></i>
-                                        </a>
-                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </div>`;
+                                    if (isAdmin) {
+                                        actionButtons = `
+                                            <div class="d-inline-flex">
+                                                <a href="<?= site_url('projetos/') ?>${projeto.id}/etapas" class="btn btn-secondary btn-sm mx-1" title="Visualizar Etapas">
+                                                    <i class="fas fa-tasks"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-primary btn-sm mx-1" data-id="${id}" title="Editar">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-danger btn-sm mx-1" data-id="${id}" title="Excluir">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </div>`;
+                                    } else {
+                                        actionButtons = `
+                                            <div class="d-inline-flex">
+                                                <a href="<?= site_url('projetos/') ?>${projeto.id}/etapas" class="btn btn-secondary btn-sm mx-1" title="Visualizar Etapas">
+                                                    <i class="fas fa-tasks"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-primary btn-sm mx-1" data-id="${id}" title="Solicitar Edição">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-danger btn-sm mx-1" data-id="${id}" title="Solicitar Exclusão">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </div>`;
+                                    }
+
+                                    var row = `
+                                        <tr>
+                                            <td class="text-wrap align-middle">${projeto.identificador || ''}</td>
+                                            <td class="text-wrap align-middle">${projeto.nome}</td>
+                                            <td class="text-wrap align-middle">${projeto.descricao || ''}</td>
+                                            <td class="text-wrap align-middle">${projeto.projeto_vinculado || ''}</td>
+                                            <td class="text-wrap align-middle">${projeto.responsaveis || ''}</td>
+                                            <td class="text-center align-middle">${actionButtons}</td>
+                                        </tr>`;
+
+                                    $('#dataTable tbody').append(row);
+                                });
                             } else {
-                                actionButtons = `
-                                    <div class="d-inline-flex">
-                                        <a href="<?= site_url('projetos/') ?>${projeto.id}/etapas" class="btn btn-secondary btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Etapas">
-                                            <i class="fas fa-tasks"></i>
-                                        </a>
-                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </div>`;
+                                $('#dataTable tbody').append('<tr><td colspan="6" class="text-center">Nenhum projeto encontrado</td></tr>');
                             }
 
-                            var row = `
-                                <tr>
-                                    <td class="text-wrap align-middle">${projeto.identificador || ''}</td>
-                                    <td class="text-wrap align-middle">${projeto.nome}</td>
-                                    <td class="text-wrap align-middle">${projeto.descricao || ''}</td>
-                                    <td class="text-wrap align-middle">${projeto.projeto_vinculado || ''}</td>
-                                    <td class="text-wrap align-middle">${projeto.responsaveis || ''}</td>
-                                    <td class="text-center align-middle">${actionButtons}</td>
-                                </tr>`;
-
-                            $('#dataTable tbody').append(row);
-                        });
-
-                        dataTable = $('#dataTable').DataTable({
-                            "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-                            "language": {
-                                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json"
-                            },
-                            "searching": false,
-                            "responsive": true,
-                            "autoWidth": false,
-                            "lengthMenu": [5, 10, 25, 50, 100],
-                            "pageLength": 10
-                        });
+                            // Re-inicializa o DataTable
+                            dataTable = $('#dataTable').DataTable({
+                                "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                                "language": {
+                                    "url": "https://cdn.datatables.net/plug-ins/1.13.1/i18n/pt-BR.json"
+                                },
+                                "responsive": true,
+                                "autoWidth": false,
+                                "lengthMenu": [5, 10, 25, 50, 100],
+                                "pageLength": 10,
+                                "destroy": true
+                            });
+                            console.log('Filtros aplicados com sucesso');
+                        } catch (e) {
+                            console.error('Erro ao aplicar filtros:', e);
+                        }
                     } else {
+                        console.error('Erro ao filtrar projetos:', response.message);
                         showErrorAlert('Erro ao filtrar projetos: ' + response.message);
                     }
                 },
                 error: function(xhr, status, error) {
+                    console.error('Erro na requisição de filtro:', error, xhr.responseText);
                     showErrorAlert('Erro na requisição: ' + error);
                 },
                 complete: function() {
@@ -399,6 +533,7 @@
 
         // Funções para exibir alertas
         function showSuccessAlert(message) {
+            console.log('Exibindo alerta de sucesso:', message);
             Swal.fire({
                 icon: 'success',
                 title: 'Sucesso',
@@ -409,6 +544,7 @@
         }
 
         function showErrorAlert(message) {
+            console.error('Exibindo alerta de erro:', message);
             Swal.fire({
                 icon: 'error',
                 title: 'Erro',
