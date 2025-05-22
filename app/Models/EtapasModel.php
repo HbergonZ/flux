@@ -13,8 +13,8 @@ class EtapasModel extends Model
 
     protected $allowedFields = [
         'nome',
-        'id_projeto',
-        'ordem'
+        'ordem',
+        'id_projeto'
     ];
 
     protected $useTimestamps = true;
@@ -35,7 +35,17 @@ class EtapasModel extends Model
     public function getEtapasByProjeto($idProjeto)
     {
         return $this->where('id_projeto', $idProjeto)
-            ->orderBy('data_criacao', 'ASC')
+            ->orderBy('ordem', 'ASC')
             ->findAll();
+    }
+
+    public function getProximaOrdem($idProjeto)
+    {
+        $builder = $this->where('id_projeto', $idProjeto)
+            ->selectMax('ordem');
+        $query = $builder->get();
+        $result = $query->getRowArray();
+
+        return ($result['ordem'] ?? 0) + 1;
     }
 }

@@ -5,6 +5,7 @@
 <?php echo view('components/etapas/modal-solicitar-edicao.php'); ?>
 <?php echo view('components/etapas/modal-solicitar-exclusao.php'); ?>
 <?php echo view('components/etapas/modal-solicitar-inclusao.php'); ?>
+<?php echo view('components/etapas/modal-ordenar-etapas.php'); ?>
 
 <div class="container-fluid">
 
@@ -69,21 +70,31 @@
     <div class="card shadow mb-4 mx-md-5 mx-3">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Lista de Etapas</h6>
-            <?php if (auth()->user()->inGroup('admin')): ?>
-                <a href="#" class="btn btn-primary btn-icon-split btn-sm" data-toggle="modal" data-target="#addEtapaModal">
-                    <span class="icon text-white-50">
-                        <i class="fas fa-plus"></i>
-                    </span>
-                    <span class="text">Incluir Etapa</span>
-                </a>
-            <?php else: ?>
-                <a href="#" class="btn btn-primary btn-icon-split btn-sm" data-toggle="modal" data-target="#solicitarInclusaoModal">
-                    <span class="icon text-white-50">
-                        <i class="fas fa-plus"></i>
-                    </span>
-                    <span class="text">Solicitar Inclusão</span>
-                </a>
-            <?php endif; ?>
+            <div class="d-flex">
+                <?php if (auth()->user()->inGroup('admin')): ?>
+                    <div class="d-flex">
+                        <a href="#" class="btn btn-info btn-icon-split btn-sm mr-2" data-toggle="modal" data-target="#ordenarEtapasModal">
+                            <span class="icon text-white-50">
+                                <i class="fas fa-sort"></i>
+                            </span>
+                            <span class="text">Alterar Ordem</span>
+                        </a>
+                        <a href="#" class="btn btn-primary btn-icon-split btn-sm" data-toggle="modal" data-target="#addEtapaModal">
+                            <span class="icon text-white-50">
+                                <i class="fas fa-plus"></i>
+                            </span>
+                            <span class="text">Incluir Etapa</span>
+                        </a>
+                    </div>
+                <?php else: ?>
+                    <a href="#" class="btn btn-primary btn-icon-split btn-sm" data-toggle="modal" data-target="#solicitarInclusaoModal">
+                        <span class="icon text-white-50">
+                            <i class="fas fa-plus"></i>
+                        </span>
+                        <span class="text">Solicitar Inclusão</span>
+                    </a>
+                <?php endif; ?>
+            </div>
         </div>
         <div class="card-body">
             <div class="table-responsive">

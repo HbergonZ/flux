@@ -53,33 +53,60 @@ class Etapas extends BaseController
 
     public function cadastrar($idProjeto)
     {
+        log_message('debug', 'Iniciando cadastro de etapa para o projeto: ' . $idProjeto);
+
         if (!$this->request->isAJAX()) {
+            log_message('debug', 'Requisição não é AJAX, redirecionando');
             return redirect()->to("/projetos/$idProjeto/etapas");
         }
 
         $response = ['success' => false, 'message' => ''];
 
-        $rules = [
-            'nome' => 'required|min_length[3]|max_length[255]',
-            'ordem' => 'permit_empty|integer'
-        ];
-
-        if ($this->validate($rules)) {
-            try {
-                $data = [
-                    'nome' => $this->request->getPost('nome'),
-                    'ordem' => $this->request->getPost('ordem'),
-                    'id_projeto' => $idProjeto
-                ];
-
-                $this->etapasModel->insert($data);
-                $response['success'] = true;
-                $response['message'] = 'Etapa cadastrada com sucesso!';
-            } catch (\Exception $e) {
-                $response['message'] = 'Erro ao cadastrar etapa: ' . $e->getMessage();
+        try {
+            log_message('debug', 'Verificando permissões do usuário');
+            if (!auth()->user()->inGroup('admin')) {
+                throw new \Exception('Você não tem permissão para esta ação');
             }
-        } else {
-            $response['message'] = implode('<br>', $this->validator->getErrors());
+
+            log_message('debug', 'Validando dados do formulário');
+            $rules = [
+                'nome' => 'required|min_length[3]|max_length[255]',
+                'ordem' => 'required|integer'
+            ];
+
+            if (!$this->validate($rules)) {
+                $errors = $this->validator->getErrors();
+                log_message('debug', 'Erros de validação: ' . print_r($errors, true));
+                throw new \Exception(implode("\n", $errors));
+            }
+
+            $data = [
+                'nome' => $this->request->getPost('nome'),
+                'ordem' => $this->request->getPost('ordem'),
+                'id_projeto' => $idProjeto
+            ];
+
+            log_message('debug', 'Dados preparados para inserção: ' . print_r($data, true));
+
+            $this->etapasModel->transStart();
+            $insertId = $this->etapasModel->insert($data);
+
+            if (!$insertId) {
+                throw new \Exception('Falha ao inserir etapa no banco de dados');
+            }
+
+            $this->etapasModel->transComplete();
+
+            $etapaInserida = $this->etapasModel->find($insertId);
+            $response['success'] = true;
+            $response['message'] = 'Etapa cadastrada com sucesso!';
+            $response['data'] = $etapaInserida;
+
+            log_message('debug', 'Resposta JSON preparada: ' . print_r($response, true));
+        } catch (\Exception $e) {
+            $this->etapasModel->transRollback();
+            log_message('error', 'Erro ao cadastrar etapa: ' . $e->getMessage());
+            $response['message'] = $e->getMessage();
         }
 
         return $this->response->setJSON($response);
@@ -361,6 +388,69 @@ class Etapas extends BaseController
             }
         } else {
             $response['message'] = implode('<br>', $this->validator->getErrors());
+        }
+
+        return $this->response->setJSON($response);
+    }
+    public function proximaOrdem($idProjeto)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $proximaOrdem = $this->etapasModel->getProximaOrdem($idProjeto);
+            return $this->response->setJSON([
+                'success' => true,
+                'proximaOrdem' => $proximaOrdem
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Erro ao calcular próxima ordem: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Erro ao calcular próxima ordem'
+            ]);
+        }
+    }
+
+    public function salvarOrdem($idProjeto)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $response = ['success' => false, 'message' => ''];
+        $ordens = $this->request->getPost('ordem');
+
+        if (empty($ordens) || !is_array($ordens)) {
+            $response['message'] = 'Nenhuma ordem foi enviada';
+            return $this->response->setJSON($response);
+        }
+
+        // Verificar se há ordens duplicadas
+        if (count($ordens) !== count(array_unique($ordens))) {
+            $response['message'] = 'Existem ordens duplicadas';
+            return $this->response->setJSON($response);
+        }
+
+        try {
+            $this->etapasModel->transStart();
+
+            foreach ($ordens as $id => $ordem) {
+                $this->etapasModel->update($id, ['ordem' => (int)$ordem]);
+            }
+
+            $this->etapasModel->transComplete();
+
+            if ($this->etapasModel->transStatus() === false) {
+                throw new \Exception('Erro ao atualizar ordens no banco de dados');
+            }
+
+            $response['success'] = true;
+            $response['message'] = 'Ordem das etapas atualizada com sucesso!';
+        } catch (\Exception $e) {
+            log_message('error', 'Erro ao salvar ordem: ' . $e->getMessage());
+            $response['message'] = 'Erro ao salvar ordem: ' . $e->getMessage();
         }
 
         return $this->response->setJSON($response);

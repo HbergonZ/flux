@@ -9,46 +9,122 @@
     $(document).ready(function() {
         console.log('Documento pronto, inicializando DataTable');
 
-        // Inicializa o DataTable
-        var dataTable;
-        try {
-            dataTable = $('#dataTable').DataTable({
-                "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-                "language": {
-                    "url": "https://cdn.datatables.net/plug-ins/1.13.1/i18n/pt-BR.json",
-                    "emptyTable": "Nenhum dado disponível na tabela",
-                    "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
-                    "infoEmpty": "Mostrando 0 a 0 de 0 registros",
-                    "infoFiltered": "(filtrado de _MAX_ registros no total)",
-                    "lengthMenu": "Mostrar _MENU_ registros por página",
-                    "loadingRecords": "Carregando...",
-                    "processing": "Processando...",
-                    "search": "Pesquisar:",
-                    "zeroRecords": "Nenhum registro correspondente encontrado",
-                    "paginate": {
-                        "first": "Primeira",
-                        "last": "Última",
-                        "next": "Próxima",
-                        "previous": "Anterior"
-                    }
-                },
-                "responsive": true,
-                "autoWidth": false,
-                "lengthMenu": [5, 10, 25, 50, 100],
-                "pageLength": 10,
-                "destroy": true,
-                "data": <?= isset($projetos) ? json_encode($projetos) : '[]' ?> // Garante que sempre tenha dados
-            });
-            console.log('DataTable inicializado com sucesso');
-        } catch (e) {
-            console.error('Erro ao inicializar DataTable:', e);
-        }
-
         // Configuração do AJAX
         $.ajaxSetup({
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
                 '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
+            }
+        });
+
+        // Inicializa o DataTable
+        var dataTable = $('#dataTable').DataTable({
+            "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            "language": {
+                "url": "https://cdn.datatables.net/plug-ins/1.13.1/i18n/pt-BR.json",
+                "emptyTable": "Nenhum dado disponível na tabela",
+                "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
+                "infoEmpty": "Mostrando 0 a 0 de 0 registros",
+                "infoFiltered": "(filtrado de _MAX_ registros no total)",
+                "lengthMenu": "Mostrar _MENU_ registros por página",
+                "loadingRecords": "Carregando...",
+                "processing": "Processando...",
+                "search": "Pesquisar:",
+                "zeroRecords": "Nenhum registro correspondente encontrado",
+                "paginate": {
+                    "first": "Primeira",
+                    "last": "Última",
+                    "next": "Próxima",
+                    "previous": "Anterior"
+                }
+            },
+            "responsive": true,
+            "autoWidth": false,
+            "lengthMenu": [5, 10, 25, 50, 100],
+            "pageLength": 10,
+            "processing": true,
+            "serverSide": false,
+            "ajax": {
+                "url": '<?= site_url("projetos/filtrar/$idPlano") ?>',
+                "type": "POST",
+                "data": function(d) {
+                    // Adiciona os parâmetros do filtro
+                    d.nome = $('#filterProjeto').val();
+                    d.projeto_vinculado = $('#filterProjetoVinculado').val();
+                    d.id_eixo = $('#filterEixo').val();
+                },
+                "error": function(xhr, error, thrown) {
+                    console.error('Erro ao carregar dados:', xhr, error, thrown);
+                    showErrorAlert('Erro ao carregar dados da tabela');
+                }
+            },
+            "columns": [{
+                    "data": "identificador",
+                    "className": "text-wrap align-middle"
+                },
+                {
+                    "data": "nome",
+                    "className": "text-wrap align-middle"
+                },
+                {
+                    "data": "descricao",
+                    "className": "text-wrap align-middle"
+                },
+                {
+                    "data": "projeto_vinculado",
+                    "className": "text-wrap align-middle"
+                },
+                {
+                    "data": "responsaveis",
+                    "className": "text-wrap align-middle"
+                },
+                {
+                    "data": null,
+                    "className": "text-center align-middle",
+                    "render": function(data, type, row) {
+                        var id = row.id + '-' + row.nome.toLowerCase().replace(/\s+/g, '-');
+                        var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
+
+                        if (isAdmin) {
+                            return `
+                                <div class="d-inline-flex">
+                                    <a href="<?= site_url('planos/') ?><?= $plano['id'] ?>/projetos/${row.id}/etapas" class="btn btn-secondary btn-sm mx-1" title="Visualizar Etapas">
+                                        <i class="fas fa-tasks"></i>
+                                    </a>
+                                    <a href="<?= site_url('planos/') ?><?= $plano['id'] ?>/projetos/${row.id}/acoes" class="btn btn-info btn-sm mx-1" title="Acessar Ações">
+                                        <i class="fas fa-th-list"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>`;
+                        } else {
+                            return `
+                                <div class="d-inline-flex">
+                                    <a href="<?= site_url('planos/') ?><?= $plano['id'] ?>/projetos/${row.id}/etapas" class="btn btn-secondary btn-sm mx-1" title="Visualizar Etapas">
+                                        <i class="fas fa-tasks"></i>
+                                    </a>
+                                    <a href="<?= site_url('planos/') ?><?= $plano['id'] ?>/projetos/${row.id}/acoes" class="btn btn-info btn-sm mx-1" title="Acessar Ações">
+                                        <i class="fas fa-th-list"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>`;
+                        }
+                    },
+                    "orderable": false
+                }
+            ],
+            "createdRow": function(row, data, dataIndex) {
+                // Adiciona classes às células se necessário
+                $(row).find('td').addClass('align-middle');
             }
         });
 
@@ -268,7 +344,7 @@
                     if (response.success) {
                         $('#deleteProjetoModal').modal('hide');
                         showSuccessAlert(response.message || 'Projeto excluído com sucesso!');
-                        setTimeout(() => location.reload(), 1500);
+                        dataTable.ajax.reload();
                     } else {
                         console.error('Erro ao excluir projeto:', response.message);
                         showErrorAlert(response.message || 'Ocorreu um erro durante a exclusão.');
@@ -288,14 +364,14 @@
         $('#formFiltros').submit(function(e) {
             e.preventDefault();
             console.log('Formulário de filtros submetido');
-            applyFilters();
+            dataTable.ajax.reload();
         });
 
         // Limpar filtros
         $('#btnLimparFiltros').click(function() {
             console.log('Botão Limpar Filtros clicado');
             $('#formFiltros')[0].reset();
-            applyFilters();
+            dataTable.ajax.reload();
         });
 
         // Função genérica para enviar formulários
@@ -322,96 +398,7 @@
 
                         if (reloadTable) {
                             console.log('Recarregando tabela...');
-                            // Recarrega a página completamente quando não há projetos
-                            if ($('#dataTable tbody tr').length === 0 || $('#dataTable tbody tr td').text().includes('Nenhum projeto encontrado')) {
-                                location.reload();
-                            } else {
-                                // Caso contrário, recarrega os dados via AJAX
-                                $.ajax({
-                                    url: '<?= site_url("projetos/filtrar/$idPlano") ?>',
-                                    type: "POST",
-                                    data: $('#formFiltros').serialize(),
-                                    success: function(filterResponse) {
-                                        console.log('Resposta de filtro recebida:', filterResponse);
-                                        if (filterResponse.success) {
-                                            try {
-                                                dataTable.clear().destroy();
-                                                $('#dataTable tbody').empty();
-
-                                                if (filterResponse.data && filterResponse.data.length > 0) {
-                                                    console.log('Adicionando ' + filterResponse.data.length + ' projetos à tabela');
-                                                    $.each(filterResponse.data, function(index, projeto) {
-                                                        var id = projeto.id + '-' + projeto.nome.toLowerCase().replace(/\s+/g, '-');
-                                                        var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
-                                                        var actionButtons = '';
-
-                                                        if (isAdmin) {
-                                                            actionButtons = `
-                                                                <div class="d-inline-flex">
-                                                                    <a href="<?= site_url('projetos/') ?>${projeto.id}/etapas" class="btn btn-secondary btn-sm mx-1" title="Visualizar Etapas">
-                                                                        <i class="fas fa-tasks"></i>
-                                                                    </a>
-                                                                    <button type="button" class="btn btn-primary btn-sm mx-1" data-id="${id}" title="Editar">
-                                                                        <i class="fas fa-edit"></i>
-                                                                    </button>
-                                                                    <button type="button" class="btn btn-danger btn-sm mx-1" data-id="${id}" title="Excluir">
-                                                                        <i class="fas fa-trash-alt"></i>
-                                                                    </button>
-                                                                </div>`;
-                                                        } else {
-                                                            actionButtons = `
-                                                                <div class="d-inline-flex">
-                                                                    <a href="<?= site_url('projetos/') ?>${projeto.id}/etapas" class="btn btn-secondary btn-sm mx-1" title="Visualizar Etapas">
-                                                                        <i class="fas fa-tasks"></i>
-                                                                    </a>
-                                                                    <button type="button" class="btn btn-primary btn-sm mx-1" data-id="${id}" title="Solicitar Edição">
-                                                                        <i class="fas fa-edit"></i>
-                                                                    </button>
-                                                                    <button type="button" class="btn btn-danger btn-sm mx-1" data-id="${id}" title="Solicitar Exclusão">
-                                                                        <i class="fas fa-trash-alt"></i>
-                                                                    </button>
-                                                                </div>`;
-                                                        }
-
-                                                        var row = `
-                                                            <tr>
-                                                                <td class="text-wrap align-middle">${projeto.identificador || ''}</td>
-                                                                <td class="text-wrap align-middle">${projeto.nome}</td>
-                                                                <td class="text-wrap align-middle">${projeto.descricao || ''}</td>
-                                                                <td class="text-wrap align-middle">${projeto.projeto_vinculado || ''}</td>
-                                                                <td class="text-wrap align-middle">${projeto.responsaveis || ''}</td>
-                                                                <td class="text-center align-middle">${actionButtons}</td>
-                                                            </tr>`;
-
-                                                        $('#dataTable tbody').append(row);
-                                                    });
-                                                } else {
-                                                    $('#dataTable tbody').append('<tr><td colspan="6" class="text-center">Nenhum projeto encontrado</td></tr>');
-                                                }
-
-                                                // Re-inicializa o DataTable
-                                                dataTable = $('#dataTable').DataTable({
-                                                    "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-                                                    "language": {
-                                                        "url": "https://cdn.datatables.net/plug-ins/1.13.1/i18n/pt-BR.json"
-                                                    },
-                                                    "responsive": true,
-                                                    "autoWidth": false,
-                                                    "lengthMenu": [5, 10, 25, 50, 100],
-                                                    "pageLength": 10,
-                                                    "destroy": true
-                                                });
-                                                console.log('Tabela recarregada com sucesso');
-                                            } catch (e) {
-                                                console.error('Erro ao recarregar tabela:', e);
-                                            }
-                                        }
-                                    },
-                                    error: function(xhr, status, error) {
-                                        console.error('Erro ao filtrar projetos:', error, xhr.responseText);
-                                    }
-                                });
-                            }
+                            dataTable.ajax.reload();
                         }
                     } else {
                         console.error('Erro na operação:', response.message);
@@ -424,115 +411,6 @@
                 },
                 complete: function() {
                     submitBtn.prop('disabled', false).html(originalBtnText);
-                }
-            });
-        }
-
-        // Aplicar filtros na tabela
-        function applyFilters() {
-            console.log('Aplicando filtros...');
-            const hasFilters = $('#formFiltros').find('input, select').toArray().some(el => $(el).val() !== '' && $(el).val() !== null);
-
-            if (!hasFilters) {
-                console.log('Nenhum filtro aplicado, recarregando página...');
-                location.reload();
-                return;
-            }
-
-            $.ajax({
-                type: "POST",
-                url: '<?= site_url("projetos/filtrar/$idPlano") ?>',
-                data: $('#formFiltros').serialize(),
-                dataType: "json",
-                beforeSend: function() {
-                    console.log('Enviando requisição de filtro...');
-                    $('#dataTable').css('opacity', '0.5');
-                },
-                success: function(response) {
-                    console.log('Resposta de filtro recebida:', response);
-                    if (response.success) {
-                        try {
-                            dataTable.clear().destroy();
-                            $('#dataTable tbody').empty();
-
-                            if (response.data && response.data.length > 0) {
-                                console.log('Adicionando ' + response.data.length + ' projetos filtrados à tabela');
-                                $.each(response.data, function(index, projeto) {
-                                    var id = projeto.id + '-' + projeto.nome.toLowerCase().replace(/\s+/g, '-');
-                                    var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
-                                    var actionButtons = '';
-
-                                    if (isAdmin) {
-                                        actionButtons = `
-                                            <div class="d-inline-flex">
-                                                <a href="<?= site_url('projetos/') ?>${projeto.id}/etapas" class="btn btn-secondary btn-sm mx-1" title="Visualizar Etapas">
-                                                    <i class="fas fa-tasks"></i>
-                                                </a>
-                                                <button type="button" class="btn btn-primary btn-sm mx-1" data-id="${id}" title="Editar">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-danger btn-sm mx-1" data-id="${id}" title="Excluir">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                            </div>`;
-                                    } else {
-                                        actionButtons = `
-                                            <div class="d-inline-flex">
-                                                <a href="<?= site_url('projetos/') ?>${projeto.id}/etapas" class="btn btn-secondary btn-sm mx-1" title="Visualizar Etapas">
-                                                    <i class="fas fa-tasks"></i>
-                                                </a>
-                                                <button type="button" class="btn btn-primary btn-sm mx-1" data-id="${id}" title="Solicitar Edição">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-danger btn-sm mx-1" data-id="${id}" title="Solicitar Exclusão">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                            </div>`;
-                                    }
-
-                                    var row = `
-                                        <tr>
-                                            <td class="text-wrap align-middle">${projeto.identificador || ''}</td>
-                                            <td class="text-wrap align-middle">${projeto.nome}</td>
-                                            <td class="text-wrap align-middle">${projeto.descricao || ''}</td>
-                                            <td class="text-wrap align-middle">${projeto.projeto_vinculado || ''}</td>
-                                            <td class="text-wrap align-middle">${projeto.responsaveis || ''}</td>
-                                            <td class="text-center align-middle">${actionButtons}</td>
-                                        </tr>`;
-
-                                    $('#dataTable tbody').append(row);
-                                });
-                            } else {
-                                $('#dataTable tbody').append('<tr><td colspan="6" class="text-center">Nenhum projeto encontrado</td></tr>');
-                            }
-
-                            // Re-inicializa o DataTable
-                            dataTable = $('#dataTable').DataTable({
-                                "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-                                "language": {
-                                    "url": "https://cdn.datatables.net/plug-ins/1.13.1/i18n/pt-BR.json"
-                                },
-                                "responsive": true,
-                                "autoWidth": false,
-                                "lengthMenu": [5, 10, 25, 50, 100],
-                                "pageLength": 10,
-                                "destroy": true
-                            });
-                            console.log('Filtros aplicados com sucesso');
-                        } catch (e) {
-                            console.error('Erro ao aplicar filtros:', e);
-                        }
-                    } else {
-                        console.error('Erro ao filtrar projetos:', response.message);
-                        showErrorAlert('Erro ao filtrar projetos: ' + response.message);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Erro na requisição de filtro:', error, xhr.responseText);
-                    showErrorAlert('Erro na requisição: ' + error);
-                },
-                complete: function() {
-                    $('#dataTable').css('opacity', '1');
                 }
             });
         }

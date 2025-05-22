@@ -6,37 +6,77 @@
 
 <script>
     $(document).ready(function() {
-        // Inicializa o DataTable
+        // Inicializa o DataTable com configuração mais robusta
         var dataTable = $('#dataTable').DataTable({
             "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json",
-                "emptyTable": "Nenhum dado disponível na tabela",
-                "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
-                "infoEmpty": "Mostrando 0 a 0 de 0 registros",
-                "infoFiltered": "(filtrado de _MAX_ registros no total)",
-                "lengthMenu": "Mostrar _MENU_ registros por página",
-                "loadingRecords": "Carregando...",
-                "processing": "Processando...",
-                "search": "Pesquisar:",
-                "zeroRecords": "Nenhum registro correspondente encontrado",
-                "paginate": {
-                    "first": "Primeira",
-                    "last": "Última",
-                    "next": "Próxima",
-                    "previous": "Anterior"
-                },
-                "aria": {
-                    "sortAscending": ": ativar para ordenar coluna ascendente",
-                    "sortDescending": ": ativar para ordenar coluna descendente"
-                }
+                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json"
             },
             "searching": false,
             "responsive": true,
             "autoWidth": false,
             "lengthMenu": [5, 10, 25, 50, 100],
-            "pageLength": 10
+            "pageLength": 10,
+            "columns": [{
+                    "data": "ordem",
+                    "className": "text-center"
+                },
+                {
+                    "data": "nome",
+                    "className": "text-wrap"
+                },
+                {
+                    "data": "data_criacao",
+                    "className": "text-center",
+                    "render": function(data) {
+                        return data ? formatDate(data) : '-';
+                    }
+                },
+                {
+                    "data": "data_atualizacao",
+                    "className": "text-center",
+                    "render": function(data) {
+                        return data ? formatDate(data) : '-';
+                    }
+                },
+                {
+                    "data": null,
+                    "className": "text-center",
+                    "orderable": false,
+                    "render": function(data, type, row) {
+                        var id = row.id + '-' + row.nome.toLowerCase().replace(/\s+/g, '-');
+                        var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
 
+                        var buttons = `
+                            <div class="d-inline-flex">
+                                <a href="<?= site_url('etapas/') ?>${row.id}/acoes" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Ações">
+                                    <i class="fas fa-th-list"></i>
+                                </a>`;
+
+                        if (isAdmin) {
+                            buttons += `
+                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>`;
+                        } else {
+                            buttons += `
+                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>`;
+                        }
+
+                        buttons += `</div>`;
+                        return buttons;
+                    }
+                }
+            ],
+            "data": <?= json_encode($etapas ?? []) ?>
         });
 
         // Configuração do AJAX
@@ -49,6 +89,77 @@
 
         // Armazenar dados originais do formulário
         let formOriginalData = {};
+
+        // Event listener para a troca de ordens
+        $(document).on('change', '.ordem-select', function() {
+            const selectAtual = this;
+            const novaOrdem = parseInt(selectAtual.value);
+            const idAtual = selectAtual.name.match(/\[(.*?)\]/)[1];
+            const ordemOriginal = parseInt($(selectAtual).data('original'));
+
+            // Se a nova ordem for igual à original, não faz nada
+            if (novaOrdem === ordemOriginal) return;
+
+            // Encontrar o select que tinha a nova ordem
+            let selectAlvo = null;
+            $('.ordem-select').each(function() {
+                if (this !== selectAtual && parseInt(this.value) === novaOrdem) {
+                    selectAlvo = this;
+                    return false; // sai do loop
+                }
+            });
+
+            // Se encontrou um select com a ordem que queremos trocar
+            if (selectAlvo) {
+                // Troca a ordem do select alvo para a ordem original do select atual
+                $(selectAlvo).val(ordemOriginal).data('original', ordemOriginal);
+            }
+
+            // Atualiza o data-original do select atual para a nova ordem
+            $(selectAtual).data('original', novaOrdem);
+        });
+
+        // Inicializar ordens originais quando o modal é aberto
+        $('#ordenarEtapasModal').on('shown.bs.modal', function() {
+            $('.ordem-select').each(function() {
+                $(this).data('original', $(this).val());
+            });
+        });
+
+        // Carregar próxima ordem ao abrir o modal de adição
+        $('#addEtapaModal').on('show.bs.modal', function() {
+            $.ajax({
+                url: '<?= site_url("etapas/proxima-ordem/$idProjeto") ?>',
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        $('#etapaOrdem').val(response.proximaOrdem);
+                    } else {
+                        // Fallback: calcular no cliente
+                        var maxOrdem = 0;
+                        $('#dataTable tbody tr').each(function() {
+                            var ordem = parseInt($(this).find('td:eq(0)').text()) || 0;
+                            if (ordem > maxOrdem) {
+                                maxOrdem = ordem;
+                            }
+                        });
+                        $('#etapaOrdem').val(maxOrdem + 1);
+                    }
+                },
+                error: function() {
+                    // Fallback: calcular no cliente
+                    var maxOrdem = 0;
+                    $('#dataTable tbody tr').each(function() {
+                        var ordem = parseInt($(this).find('td:eq(0)').text()) || 0;
+                        if (ordem > maxOrdem) {
+                            maxOrdem = ordem;
+                        }
+                    });
+                    $('#etapaOrdem').val(maxOrdem + 1);
+                }
+            });
+        });
 
         // Cadastrar nova etapa (apenas admin)
         $('#formAddEtapa').submit(function(e) {
@@ -214,6 +325,39 @@
             submitForm($(this), '#deleteEtapaModal');
         });
 
+        // Enviar formulário de ordenação
+        $('#formOrdenarEtapas').submit(function(e) {
+            e.preventDefault();
+
+            const submitBtn = $(this).find('button[type="submit"]');
+            const originalBtnText = submitBtn.html();
+
+            submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...');
+
+            $.ajax({
+                type: "POST",
+                url: $(this).attr('action'),
+                data: $(this).serialize(),
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        $('#ordenarEtapasModal').modal('hide');
+                        showSuccessAlert(response.message || 'Ordem atualizada com sucesso!');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showErrorAlert(response.message || 'Ocorreu um erro ao atualizar a ordem.');
+                    }
+                },
+                error: function(xhr) {
+                    console.error(xhr.responseText);
+                    showErrorAlert('Erro na comunicação com o servidor.');
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).html(originalBtnText);
+                }
+            });
+        });
+
         // Aplicar filtros
         $('#formFiltros').submit(function(e) {
             e.preventDefault();
@@ -239,21 +383,27 @@
                 data: form.serialize(),
                 dataType: "json",
                 success: function(response) {
+                    console.log('Resposta recebida:', response);
                     if (response.success) {
                         if (modalId) {
                             $(modalId).modal('hide');
+                            form[0].reset();
                         }
                         showSuccessAlert(successMessage || response.message || 'Operação realizada com sucesso!');
 
+                        // Recarregar a página apenas se não for uma solicitação
                         if (!modalId || (modalId !== '#solicitarEdicaoModal' && modalId !== '#solicitarExclusaoModal' && modalId !== '#solicitarInclusaoModal')) {
-                            setTimeout(() => location.reload(), 1500);
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1500);
                         }
                     } else {
+                        console.error('Erro na operação:', response.message);
                         showErrorAlert(response.message || 'Ocorreu um erro durante a operação.');
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.error(xhr.responseText);
+                    console.error('Erro na requisição AJAX:', error, xhr.responseText);
                     showErrorAlert('Erro na comunicação com o servidor: ' + error);
                 },
                 complete: function() {
@@ -281,68 +431,7 @@
                 },
                 success: function(response) {
                     if (response.success) {
-                        dataTable.destroy();
-                        $('#dataTable tbody').empty();
-
-                        $.each(response.data, function(index, etapa) {
-                            var id = etapa.id + '-' + etapa.nome.toLowerCase().replace(/\s+/g, '-');
-                            var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
-                            var actionButtons = '';
-
-                            if (isAdmin) {
-                                actionButtons = `
-                                    <div class="d-inline-flex">
-                                        <a href="<?= site_url('etapas/') ?>${etapa.id}/acoes" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Ações">
-                                            <i class="fas fa-tasks"></i>
-                                        </a>
-                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </div>`;
-                            } else {
-                                actionButtons = `
-                                    <div class="d-inline-flex">
-                                        <a href="<?= site_url('etapas/') ?>${etapa.id}/acoes" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Ações">
-                                            <i class="fas fa-tasks"></i>
-                                        </a>
-                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </div>`;
-                            }
-
-                            var row = `
-                                <tr>
-                                    <td class="text-center">${etapa.ordem || '-'}</td>
-                                    <td class="text-wrap">${etapa.nome}</td>
-                                    <td class="text-center">${formatDate(etapa.data_criacao)}</td>
-                                    <td class="text-center">${formatDate(etapa.data_atualizacao)}</td>
-                                    <td class="text-center">${actionButtons}</td>
-                                </tr>`;
-
-                            $('#dataTable tbody').append(row);
-                        });
-
-                        dataTable = $('#dataTable').DataTable({
-                            "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-                            "language": {
-                                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json"
-                            },
-                            "searching": false,
-                            "responsive": true,
-                            "autoWidth": false,
-                            "lengthMenu": [5, 10, 25, 50, 100],
-                            "pageLength": 10,
-                            "order": [
-                                [0, 'asc']
-                            ]
-                        });
+                        dataTable.clear().rows.add(response.data).draw();
                     } else {
                         showErrorAlert('Erro ao filtrar etapas: ' + response.message);
                     }

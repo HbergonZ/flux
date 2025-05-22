@@ -15,6 +15,10 @@
                         <label for="etapaNome">Nome*</label>
                         <input type="text" class="form-control" id="etapaNome" name="nome" required maxlength="255">
                     </div>
+                    <div class="form-group">
+                        <label for="etapaOrdem">Ordem</label>
+                        <input type="number" class="form-control" id="etapaOrdem" name="ordem" min="1" readonly>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
