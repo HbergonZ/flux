@@ -180,6 +180,13 @@
                         $('#editEtapaId').val(response.data.id);
                         $('#editEtapaNome').val(response.data.nome);
                         $('#editEtapaOrdem').val(response.data.ordem);
+
+                        // Armazena os valores originais para comparação
+                        formOriginalData = {
+                            nome: response.data.nome,
+                            ordem: response.data.ordem
+                        };
+
                         $('#editEtapaModal').modal('show');
                     } else {
                         showErrorAlert(response.message || "Erro ao carregar etapa");
@@ -309,20 +316,124 @@
             submitForm($(this), '#editEtapaModal');
         });
 
-        // Excluir etapa - Abrir modal de confirmação (apenas admin)
+        // Modal de confirmação de exclusão com verificação de relacionamentos
         $(document).on('click', '.btn-danger[title="Excluir"]', function() {
-            var etapaId = $(this).data('id').split('-')[0];
-            var etapaName = $(this).closest('tr').find('td:nth-child(2)').text();
+            var btn = $(this);
+            var etapaId = btn.data('id').split('-')[0];
+            var etapaName = btn.closest('tr').find('td:nth-child(2)').text();
 
-            $('#deleteEtapaId').val(etapaId);
-            $('#etapaNameToDelete').text(etapaName);
-            $('#deleteEtapaModal').modal('show');
+            // Verificar se há relacionamentos
+            $.ajax({
+                url: '<?= site_url('etapas/verificar-relacionamentos/') ?>' + etapaId,
+                type: 'GET',
+                dataType: 'json',
+                beforeSend: function() {
+                    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
+                },
+                complete: function() {
+                    btn.prop('disabled', false).html('<i class="fas fa-trash-alt"></i>');
+                },
+                success: function(response) {
+                    if (response.success) {
+                        var totalAcoes = response.contagem.acoes;
+
+                        if (totalAcoes > 0) {
+                            // Exibir alerta de confirmação com detalhes
+                            Swal.fire({
+                                title: 'Atenção! Exclusão em Cascata',
+                                html: `Você está prestes a excluir a etapa <strong>${etapaName}</strong> e <strong>TODAS</strong> as suas ações vinculadas:<br><br>
+                                   <ul class="text-left">
+                                       <li>Ações: ${response.contagem.acoes}</li>
+                                   </ul>
+                                   <p class="text-danger mt-2"><strong>Esta ação é irreversível!</strong></p>`,
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonColor: '#d33',
+                                cancelButtonColor: '#3085d6',
+                                confirmButtonText: 'Sim, excluir tudo!',
+                                cancelButtonText: 'Cancelar',
+                                width: '600px'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    $('#deleteEtapaId').val(etapaId);
+                                    $('#etapaNameToDelete').text(etapaName);
+                                    $('#deleteEtapaModal').modal('show');
+                                }
+                            });
+                        } else {
+                            // Exibir confirmação simples se não houver relacionamentos
+                            Swal.fire({
+                                title: 'Confirmar Exclusão',
+                                html: `Tem certeza que deseja excluir a etapa <strong>${etapaName}</strong>?`,
+                                icon: 'question',
+                                showCancelButton: true,
+                                confirmButtonColor: '#d33',
+                                cancelButtonColor: '#3085d6',
+                                confirmButtonText: 'Sim, excluir!',
+                                cancelButtonText: 'Cancelar'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    $('#deleteEtapaId').val(etapaId);
+                                    $('#etapaNameToDelete').text(etapaName);
+                                    $('#deleteEtapaModal').modal('show');
+                                }
+                            });
+                        }
+                    } else {
+                        Swal.fire('Erro', response.message || 'Erro ao verificar relacionamentos', 'error');
+                    }
+                },
+                error: function(xhr) {
+                    Swal.fire('Erro', 'Falha na comunicação com o servidor', 'error');
+                }
+            });
         });
 
-        // Confirmar exclusão (apenas admin)
+        // Processar exclusão após confirmação
         $('#formDeleteEtapa').submit(function(e) {
             e.preventDefault();
-            submitForm($(this), '#deleteEtapaModal');
+            var form = $(this);
+            var submitBtn = form.find('button[type="submit"]');
+            var originalBtnText = submitBtn.html();
+
+            submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Excluindo...');
+
+            $.ajax({
+                type: "POST",
+                url: form.attr('action'),
+                data: form.serialize(),
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        $('#deleteEtapaModal').modal('hide');
+
+                        // Mostrar mensagem de sucesso com detalhes
+                        var msg = response.message;
+                        if (response.contagem) {
+                            msg += `<br><small>Ações excluídas: ${response.contagem.acoes}</small>`;
+                        }
+
+                        Swal.fire({
+                            title: 'Sucesso!',
+                            html: msg,
+                            icon: 'success',
+                            timer: 3000,
+                            timerProgressBar: true,
+                            willClose: () => {
+                                location.reload();
+                            }
+                        });
+                    } else {
+                        Swal.fire('Erro', response.message, 'error');
+                    }
+                },
+                error: function(xhr) {
+                    Swal.fire('Erro', 'Falha na comunicação com o servidor', 'error');
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).html(originalBtnText);
+                }
+            });
         });
 
         // Enviar formulário de ordenação

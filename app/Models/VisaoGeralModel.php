@@ -7,7 +7,7 @@ use CodeIgniter\Model;
 class VisaoGeralModel extends Model
 {
     protected $table = 'acoes';
-    protected $primaryKey = 'id_acao';
+    protected $primaryKey = 'id';
     protected $returnType = 'array';
     protected $useTimestamps = true;
     protected $createdField = 'created_at';
@@ -49,7 +49,7 @@ class VisaoGeralModel extends Model
         // Formata os dados
         return array_map(function ($item) {
             return [
-                'id_acao' => $item['id_acao'],
+                'id' => $item['id'],
                 'nome' => $item['nome'],
                 'projeto' => $item['projeto'] ?? '',
                 'responsavel' => $item['responsavel'],

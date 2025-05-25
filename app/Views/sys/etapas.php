@@ -12,23 +12,22 @@
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="<?= site_url('/') ?>">Início</a></li>
-            <li class="breadcrumb-item"><a href="<?= site_url('planos') ?>"><?= $plano['nome'] ?></a></li>
-            <li class="breadcrumb-item"><a href="<?= site_url("planos/{$projeto['id_plano']}/projetos") ?>"><?= $projeto['nome'] ?></a></li>
+            <li class="breadcrumb-item"><a href="<?= site_url('/planos') ?>">Início</a></li>
+            <li class="breadcrumb-item"><a href="<?= site_url("planos/{$plano['id']}") ?>"><?= $plano['nome'] ?></a></li>
+            <li class="breadcrumb-item"><a href="<?= site_url("planos/{$plano['id']}/projetos/") ?>"><?= $projeto['nome'] ?></a></li>
             <li class="breadcrumb-item active" aria-current="page">Etapas</li>
         </ol>
     </nav>
-
 
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Etapas do Projeto: <?= $projeto['nome'] ?></h1>
         <div>
-            <a href="<?= site_url("planos/{$projeto['id_plano']}/projetos") ?>" class="btn btn-secondary btn-icon-split btn-sm">
+            <a href="<?= site_url("planos/{$plano['id']}/projetos/") ?>" class="btn btn-secondary btn-icon-split btn-sm">
                 <span class="icon text-white-50">
                     <i class="fas fa-arrow-left"></i>
                 </span>
-                <span class="text">Voltar para Projetos</span>
+                <span class="text">Voltar para Projeto</span>
             </a>
         </div>
     </div>

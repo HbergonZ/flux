@@ -9,7 +9,7 @@
             </div>
             <form id="formSolicitarExclusao" method="post" action="<?= site_url('acoes/solicitar-exclusao') ?>">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
-                <input type="hidden" name="id_acao" id="solicitarExclusaoId">
+                <input type="hidden" name="id" id="solicitarExclusaoId">
                 <input type="hidden" name="id_etapa" value="<?= $tipoOrigem === 'etapa' ? $idOrigem : '' ?>">
                 <input type="hidden" name="id_projeto" value="<?= $tipoOrigem === 'projeto' ? $idOrigem : ($tipoOrigem === 'etapa' ? $etapa['id_projeto'] : '') ?>">
 

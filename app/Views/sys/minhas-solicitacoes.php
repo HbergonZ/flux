@@ -7,7 +7,7 @@
     <div class="card shadow mb-4 mx-md-5 mx-3">
         <div class="card-header py-3 bg-warning">
             <h6 class="m-0 font-weight-bold text-white">
-                Solicitações Pendentes (<?= count(array_filter($solicitacoes, fn($s) => strtolower($s['status']) == 'pendente')) ?>)
+                Solicitações Pendentes
             </h6>
         </div>
         <div class="card-body">
@@ -60,7 +60,7 @@
     <div class="card shadow mb-4 mx-md-5 mx-3">
         <div class="card-header py-3 bg-primary">
             <h6 class="m-0 font-weight-bold text-white">
-                Histórico de Solicitações (<?= count(array_filter($solicitacoes, fn($s) => strtolower($s['status']) != 'pendente')) ?>)
+                Histórico de Solicitações
             </h6>
         </div>
         <div class="card-body">

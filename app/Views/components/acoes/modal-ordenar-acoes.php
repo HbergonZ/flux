@@ -20,7 +20,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($acoes as $index => $acao): ?>
+                            <?php foreach ($acoes as $acao): ?>
                                 <tr data-id="<?= $acao['id'] ?>">
                                     <td><?= $acao['nome'] ?></td>
                                     <td class="text-center"><?= $acao['ordem'] ?></td>

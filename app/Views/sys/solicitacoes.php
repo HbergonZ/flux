@@ -25,7 +25,7 @@
                         <?php foreach ($solicitacoes as $solicitacao) : ?>
                             <tr>
                                 <td class="text-center"><?= ucfirst($solicitacao['tipo']) ?></td>
-                                <td class="text-center"><?= ucfirst($solicitacao['nivel']) ?></td>
+                                <td class="text-center"><?= ucfirst(str_replace('acao', 'ação', $solicitacao['nivel'])) ?></td>
                                 <td><?= esc($solicitacao['nome']) ?></td>
                                 <td class="text-center"><?= esc($solicitacao['solicitante']) ?></td>
                                 <td class="text-center"><?= date('d/m/Y H:i', strtotime($solicitacao['data_solicitacao'])) ?></td>

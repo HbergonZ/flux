@@ -1,10 +1,5 @@
-<!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<!-- DataTables -->
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap4.min.css" />
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap4.min.js"></script>
@@ -17,45 +12,125 @@
         let etapaNome = '<?= isset($etapa) ? $etapa["nome"] : "" ?>';
         let formOriginalData = {};
 
-        // Inicializa o DataTable com ordenação pela coluna oculta (ordem)
+        // Configuração do DataTables
         function initializeDataTable() {
             return $('#dataTable').DataTable({
                 "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
                 "language": {
-                    "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json",
-                    "emptyTable": "Nenhum dado disponível na tabela",
-                    "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
-                    "infoEmpty": "Mostrando 0 a 0 de 0 registros",
-                    "infoFiltered": "(filtrado de _MAX_ registros no total)",
-                    "lengthMenu": "Mostrar _MENU_ registros por página",
-                    "loadingRecords": "Carregando...",
-                    "processing": "Processando...",
-                    "search": "Pesquisar:",
-                    "zeroRecords": "Nenhum registro correspondente encontrado",
-                    "paginate": {
-                        "first": "Primeira",
-                        "last": "Última",
-                        "next": "Próxima",
-                        "previous": "Anterior"
-                    },
-                    "aria": {
-                        "sortAscending": ": ativar para ordenar coluna ascendente",
-                        "sortDescending": ": ativar para ordenar coluna descendente"
-                    }
+                    "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json"
                 },
                 "searching": false,
                 "responsive": true,
                 "autoWidth": false,
                 "lengthMenu": [5, 10, 25, 50, 100],
                 "pageLength": 10,
-                "columnDefs": [{
-                    "targets": [0], // Coluna de ordem (oculta)
-                    "visible": false,
-                    "searchable": false
-                }],
+                "columns": [{
+                        "data": "ordem",
+                        "visible": false,
+                        "searchable": false
+                    },
+                    {
+                        "data": "nome",
+                        "className": "text-wrap"
+                    },
+                    ...(!acessoDireto ? [{
+                        "data": "etapa",
+                        "defaultContent": etapaNome
+                    }] : []),
+                    {
+                        "data": "responsavel",
+                        "defaultContent": ""
+                    },
+                    {
+                        "data": "equipe",
+                        "defaultContent": ""
+                    },
+                    {
+                        "data": "entrega_estimada",
+                        "className": "text-center",
+                        "render": function(data) {
+                            return data ? formatDate(data) : '';
+                        }
+                    },
+                    {
+                        "data": "data_inicio",
+                        "className": "text-center",
+                        "render": function(data) {
+                            return data ? formatDate(data) : '';
+                        }
+                    },
+                    {
+                        "data": "data_fim",
+                        "className": "text-center",
+                        "render": function(data) {
+                            return data ? formatDate(data) : '';
+                        }
+                    },
+                    {
+                        "data": "status",
+                        "className": "text-center",
+                        "render": function(data) {
+                            if (!data) data = 'Não iniciado';
+                            const badgeClass = {
+                                'Finalizado': 'badge-success',
+                                'Em andamento': 'badge-primary',
+                                'Paralisado': 'badge-danger',
+                                'Não iniciado': 'badge-secondary'
+                            } [data] || 'badge-secondary';
+
+                            return `<span class="badge ${badgeClass}">${data}</span>`;
+                        }
+                    },
+                    {
+                        "data": null,
+                        "className": "text-center",
+                        "orderable": false,
+                        "render": function(data, type, row) {
+                            const id = row.id + '-' + row.nome.toLowerCase().replace(/\s+/g, '-');
+                            const isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
+
+                            let buttons = '<div class="d-inline-flex">';
+
+                            if (isAdmin) {
+                                buttons += `
+                                    <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>`;
+                            } else {
+                                buttons += `
+                                    <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>`;
+                            }
+
+                            buttons += '</div>';
+                            return buttons;
+                        }
+                    }
+                ],
                 "order": [
                     [0, 'asc']
-                ] // Ordena pela coluna 0 (ordem) ascendente
+                ], // Ordena pela coluna oculta (ordem)
+                "data": <?= json_encode(array_map(function ($acao) use ($acessoDireto, $etapa) {
+                            return [
+                                'id' => $acao['id'],
+                                'nome' => $acao['nome'],
+                                'etapa' => !$acessoDireto ? ($etapa['nome'] ?? '') : '',
+                                'responsavel' => $acao['responsavel'] ?? '',
+                                'equipe' => $acao['equipe'] ?? '',
+                                'entrega_estimada' => $acao['entrega_estimada'] ?? null,
+                                'data_inicio' => $acao['data_inicio'] ?? null,
+                                'data_fim' => $acao['data_fim'] ?? null,
+                                'status' => $acao['status'] ?? 'Não iniciado',
+                                'ordem' => $acao['ordem'] ?? 0
+                            ];
+                        }, $acoes ?? [])) ?>
             });
         }
 
@@ -84,8 +159,8 @@
                         console.error('Erro ao calcular próxima ordem:', response.message);
                         // Fallback: calcular no cliente
                         var maxOrdem = 0;
-                        $('#dataTable tbody tr').each(function() {
-                            var ordem = parseInt($(this).find('td:eq(0)').text()) || 0;
+                        dataTable.rows().every(function() {
+                            var ordem = parseInt(this.data().ordem) || 0;
                             if (ordem > maxOrdem) {
                                 maxOrdem = ordem;
                             }
@@ -98,8 +173,8 @@
                     console.error('Falha ao calcular próxima ordem via AJAX');
                     // Fallback: calcular no cliente
                     var maxOrdem = 0;
-                    $('#dataTable tbody tr').each(function() {
-                        var ordem = parseInt($(this).find('td:eq(0)').text()) || 0;
+                    dataTable.rows().every(function() {
+                        var ordem = parseInt(this.data().ordem) || 0;
                         if (ordem > maxOrdem) {
                             maxOrdem = ordem;
                         }
@@ -361,79 +436,95 @@
 
         // Atualizar tabela com dados filtrados
         function updateTableWithFilteredData(acoes) {
-            dataTable.destroy();
+            // Destruir a tabela existente
+            if ($.fn.DataTable.isDataTable('#dataTable')) {
+                dataTable.destroy();
+            }
+
+            // Limpar o corpo da tabela
             $('#dataTable tbody').empty();
 
             if (acoes.length === 0) {
                 const colCount = acessoDireto ? 9 : 10; // Ajustado para coluna oculta
                 $('#dataTable tbody').append(`
-                    <tr>
-                        <td colspan="${colCount}" class="text-center">Nenhuma ação encontrada com os filtros aplicados</td>
-                    </tr>
-                `);
-            } else {
-                $.each(acoes, function(index, acao) {
-                    const id = acao.id + '-' + acao.nome.toLowerCase().replace(/\s+/g, '-');
-                    const isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
-
-                    // Determina a classe do badge de status
-                    let statusBadge = 'badge-secondary';
-                    switch (acao.status) {
-                        case 'Finalizado':
-                            statusBadge = 'badge-success';
-                            break;
-                        case 'Em andamento':
-                            statusBadge = 'badge-primary';
-                            break;
-                        case 'Paralisado':
-                            statusBadge = 'badge-danger';
-                            break;
-                    }
-
-                    // Monta a linha da tabela incluindo a coluna oculta
-                    const row = `
                         <tr>
-                            <td>${acao.ordem}</td> <!-- Coluna oculta -->
-                            <td class="text-wrap">${acao.nome}</td>
-                            ${(!acessoDireto) ? `<td>${etapaNome}</td>` : ''}
-                            <td>${acao.responsavel || ''}</td>
-                            <td>${acao.equipe || ''}</td>
-                            <td class="text-center">${acao.entrega_estimada ? formatDate(acao.entrega_estimada) : ''}</td>
-                            <td class="text-center">${acao.data_inicio ? formatDate(acao.data_inicio) : ''}</td>
-                            <td class="text-center">${acao.data_fim ? formatDate(acao.data_fim) : ''}</td>
-                            <td class="text-center">
-                                <span class="badge ${statusBadge}">
-                                    ${acao.status || 'Não iniciado'}
-                                </span>
-                            </td>
-                            <td class="text-center">
-                                <div class="d-inline-flex">
-                                    ${isAdmin ? `
-                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    ` : `
-                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    `}
-                                </div>
-                            </td>
-                        </tr>`;
+                            <td colspan="${colCount}" class="text-center">Nenhuma ação encontrada com os filtros aplicados</td>
+                        </tr>
+                    `);
+            } else {
+                // Reconstruir a tabela com os dados filtrados
+                dataTable = initializeDataTable();
+            }
+        }
 
-                    $('#dataTable tbody').append(row);
-                });
+        // Event listener para a troca de ordens no modal
+        $(document).on('change', '.ordem-select', function() {
+            const selectAtual = this;
+            const novaOrdem = parseInt(selectAtual.value);
+            const idAtual = selectAtual.name.match(/\[(.*?)\]/)[1];
+            const ordemOriginal = parseInt($(selectAtual).data('original'));
+
+            // Se a nova ordem for igual à original, não faz nada
+            if (novaOrdem === ordemOriginal) return;
+
+            // Encontrar o select que tinha a nova ordem
+            let selectAlvo = null;
+            $('.ordem-select').each(function() {
+                if (this !== selectAtual && parseInt(this.value) === novaOrdem) {
+                    selectAlvo = this;
+                    return false; // sai do loop
+                }
+            });
+
+            // Se encontrou um select com a ordem que queremos trocar
+            if (selectAlvo) {
+                // Troca a ordem do select alvo para a ordem original do select atual
+                $(selectAlvo).val(ordemOriginal).data('original', ordemOriginal);
             }
 
-            // Re-inicializa o DataTable mantendo a ordenação pela coluna oculta
-            dataTable = initializeDataTable();
-        }
+            // Atualiza o data-original do select atual para a nova ordem
+            $(selectAtual).data('original', novaOrdem);
+        });
+
+        // Inicializar ordens originais quando o modal é aberto
+        $('#ordenarAcoesModal').on('shown.bs.modal', function() {
+            $('.ordem-select').each(function() {
+                $(this).data('original', $(this).val());
+            });
+        });
+
+        // Enviar formulário de ordenação
+        $('#formOrdenarAcoes').submit(function(e) {
+            e.preventDefault();
+
+            const submitBtn = $(this).find('button[type="submit"]');
+            const originalBtnText = submitBtn.html();
+
+            submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...');
+
+            $.ajax({
+                type: "POST",
+                url: $(this).attr('action'),
+                data: $(this).serialize(),
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        $('#ordenarAcoesModal').modal('hide');
+                        showSuccessAlert(response.message || 'Ordem atualizada com sucesso!');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showErrorAlert(response.message || 'Ocorreu um erro ao atualizar a ordem.');
+                    }
+                },
+                error: function(xhr) {
+                    console.error(xhr.responseText);
+                    showErrorAlert('Erro na comunicação com o servidor.');
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).html(originalBtnText);
+                }
+            });
+        });
 
         // Função genérica para enviar formulários
         function submitForm(form, modalId, successMessage = null) {

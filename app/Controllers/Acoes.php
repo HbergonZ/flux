@@ -74,6 +74,7 @@ class Acoes extends BaseController
         }
 
         $data = [];
+        $etapa = null; // Inicializa a variável etapa como null
 
         if ($tipoOrigem === 'etapa') {
             $etapa = $this->etapasModel->find($idOrigem);
@@ -123,6 +124,7 @@ class Acoes extends BaseController
                 ->findAll();
 
             $data = [
+                'etapa' => null, // Define etapa como null para acesso direto
                 'projeto' => $projeto,
                 'plano' => $plano,
                 'acoes' => $acoes,
@@ -165,7 +167,7 @@ class Acoes extends BaseController
                     'ordem' => $proximaOrdem,
                     'responsavel' => $this->request->getPost('responsavel'),
                     'equipe' => $this->request->getPost('equipe'),
-                    'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias'),
+                    'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias') ?: null,
                     'entrega_estimada' => $this->request->getPost('entrega_estimada') ?: null,
                     'data_inicio' => $this->request->getPost('data_inicio') ?: null,
                     'data_fim' => $this->request->getPost('data_fim') ?: null,
@@ -494,7 +496,7 @@ class Acoes extends BaseController
                 }
 
                 $data = [
-                    'nivel' => 'ação',
+                    'nivel' => 'acao',
                     'id_solicitante' => auth()->id(),
                     'id_plano' => $projeto['id_plano'],
                     'id_projeto' => $acaoAtual['id_projeto'],
@@ -563,7 +565,7 @@ class Acoes extends BaseController
                 ];
 
                 $data = [
-                    'nivel' => 'ação',
+                    'nivel' => 'acao',
                     'id_solicitante' => auth()->id(),
                     'id_plano' => $projeto['id_plano'],
                     'id_projeto' => $acao['id_projeto'],
@@ -664,7 +666,7 @@ class Acoes extends BaseController
                 }
 
                 $data = [
-                    'nivel' => 'ação',
+                    'nivel' => 'acao',
                     'id_solicitante' => auth()->id(),
                     'id_plano' => $idPlano,
                     'id_projeto' => $idProjeto,
@@ -701,6 +703,12 @@ class Acoes extends BaseController
 
         if (empty($ordens) || !is_array($ordens)) {
             $response['message'] = 'Nenhuma ordem foi enviada';
+            return $this->response->setJSON($response);
+        }
+
+        // Verificar se há ordens duplicadas
+        if (count($ordens) !== count(array_unique($ordens))) {
+            $response['message'] = 'Existem ordens duplicadas';
             return $this->response->setJSON($response);
         }
 

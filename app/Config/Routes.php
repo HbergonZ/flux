@@ -91,6 +91,7 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
     $routes->post('etapas/excluir/(:num)', 'Etapas::excluir/$1');
     $routes->get('etapas/proxima-ordem/(:num)', 'Etapas::proximaOrdem/$1');
     $routes->post('etapas/salvar-ordem/(:num)', 'Etapas::salvarOrdem/$1');
+    $routes->get('etapas/verificar-relacionamentos/(:num)', 'Etapas::verificarRelacionamentos/$1');
 
     // Ações
     $routes->post('acoes/cadastrar/(:num)/(:segment)', 'Acoes::cadastrar/$1/$2');

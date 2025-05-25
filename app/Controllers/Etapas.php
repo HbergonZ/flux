@@ -4,38 +4,51 @@ namespace App\Controllers;
 
 use App\Models\EtapasModel;
 use App\Models\PlanosModel;
+use App\Models\AcoesModel;
 use App\Models\ProjetosModel;
 use App\Models\SolicitacoesModel;
+use App\Controllers\LogController;
 
 class Etapas extends BaseController
 {
     protected $etapasModel;
+    protected $acoesModel;
     protected $planosModel;
     protected $projetosModel;
     protected $solicitacoesModel;
+    protected $logController;
 
     public function __construct()
     {
         $this->etapasModel = new EtapasModel();
         $this->projetosModel = new ProjetosModel();
+        $this->acoesModel = new AcoesModel();
         $this->planosModel = new PlanosModel();
         $this->solicitacoesModel = new SolicitacoesModel();
+        $this->logController = new LogController();
     }
 
-    public function index($idProjeto = null)
+    public function index($idPlano = null, $idProjeto = null)
     {
         if (empty($idProjeto)) {
             return redirect()->back();
         }
 
+        // Carrega o projeto usando o ID da rota
         $projeto = $this->projetosModel->find($idProjeto);
         if (!$projeto) {
             return redirect()->back();
         }
 
-        $plano = $this->planosModel->find($projeto['id_plano']);
+        // Carrega o plano usando o ID da rota, não o ID do projeto
+        $plano = $this->planosModel->find($idPlano);
         if (!$plano) {
             return redirect()->back();
+        }
+
+        // Verifica se o projeto pertence ao plano
+        if ($projeto['id_plano'] != $plano['id']) {
+            return redirect()->back()->with('error', 'Projeto não pertence ao plano especificado');
         }
 
         $etapas = $this->etapasModel->getEtapasByProjeto($idProjeto);
@@ -44,7 +57,8 @@ class Etapas extends BaseController
             'projeto' => $projeto,
             'plano' => $plano,
             'etapas' => $etapas,
-            'idProjeto' => $idProjeto
+            'idProjeto' => $idProjeto,
+            'idPlano' => $idPlano // Adicione isso para usar na view
         ];
 
         $this->content_data['content'] = view('sys/etapas', $data);
@@ -53,22 +67,17 @@ class Etapas extends BaseController
 
     public function cadastrar($idProjeto)
     {
-        log_message('debug', 'Iniciando cadastro de etapa para o projeto: ' . $idProjeto);
-
         if (!$this->request->isAJAX()) {
-            log_message('debug', 'Requisição não é AJAX, redirecionando');
             return redirect()->to("/projetos/$idProjeto/etapas");
         }
 
         $response = ['success' => false, 'message' => ''];
 
         try {
-            log_message('debug', 'Verificando permissões do usuário');
             if (!auth()->user()->inGroup('admin')) {
                 throw new \Exception('Você não tem permissão para esta ação');
             }
 
-            log_message('debug', 'Validando dados do formulário');
             $rules = [
                 'nome' => 'required|min_length[3]|max_length[255]',
                 'ordem' => 'required|integer'
@@ -76,7 +85,6 @@ class Etapas extends BaseController
 
             if (!$this->validate($rules)) {
                 $errors = $this->validator->getErrors();
-                log_message('debug', 'Erros de validação: ' . print_r($errors, true));
                 throw new \Exception(implode("\n", $errors));
             }
 
@@ -86,8 +94,6 @@ class Etapas extends BaseController
                 'id_projeto' => $idProjeto
             ];
 
-            log_message('debug', 'Dados preparados para inserção: ' . print_r($data, true));
-
             $this->etapasModel->transStart();
             $insertId = $this->etapasModel->insert($data);
 
@@ -95,17 +101,20 @@ class Etapas extends BaseController
                 throw new \Exception('Falha ao inserir etapa no banco de dados');
             }
 
+            $etapaInserida = array_merge(['id' => $insertId], $data);
+
+            // Registrar log de criação
+            if (!$this->logController->registrarCriacao('etapa', $etapaInserida, 'Cadastro inicial da etapa')) {
+                throw new \Exception('Falha ao registrar log de criação');
+            }
+
             $this->etapasModel->transComplete();
 
-            $etapaInserida = $this->etapasModel->find($insertId);
             $response['success'] = true;
             $response['message'] = 'Etapa cadastrada com sucesso!';
             $response['data'] = $etapaInserida;
-
-            log_message('debug', 'Resposta JSON preparada: ' . print_r($response, true));
         } catch (\Exception $e) {
             $this->etapasModel->transRollback();
-            log_message('error', 'Erro ao cadastrar etapa: ' . $e->getMessage());
             $response['message'] = $e->getMessage();
         }
 
@@ -147,16 +156,36 @@ class Etapas extends BaseController
 
         if ($this->validate($rules)) {
             try {
+                $id = $this->request->getPost('id');
+                $etapaAntiga = $this->etapasModel->find($id);
+
+                if (!$etapaAntiga || $etapaAntiga['id_projeto'] != $idProjeto) {
+                    $response['message'] = 'Etapa não encontrada ou não pertence a este projeto';
+                    return $this->response->setJSON($response);
+                }
+
                 $data = [
-                    'id' => $this->request->getPost('id'),
+                    'id' => $id,
                     'nome' => $this->request->getPost('nome'),
                     'ordem' => $this->request->getPost('ordem')
                 ];
 
+                $this->etapasModel->transStart();
                 $this->etapasModel->save($data);
+
+                $etapaAtualizada = $this->etapasModel->find($id);
+
+                // Registrar log de edição
+                if (!$this->logController->registrarEdicao('etapa', $etapaAntiga, $etapaAtualizada, 'Edição realizada via interface')) {
+                    throw new \Exception('Falha ao registrar log de edição');
+                }
+
+                $this->etapasModel->transComplete();
+
                 $response['success'] = true;
                 $response['message'] = 'Etapa atualizada com sucesso!';
             } catch (\Exception $e) {
+                $this->etapasModel->transRollback();
                 $response['message'] = 'Erro ao atualizar etapa: ' . $e->getMessage();
             }
         } else {
@@ -175,14 +204,51 @@ class Etapas extends BaseController
         $response = ['success' => false, 'message' => ''];
         $id = $this->request->getPost('id');
 
+        $db = \Config\Database::connect();
+        $acoesModel = new AcoesModel($db);
+
         try {
-            if ($this->etapasModel->delete($id)) {
-                $response['success'] = true;
-                $response['message'] = 'Etapa excluída com sucesso!';
-            } else {
-                $response['message'] = 'Erro ao excluir etapa: registro não encontrado';
+            $db->transStart();
+
+            $etapa = $this->etapasModel->find($id);
+            if (!$etapa || $etapa['id_projeto'] != $idProjeto) {
+                throw new \Exception('Etapa não encontrada ou não pertence a este projeto');
             }
+
+            // Contar e excluir ações vinculadas
+            $acoes = $acoesModel->where('id_etapa', $id)->findAll();
+            $contagemAcoes = count($acoes);
+
+            foreach ($acoes as $acao) {
+                // Registrar log de exclusão da ação
+                if (!$this->logController->registrarExclusao('acao', $acao, 'Exclusão em cascata da etapa')) {
+                    throw new \Exception('Falha ao registrar log de exclusão da ação');
+                }
+
+                if (!$acoesModel->delete($acao['id'])) {
+                    throw new \Exception("Falha ao excluir ação ID: {$acao['id']}");
+                }
+            }
+
+            // Registrar log de exclusão da etapa
+            if (!$this->logController->registrarExclusao('etapa', $etapa, 'Exclusão realizada via interface')) {
+                throw new \Exception('Falha ao registrar log de exclusão da etapa');
+            }
+
+            // Excluir a etapa
+            if (!$this->etapasModel->delete($id)) {
+                throw new \Exception('Falha ao excluir etapa');
+            }
+
+            $db->transComplete();
+
+            $response['success'] = true;
+            $response['message'] = 'Etapa e suas ações foram excluídas com sucesso!';
+            $response['contagem'] = [
+                'acoes' => $contagemAcoes
+            ];
         } catch (\Exception $e) {
+            $db->transRollback();
             $response['message'] = 'Erro ao excluir etapa: ' . $e->getMessage();
         }
 
@@ -282,7 +348,6 @@ class Etapas extends BaseController
                 $response['success'] = true;
                 $response['message'] = 'Solicitação de edição enviada com sucesso!';
             } catch (\Exception $e) {
-                log_message('error', 'Erro em solicitarEdicao: ' . $e->getMessage());
                 $response['message'] = 'Erro ao processar solicitação: ' . $e->getMessage();
             }
         } else {
@@ -336,7 +401,6 @@ class Etapas extends BaseController
                 $response['success'] = true;
                 $response['message'] = 'Solicitação de exclusão enviada com sucesso!';
             } catch (\Exception $e) {
-                log_message('error', 'Erro em solicitarExclusao: ' . $e->getMessage());
                 $response['message'] = 'Erro ao processar solicitação: ' . $e->getMessage();
             }
         } else {
@@ -383,7 +447,6 @@ class Etapas extends BaseController
                 $response['success'] = true;
                 $response['message'] = 'Solicitação de inclusão enviada com sucesso!';
             } catch (\Exception $e) {
-                log_message('error', 'Erro em solicitarInclusao: ' . $e->getMessage());
                 $response['message'] = 'Erro ao processar solicitação: ' . $e->getMessage();
             }
         } else {
@@ -392,6 +455,7 @@ class Etapas extends BaseController
 
         return $this->response->setJSON($response);
     }
+
     public function proximaOrdem($idProjeto)
     {
         if (!$this->request->isAJAX()) {
@@ -405,7 +469,6 @@ class Etapas extends BaseController
                 'proximaOrdem' => $proximaOrdem
             ]);
         } catch (\Exception $e) {
-            log_message('error', 'Erro ao calcular próxima ordem: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Erro ao calcular próxima ordem'
@@ -449,8 +512,37 @@ class Etapas extends BaseController
             $response['success'] = true;
             $response['message'] = 'Ordem das etapas atualizada com sucesso!';
         } catch (\Exception $e) {
-            log_message('error', 'Erro ao salvar ordem: ' . $e->getMessage());
             $response['message'] = 'Erro ao salvar ordem: ' . $e->getMessage();
+        }
+
+        return $this->response->setJSON($response);
+    }
+    public function verificarRelacionamentos($idEtapa)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $response = ['success' => false, 'message' => '', 'contagem' => [
+            'acoes' => 0
+        ]];
+
+        try {
+            $acoesModel = new AcoesModel();
+
+            $etapa = $this->etapasModel->find($idEtapa);
+            if (!$etapa) {
+                $response['message'] = 'Etapa não encontrada';
+                return $this->response->setJSON($response);
+            }
+
+            // Contar ações vinculadas
+            $acoes = $acoesModel->where('id_etapa', $idEtapa)->findAll();
+            $response['contagem']['acoes'] = count($acoes);
+
+            $response['success'] = true;
+        } catch (\Exception $e) {
+            $response['message'] = 'Erro ao verificar relacionamentos: ' . $e->getMessage();
         }
 
         return $this->response->setJSON($response);

@@ -8,6 +8,7 @@ use App\Models\EixosModel;
 use App\Models\SolicitacoesModel;
 use App\Models\EtapasModel;
 use App\Models\AcoesModel;
+use App\Controllers\LogController;
 
 class Projetos extends BaseController
 {
@@ -17,6 +18,7 @@ class Projetos extends BaseController
     protected $solicitacoesModel;
     protected $etapasModel;
     protected $acoesModel;
+    protected $logController;
 
     public function __construct()
     {
@@ -26,6 +28,7 @@ class Projetos extends BaseController
         $this->solicitacoesModel = new SolicitacoesModel();
         $this->etapasModel = new EtapasModel();
         $this->acoesModel = new AcoesModel();
+        $this->logController = new LogController();
     }
 
     public function index($idPlano = null)
@@ -124,6 +127,7 @@ class Projetos extends BaseController
 
             log_message('debug', 'Dados preparados para inserção: ' . print_r($data, true));
 
+            $this->projetosModel->transStart();
             $insertId = $this->projetosModel->insert($data);
 
             if ($this->projetosModel->errors()) {
@@ -132,15 +136,24 @@ class Projetos extends BaseController
                 throw new \Exception(implode("\n", $errors));
             }
 
+            $projetoInserido = array_merge(['id' => $insertId], $data);
+
+            // Registrar log de criação
+            if (!$this->logController->registrarCriacao('projeto', $projetoInserido, 'Cadastro inicial do projeto')) {
+                throw new \Exception('Falha ao registrar log de criação');
+            }
+
+            $this->projetosModel->transComplete();
+
             log_message('debug', 'Projeto inserido com ID: ' . $insertId);
 
-            $projetoInserido = $this->projetosModel->find($insertId);
             $response['success'] = true;
             $response['message'] = 'Projeto cadastrado com sucesso!';
             $response['data'] = $projetoInserido;
 
             log_message('debug', 'Resposta JSON preparada: ' . print_r($response, true));
         } catch (\Exception $e) {
+            $this->projetosModel->transRollback();
             log_message('error', 'Erro ao cadastrar projeto: ' . $e->getMessage());
             $response['message'] = $e->getMessage();
         }
@@ -203,9 +216,9 @@ class Projetos extends BaseController
         if ($this->validate($rules)) {
             try {
                 $id = $this->request->getPost('id');
-                $projeto = $this->projetosModel->find($id);
+                $projetoAntigo = $this->projetosModel->find($id);
 
-                if (!$projeto || $projeto['id_plano'] != $idPlano) {
+                if (!$projetoAntigo || $projetoAntigo['id_plano'] != $idPlano) {
                     log_message('debug', 'Projeto não encontrado ou não pertence ao plano');
                     $response['message'] = 'Projeto não encontrado ou não pertence a este plano';
                     return $this->response->setJSON($response);
@@ -235,12 +248,24 @@ class Projetos extends BaseController
 
                 log_message('debug', 'Dados preparados para atualização: ' . print_r($data, true));
 
+                $this->projetosModel->transStart();
                 $this->projetosModel->save($data);
+
+                $projetoAtualizado = $this->projetosModel->find($id);
+
+                // Registrar log de edição
+                if (!$this->logController->registrarEdicao('projeto', $projetoAntigo, $projetoAtualizado, 'Edição realizada via interface')) {
+                    throw new \Exception('Falha ao registrar log de edição');
+                }
+
+                $this->projetosModel->transComplete();
+
                 $response['success'] = true;
                 $response['message'] = 'Projeto atualizado com sucesso!';
 
                 log_message('debug', 'Projeto atualizado com sucesso');
             } catch (\Exception $e) {
+                $this->projetosModel->transRollback();
                 log_message('error', 'Erro ao atualizar projeto: ' . $e->getMessage());
                 $response['message'] = 'Erro ao atualizar projeto: ' . $e->getMessage();
             }
@@ -287,26 +312,122 @@ class Projetos extends BaseController
             }
 
             log_message('debug', 'Verificando dependências do projeto');
-            if (
-                $this->etapasModel->where('id_projeto', $idProjeto)->countAllResults() > 0 ||
-                $this->acoesModel->where('id_projeto', $idProjeto)->where('id_etapa', null)->countAllResults() > 0
-            ) {
-                log_message('debug', 'Existem etapas ou ações vinculadas ao projeto');
-                $response['message'] = 'Não é possível excluir o projeto pois existem etapas ou ações vinculadas';
+            $contagem = [
+                'etapas' => 0,
+                'acoes' => 0
+            ];
+
+            $this->projetosModel->transStart();
+
+            // Verificar e excluir etapas e ações vinculadas
+            $etapas = $this->etapasModel->where('id_projeto', $idProjeto)->findAll();
+            $contagem['etapas'] = count($etapas);
+
+            foreach ($etapas as $etapa) {
+                $acoes = $this->acoesModel->where('id_etapa', $etapa['id'])->findAll();
+                $contagem['acoes'] += count($acoes);
+
+                foreach ($acoes as $acao) {
+                    // Registrar log de exclusão da ação
+                    if (!$this->logController->registrarExclusao('acao', $acao, 'Exclusão em cascata do projeto')) {
+                        throw new \Exception('Falha ao registrar log de exclusão da ação');
+                    }
+
+                    if (!$this->acoesModel->delete($acao['id'])) {
+                        throw new \Exception("Falha ao excluir ação ID: {$acao['id']}");
+                    }
+                }
+
+                // Registrar log de exclusão da etapa
+                if (!$this->logController->registrarExclusao('etapa', $etapa, 'Exclusão em cascata do projeto')) {
+                    throw new \Exception('Falha ao registrar log de exclusão da etapa');
+                }
+
+                if (!$this->etapasModel->delete($etapa['id'])) {
+                    throw new \Exception("Falha ao excluir etapa ID: {$etapa['id']}");
+                }
+            }
+
+            // Verificar e excluir ações diretas vinculadas ao projeto
+            $acoesDiretas = $this->acoesModel->where('id_projeto', $idProjeto)
+                ->where('id_etapa', null)
+                ->findAll();
+            $contagem['acoes'] += count($acoesDiretas);
+
+            foreach ($acoesDiretas as $acao) {
+                // Registrar log de exclusão da ação direta
+                if (!$this->logController->registrarExclusao('acao', $acao, 'Exclusão em cascata do projeto')) {
+                    throw new \Exception('Falha ao registrar log de exclusão da ação direta');
+                }
+
+                if (!$this->acoesModel->delete($acao['id'])) {
+                    throw new \Exception("Falha ao excluir ação direta ID: {$acao['id']}");
+                }
+            }
+
+            // Registrar log de exclusão do projeto
+            if (!$this->logController->registrarExclusao('projeto', $projeto, 'Exclusão realizada via interface')) {
+                throw new \Exception('Falha ao registrar log de exclusão do projeto');
+            }
+
+            // Excluir o projeto
+            if (!$this->projetosModel->delete($idProjeto)) {
+                throw new \Exception('Falha ao excluir projeto');
+            }
+
+            $this->projetosModel->transComplete();
+
+            $response['success'] = true;
+            $response['message'] = 'Projeto excluído com sucesso!';
+            $response['contagem'] = $contagem;
+
+            log_message('debug', 'Projeto excluído com sucesso');
+        } catch (\Exception $e) {
+            $this->projetosModel->transRollback();
+            log_message('error', 'Erro ao excluir projeto: ' . $e->getMessage());
+            $response['message'] = 'Erro ao excluir projeto: ' . $e->getMessage();
+        }
+
+        return $this->response->setJSON($response);
+    }
+
+    public function verificarRelacionamentos($idProjeto)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $response = ['success' => false, 'message' => '', 'contagem' => [
+            'etapas' => 0,
+            'acoes' => 0
+        ]];
+
+        try {
+            $projeto = $this->projetosModel->find($idProjeto);
+            if (!$projeto) {
+                $response['message'] = 'Projeto não encontrado';
                 return $this->response->setJSON($response);
             }
 
-            if ($this->projetosModel->delete($idProjeto)) {
-                log_message('debug', 'Projeto excluído com sucesso');
-                $response['success'] = true;
-                $response['message'] = 'Projeto excluído com sucesso!';
-            } else {
-                log_message('error', 'Erro ao excluir projeto');
-                $response['message'] = 'Erro ao excluir projeto';
+            // Contar etapas vinculadas
+            $etapas = $this->etapasModel->where('id_projeto', $idProjeto)->findAll();
+            $response['contagem']['etapas'] = count($etapas);
+
+            // Contar ações vinculadas (diretas e através de etapas)
+            $acoesDiretas = $this->acoesModel->where('id_projeto', $idProjeto)
+                ->where('id_etapa IS NULL')
+                ->findAll();
+            $response['contagem']['acoes'] = count($acoesDiretas);
+
+            foreach ($etapas as $etapa) {
+                $acoes = $this->acoesModel->where('id_etapa', $etapa['id'])->findAll();
+                $response['contagem']['acoes'] += count($acoes);
             }
+
+            $response['success'] = true;
         } catch (\Exception $e) {
-            log_message('error', 'Erro ao excluir projeto: ' . $e->getMessage());
-            $response['message'] = 'Erro ao excluir projeto: ' . $e->getMessage();
+            log_message('error', 'Erro ao verificar relacionamentos: ' . $e->getMessage());
+            $response['message'] = 'Erro ao verificar relacionamentos: ' . $e->getMessage();
         }
 
         return $this->response->setJSON($response);
@@ -669,12 +790,30 @@ class Projetos extends BaseController
 
                 log_message('debug', 'Dados da ação direta: ' . print_r($data, true));
 
-                $this->acoesModel->insert($data);
+                $this->acoesModel->transStart();
+
+                $insertId = $this->acoesModel->insert($data);
+
+                if ($this->acoesModel->errors()) {
+                    throw new \Exception(implode("\n", $this->acoesModel->errors()));
+                }
+
+                $acaoInserida = array_merge(['id' => $insertId], $data);
+
+                // Registrar log de criação
+                if (!$this->logController->registrarCriacao('acao', $acaoInserida, 'Cadastro de ação direta no projeto')) {
+                    throw new \Exception('Falha ao registrar log de criação');
+                }
+
+                $this->acoesModel->transComplete();
+
                 $response['success'] = true;
                 $response['message'] = 'Ação cadastrada com sucesso!';
+                $response['data'] = $acaoInserida;
 
                 log_message('debug', 'Ação direta cadastrada com sucesso');
             } catch (\Exception $e) {
+                $this->acoesModel->transRollback();
                 log_message('error', 'Erro ao cadastrar ação direta: ' . $e->getMessage());
                 $response['message'] = 'Erro ao cadastrar ação: ' . $e->getMessage();
             }
@@ -682,6 +821,182 @@ class Projetos extends BaseController
             $errors = $this->validator->getErrors();
             log_message('debug', 'Erros de validação ao cadastrar ação: ' . print_r($errors, true));
             $response['message'] = implode('<br>', $errors);
+        }
+
+        return $this->response->setJSON($response);
+    }
+
+    public function editarAcaoDireta($idProjeto, $idAcao)
+    {
+        log_message('debug', "Editando ação direta ID: $idAcao do projeto ID: $idProjeto");
+
+        if (!$this->request->isAJAX()) {
+            log_message('debug', 'Requisição não é AJAX, redirecionando');
+            return redirect()->to("/projetos/$idProjeto/acoes");
+        }
+
+        $response = ['success' => false, 'message' => ''];
+
+        try {
+            $projeto = $this->projetosModel->find($idProjeto);
+            if (!$projeto) {
+                throw new \Exception('Projeto não encontrado');
+            }
+
+            $acao = $this->acoesModel->where('id', $idAcao)
+                ->where('id_projeto', $idProjeto)
+                ->where('id_etapa IS NULL')
+                ->first();
+
+            if (!$acao) {
+                throw new \Exception('Ação não encontrada ou não pertence a este projeto');
+            }
+
+            $rules = [
+                'nome' => 'required|min_length[3]|max_length[255]',
+                'responsavel' => 'permit_empty|max_length[255]',
+                'equipe' => 'permit_empty|max_length[255]',
+                'tempo_estimado_dias' => 'permit_empty|integer',
+                'inicio_estimado' => 'permit_empty|valid_date',
+                'fim_estimado' => 'permit_empty|valid_date',
+                'data_inicio' => 'permit_empty|valid_date',
+                'data_fim' => 'permit_empty|valid_date',
+                'status' => 'permit_empty|in_list[Em andamento,Finalizado,Paralisado,Não iniciado]',
+                'ordem' => 'permit_empty|integer'
+            ];
+
+            if (!$this->validate($rules)) {
+                $errors = $this->validator->getErrors();
+                throw new \Exception(implode("\n", $errors));
+            }
+
+            $dadosAntigos = $acao;
+            $dadosAtualizados = [
+                'nome' => $this->request->getPost('nome'),
+                'responsavel' => $this->request->getPost('responsavel'),
+                'equipe' => $this->request->getPost('equipe'),
+                'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias'),
+                'inicio_estimado' => $this->request->getPost('inicio_estimado'),
+                'fim_estimado' => $this->request->getPost('fim_estimado'),
+                'data_inicio' => $this->request->getPost('data_inicio'),
+                'data_fim' => $this->request->getPost('data_fim'),
+                'status' => $this->request->getPost('status'),
+                'ordem' => $this->request->getPost('ordem')
+            ];
+
+            $this->acoesModel->transStart();
+
+            if (!$this->acoesModel->update($idAcao, $dadosAtualizados)) {
+                throw new \Exception('Falha ao atualizar ação');
+            }
+
+            $acaoAtualizada = $this->acoesModel->find($idAcao);
+
+            // Registrar log de edição
+            if (!$this->logController->registrarEdicao('acao', $dadosAntigos, $acaoAtualizada, 'Edição de ação direta')) {
+                throw new \Exception('Falha ao registrar log de edição');
+            }
+
+            $this->acoesModel->transComplete();
+
+            $response['success'] = true;
+            $response['message'] = 'Ação atualizada com sucesso!';
+            $response['data'] = $acaoAtualizada;
+        } catch (\Exception $e) {
+            $this->acoesModel->transRollback();
+            log_message('error', 'Erro ao editar ação direta: ' . $e->getMessage());
+            $response['message'] = $e->getMessage();
+        }
+
+        return $this->response->setJSON($response);
+    }
+
+    public function excluirAcaoDireta($idProjeto, $idAcao)
+    {
+        log_message('debug', "Excluindo ação direta ID: $idAcao do projeto ID: $idProjeto");
+
+        if (!$this->request->isAJAX()) {
+            log_message('debug', 'Requisição não é AJAX, redirecionando');
+            return redirect()->to("/projetos/$idProjeto/acoes");
+        }
+
+        $response = ['success' => false, 'message' => ''];
+
+        try {
+            $projeto = $this->projetosModel->find($idProjeto);
+            if (!$projeto) {
+                throw new \Exception('Projeto não encontrado');
+            }
+
+            $acao = $this->acoesModel->where('id', $idAcao)
+                ->where('id_projeto', $idProjeto)
+                ->where('id_etapa IS NULL')
+                ->first();
+
+            if (!$acao) {
+                throw new \Exception('Ação não encontrada ou não pertence a este projeto');
+            }
+
+            $this->acoesModel->transStart();
+
+            // Registrar log de exclusão
+            if (!$this->logController->registrarExclusao('acao', $acao, 'Exclusão de ação direta')) {
+                throw new \Exception('Falha ao registrar log de exclusão');
+            }
+
+            if (!$this->acoesModel->delete($idAcao)) {
+                throw new \Exception('Falha ao excluir ação');
+            }
+
+            $this->acoesModel->transComplete();
+
+            $response['success'] = true;
+            $response['message'] = 'Ação excluída com sucesso!';
+        } catch (\Exception $e) {
+            $this->acoesModel->transRollback();
+            log_message('error', 'Erro ao excluir ação direta: ' . $e->getMessage());
+            $response['message'] = $e->getMessage();
+        }
+
+        return $this->response->setJSON($response);
+    }
+
+    public function reordenarAcoesDiretas($idProjeto)
+    {
+        log_message('debug', "Reordenando ações diretas do projeto ID: $idProjeto");
+
+        if (!$this->request->isAJAX()) {
+            log_message('debug', 'Requisição não é AJAX, redirecionando');
+            return redirect()->to("/projetos/$idProjeto/acoes");
+        }
+
+        $response = ['success' => false, 'message' => ''];
+
+        try {
+            $ordens = $this->request->getPost('ordens');
+            if (empty($ordens)) {
+                throw new \Exception('Nenhuma ordem foi enviada');
+            }
+
+            $this->acoesModel->transStart();
+
+            foreach ($ordens as $item) {
+                $this->acoesModel
+                    ->where('id', $item['id'])
+                    ->where('id_projeto', $idProjeto)
+                    ->where('id_etapa IS NULL')
+                    ->set(['ordem' => $item['ordem']])
+                    ->update();
+            }
+
+            $this->acoesModel->transComplete();
+
+            $response['success'] = true;
+            $response['message'] = 'Ordem das ações atualizada com sucesso!';
+        } catch (\Exception $e) {
+            $this->acoesModel->transRollback();
+            log_message('error', 'Erro ao reordenar ações diretas: ' . $e->getMessage());
+            $response['message'] = $e->getMessage();
         }
 
         return $this->response->setJSON($response);

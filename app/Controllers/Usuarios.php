@@ -156,6 +156,14 @@ class Usuarios extends BaseController
         }
 
         try {
+            // Dados antes da alteração
+            $dadosAntigos = [
+                'username' => $user->username,
+                'email' => $currentEmail,
+                'active' => $user->active,
+                'groups' => $user->getGroups()
+            ];
+
             $user->fill([
                 'username' => $this->request->getPost('username')
             ]);
@@ -166,6 +174,24 @@ class Usuarios extends BaseController
             }
 
             $this->userModel->save($user);
+
+            // Dados após alteração
+            $dadosNovos = [
+                'username' => $user->username,
+                'email' => $newEmail,
+                'active' => $user->active,
+                'groups' => $user->getGroups()
+            ];
+
+            // Registrar log da edição
+            $this->registrarLog(
+                'edicao',
+                'usuario',
+                $user->id,
+                $dadosAntigos,
+                $dadosNovos,
+                $isSelfEdit ? 'Auto-edição de perfil' : null
+            );
 
             return $this->response->setJSON([
                 'success' => true,
@@ -242,10 +268,25 @@ class Usuarios extends BaseController
         }
 
         try {
-            foreach ($user->getGroups() as $oldGroup) {
+            $gruposAntigos = $user->getGroups();
+
+            // Remover todos os grupos atuais
+            foreach ($gruposAntigos as $oldGroup) {
                 $user->removeGroup($oldGroup);
             }
+
+            // Adicionar novo grupo
             $user->addGroup($group);
+
+            // Registrar log da alteração de grupo
+            $this->registrarLog(
+                'alteracao',
+                'grupo',
+                $user->id,
+                ['grupos' => $gruposAntigos],
+                ['grupos' => [$group]],
+                'Alteração de grupo do usuário'
+            );
 
             return $this->response->setJSON([
                 'success' => true,
@@ -299,6 +340,28 @@ class Usuarios extends BaseController
         }
 
         try {
+            // Obter dados do usuário antes de excluir
+            $identity = $this->authIdentities->where('user_id', $user->id)->get()->getRow();
+            $dadosUsuario = [
+                'username' => $user->username,
+                'email' => $identity ? $identity->secret : null,
+                'active' => $user->active,
+                'groups' => $user->getGroups(),
+                'created_at' => $user->created_at,
+                'updated_at' => $user->updated_at
+            ];
+
+            // Registrar log da exclusão
+            $this->registrarLog(
+                'exclusao',
+                'usuario',
+                $user->id,
+                $dadosUsuario,
+                null,
+                'Exclusão de usuário pelo administrador'
+            );
+
+            // Executar exclusão
             $this->authIdentities->where('user_id', $user->id)->delete();
             $this->userModel->delete($user->id);
 
@@ -312,6 +375,27 @@ class Usuarios extends BaseController
                 'success' => false,
                 'message' => 'Erro ao excluir usuário. Por favor, tente novamente.'
             ]);
+        }
+    }
+    protected function registrarLog(string $tipoOperacao, string $entidade, ?int $idEntidade, ?array $dadosAntigos = null, ?array $dadosNovos = null, ?string $justificativa = null)
+    {
+        $logModel = new \App\Models\LogAdminModel();
+
+        $dadosLog = [
+            'id_usuario' => auth()->user()->id,
+            'tipo_operacao' => $tipoOperacao,
+            'entidade' => $entidade,
+            'id_entidade' => $idEntidade,
+            'nome_entidade' => $dadosNovos['username'] ?? $dadosAntigos['username'] ?? 'Usuário ' . $idEntidade,
+            'dados_antigos' => $dadosAntigos ? json_encode($dadosAntigos) : null,
+            'dados_novos' => $dadosNovos ? json_encode($dadosNovos) : null,
+            'justificativa' => $justificativa
+        ];
+
+        try {
+            $logModel->insert($dadosLog);
+        } catch (\Exception $e) {
+            log_message('error', 'Falha ao registrar log: ' . $e->getMessage());
         }
     }
 }

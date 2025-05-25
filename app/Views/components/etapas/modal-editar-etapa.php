@@ -16,6 +16,11 @@
                         <label for="editEtapaNome">Nome*</label>
                         <input type="text" class="form-control" id="editEtapaNome" name="nome" required maxlength="255">
                     </div>
+                    <div class="form-group">
+                        <label for="editEtapaOrdem">Ordem Atual</label>
+                        <input type="number" class="form-control" id="editEtapaOrdem" name="ordem" readonly>
+                        <small class="form-text text-muted">Para alterar a ordem, utilize o recurso "Alterar Ordem" na lista de etapas.</small>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
