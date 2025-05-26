@@ -50,6 +50,7 @@
                                 </select>
                             </div>
                         </div>
+
                     </div>
 
                     <div class="row">
@@ -59,6 +60,16 @@
                                 <select class="form-control" id="editProjetoPriorizacao" name="priorizacao_gab">
                                     <option value="0">Não</option>
                                     <option value="1">Sim</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="projetoStatus">Status do Projeto*</label>
+                                <select class="form-control" id="projetoStatus" name="status" required>
+                                    <option value="Ativo" <?= ($projeto['status'] ?? 'Ativo') === 'Ativo' ? 'selected' : '' ?>>Ativo</option>
+                                    <option value="Paralisado" <?= ($projeto['status'] ?? 'Ativo') === 'Paralisado' ? 'selected' : '' ?>>Paralisado</option>
+                                    <option value="Concluído" <?= ($projeto['status'] ?? 'Ativo') === 'Concluído' ? 'selected' : '' ?>>Concluído</option>
                                 </select>
                             </div>
                         </div>

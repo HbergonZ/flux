@@ -1,8 +1,16 @@
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- jQuery PRIMEIRO - versão mais recente -->
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+<!-- Bootstrap -->
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap4.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- DataTables -->
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap4.min.js"></script>
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
     $(document).ready(function() {
@@ -11,6 +19,7 @@
         let acessoDireto = <?= isset($acessoDireto) && $acessoDireto ? 'true' : 'false' ?>;
         let etapaNome = '<?= isset($etapa) ? $etapa["nome"] : "" ?>';
         let formOriginalData = {};
+        let acaoIdEquipe = null;
 
         // Configuração do DataTables
         function initializeDataTable() {
@@ -93,20 +102,20 @@
 
                             if (isAdmin) {
                                 buttons += `
-                                    <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>`;
+                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>`;
                             } else {
                                 buttons += `
-                                    <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>`;
+                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>`;
                             }
 
                             buttons += '</div>';
@@ -116,7 +125,7 @@
                 ],
                 "order": [
                     [0, 'asc']
-                ], // Ordena pela coluna oculta (ordem)
+                ],
                 "data": <?= json_encode(array_map(function ($acao) use ($acessoDireto, $etapa) {
                             return [
                                 'id' => $acao['id'],
@@ -447,10 +456,10 @@
             if (acoes.length === 0) {
                 const colCount = acessoDireto ? 9 : 10; // Ajustado para coluna oculta
                 $('#dataTable tbody').append(`
-                        <tr>
-                            <td colspan="${colCount}" class="text-center">Nenhuma ação encontrada com os filtros aplicados</td>
-                        </tr>
-                    `);
+                            <tr>
+                                <td colspan="${colCount}" class="text-center">Nenhuma ação encontrada com os filtros aplicados</td>
+                            </tr>
+                        `);
             } else {
                 // Reconstruir a tabela com os dados filtrados
                 dataTable = initializeDataTable();
@@ -522,6 +531,215 @@
                 },
                 complete: function() {
                     submitBtn.prop('disabled', false).html(originalBtnText);
+                }
+            });
+        });
+
+        // Configuração do modal de equipe com Select2
+        $('#equipeAcaoModal').on('shown.bs.modal', function() {
+
+            // Destrua qualquer instância existente
+            if ($('#selectUsuarioEquipe').hasClass('select2-hidden-accessible')) {
+                $('#selectUsuarioEquipe').select2('destroy');
+            }
+
+            // Inicialize o Select2
+            $('#selectUsuarioEquipe').select2({
+                placeholder: "Digite para buscar usuários...",
+                minimumInputLength: 2,
+                width: '100%',
+                ajax: {
+                    url: '<?= site_url("acoes/buscar-usuarios") ?>',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function(params) {
+                        console.log('Buscando usuários com termo:', params.term);
+                        return {
+                            term: params.term,
+                            acao_id: acaoIdEquipe,
+                            '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                        };
+                    },
+                    processResults: function(data, params) {
+                        console.log('Resultados recebidos:', data);
+                        return {
+                            results: data.results || []
+                        };
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.error('Erro na busca:', textStatus, errorThrown);
+                    }
+                }
+            }).on('select2:open', function() {
+                console.log('Select2 aberto');
+            });
+        });
+
+        // Botão "Ver Equipe"
+        $(document).on('click', '#btnVerEquipe', function(e) {
+            e.preventDefault();
+            acaoIdEquipe = $('#editAcaoId').val();
+
+            if (!acaoIdEquipe) {
+                showErrorAlert('ID da ação não encontrado');
+                return;
+            }
+
+            $('#editAcaoModal').modal('hide').on('hidden.bs.modal', function() {
+                $(this).off('hidden.bs.modal');
+                $('#equipeAcaoModal').modal('show');
+                carregarEquipeAcao(acaoIdEquipe);
+                carregarUsuariosDisponiveis(acaoIdEquipe);
+            });
+        });
+
+        // Carregar usuários disponíveis para o select
+        function carregarUsuariosDisponiveis(acaoId) {
+            $.ajax({
+                url: '<?= site_url("acoes/buscar-usuarios") ?>',
+                type: 'GET',
+                data: {
+                    acao_id: acaoId
+                },
+                dataType: 'json',
+                beforeSend: function() {
+                    $('#selectUsuarioEquipe').html('<option value="">Carregando usuários...</option>');
+                },
+                success: function(response) {
+                    if (response.success && response.data && response.data.length > 0) {
+                        let options = '<option value="">Selecione um usuário</option>';
+                        response.data.forEach(usuario => {
+                            options += `<option value="${usuario.id}">${usuario.username} (${usuario.email})</option>`;
+                        });
+                        $('#selectUsuarioEquipe').html(options);
+                    } else {
+                        $('#selectUsuarioEquipe').html('<option value="">Nenhum usuário disponível</option>');
+                    }
+                },
+                error: function() {
+                    $('#selectUsuarioEquipe').html('<option value="">Erro ao carregar usuários</option>');
+                    showErrorAlert('Erro ao carregar lista de usuários');
+                }
+            });
+        }
+
+        // Função para carregar a equipe
+        function carregarEquipeAcao(acaoId) {
+            $.ajax({
+                url: `<?= site_url("acoes/get-equipe/") ?>${acaoId}`,
+                type: 'GET',
+                dataType: 'json',
+                beforeSend: function() {
+                    $('#tabelaEquipeAcao tbody').html('<tr><td colspan="3" class="text-center"><i class="fas fa-spinner fa-spin"></i> Carregando...</td></tr>');
+                },
+                success: function(response) {
+                    const tbody = $('#tabelaEquipeAcao tbody');
+                    tbody.empty();
+
+                    if (response.data && response.data.length > 0) {
+                        response.data.forEach(membro => {
+                            tbody.append(`
+                                    <tr data-usuario-id="${membro.id}">
+                                        <td>${membro.username}</td>
+                                        <td>${membro.email}</td>
+                                        <td class="text-center">
+                                            <button class="btn btn-danger btn-sm btn-remover-equipe" data-usuario-id="${membro.id}">
+                                                <i class="fas fa-trash-alt"></i> Remover
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `);
+                        });
+                    } else {
+                        tbody.append('<tr><td colspan="3" class="text-center">Nenhum membro na equipe</td></tr>');
+                    }
+                },
+                error: function(xhr) {
+                    console.error('Erro ao carregar equipe:', xhr.responseText);
+                    $('#tabelaEquipeAcao tbody').html('<tr><td colspan="3" class="text-center text-danger">Erro ao carregar equipe</td></tr>');
+                }
+            });
+        }
+
+        // Adicionar usuário à equipe
+        $('#btnAdicionarUsuarioEquipe').click(function() {
+            const usuarioId = $('#selectUsuarioEquipe').val();
+            if (!usuarioId || !acaoIdEquipe) {
+                showErrorAlert('Selecione um usuário válido');
+                return;
+            }
+
+            $.ajax({
+                url: '<?= site_url("acoes/adicionar-membro-equipe") ?>',
+                type: 'POST',
+                data: {
+                    acao_id: acaoIdEquipe,
+                    usuario_id: usuarioId,
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                },
+                dataType: 'json',
+                beforeSend: function() {
+                    $('#btnAdicionarUsuarioEquipe').prop('disabled', true);
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $('#selectUsuarioEquipe').val(null).trigger('change');
+                        carregarEquipeAcao(acaoIdEquipe);
+                        carregarUsuariosDisponiveis(acaoIdEquipe);
+                        showSuccessAlert(response.message);
+                    } else {
+                        showErrorAlert(response.message);
+                    }
+                },
+                error: function() {
+                    showErrorAlert('Erro na comunicação com o servidor');
+                },
+                complete: function() {
+                    $('#btnAdicionarUsuarioEquipe').prop('disabled', false);
+                }
+
+
+            });
+        });
+
+        // Remover usuário da equipe
+        $(document).on('click', '.btn-remover-equipe', function() {
+            const usuarioId = $(this).data('usuario-id');
+            if (!usuarioId || !acaoIdEquipe) return;
+
+            Swal.fire({
+                title: 'Remover usuário da equipe?',
+                text: "Esta ação não pode ser desfeita!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sim, remover!',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '<?= site_url("acoes/remover-membro-equipe") ?>',
+                        type: 'POST',
+                        data: {
+                            acao_id: acaoIdEquipe,
+                            usuario_id: usuarioId,
+                            '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                        },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                carregarEquipeAcao(acaoIdEquipe);
+                                carregarUsuariosDisponiveis(acaoIdEquipe); // Adicione esta linha
+                                showSuccessAlert(response.message);
+                            } else {
+                                showErrorAlert(response.message);
+                            }
+                        },
+                        error: function() {
+                            showErrorAlert('Erro na comunicação com o servidor');
+                        }
+                    });
                 }
             });
         });
@@ -616,5 +834,85 @@
                 confirmButtonText: 'Entendi'
             });
         }
+
+        // Debug - verifique se a requisição está sendo feita
+        $('#selectUsuarioEquipe').on('select2:open', function() {
+            console.log('Select2 aberto, acaoIdEquipe:', acaoIdEquipe);
+        });
+
+        $('#selectUsuarioEquipe').on('select2:select', function(e) {
+            console.log('Usuário selecionado:', e.params.data);
+        });
+
+        // Adicione este código no seu script
+        $('#editAcaoModal').on('hidden.bs.modal', function() {
+            $(this).removeAttr('aria-hidden');
+            $('body').removeClass('modal-open');
+            $('.modal-backdrop').remove();
+        });
+
+        // Função para filtrar os usuários no select
+        function filtrarUsuarios(termo) {
+            const select = document.getElementById('selectUsuarioEquipe');
+            const options = select.options;
+
+            for (let i = 0; i < options.length; i++) {
+                const option = options[i];
+                const text = option.text.toLowerCase();
+                const matches = text.includes(termo.toLowerCase());
+
+                option.style.display = matches ? '' : 'none';
+                if (matches && termo !== '') {
+                    option.style.backgroundColor = '#ffff99'; // Destacar resultados
+                } else {
+                    option.style.backgroundColor = '';
+                }
+            }
+        }
+
+        // Event listener para o campo de busca
+        $('#buscaUsuario').on('input', function() {
+            filtrarUsuarios($(this).val());
+        });
+
+        // Atualize a função carregarUsuariosDisponiveis para manter uma cópia dos usuários
+        let todosUsuarios = [];
+
+        function carregarUsuariosDisponiveis(acaoId) {
+            $.ajax({
+                url: '<?= site_url("acoes/buscar-usuarios") ?>',
+                type: 'GET',
+                data: {
+                    acao_id: acaoId
+                },
+                dataType: 'json',
+                beforeSend: function() {
+                    $('#selectUsuarioEquipe').html('<option value="">Carregando usuários...</option>');
+                },
+                success: function(response) {
+                    todosUsuarios = response.data || [];
+
+                    if (todosUsuarios.length > 0) {
+                        let options = '';
+                        todosUsuarios.forEach(usuario => {
+                            options += `<option value="${usuario.id}">${usuario.username} (${usuario.email})</option>`;
+                        });
+                        $('#selectUsuarioEquipe').html(options);
+                        $('#buscaUsuario').val('').trigger('input'); // Limpar filtro
+                    } else {
+                        $('#selectUsuarioEquipe').html('<option value="">Nenhum usuário disponível</option>');
+                    }
+                },
+                error: function() {
+                    $('#selectUsuarioEquipe').html('<option value="">Erro ao carregar usuários</option>');
+                    showErrorAlert('Erro ao carregar lista de usuários');
+                }
+            });
+        }
+
+        // Limpar busca quando o modal é fechado
+        $('#equipeAcaoModal').on('hidden.bs.modal', function() {
+            $('#buscaUsuario').val('');
+        });
     });
 </script>

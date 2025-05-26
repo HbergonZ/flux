@@ -18,7 +18,12 @@ class ProjetosModel extends Model
         'priorizacao_gab',
         'id_eixo',
         'id_plano',
-        'responsaveis'
+        'responsaveis',
+        'status'
+    ];
+
+    protected $validationRules = [
+        'status' => 'permit_empty|in_list[Ativo,Paralisado,Concluído]'
     ];
 
     protected $useTimestamps = true;
@@ -64,5 +69,28 @@ class ProjetosModel extends Model
             ->where('projetos.id', $idProjeto)
             ->get()
             ->getRowArray();
+    }
+
+    public function atualizarStatus(int $idProjeto, string $novoStatus)
+    {
+        // Inicia transação para garantir consistência
+        $this->db->transStart();
+
+        try {
+            // Atualiza o status do projeto
+            $this->update($idProjeto, ['status' => $novoStatus]);
+
+            // Dispara atualização em cascata para as ações
+            $acoesModel = new \App\Models\AcoesModel();
+            $acoesModel->atualizarStatusAcoesProjeto($idProjeto, $novoStatus);
+
+            $this->db->transComplete();
+
+            return true;
+        } catch (\Exception $e) {
+            $this->db->transRollback();
+            log_message('error', 'Erro ao atualizar status do projeto: ' . $e->getMessage());
+            return false;
+        }
     }
 }

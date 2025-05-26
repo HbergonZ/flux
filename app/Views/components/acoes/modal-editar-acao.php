@@ -66,12 +66,7 @@
 
                     <div class="form-group">
                         <label for="editAcaoStatus">Status</label>
-                        <select class="form-control" id="editAcaoStatus" name="status">
-                            <option value="Não iniciado">Não iniciado</option>
-                            <option value="Em andamento">Em andamento</option>
-                            <option value="Paralisado">Paralisado</option>
-                            <option value="Finalizado">Finalizado</option>
-                        </select>
+                        <input type="text" class="form-control" id="acaoStatus" name="status" readonly>
                     </div>
 
                     <div class="form-group">
@@ -80,6 +75,10 @@
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-info mr-auto" id="btnVerEquipe">
+                        <i class="fas fa-users"></i> Ver Equipe
+                    </button>
+
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Salvar Alterações</button>
                 </div>

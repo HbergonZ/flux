@@ -100,6 +100,10 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
     $routes->get('acoes/editar/(:num)', 'Acoes::editar/$1');
     $routes->post('acoes/atualizar/(:num)/(:segment)', 'Acoes::atualizar/$1/$2');
     $routes->post('acoes/excluir/(:num)/(:segment)', 'Acoes::excluir/$1/$2');
+    $routes->post('acoes/adicionar-membro-equipe', 'Acoes::adicionarMembroEquipe');
+    $routes->post('acoes/remover-membro-equipe', 'Acoes::removerMembroEquipe');
+    $routes->get('acoes/buscar-usuarios', 'Acoes::buscarUsuarios');
+    $routes->get('acoes/get-equipe/(:num)', 'Acoes::getEquipe/$1');
 
     // Solicitações
     $routes->get('solicitacoes', 'Solicitacoes::index');

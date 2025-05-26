@@ -1,4 +1,5 @@
 <!-- Importação de Modais -->
+<?php echo view('components/acoes/modal-equipe-acao.php'); ?>
 <?php echo view('components/acoes/modal-editar-acao.php'); ?>
 <?php echo view('components/acoes/modal-confirmar-exclusao.php'); ?>
 <?php echo view('components/acoes/modal-adicionar-acao.php'); ?>

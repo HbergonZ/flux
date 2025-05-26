@@ -210,10 +210,14 @@ class Projetos extends BaseController
             'projeto_vinculado' => 'permit_empty|max_length[255]',
             'priorizacao_gab' => 'permit_empty|in_list[0,1]',
             'id_eixo' => 'permit_empty|integer',
-            'responsaveis' => 'permit_empty'
+            'responsaveis' => 'permit_empty',
+            'status' => 'required|in_list[Ativo,Paralisado,Concluído]'
         ];
 
         if ($this->validate($rules)) {
+            $db = \Config\Database::connect();
+            $db->transStart(); // Inicia transação manualmente
+
             try {
                 $id = $this->request->getPost('id');
                 $projetoAntigo = $this->projetosModel->find($id);
@@ -224,16 +228,8 @@ class Projetos extends BaseController
                     return $this->response->setJSON($response);
                 }
 
-                log_message('debug', 'Verificando identificador único para atualização');
-                $identificadorExistente = $this->projetosModel
-                    ->where('identificador', $this->request->getPost('identificador'))
-                    ->where('id_plano', $idPlano)
-                    ->where('id !=', $id)
-                    ->first();
-
-                if ($identificadorExistente) {
-                    throw new \Exception('Já existe um projeto com este identificador no plano atual');
-                }
+                $novoStatus = $this->request->getPost('status');
+                $statusAlterado = ($projetoAntigo['status'] !== $novoStatus);
 
                 $data = [
                     'id' => $id,
@@ -243,13 +239,24 @@ class Projetos extends BaseController
                     'projeto_vinculado' => $this->request->getPost('projeto_vinculado'),
                     'priorizacao_gab' => $this->request->getPost('priorizacao_gab') ?? 0,
                     'id_eixo' => $this->request->getPost('id_eixo') ?: null,
-                    'responsaveis' => $this->request->getPost('responsaveis')
+                    'responsaveis' => $this->request->getPost('responsaveis'),
+                    'status' => $novoStatus
                 ];
 
                 log_message('debug', 'Dados preparados para atualização: ' . print_r($data, true));
 
-                $this->projetosModel->transStart();
+                // 1. Atualiza o projeto
                 $this->projetosModel->save($data);
+
+                // 2. Se o status foi alterado, atualiza as ações
+                if ($statusAlterado) {
+                    log_message('debug', 'Status alterado de ' . $projetoAntigo['status'] . ' para ' . $novoStatus . '. Atualizando ações...');
+
+                    $acoesModel = new \App\Models\AcoesModel();
+                    $result = $acoesModel->atualizarStatusAcoesProjeto($id, $novoStatus, $db); // Passa a conexão
+
+                    log_message('debug', 'Resultado da atualização de ações: ' . print_r($result, true));
+                }
 
                 $projetoAtualizado = $this->projetosModel->find($id);
 
@@ -258,14 +265,18 @@ class Projetos extends BaseController
                     throw new \Exception('Falha ao registrar log de edição');
                 }
 
-                $this->projetosModel->transComplete();
+                $db->transComplete(); // Confirma a transação
+
+                if ($db->transStatus() === false) {
+                    throw new \Exception('Falha na transação do banco de dados');
+                }
 
                 $response['success'] = true;
                 $response['message'] = 'Projeto atualizado com sucesso!';
 
                 log_message('debug', 'Projeto atualizado com sucesso');
             } catch (\Exception $e) {
-                $this->projetosModel->transRollback();
+                $db->transRollback();
                 log_message('error', 'Erro ao atualizar projeto: ' . $e->getMessage());
                 $response['message'] = 'Erro ao atualizar projeto: ' . $e->getMessage();
             }
@@ -1000,5 +1011,16 @@ class Projetos extends BaseController
         }
 
         return $this->response->setJSON($response);
+    }
+    public function atualizarStatus($idProjeto)
+    {
+        $novoStatus = $this->request->getPost('status');
+
+        $this->projetosModel->atualizarStatus($idProjeto, $novoStatus);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Status do projeto e ações atualizados!'
+        ]);
     }
 }

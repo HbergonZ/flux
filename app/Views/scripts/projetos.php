@@ -157,6 +157,7 @@
                         $('#editProjetoVinculado').val(response.data.projeto_vinculado);
                         $('#editProjetoEixo').val(response.data.id_eixo);
                         $('#editProjetoResponsaveis').val(response.data.responsaveis);
+                        $('#projetoStatus').val(response.data.status || 'Ativo'); // Adicione esta linha
                         $('#editProjetoModal').modal('show');
                     } else {
                         console.error('Erro ao carregar projeto:', response.message);

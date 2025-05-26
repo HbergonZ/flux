@@ -64,16 +64,6 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="acaoStatus">Status</label>
-                        <select class="form-control" id="acaoStatus" name="status">
-                            <option value="Não iniciado">Não iniciado</option>
-                            <option value="Em andamento">Em andamento</option>
-                            <option value="Paralisado">Paralisado</option>
-                            <option value="Finalizado">Finalizado</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
                         <label for="acaoOrdem">Ordem</label>
                         <input type="number" class="form-control" id="acaoOrdem" name="ordem" min="1" readonly>
                     </div>
