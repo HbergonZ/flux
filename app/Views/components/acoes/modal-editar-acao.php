@@ -1,9 +1,11 @@
 <div class="modal fade" id="editAcaoModal" tabindex="-1" role="dialog" aria-labelledby="editAcaoModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editAcaoModalLabel">Editar Ação</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editAcaoModalLabel">
+                    <i class="fas fa-edit mr-2"></i>Editar Ação
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -44,7 +46,18 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="editAcaoEntregaEstimada">Entrega Estimada</label>
-                                <input type="date" class="form-control" id="editAcaoEntregaEstimada" name="entrega_estimada" onchange="validarData(this)">
+                                <input type="date" class="form-control" id="editAcaoEntregaEstimada" name="entrega_estimada">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="editAcaoStatus">Status</label>
+                                <select class="form-control" id="editAcaoStatus" name="status">
+                                    <option value="Não iniciado">Não iniciado</option>
+                                    <option value="Em andamento">Em andamento</option>
+                                    <option value="Paralisado">Paralisado</option>
+                                    <option value="Finalizado">Finalizado</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -53,34 +66,43 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="editAcaoDataInicio">Data Início Real</label>
-                                <input type="date" class="form-control" id="editAcaoDataInicio" name="data_inicio" onchange="validarData(this)">
+                                <input type="date" class="form-control" id="editAcaoDataInicio" name="data_inicio">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="editAcaoDataFim">Data Fim Real</label>
-                                <input type="date" class="form-control" id="editAcaoDataFim" name="data_fim" onchange="validarData(this)">
+                                <input type="date" class="form-control" id="editAcaoDataFim" name="data_fim">
                             </div>
                         </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="editAcaoStatus">Status</label>
-                        <input type="text" class="form-control" id="acaoStatus" name="status" readonly>
                     </div>
 
                     <div class="form-group">
                         <label for="editAcaoOrdem">Ordem</label>
                         <input type="number" class="form-control" id="editAcaoOrdem" name="ordem" min="1" readonly>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-info mr-auto" id="btnVerEquipe">
-                        <i class="fas fa-users"></i> Ver Equipe
-                    </button>
 
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                    <!-- Botões de Gerenciamento posicionados aqui -->
+                    <div class="d-flex justify-content-between mt-4 mb-3">
+                        <button type="button" class="btn btn-success" id="btnGerenciarEvidencias">
+                            <i class="fas fa-file-alt mr-2"></i> Gerenciar Evidências
+                        </button>
+
+                        <button type="button" class="btn btn-info" id="btnVerEquipe">
+                            <i class="fas fa-users mr-2"></i> Ver Equipe
+                        </button>
+                    </div>
+
+                    <hr class="mt-2 mb-4">
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times mr-2"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save mr-2"></i> Salvar Alterações
+                    </button>
                 </div>
             </form>
         </div>

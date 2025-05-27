@@ -8,6 +8,7 @@ use App\Models\ProjetosModel;
 use App\Models\PlanosModel;
 use App\Models\SolicitacoesModel;
 use App\Controllers\LogController;
+use App\Models\EvidenciasModel;
 
 class Acoes extends BaseController
 {
@@ -17,6 +18,7 @@ class Acoes extends BaseController
     protected $projetosModel;
     protected $planosModel;
     protected $solicitacoesModel;
+    protected $evidenciasModel;
 
     public function __construct()
     {
@@ -26,6 +28,7 @@ class Acoes extends BaseController
         $this->planosModel = new PlanosModel();
         $this->solicitacoesModel = new SolicitacoesModel();
         $this->logController = new LogController();
+        $this->evidenciasModel = new EvidenciasModel();
     }
 
     private function getProximaOrdem($idOrigem, $tipoOrigem)
@@ -310,6 +313,17 @@ class Acoes extends BaseController
                     throw new \Exception('Falha ao registrar log de edição');
                 }
 
+                if (!empty($data['data_fim'])) {
+                    $temEvidencias = $this->evidenciasModel->where('nivel', 'acao')
+                        ->where('id_nivel', $id)
+                        ->countAllResults() > 0;
+
+                    if (!$temEvidencias) {
+                        $response['message'] = 'Para definir uma data de fim, é necessário cadastrar pelo menos uma evidência.';
+                        return $this->response->setJSON($response);
+                    }
+                }
+
                 $this->acoesModel->transComplete();
 
                 $response['success'] = true;
@@ -465,6 +479,19 @@ class Acoes extends BaseController
                 }
 
                 unset($acaoAtual['id'], $acaoAtual['created_at'], $acaoAtual['updated_at']);
+
+                if (!empty($postData['data_fim'])) {
+                    if (empty($postData['evidencias'])) {
+                        $response['message'] = 'Ao definir uma data fim, é obrigatório informar as evidências.';
+                        return $this->response->setJSON($response);
+                    }
+
+                    // Adiciona as evidências aos dados alterados
+                    $alteracoes['evidencias'] = [
+                        'de' => null,
+                        'para' => $postData['evidencias']
+                    ];
+                }
 
                 $alteracoes = [];
                 $camposEditaveis = [
@@ -924,6 +951,112 @@ class Acoes extends BaseController
                 'success' => false,
                 'message' => 'Erro ao buscar equipe',
                 'equipe' => ''
+            ]);
+        }
+    }
+
+    public function gerenciarEvidencias($acaoId)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $acao = $this->acoesModel->find($acaoId);
+        if (!$acao) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Ação não encontrada']);
+        }
+
+        $evidencias = $this->evidenciasModel->where('nivel', 'acao')
+            ->where('id_nivel', $acaoId)
+            ->orderBy('created_at', 'DESC')  // Mantemos DESC para exibir as mais recentes primeiro
+            ->findAll();
+
+        return $this->response->setJSON([
+            'success' => true,
+            'html' => view('components/acoes/modal-evidencias', [
+                'acao' => $acao,
+                'evidencias' => $evidencias,
+                'totalEvidencias' => count($evidencias)
+            ])
+        ]);
+    }
+
+    public function adicionarEvidencia($acaoId)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $rules = [
+            'tipo' => 'required|in_list[texto,link]',
+            'evidencia_texto' => 'permit_empty|min_length[3]',
+            'evidencia_link' => 'permit_empty|valid_url',
+            'descricao' => 'permit_empty'
+        ];
+
+        if ($this->validate($rules)) {
+            try {
+                $tipo = $this->request->getPost('tipo');
+                $evidencia = $tipo === 'texto' ? $this->request->getPost('evidencia_texto') : $this->request->getPost('evidencia_link');
+
+                $data = [
+                    'tipo' => $tipo,
+                    'evidencia' => $evidencia,
+                    'descricao' => $this->request->getPost('descricao'),
+                    'nivel' => 'acao',
+                    'id_nivel' => $acaoId,
+                    'created_by' => auth()->id()
+                ];
+
+                $this->evidenciasModel->insert($data);
+
+                // Obter todas as evidências atualizadas
+                $evidencias = $this->evidenciasModel->where('nivel', 'acao')
+                    ->where('id_nivel', $acaoId)
+                    ->orderBy('created_at', 'DESC')
+                    ->findAll();
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Evidência adicionada com sucesso!',
+                    'evidencias' => $evidencias,
+                    'totalEvidencias' => count($evidencias)
+                ]);
+            } catch (\Exception $e) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ]);
+            }
+        } else {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => implode('<br>', $this->validator->getErrors())
+            ]);
+        }
+    }
+    public function removerEvidencia($evidenciaId)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $evidencia = $this->evidenciasModel->find($evidenciaId);
+            if (!$evidencia) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Evidência não encontrada']);
+            }
+
+            $this->evidenciasModel->delete($evidenciaId);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Evidência removida com sucesso!'
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Erro ao remover evidência: ' . $e->getMessage()
             ]);
         }
     }

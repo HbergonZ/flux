@@ -162,4 +162,13 @@ class AcoesModel extends Model
             ->get()
             ->getResultArray();
     }
+    public function podeFinalizar($acaoId)
+    {
+        $evidencias = $this->db->table('evidencias')
+            ->where('nivel', 'acao')
+            ->where('id_nivel', $acaoId)
+            ->countAllResults();
+
+        return $evidencias > 0;
+    }
 }

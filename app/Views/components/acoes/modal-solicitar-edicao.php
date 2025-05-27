@@ -79,6 +79,17 @@
                     </div>
 
                     <div class="form-group">
+                        <label>Evidências (obrigatório se estiver definindo data fim)</label>
+                        <textarea class="form-control" name="evidencias" rows="3"
+                            <?= !empty($formOriginalData['data_fim']) && empty($this->request->getPost('data_fim')) ? '' : 'required' ?>>
+    </textarea>
+                        <small class="form-text text-muted">
+                            Descreva as evidências que comprovam o andamento ou conclusão desta ação.
+                            Se estiver definindo uma data fim, este campo é obrigatório.
+                        </small>
+                    </div>
+
+                    <div class="form-group">
                         <label for="solicitarEdicaoJustificativa">Justificativa para as alterações*</label>
                         <textarea class="form-control" id="solicitarEdicaoJustificativa" name="justificativa" rows="3" required></textarea>
                     </div>

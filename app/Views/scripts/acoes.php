@@ -931,5 +931,223 @@
         $('#equipeAcaoModal').on('hidden.bs.modal', function() {
             $('#buscaUsuario').val('');
         });
+
+        // Gerenciar evidências
+        $(document).on('click', '#btnGerenciarEvidencias', function(e) {
+            e.preventDefault();
+            const acaoId = $('#editAcaoId').val();
+
+            // Esconde o modal de edição primeiro
+            $('#editAcaoModal').modal('hide');
+
+            // Aguarda o modal esconder completamente antes de abrir o novo
+            $('#editAcaoModal').on('hidden.bs.modal', function() {
+                $.ajax({
+                    url: `<?= site_url('acoes/gerenciar-evidencias/') ?>${acaoId}`,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            // Remove qualquer modal de evidências existente
+                            $('#evidenciasAcaoModal').remove();
+
+                            // Adiciona o novo modal ao body
+                            $('body').append(response.html);
+
+                            // Mostra o novo modal
+                            $('#evidenciasAcaoModal').modal('show');
+
+                            // Configura eventos para quando o modal fechar
+                            $('#evidenciasAcaoModal').on('hidden.bs.modal', function() {
+                                $(this).remove();
+                                $('#editAcaoModal').modal('show');
+                            });
+                        } else {
+                            showErrorAlert(response.message);
+                            $('#editAcaoModal').modal('show');
+                        }
+                    },
+                    error: function() {
+                        showErrorAlert('Erro ao carregar evidências');
+                        $('#editAcaoModal').modal('show');
+                    }
+                });
+            });
+        });
+
+        // Atualize a parte do change do tipo
+        $('body').on('change', 'input[name="tipo"]', function() {
+            const tipo = $(this).val();
+            if (tipo === 'link') {
+                $('#grupoTexto').hide();
+                $('#evidenciaTexto').prop('required', false);
+                $('#grupoLink').show();
+                $('#evidenciaLink').prop('required', true);
+            } else {
+                $('#grupoTexto').show();
+                $('#evidenciaTexto').prop('required', true);
+                $('#grupoLink').hide();
+                $('#evidenciaLink').prop('required', false);
+            }
+        });
+
+        // Atualize o submit do formulário
+        $('body').on('submit', '#formAdicionarEvidencia', function(e) {
+            e.preventDefault();
+            const form = $(this);
+            const acaoId = form.find('input[name="acao_id"]').val();
+            const tipo = form.find('input[name="tipo"]:checked').val();
+
+            const data = {
+                '<?= csrf_token() ?>': form.find('input[name="<?= csrf_token() ?>"]').val(),
+                'tipo': tipo,
+                'descricao': form.find('textarea[name="descricao"]').val(),
+                'nivel': 'acao',
+                'id_nivel': acaoId
+            };
+
+            if (tipo === 'texto') {
+                data.evidencia = form.find('textarea[name="evidencia_texto"]').val();
+            } else {
+                data.evidencia = form.find('input[name="evidencia_link"]').val();
+            }
+
+            $.ajax({
+                url: `<?= site_url('acoes/adicionar-evidencia/') ?>${acaoId}`,
+                type: 'POST',
+                data: data,
+                dataType: 'json',
+                beforeSend: function() {
+                    form.find('button[type="submit"]').prop('disabled', true)
+                        .html('<span class="spinner-border spinner-border-sm" role="status"></span> Enviando...');
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Modifique o showSuccessAlert para não fechar o modal
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Sucesso',
+                            text: response.message,
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+
+                        form.trigger('reset');
+                        $('#grupoLink').hide();
+                        $('#grupoTexto').show();
+                        $('input[name="tipo"][value="texto"]').prop('checked', true);
+
+                        // Reconstruir a lista de evidências (mantenha o código que já tinha)
+                        const listaEvidencias = $('.list-group');
+                        listaEvidencias.empty();
+
+                        if (response.evidencias && response.evidencias.length > 0) {
+                            response.evidencias.forEach((evidencia, index) => {
+                                // ... (mantenha o código de construção da lista)
+                            });
+                        } else {
+                            listaEvidencias.append(`
+                <div class="alert alert-info text-center py-4">
+                    <i class="fas fa-info-circle fa-2x mb-3"></i>
+                    <p class="mb-0">Nenhuma evidência cadastrada ainda.</p>
+                </div>
+            `);
+                        }
+                    } else {
+                        showErrorAlert(response.message);
+                    }
+                },
+                error: function() {
+                    showErrorAlert('Erro na comunicação com o servidor');
+                },
+                complete: function() {
+                    form.find('button[type="submit"]').prop('disabled', false).text('Adicionar Evidência');
+                }
+            });
+        });
+
+        function setupEvidenciasModal(acaoId) {
+            $('#evidenciasAcaoModal').on('hidden.bs.modal', function() {
+                $(this).remove();
+                $('#editAcaoModal').modal('show');
+            });
+        }
+
+        // Remover evidência
+        $(document).on('click', '.btn-remover-evidencia', function() {
+            const evidenciaId = $(this).data('id');
+            const acaoId = $('#formAdicionarEvidencia input[name="acao_id"]').val();
+
+            Swal.fire({
+                title: 'Remover evidência?',
+                text: "Esta ação não pode ser desfeita!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sim, remover!',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `<?= site_url('acoes/remover-evidencia/') ?>${evidenciaId}`,
+                        type: 'POST',
+                        data: {
+                            '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                        },
+                        dataType: 'json',
+                        success: (response) => {
+                            if (response.success) {
+                                // Remove o elemento da lista imediatamente
+                                $(this).closest('.list-group-item').remove();
+
+                                // Atualiza o contador de evidências
+                                const badge = $('#evidenciasAcaoModal .badge');
+                                badge.text(parseInt(badge.text()) - 1);
+
+                                // Mostra mensagem de sucesso
+                                Swal.fire(
+                                    'Removido!',
+                                    'A evidência foi removida com sucesso.',
+                                    'success'
+                                );
+
+                                // Se não houver mais evidências, mostra mensagem
+                                if ($('#listaEvidencias .list-group-item').length === 0) {
+                                    $('#listaEvidencias').html(`
+                                <div class="alert alert-info text-center py-4">
+                                    <i class="fas fa-info-circle fa-2x mb-3"></i>
+                                    <p class="mb-0">Nenhuma evidência cadastrada ainda.</p>
+                                </div>
+                            `);
+                                }
+                            } else {
+                                Swal.fire(
+                                    'Erro!',
+                                    response.message || 'Ocorreu um erro ao remover a evidência.',
+                                    'error'
+                                );
+                            }
+                        },
+                        error: () => {
+                            Swal.fire(
+                                'Erro!',
+                                'Falha na comunicação com o servidor.',
+                                'error'
+                            );
+                        }
+                    });
+                }
+            });
+        });
+
+        function setupEvidenciasModal(acaoId) {
+            $('#evidenciasAcaoModal').on('hidden.bs.modal', function() {
+                $(this).remove();
+                $('#editAcaoModal').modal('show');
+            });
+        }
     });
 </script>
