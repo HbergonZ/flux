@@ -907,4 +907,24 @@ class Acoes extends BaseController
             ]);
         }
     }
+
+    public function getEquipeFormatada($acaoId)
+    {
+        try {
+            $equipe = $this->acoesModel->getUsernamesEquipe($acaoId);
+            $equipeFormatada = implode(', ', array_column($equipe, 'username'));
+
+            return $this->response->setJSON([
+                'success' => true,
+                'equipe' => $equipeFormatada
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Erro ao buscar equipe formatada: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Erro ao buscar equipe',
+                'equipe' => ''
+            ]);
+        }
+    }
 }

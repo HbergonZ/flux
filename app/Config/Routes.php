@@ -104,6 +104,7 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
     $routes->post('acoes/remover-membro-equipe', 'Acoes::removerMembroEquipe');
     $routes->get('acoes/buscar-usuarios', 'Acoes::buscarUsuarios');
     $routes->get('acoes/get-equipe/(:num)', 'Acoes::getEquipe/$1');
+    $routes->get('acoes/get-equipe-formatada/(:num)', 'Acoes::getEquipeFormatada/$1');
 
     // Solicitações
     $routes->get('solicitacoes', 'Solicitacoes::index');

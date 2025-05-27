@@ -51,8 +51,25 @@
                         "defaultContent": ""
                     },
                     {
-                        "data": "equipe",
-                        "defaultContent": ""
+                        "data": "id",
+                        "render": function(data, type, row) {
+                            if (type === 'display') {
+                                let equipe = 'Carregando...';
+                                $.ajax({
+                                    url: `<?= site_url('acoes/get-equipe-formatada/') ?>${data}`,
+                                    type: 'GET',
+                                    async: false,
+                                    success: function(response) {
+                                        equipe = response.success ? response.equipe : 'Erro ao carregar';
+                                    },
+                                    error: function() {
+                                        equipe = 'Erro ao carregar';
+                                    }
+                                });
+                                return equipe;
+                            }
+                            return '';
+                        }
                     },
                     {
                         "data": "entrega_estimada",

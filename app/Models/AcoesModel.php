@@ -127,8 +127,9 @@ class AcoesModel extends Model
     public function getEquipeAcao($acaoId)
     {
         $builder = $this->db->table('acoes_equipe');
-        return $builder->select('users.id, users.username, users.email')
+        return $builder->select('users.id, users.username, auth_identities.secret as email')
             ->join('users', 'users.id = acoes_equipe.usuario_id')
+            ->join('auth_identities', 'auth_identities.user_id = users.id AND auth_identities.type = "email_password"')
             ->where('acao_id', $acaoId)
             ->get()
             ->getResultArray();
@@ -150,5 +151,15 @@ class AcoesModel extends Model
             'acao_id' => $acaoId,
             'usuario_id' => $usuarioId
         ])->delete();
+    }
+
+    public function getUsernamesEquipe($acaoId)
+    {
+        $builder = $this->db->table('acoes_equipe');
+        return $builder->select('users.username')
+            ->join('users', 'users.id = acoes_equipe.usuario_id')
+            ->where('acao_id', $acaoId)
+            ->get()
+            ->getResultArray();
     }
 }

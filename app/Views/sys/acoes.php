@@ -176,7 +176,7 @@
                                         <td><?= $etapa['nome'] ?></td>
                                     <?php endif; ?>
                                     <td><?= $acao['responsavel'] ?? '' ?></td>
-                                    <td><?= $acao['equipe'] ?? '' ?></td>
+                                    <td><!-- O conteúdo será preenchido via AJAX --></td>
                                     <td class="text-center"><?= $acao['entrega_estimada'] ? date('d/m/Y', strtotime($acao['entrega_estimada'])) : '' ?></td>
                                     <td class="text-center"><?= $acao['data_inicio'] ? date('d/m/Y', strtotime($acao['data_inicio'])) : '' ?></td>
                                     <td class="text-center"><?= $acao['data_fim'] ? date('d/m/Y', strtotime($acao['data_fim'])) : '' ?></td>
