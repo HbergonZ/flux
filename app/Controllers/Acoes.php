@@ -1025,13 +1025,13 @@ class Acoes extends BaseController
             } catch (\Exception $e) {
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => $e->getMessage()
+                    'message' => 'Erro ao adicionar evidência: ' . $e->getMessage()
                 ]);
             }
         } else {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => implode('<br>', $this->validator->getErrors())
+                'message' => 'Erro de validação: ' . implode('<br>', $this->validator->getErrors())
             ]);
         }
     }

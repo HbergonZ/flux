@@ -3,7 +3,7 @@
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title">
-                    <i class="fas fa-file-alt mr-2"></i>Evidências da Ação: <?= esc($acao['nome']) ?>
+                    Gerenciar Evidências
                 </h5>
                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Fechar">
                     <span aria-hidden="true">&times;</span>
@@ -13,6 +13,12 @@
                 <form id="formAdicionarEvidencia" class="mb-4">
                     <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                     <input type="hidden" name="acao_id" value="<?= esc($acao['id']) ?>">
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            Ação: <?= esc($acao['nome']) ?>
+                        </h5>
+                    </div>
 
                     <div class="form-group">
                         <label class="font-weight-bold">Tipo de Evidência</label>

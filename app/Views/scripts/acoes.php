@@ -940,6 +940,9 @@
             // Esconde o modal de edição primeiro
             $('#editAcaoModal').modal('hide');
 
+            // Remove qualquer listener existente para evitar múltiplas chamadas
+            $('#editAcaoModal').off('hidden.bs.modal');
+
             // Aguarda o modal esconder completamente antes de abrir o novo
             $('#editAcaoModal').on('hidden.bs.modal', function() {
                 $.ajax({
@@ -955,10 +958,11 @@
                             $('body').append(response.html);
 
                             // Mostra o novo modal
-                            $('#evidenciasAcaoModal').modal('show');
+                            const evidenciasModal = $('#evidenciasAcaoModal');
+                            evidenciasModal.modal('show');
 
                             // Configura eventos para quando o modal fechar
-                            $('#evidenciasAcaoModal').on('hidden.bs.modal', function() {
+                            evidenciasModal.on('hidden.bs.modal', function() {
                                 $(this).remove();
                                 $('#editAcaoModal').modal('show');
                             });
@@ -973,6 +977,10 @@
                     }
                 });
             });
+        });
+
+        $('#editAcaoModal').on('hide.bs.modal', function() {
+            $(this).off('hidden.bs.modal');
         });
 
         // Atualize a parte do change do tipo
@@ -997,6 +1005,7 @@
             const form = $(this);
             const acaoId = form.find('input[name="acao_id"]').val();
             const tipo = form.find('input[name="tipo"]:checked').val();
+            const listaEvidencias = $('#listaEvidencias');
 
             const data = {
                 '<?= csrf_token() ?>': form.find('input[name="<?= csrf_token() ?>"]').val(),
@@ -1023,37 +1032,73 @@
                 },
                 success: function(response) {
                     if (response.success) {
-                        // Modifique o showSuccessAlert para não fechar o modal
                         Swal.fire({
                             icon: 'success',
                             title: 'Sucesso',
                             text: response.message,
-                            toast: true,
-                            position: 'top-end',
                             showConfirmButton: false,
-                            timer: 3000
+                            timer: 1500
                         });
 
+                        // Limpar o formulário
                         form.trigger('reset');
                         $('#grupoLink').hide();
                         $('#grupoTexto').show();
                         $('input[name="tipo"][value="texto"]').prop('checked', true);
 
-                        // Reconstruir a lista de evidências (mantenha o código que já tinha)
-                        const listaEvidencias = $('.list-group');
+                        // Atualizar a lista de evidências
                         listaEvidencias.empty();
 
                         if (response.evidencias && response.evidencias.length > 0) {
                             response.evidencias.forEach((evidencia, index) => {
-                                // ... (mantenha o código de construção da lista)
+                                const isTexto = evidencia.tipo === 'texto';
+                                const evidenciaItem = `
+                            <div class="list-group-item mb-2">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <strong>Evidência #${response.totalEvidencias - index}</strong>
+                                            <small class="text-muted">
+                                                ${new Date(evidencia.created_at).toLocaleDateString('pt-BR')}
+                                            </small>
+                                        </div>
+
+                                        ${isTexto ?
+                                            `<div class="bg-light p-3 rounded mb-2">${evidencia.evidencia.replace(/\n/g, '<br>')}</div>` :
+                                            `<div class="mb-2">
+                                                <a href="${evidencia.evidencia}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-external-link-alt mr-2"></i>Abrir Link
+                                                </a>
+                                                <small class="d-block text-muted mt-1">${evidencia.evidencia}</small>
+                                            </div>`
+                                        }
+
+                                        ${evidencia.descricao ?
+                                            `<div class="mt-2">
+                                                <small class="text-muted d-block"><strong>Descrição:</strong></small>
+                                                <div class="bg-light p-2 rounded">${evidencia.descricao.replace(/\n/g, '<br>')}</div>
+                                            </div>` :
+                                            ''
+                                        }
+                                    </div>
+
+                                    <?php if (auth()->user()->inGroup('admin')): ?>
+                                        <button class="btn btn-sm btn-danger ml-2 btn-remover-evidencia" data-id="${evidencia.id}">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        `;
+                                listaEvidencias.append(evidenciaItem);
                             });
                         } else {
                             listaEvidencias.append(`
-                <div class="alert alert-info text-center py-4">
-                    <i class="fas fa-info-circle fa-2x mb-3"></i>
-                    <p class="mb-0">Nenhuma evidência cadastrada ainda.</p>
-                </div>
-            `);
+                        <div class="alert alert-info text-center py-4">
+                            <i class="fas fa-info-circle fa-2x mb-3"></i>
+                            <p class="mb-0">Nenhuma evidência cadastrada ainda.</p>
+                        </div>
+                    `);
                         }
                     } else {
                         showErrorAlert(response.message);
