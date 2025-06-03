@@ -999,13 +999,21 @@ class Acoes extends BaseController
                 $tipo = $this->request->getPost('tipo');
                 $evidencia = $tipo === 'texto' ? $this->request->getPost('evidencia_texto') : $this->request->getPost('evidencia_link');
 
+                if (empty($evidencia)) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'O campo de evidência é obrigatório'
+                    ]);
+                }
+
                 $data = [
                     'tipo' => $tipo,
                     'evidencia' => $evidencia,
                     'descricao' => $this->request->getPost('descricao'),
                     'nivel' => 'acao',
                     'id_nivel' => $acaoId,
-                    'created_by' => auth()->id()
+                    'created_by' => auth()->id(),
+                    'created_at' => date('Y-m-d H:i:s')
                 ];
 
                 $this->evidenciasModel->insert($data);
@@ -1023,6 +1031,7 @@ class Acoes extends BaseController
                     'totalEvidencias' => count($evidencias)
                 ]);
             } catch (\Exception $e) {
+                log_message('error', 'Erro ao adicionar evidência: ' . $e->getMessage());
                 return $this->response->setJSON([
                     'success' => false,
                     'message' => 'Erro ao adicionar evidência: ' . $e->getMessage()

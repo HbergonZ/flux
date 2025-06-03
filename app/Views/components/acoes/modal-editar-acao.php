@@ -18,11 +18,17 @@
                 <div class="modal-body">
                     <!-- Botões de Gerenciamento posicionados aqui -->
                     <div class="d-flex mb-3">
-                        <button type="button" class="btn text-white mr-2 btn-sm" style="background-color: #2c9faf; border-color: #2a96a5" id="btnGerenciarEvidencias">
+                        <button type="button"
+                            class="btn btn-outline-transparent mr-2"
+                            style="color: #2c9faf; border-color: #2a96a5"
+                            id="btnGerenciarEvidencias">
                             <i class="fas fa-file-alt mr-2"></i> Gerenciar Evidências
                         </button>
 
-                        <button type="button" class="btn text-white btn-sm" style="background-color: #2c9faf; border-color: #2a96a5" id="btnVerEquipe">
+                        <button type="button"
+                            class="btn btn-outline-transparent"
+                            style="color: #2c9faf; border-color: #2a96a5"
+                            id="btnVerEquipe">
                             <i class="fas fa-users mr-2"></i> Ver Equipe
                         </button>
                     </div>

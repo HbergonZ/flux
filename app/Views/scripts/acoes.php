@@ -999,32 +999,16 @@
             }
         });
 
-        // Atualize o submit do formulário
+        //submit do formulário
         $('body').on('submit', '#formAdicionarEvidencia', function(e) {
             e.preventDefault();
             const form = $(this);
             const acaoId = form.find('input[name="acao_id"]').val();
-            const tipo = form.find('input[name="tipo"]:checked').val();
-            const listaEvidencias = $('#listaEvidencias');
-
-            const data = {
-                '<?= csrf_token() ?>': form.find('input[name="<?= csrf_token() ?>"]').val(),
-                'tipo': tipo,
-                'descricao': form.find('textarea[name="descricao"]').val(),
-                'nivel': 'acao',
-                'id_nivel': acaoId
-            };
-
-            if (tipo === 'texto') {
-                data.evidencia = form.find('textarea[name="evidencia_texto"]').val();
-            } else {
-                data.evidencia = form.find('input[name="evidencia_link"]').val();
-            }
 
             $.ajax({
                 url: `<?= site_url('acoes/adicionar-evidencia/') ?>${acaoId}`,
                 type: 'POST',
-                data: data,
+                data: form.serialize(),
                 dataType: 'json',
                 beforeSend: function() {
                     form.find('button[type="submit"]').prop('disabled', true)
@@ -1032,80 +1016,22 @@
                 },
                 success: function(response) {
                     if (response.success) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Sucesso',
-                            text: response.message,
-                            showConfirmButton: false,
-                            timer: 1500
-                        });
-
-                        // Limpar o formulário
                         form.trigger('reset');
                         $('#grupoLink').hide();
                         $('#grupoTexto').show();
                         $('input[name="tipo"][value="texto"]').prop('checked', true);
 
-                        // Atualizar a lista de evidências
-                        listaEvidencias.empty();
+                        // Atualiza a lista completa
+                        atualizarListaEvidencias(acaoId);
 
-                        if (response.evidencias && response.evidencias.length > 0) {
-                            response.evidencias.forEach((evidencia, index) => {
-                                const isTexto = evidencia.tipo === 'texto';
-                                const evidenciaItem = `
-                            <div class="list-group-item mb-2">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div class="flex-grow-1">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <strong>Evidência #${response.totalEvidencias - index}</strong>
-                                            <small class="text-muted">
-                                                ${new Date(evidencia.created_at).toLocaleDateString('pt-BR')}
-                                            </small>
-                                        </div>
-
-                                        ${isTexto ?
-                                            `<div class="bg-light p-3 rounded mb-2">${evidencia.evidencia.replace(/\n/g, '<br>')}</div>` :
-                                            `<div class="mb-2">
-                                                <a href="${evidencia.evidencia}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-external-link-alt mr-2"></i>Abrir Link
-                                                </a>
-                                                <small class="d-block text-muted mt-1">${evidencia.evidencia}</small>
-                                            </div>`
-                                        }
-
-                                        ${evidencia.descricao ?
-                                            `<div class="mt-2">
-                                                <small class="text-muted d-block"><strong>Descrição:</strong></small>
-                                                <div class="bg-light p-2 rounded">${evidencia.descricao.replace(/\n/g, '<br>')}</div>
-                                            </div>` :
-                                            ''
-                                        }
-                                    </div>
-
-                                    <?php if (auth()->user()->inGroup('admin')): ?>
-                                        <button class="btn btn-sm btn-danger ml-2 btn-remover-evidencia" data-id="${evidencia.id}">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        `;
-                                listaEvidencias.append(evidenciaItem);
-                            });
-                        } else {
-                            listaEvidencias.append(`
-                        <div class="alert alert-info text-center py-4">
-                            <i class="fas fa-info-circle fa-2x mb-3"></i>
-                            <p class="mb-0">Nenhuma evidência cadastrada ainda.</p>
-                        </div>
-                    `);
-                        }
-                    } else {
-                        showErrorAlert(response.message);
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Sucesso!',
+                            text: response.message,
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
                     }
-                },
-                error: function() {
-                    showErrorAlert('Erro na comunicação com o servidor');
                 },
                 complete: function() {
                     form.find('button[type="submit"]').prop('disabled', false).text('Adicionar Evidência');
