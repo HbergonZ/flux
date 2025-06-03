@@ -1000,41 +1000,120 @@
         });
 
         //submit do formulário
+        // Atualize o submit do formulário de evidências
         $('body').on('submit', '#formAdicionarEvidencia', function(e) {
             e.preventDefault();
             const form = $(this);
             const acaoId = form.find('input[name="acao_id"]').val();
+            const submitBtn = form.find('button[type="submit"]');
+            const originalBtnText = submitBtn.html();
 
+            submitBtn.prop('disabled', true)
+                .html('<span class="spinner-border spinner-border-sm" role="status"></span> Enviando...');
+
+            // Obter os dados do formulário
+            const formData = form.serialize();
+
+            // Enviar via AJAX para a rota correta
             $.ajax({
                 url: `<?= site_url('acoes/adicionar-evidencia/') ?>${acaoId}`,
                 type: 'POST',
-                data: form.serialize(),
+                data: formData,
                 dataType: 'json',
-                beforeSend: function() {
-                    form.find('button[type="submit"]').prop('disabled', true)
-                        .html('<span class="spinner-border spinner-border-sm" role="status"></span> Enviando...');
-                },
                 success: function(response) {
                     if (response.success) {
+                        // Limpa o formulário
                         form.trigger('reset');
                         $('#grupoLink').hide();
                         $('#grupoTexto').show();
                         $('input[name="tipo"][value="texto"]').prop('checked', true);
 
-                        // Atualiza a lista completa
-                        atualizarListaEvidencias(acaoId);
+                        // Atualiza a lista de evidências
+                        if (response.evidencias && response.evidencias.length > 0) {
+                            let evidenciasHTML = '<div class="list-group">';
 
+                            response.evidencias.forEach((evidencia, index) => {
+                                evidenciasHTML += `
+                            <div class="list-group-item mb-2">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <strong>Evidência #${response.totalEvidencias - index}</strong>
+                                            <small class="text-muted">
+                                                ${new Date(evidencia.created_at).toLocaleString('pt-BR')}
+                                            </small>
+                                        </div>`;
+
+                                if (evidencia.tipo === 'texto') {
+                                    evidenciasHTML += `
+                                <div class="bg-light p-3 rounded mb-2">
+                                    ${evidencia.evidencia.replace(/\n/g, '<br>')}
+                                </div>`;
+                                } else {
+                                    evidenciasHTML += `
+                                <div class="mb-2">
+                                    <a href="${evidencia.evidencia}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-external-link-alt mr-2"></i>Abrir Link
+                                    </a>
+                                    <small class="d-block text-muted mt-1">
+                                        ${evidencia.evidencia}
+                                    </small>
+                                </div>`;
+                                }
+
+                                if (evidencia.descricao) {
+                                    evidenciasHTML += `
+                                <div class="mt-2">
+                                    <small class="text-muted d-block"><strong>Descrição:</strong></small>
+                                    <div class="bg-light p-2 rounded">
+                                        ${evidencia.descricao.replace(/\n/g, '<br>')}
+                                    </div>
+                                </div>`;
+                                }
+
+                                evidenciasHTML += `
+                                    </div>
+                                    <button class="btn btn-sm btn-danger ml-2 btn-remover-evidencia" data-id="${evidencia.id}">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </div>`;
+                            });
+
+                            evidenciasHTML += '</div>';
+                            $('#listaEvidencias').html(evidenciasHTML);
+                        }
+
+                        // Atualiza o contador
+                        $('.badge-pill').text(response.totalEvidencias);
+
+                        // Mostra mensagem de sucesso
                         Swal.fire({
                             icon: 'success',
                             title: 'Sucesso!',
-                            text: response.message,
+                            text: 'Evidência adicionada com sucesso!',
                             showConfirmButton: false,
                             timer: 1500
                         });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erro',
+                            text: response.message || 'Ocorreu um erro ao adicionar a evidência',
+                            confirmButtonText: 'Entendi'
+                        });
                     }
                 },
+                error: function(xhr) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro',
+                        text: 'Falha na comunicação com o servidor',
+                        confirmButtonText: 'Entendi'
+                    });
+                },
                 complete: function() {
-                    form.find('button[type="submit"]').prop('disabled', false).text('Adicionar Evidência');
+                    submitBtn.prop('disabled', false).html(originalBtnText);
                 }
             });
         });
@@ -1050,6 +1129,7 @@
         $(document).on('click', '.btn-remover-evidencia', function() {
             const evidenciaId = $(this).data('id');
             const acaoId = $('#formAdicionarEvidencia input[name="acao_id"]').val();
+            const $evidenciaItem = $(this).closest('.list-group-item');
 
             Swal.fire({
                 title: 'Remover evidência?',
@@ -1071,22 +1151,16 @@
                         dataType: 'json',
                         success: (response) => {
                             if (response.success) {
-                                // Remove o elemento da lista imediatamente
-                                $(this).closest('.list-group-item').remove();
+                                // Remove o elemento da lista
+                                $evidenciaItem.remove();
 
-                                // Atualiza o contador de evidências
+                                // Atualiza o contador
                                 const badge = $('#evidenciasAcaoModal .badge');
-                                badge.text(parseInt(badge.text()) - 1);
-
-                                // Mostra mensagem de sucesso
-                                Swal.fire(
-                                    'Removido!',
-                                    'A evidência foi removida com sucesso.',
-                                    'success'
-                                );
+                                const newCount = parseInt(badge.text()) - 1;
+                                badge.text(newCount);
 
                                 // Se não houver mais evidências, mostra mensagem
-                                if ($('#listaEvidencias .list-group-item').length === 0) {
+                                if (newCount === 0) {
                                     $('#listaEvidencias').html(`
                                 <div class="alert alert-info text-center py-4">
                                     <i class="fas fa-info-circle fa-2x mb-3"></i>
@@ -1094,6 +1168,12 @@
                                 </div>
                             `);
                                 }
+
+                                Swal.fire(
+                                    'Removido!',
+                                    'A evidência foi removida com sucesso.',
+                                    'success'
+                                );
                             } else {
                                 Swal.fire(
                                     'Erro!',
@@ -1118,6 +1198,37 @@
             $('#evidenciasAcaoModal').on('hidden.bs.modal', function() {
                 $(this).remove();
                 $('#editAcaoModal').modal('show');
+            });
+        }
+
+        function atualizarListaEvidencias(acaoId) {
+            $.ajax({
+                url: `<?= site_url('acoes/gerenciar-evidencias/') ?>${acaoId}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        // Atualiza a lista de evidências
+                        $('#listaEvidencias').html(response.html);
+
+                        // Atualiza o contador
+                        const count = $(response.html).filter('.list-group-item').length;
+                        $('#evidenciasAcaoModal .badge').text(count);
+
+                        // Se não houver evidências, mostra mensagem
+                        if (count === 0) {
+                            $('#listaEvidencias').html(`
+                        <div class="alert alert-info text-center py-4">
+                            <i class="fas fa-info-circle fa-2x mb-3"></i>
+                            <p class="mb-0">Nenhuma evidência cadastrada ainda.</p>
+                        </div>
+                    `);
+                        }
+                    }
+                },
+                error: function() {
+                    showErrorAlert('Erro ao carregar evidências');
+                }
             });
         }
     });
