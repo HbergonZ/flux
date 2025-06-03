@@ -39,12 +39,12 @@
 
                     <div class="form-group d-none" id="grupoLink">
                         <label for="evidenciaLink">URL*</label>
-                        <input type="url" class="form-control" id="evidenciaLink" name="evidencia_link" placeholder="https://exemplo.com">
+                        <input type="url" class="form-control" id="evidenciaLink" name="evidencia_link" required placeholder="https://exemplo.com">
                     </div>
 
                     <div class="form-group">
-                        <label for="descricaoEvidencia">Descrição</label>
-                        <textarea class="form-control" id="descricaoEvidencia" name="descricao" rows="2" placeholder="Explique a evidência (opcional)"></textarea>
+                        <label for="descricaoEvidencia">Descrição*</label>
+                        <textarea class="form-control" id="descricaoEvidencia" name="descricao" rows="2" required placeholder="Explique a evidência"></textarea>
                     </div>
 
                     <button type="submit" class="btn btn-primary btn-block">

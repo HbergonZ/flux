@@ -977,17 +977,17 @@
         });
 
         // Atualize a parte do change do tipo
-        $('body').on('change', 'input[name="tipo"]', function() {
+        $(document).on('change', 'input[name="tipo"]', function() {
             const tipo = $(this).val();
             if (tipo === 'link') {
-                $('#grupoTexto').hide();
+                $('#grupoTexto').addClass('d-none');
                 $('#evidenciaTexto').prop('required', false);
-                $('#grupoLink').show();
+                $('#grupoLink').removeClass('d-none');
                 $('#evidenciaLink').prop('required', true);
             } else {
-                $('#grupoTexto').show();
+                $('#grupoTexto').removeClass('d-none');
                 $('#evidenciaTexto').prop('required', true);
-                $('#grupoLink').hide();
+                $('#grupoLink').addClass('d-none');
                 $('#evidenciaLink').prop('required', false);
             }
         });
@@ -1056,6 +1056,17 @@
                 $('#listaEvidencias').html('<div class="list-group"></div>');
             }
 
+            // Formata a data sem segundos
+            const dataEvidencia = new Date(evidencia.created_at);
+            const dataFormatada = dataEvidencia.toLocaleString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).replace(',', '');
+
             // Cria o HTML para a nova evidência
             const html = `
         <div class="list-group-item mb-2">
@@ -1063,7 +1074,7 @@
                 <div class="flex-grow-1">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <strong>Evidência #${totalEvidencias}</strong>
-                        <small class="text-muted">${new Date(evidencia.created_at).toLocaleString('pt-BR')}</small>
+                        <small class="text-muted">${dataFormatada}</small>
                     </div>
                     ${evidencia.tipo === 'texto' ?
                         `<div class="bg-light p-3 rounded mb-2">${evidencia.evidencia.replace(/\n/g, '<br>')}</div>` :
@@ -1194,13 +1205,24 @@
                         let html = '<div class="list-group">';
 
                         response.evidencias.forEach(evidencia => {
+                            // Formata a data sem segundos
+                            const dataEvidencia = new Date(evidencia.created_at);
+                            const dataFormatada = dataEvidencia.toLocaleString('pt-BR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: false
+                            }).replace(',', '');
+
                             html += `
                         <div class="list-group-item mb-2">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="flex-grow-1">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                         <strong>Evidência #${evidencia.ordem}</strong>
-                                        <small class="text-muted">${new Date(evidencia.created_at).toLocaleString('pt-BR')}</small>
+                                        <small class="text-muted">${dataFormatada}</small>
                                     </div>
                                     ${evidencia.tipo === 'texto' ?
                                         `<div class="bg-light p-3 rounded mb-2">${evidencia.evidencia.replace(/\n/g, '<br>')}</div>` :
