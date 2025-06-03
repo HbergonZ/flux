@@ -1016,19 +1016,19 @@ class Acoes extends BaseController
                     'created_at' => date('Y-m-d H:i:s')
                 ];
 
-                $this->evidenciasModel->insert($data);
+                $insertId = $this->evidenciasModel->insert($data);
+                $novaEvidencia = $this->evidenciasModel->find($insertId);
 
-                // Obter todas as evidências atualizadas
-                $evidencias = $this->evidenciasModel->where('nivel', 'acao')
+                // Obter contagem total de evidências
+                $totalEvidencias = $this->evidenciasModel->where('nivel', 'acao')
                     ->where('id_nivel', $acaoId)
-                    ->orderBy('created_at', 'DESC')
-                    ->findAll();
+                    ->countAllResults();
 
                 return $this->response->setJSON([
                     'success' => true,
                     'message' => 'Evidência adicionada com sucesso!',
-                    'evidencias' => $evidencias,
-                    'totalEvidencias' => count($evidencias)
+                    'evidencia' => $novaEvidencia,
+                    'totalEvidencias' => $totalEvidencias
                 ]);
             } catch (\Exception $e) {
                 log_message('error', 'Erro ao adicionar evidência: ' . $e->getMessage());
