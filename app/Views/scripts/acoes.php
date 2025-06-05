@@ -1063,14 +1063,14 @@
         });
 
         function adicionarEvidenciaNaLista(evidencia, totalEvidencias) {
-            const lista = $('.list-group');
+            const lista = $('#listaEvidencias .list-group');
 
             // Se não houver list-group (lista vazia), cria a estrutura
             if (lista.length === 0) {
                 $('#listaEvidencias').html('<div class="list-group"></div>');
             }
 
-            // Formata a data sem segundos
+            // Formata a data
             const dataEvidencia = new Date(evidencia.created_at);
             const dataFormatada = dataEvidencia.toLocaleString('pt-BR', {
                 day: '2-digit',
@@ -1081,13 +1081,16 @@
                 hour12: false
             }).replace(',', '');
 
+            // Conta quantas evidências existem agora para a numeração correta
+            const countEvidencias = $('.list-group-item').length + 1;
+
             // Cria o HTML para a nova evidência
             const html = `
-        <div class="list-group-item mb-2">
+        <div class="list-group-item mb-2" data-id="${evidencia.id}">
             <div class="d-flex justify-content-between align-items-start">
                 <div class="flex-grow-1">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <strong>Evidência #${totalEvidencias}</strong>
+                        <strong>Evidência #${countEvidencias}</strong>
                         <small class="text-muted">${dataFormatada}</small>
                     </div>
                     ${evidencia.tipo === 'texto' ?
@@ -1117,10 +1120,7 @@
             $('.list-group').prepend(html);
 
             // Atualiza o contador
-            $('.badge-pill').text(totalEvidencias);
-
-            // Remove a mensagem de lista vazia se existir
-            $('.alert-info').remove();
+            atualizarContadorEvidencias();
         }
 
         function setupEvidenciasModal(acaoId) {
@@ -1133,7 +1133,6 @@
         // Remover evidência
         $(document).on('click', '.btn-remover-evidencia', function() {
             const evidenciaId = $(this).data('id');
-            const acaoId = $('#formAdicionarEvidencia input[name="acao_id"]').val();
             const $evidenciaItem = $(this).closest('.list-group-item');
 
             Swal.fire({
@@ -1159,20 +1158,8 @@
                                 // Remove o elemento da lista
                                 $evidenciaItem.remove();
 
-                                // Atualiza o contador
-                                const badge = $('#evidenciasAcaoModal .badge');
-                                const newCount = parseInt(badge.text()) - 1;
-                                badge.text(newCount);
-
-                                // Se não houver mais evidências, mostra mensagem
-                                if (newCount === 0) {
-                                    $('#listaEvidencias').html(`
-                                <div class="alert alert-info text-center py-4">
-                                    <i class="fas fa-info-circle fa-2x mb-3"></i>
-                                    <p class="mb-0">Nenhuma evidência cadastrada ainda.</p>
-                                </div>
-                            `);
-                                }
+                                // Atualiza a numeração e contador
+                                atualizarContadorEvidencias();
 
                                 Swal.fire(
                                     'Removido!',
@@ -1285,5 +1272,51 @@
                 }
             });
         }
+
+        function atualizarContadorEvidencias() {
+            const count = $('.list-group-item').length;
+            $('.badge-pill').text(count);
+
+            // Atualiza a numeração de cada evidência
+            $('.list-group-item').each(function(index) {
+                const newNumber = count - index;
+                $(this).find('strong').text(`Evidência #${newNumber}`);
+            });
+
+            // Se não houver mais evidências, mostra mensagem
+            if (count === 0) {
+                $('#listaEvidencias').html(`
+            <div class="alert alert-info text-center py-4">
+                <i class="fas fa-info-circle fa-2x mb-3"></i>
+                <p class="mb-0">Nenhuma evidência cadastrada ainda.</p>
+            </div>
+        `);
+            }
+        }
+
+        // Código do evento de abertura do modal de evidências
+        $('body').on('shown.bs.modal', '#evidenciasAcaoModal', function() {
+            // Garante que os campos estejam configurados corretamente na abertura
+            const tipoSelecionado = $('input[name="tipo"]:checked').val();
+
+            if (tipoSelecionado === 'link') {
+                $('#grupoTexto').addClass('d-none');
+                $('#evidenciaTexto').prop('required', false);
+                $('#grupoLink').removeClass('d-none');
+                $('#evidenciaLink').prop('required', true);
+            } else {
+                $('#grupoTexto').removeClass('d-none');
+                $('#evidenciaTexto').prop('required', true);
+                $('#grupoLink').addClass('d-none');
+                $('#evidenciaLink').prop('required', false);
+            }
+
+            // Foca no primeiro campo visível
+            if (tipoSelecionado === 'link') {
+                $('#evidenciaLink').focus();
+            } else {
+                $('#evidenciaTexto').focus();
+            }
+        });
     });
 </script>
