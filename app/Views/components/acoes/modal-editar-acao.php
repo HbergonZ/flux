@@ -45,12 +45,6 @@
                                 <input type="text" class="form-control" id="editAcaoResponsavel" name="responsavel" maxlength="255">
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="editAcaoEquipe">Equipe</label>
-                                <input type="text" class="form-control" id="editAcaoEquipe" name="equipe" maxlength="255">
-                            </div>
-                        </div>
                     </div>
 
                     <div class="row">

@@ -5,7 +5,7 @@
                 <h5 class="modal-title" id="equipeAcaoModalLabel">
                     <i class="fas fa-users mr-2"></i>Gerenciar Equipe da Ação
                 </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Fechar" id="btnVoltarEdicao">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>

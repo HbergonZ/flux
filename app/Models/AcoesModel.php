@@ -14,7 +14,6 @@ class AcoesModel extends Model
         'nome',
         'descricao',
         'responsavel',
-        'equipe',
         'tempo_estimado_dias',
         'entrega_estimada',
         'data_inicio',

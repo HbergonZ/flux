@@ -168,7 +168,6 @@ class Acoes extends BaseController
                     'nome' => $this->request->getPost('nome'),
                     'ordem' => $proximaOrdem,
                     'responsavel' => $this->request->getPost('responsavel'),
-                    'equipe' => $this->request->getPost('equipe'),
                     'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias') ?: null,
                     'entrega_estimada' => $this->request->getPost('entrega_estimada') ?: null,
                     'data_inicio' => $this->request->getPost('data_inicio') ?: null,
@@ -282,7 +281,6 @@ class Acoes extends BaseController
                     'nome' => $this->request->getPost('nome'),
                     'ordem' => $this->request->getPost('ordem'),
                     'responsavel' => $this->request->getPost('responsavel'),
-                    'equipe' => $this->request->getPost('equipe'),
                     'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias'),
                     'entrega_estimada' => $this->request->getPost('entrega_estimada') ?: null,
                     'data_inicio' => $this->request->getPost('data_inicio') ?: null,
@@ -497,7 +495,6 @@ class Acoes extends BaseController
                 $camposEditaveis = [
                     'nome',
                     'responsavel',
-                    'equipe',
                     'tempo_estimado_dias',
                     'entrega_estimada',
                     'data_inicio',
@@ -646,7 +643,6 @@ class Acoes extends BaseController
                 $dadosAlterados = [
                     'nome' => $postData['nome'],
                     'responsavel' => $postData['responsavel'] ?? null,
-                    'equipe' => $postData['equipe'] ?? null,
                     'tempo_estimado_dias' => $postData['tempo_estimado_dias'] ?? null,
                     'entrega_estimada' => $postData['entrega_estimada'] ?? null,
                     'data_inicio' => $postData['data_inicio'] ?? null,

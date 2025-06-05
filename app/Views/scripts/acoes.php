@@ -602,12 +602,21 @@
                 return;
             }
 
-            $('#editAcaoModal').modal('hide').on('hidden.bs.modal', function() {
-                $(this).off('hidden.bs.modal');
-                $('#equipeAcaoModal').modal('show');
-                carregarEquipeAcao(acaoIdEquipe);
-                carregarUsuariosDisponiveis(acaoIdEquipe);
-            });
+            // Esconde o modal de edição sem fechá-lo
+            $('#editAcaoModal').modal('hide');
+
+            // Mostra o modal de equipe
+            $('#equipeAcaoModal').modal('show');
+
+            // Carrega os dados
+            carregarEquipeAcao(acaoIdEquipe);
+            carregarUsuariosDisponiveis(acaoIdEquipe);
+        });
+
+        // Botão "Voltar para Edição"
+        $(document).on('click', '#btnVoltarEdicao', function() {
+            $('#equipeAcaoModal').modal('hide');
+            $('#editAcaoModal').modal('show');
         });
 
         // Carregar usuários disponíveis para o select
@@ -647,7 +656,7 @@
                 type: 'GET',
                 dataType: 'json',
                 beforeSend: function() {
-                    $('#tabelaEquipeAcao tbody').html('<tr><td colspan="3" class="text-center"><i class="fas fa-spinner fa-spin"></i> Carregando...</td></tr>');
+                    $('#tabelaEquipeAcao tbody').html('<tr><td colspan="3" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Carregando...</td></tr>');
                 },
                 success: function(response) {
                     const tbody = $('#tabelaEquipeAcao tbody');
@@ -656,24 +665,26 @@
                     if (response.data && response.data.length > 0) {
                         response.data.forEach(membro => {
                             tbody.append(`
-                                    <tr data-usuario-id="${membro.id}">
-                                        <td>${membro.username}</td>
-                                        <td>${membro.email}</td>
-                                        <td class="text-center">
-                                            <button class="btn btn-danger btn-sm btn-remover-equipe" data-usuario-id="${membro.id}">
-                                                <i class="fas fa-trash-alt"></i> Remover
-                                            </button>
-                                        </td>
-                                    </tr>
-                                `);
+                        <tr data-usuario-id="${membro.id}">
+                            <td>${membro.username}</td>
+                            <td>${membro.email}</td>
+                            <td class="text-center">
+                                <button class="btn btn-danger btn-sm btn-remover-equipe" data-usuario-id="${membro.id}" title="Remover da equipe">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `);
                         });
+                        $('#contadorMembros').text(response.data.length);
                     } else {
-                        tbody.append('<tr><td colspan="3" class="text-center">Nenhum membro na equipe</td></tr>');
+                        tbody.append('<tr><td colspan="3" class="text-center py-4">Nenhum membro na equipe</td></tr>');
+                        $('#contadorMembros').text('0');
                     }
                 },
                 error: function(xhr) {
                     console.error('Erro ao carregar equipe:', xhr.responseText);
-                    $('#tabelaEquipeAcao tbody').html('<tr><td colspan="3" class="text-center text-danger">Erro ao carregar equipe</td></tr>');
+                    $('#tabelaEquipeAcao tbody').html('<tr><td colspan="3" class="text-center py-4 text-danger">Erro ao carregar equipe</td></tr>');
                 }
             });
         }
@@ -910,19 +921,18 @@
                     todosUsuarios = response.data || [];
 
                     if (todosUsuarios.length > 0) {
-                        let options = '';
+                        let options = '<option value="">Selecione um usuário</option>';
                         todosUsuarios.forEach(usuario => {
                             options += `<option value="${usuario.id}">${usuario.username} (${usuario.email})</option>`;
                         });
                         $('#selectUsuarioEquipe').html(options);
-                        $('#buscaUsuario').val('').trigger('input'); // Limpar filtro
+                        $('#buscaUsuario').val('').trigger('input');
                     } else {
                         $('#selectUsuarioEquipe').html('<option value="">Nenhum usuário disponível</option>');
                     }
                 },
                 error: function() {
                     $('#selectUsuarioEquipe').html('<option value="">Erro ao carregar usuários</option>');
-                    showErrorAlert('Erro ao carregar lista de usuários');
                 }
             });
         }

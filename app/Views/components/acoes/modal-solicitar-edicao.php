@@ -30,12 +30,6 @@
                                 <input type="text" class="form-control" id="solicitarEdicaoResponsavel" name="responsavel" maxlength="255">
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="solicitarEdicaoEquipe">Equipe</label>
-                                <input type="text" class="form-control" id="solicitarEdicaoEquipe" name="equipe" maxlength="255">
-                            </div>
-                        </div>
                     </div>
 
                     <div class="row">
