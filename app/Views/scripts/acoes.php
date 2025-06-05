@@ -993,12 +993,14 @@
         });
 
         //submit do formulário
+        // No seu código JavaScript, substitua a parte do submit do formulário por:
         $('body').on('submit', '#formAdicionarEvidencia', function(e) {
             e.preventDefault();
             const form = $(this);
             const acaoId = form.find('input[name="acao_id"]').val();
             const submitBtn = form.find('button[type="submit"]');
             const originalBtnText = submitBtn.html();
+            const tipoSelecionado = form.find('input[name="tipo"]:checked').val(); // Captura o tipo selecionado
 
             submitBtn.prop('disabled', true)
                 .html('<span class="spinner-border spinner-border-sm" role="status"></span> Enviando...');
@@ -1010,10 +1012,22 @@
                 dataType: "json",
                 success: function(response) {
                     if (response.success) {
+                        // Reset mais inteligente que mantém o tipo selecionado
                         form.trigger('reset');
-                        $('#grupoLink').hide();
-                        $('#grupoTexto').show();
-                        $('input[name="tipo"][value="texto"]').prop('checked', true);
+                        form.find(`input[name="tipo"][value="${tipoSelecionado}"]`).prop('checked', true);
+
+                        // Atualiza a visibilidade dos campos baseado no tipo selecionado
+                        if (tipoSelecionado === 'link') {
+                            $('#grupoTexto').addClass('d-none');
+                            $('#evidenciaTexto').prop('required', false);
+                            $('#grupoLink').removeClass('d-none');
+                            $('#evidenciaLink').prop('required', true);
+                        } else {
+                            $('#grupoTexto').removeClass('d-none');
+                            $('#evidenciaTexto').prop('required', true);
+                            $('#grupoLink').addClass('d-none');
+                            $('#evidenciaLink').prop('required', false);
+                        }
 
                         // Atualiza a lista diretamente com a resposta
                         adicionarEvidenciaNaLista(response.evidencia, response.totalEvidencias);
