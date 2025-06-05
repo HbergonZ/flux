@@ -987,24 +987,22 @@ class Acoes extends BaseController
             return redirect()->back();
         }
 
+        $tipo = $this->request->getPost('tipo');
         $rules = [
             'tipo' => 'required|in_list[texto,link]',
-            'evidencia_texto' => 'permit_empty|min_length[3]',
-            'evidencia_link' => 'permit_empty|valid_url',
             'descricao' => 'permit_empty'
         ];
 
+        // Adiciona regras condicionais baseadas no tipo
+        if ($tipo === 'texto') {
+            $rules['evidencia_texto'] = 'required|min_length[3]';
+        } else {
+            $rules['evidencia_link'] = 'required|valid_url';
+        }
+
         if ($this->validate($rules)) {
             try {
-                $tipo = $this->request->getPost('tipo');
                 $evidencia = $tipo === 'texto' ? $this->request->getPost('evidencia_texto') : $this->request->getPost('evidencia_link');
-
-                if (empty($evidencia)) {
-                    return $this->response->setJSON([
-                        'success' => false,
-                        'message' => 'O campo de evidência é obrigatório'
-                    ]);
-                }
 
                 $data = [
                     'tipo' => $tipo,
@@ -1019,16 +1017,20 @@ class Acoes extends BaseController
                 $insertId = $this->evidenciasModel->insert($data);
                 $novaEvidencia = $this->evidenciasModel->find($insertId);
 
-                // Obter contagem total de evidências
-                $totalEvidencias = $this->evidenciasModel->where('nivel', 'acao')
+                // Obter todas as evidências atualizadas
+                $evidencias = $this->evidenciasModel->where('nivel', 'acao')
                     ->where('id_nivel', $acaoId)
-                    ->countAllResults();
+                    ->orderBy('created_at', 'DESC')
+                    ->findAll();
 
                 return $this->response->setJSON([
                     'success' => true,
                     'message' => 'Evidência adicionada com sucesso!',
-                    'evidencia' => $novaEvidencia,
-                    'totalEvidencias' => $totalEvidencias
+                    'html' => view('components/acoes/conteudo-evidencias', [
+                        'acao' => $this->acoesModel->find($acaoId),
+                        'evidencias' => $evidencias,
+                        'totalEvidencias' => count($evidencias)
+                    ])
                 ]);
             } catch (\Exception $e) {
                 log_message('error', 'Erro ao adicionar evidência: ' . $e->getMessage());
@@ -1056,11 +1058,23 @@ class Acoes extends BaseController
                 return $this->response->setJSON(['success' => false, 'message' => 'Evidência não encontrada']);
             }
 
+            $acaoId = $evidencia['id_nivel'];
             $this->evidenciasModel->delete($evidenciaId);
+
+            // Obter todas as evidências atualizadas
+            $evidencias = $this->evidenciasModel->where('nivel', 'acao')
+                ->where('id_nivel', $acaoId)
+                ->orderBy('created_at', 'DESC')
+                ->findAll();
 
             return $this->response->setJSON([
                 'success' => true,
-                'message' => 'Evidência removida com sucesso!'
+                'message' => 'Evidência removida com sucesso!',
+                'html' => view('components/acoes/conteudo-evidencias', [
+                    'acao' => $this->acoesModel->find($acaoId),
+                    'evidencias' => $evidencias,
+                    'totalEvidencias' => count($evidencias)
+                ])
             ]);
         } catch (\Exception $e) {
             return $this->response->setJSON([

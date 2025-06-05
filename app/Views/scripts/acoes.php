@@ -976,31 +976,45 @@
             $(this).off('hidden.bs.modal');
         });
 
-        // Atualize a parte do change do tipo
+
+        $('body').on('show.bs.modal', '#evidenciasAcaoModal', function() {
+            // Força seleção do tipo texto e dispara o evento change
+            $('input[name="tipo"][value="texto"]').prop('checked', true).trigger('change');
+
+            // Limpa os campos
+            $('#evidenciaTexto').val('');
+            $('#evidenciaLink').val('');
+            $('#descricaoEvidencia').val('');
+
+            // Foca no campo de texto
+            $('#evidenciaTexto').focus();
+        });
+
+        // Configura o change do tipo
         $(document).on('change', 'input[name="tipo"]', function() {
             const tipo = $(this).val();
             if (tipo === 'link') {
                 $('#grupoTexto').addClass('d-none');
-                $('#evidenciaTexto').prop('required', false);
+                $('#evidenciaTexto').val('').prop('required', false);
                 $('#grupoLink').removeClass('d-none');
                 $('#evidenciaLink').prop('required', true);
+                $('#evidenciaLink').focus();
             } else {
                 $('#grupoTexto').removeClass('d-none');
                 $('#evidenciaTexto').prop('required', true);
                 $('#grupoLink').addClass('d-none');
-                $('#evidenciaLink').prop('required', false);
+                $('#evidenciaLink').val('').prop('required', false);
+                $('#evidenciaTexto').focus();
             }
         });
 
         //submit do formulário
-        // No seu código JavaScript, substitua a parte do submit do formulário por:
         $('body').on('submit', '#formAdicionarEvidencia', function(e) {
             e.preventDefault();
             const form = $(this);
             const acaoId = form.find('input[name="acao_id"]').val();
             const submitBtn = form.find('button[type="submit"]');
             const originalBtnText = submitBtn.html();
-            const tipoSelecionado = form.find('input[name="tipo"]:checked').val(); // Captura o tipo selecionado
 
             submitBtn.prop('disabled', true)
                 .html('<span class="spinner-border spinner-border-sm" role="status"></span> Enviando...');
@@ -1012,25 +1026,9 @@
                 dataType: "json",
                 success: function(response) {
                     if (response.success) {
-                        // Reset mais inteligente que mantém o tipo selecionado
                         form.trigger('reset');
-                        form.find(`input[name="tipo"][value="${tipoSelecionado}"]`).prop('checked', true);
-
-                        // Atualiza a visibilidade dos campos baseado no tipo selecionado
-                        if (tipoSelecionado === 'link') {
-                            $('#grupoTexto').addClass('d-none');
-                            $('#evidenciaTexto').prop('required', false);
-                            $('#grupoLink').removeClass('d-none');
-                            $('#evidenciaLink').prop('required', true);
-                        } else {
-                            $('#grupoTexto').removeClass('d-none');
-                            $('#evidenciaTexto').prop('required', true);
-                            $('#grupoLink').addClass('d-none');
-                            $('#evidenciaLink').prop('required', false);
-                        }
-
-                        // Atualiza a lista diretamente com a resposta
-                        adicionarEvidenciaNaLista(response.evidencia, response.totalEvidencias);
+                        // Atualiza apenas o conteúdo interno do modal
+                        $('#conteudoEvidenciasModal').html(response.html);
 
                         Swal.fire({
                             icon: 'success',
@@ -1062,13 +1060,11 @@
             });
         });
 
-        function adicionarEvidenciaNaLista(evidencia, totalEvidencias) {
-            const lista = $('#listaEvidencias .list-group');
 
-            // Se não houver list-group (lista vazia), cria a estrutura
-            if (lista.length === 0) {
-                $('#listaEvidencias').html('<div class="list-group"></div>');
-            }
+        // Função para adicionar evidência na lista
+        function adicionarEvidenciaNaLista(evidencia) {
+            // Remove completamente o conteúdo atual e cria uma nova lista
+            $('#listaEvidencias').html('<div class="list-group list-group-flush"></div>');
 
             // Formata a data
             const dataEvidencia = new Date(evidencia.created_at);
@@ -1081,17 +1077,19 @@
                 hour12: false
             }).replace(',', '');
 
-            // Conta quantas evidências existem agora para a numeração correta
-            const countEvidencias = $('.list-group-item').length + 1;
-
             // Cria o HTML para a nova evidência
             const html = `
-        <div class="list-group-item mb-2" data-id="${evidencia.id}">
+        <div class="list-group-item" data-id="${evidencia.id}">
             <div class="d-flex justify-content-between align-items-start">
                 <div class="flex-grow-1">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <strong>Evidência #${countEvidencias}</strong>
-                        <small class="text-muted">${dataFormatada}</small>
+                        <div>
+                            <span class="badge badge-light mr-2">#1</span>
+                            <small class="text-muted">${dataFormatada}</small>
+                        </div>
+                        <button class="btn btn-sm btn-danger btn-remover-evidencia" data-id="${evidencia.id}">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
                     </div>
                     ${evidencia.tipo === 'texto' ?
                         `<div class="bg-light p-3 rounded mb-2">${evidencia.evidencia.replace(/\n/g, '<br>')}</div>` :
@@ -1109,18 +1107,36 @@
                         </div>` : ''
                     }
                 </div>
-                <button class="btn btn-sm btn-danger ml-2 btn-remover-evidencia" data-id="${evidencia.id}">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
             </div>
         </div>
     `;
 
-            // Adiciona no início da lista (para manter a ordem mais recente primeiro)
-            $('.list-group').prepend(html);
+            // Adiciona a evidência na lista
+            $('.list-group').append(html);
 
             // Atualiza o contador
-            atualizarContadorEvidencias();
+            $('.badge-pill').text('1');
+        }
+
+        // Função para atualizar o contador e a numeração das evidências
+        function atualizarContadorEvidencias() {
+            const count = $('.list-group-item').length;
+            $('.badge-pill').text(count);
+
+            // Atualiza a numeração de cada evidência
+            $('.list-group-item').each(function(index) {
+                $(this).find('.badge').text(`#${count - index}`);
+            });
+
+            // Se não houver mais evidências, mostra mensagem
+            if (count === 0) {
+                $('#listaEvidencias').html(`
+            <div class="alert alert-info text-center py-4 m-3">
+                <i class="fas fa-info-circle fa-2x mb-3"></i>
+                <p class="mb-0">Nenhuma evidência cadastrada ainda.</p>
+            </div>
+        `);
+            }
         }
 
         function setupEvidenciasModal(acaoId) {
@@ -1133,7 +1149,6 @@
         // Remover evidência
         $(document).on('click', '.btn-remover-evidencia', function() {
             const evidenciaId = $(this).data('id');
-            const $evidenciaItem = $(this).closest('.list-group-item');
 
             Swal.fire({
                 title: 'Remover evidência?',
@@ -1155,21 +1170,18 @@
                         dataType: 'json',
                         success: (response) => {
                             if (response.success) {
-                                // Remove o elemento da lista
-                                $evidenciaItem.remove();
-
-                                // Atualiza a numeração e contador
-                                atualizarContadorEvidencias();
+                                // Atualiza apenas o conteúdo interno do modal
+                                $('#conteudoEvidenciasModal').html(response.html);
 
                                 Swal.fire(
                                     'Removido!',
-                                    'A evidência foi removida com sucesso.',
+                                    response.message,
                                     'success'
                                 );
                             } else {
                                 Swal.fire(
                                     'Erro!',
-                                    response.message || 'Ocorreu um erro ao remover a evidência.',
+                                    response.message,
                                     'error'
                                 );
                             }
@@ -1318,5 +1330,28 @@
                 $('#evidenciaTexto').focus();
             }
         });
+
+        function removerEvidencia(evidenciaId) {
+            $.ajax({
+                url: `<?= site_url('acoes/remover-evidencia/') ?>${evidenciaId}`,
+                type: 'POST',
+                data: {
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                },
+                dataType: 'json',
+                success: (response) => {
+                    if (response.success) {
+                        // Recarrega a lista completa via AJAX
+                        carregarListaEvidencias(response.acao_id);
+                    } else {
+                        Swal.fire('Erro!', response.message || 'Ocorreu um erro ao remover a evidência.', 'error');
+                    }
+                },
+                error: () => {
+                    Swal.fire('Erro!', 'Falha na comunicação com o servidor.', 'error');
+                }
+            });
+        }
+
     });
 </script>
