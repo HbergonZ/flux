@@ -623,6 +623,7 @@
                     $('#selectUsuarioEquipe').html('<option value="">Carregando usuários...</option>');
                 },
                 success: function(response) {
+                    console.log('Resposta completa:', response); // Adicione este log
                     if (response.success && response.data && response.data.length > 0) {
                         let options = '<option value="">Selecione um usuário</option>';
                         response.data.forEach(usuario => {
@@ -630,12 +631,17 @@
                         });
                         $('#selectUsuarioEquipe').html(options);
                     } else {
+                        console.log('Resposta sem dados:', response.message); // Adicione este log
                         $('#selectUsuarioEquipe').html('<option value="">Nenhum usuário disponível</option>');
+                        if (response.message) {
+                            showErrorAlert(response.message);
+                        }
                     }
                 },
-                error: function() {
+                error: function(xhr) {
+                    console.error('Erro completo:', xhr.responseText); // Adicione este log
                     $('#selectUsuarioEquipe').html('<option value="">Erro ao carregar usuários</option>');
-                    showErrorAlert('Erro ao carregar lista de usuários');
+                    showErrorAlert('Erro ao carregar lista de usuários: ' + xhr.statusText);
                 }
             });
         }

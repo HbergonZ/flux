@@ -900,6 +900,7 @@ class Acoes extends BaseController
     public function buscarUsuarios()
     {
         $acaoId = $this->request->getGet('acao_id');
+        log_message('debug', 'buscarUsuarios acessado por user_id: ' . auth()->id());
 
         try {
             $db = db_connect();
