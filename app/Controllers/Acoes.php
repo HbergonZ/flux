@@ -478,19 +478,6 @@ class Acoes extends BaseController
 
                 unset($acaoAtual['id'], $acaoAtual['created_at'], $acaoAtual['updated_at']);
 
-                if (!empty($postData['data_fim'])) {
-                    if (empty($postData['evidencias'])) {
-                        $response['message'] = 'Ao definir uma data fim, é obrigatório informar as evidências.';
-                        return $this->response->setJSON($response);
-                    }
-
-                    // Adiciona as evidências aos dados alterados
-                    $alteracoes['evidencias'] = [
-                        'de' => null,
-                        'para' => $postData['evidencias']
-                    ];
-                }
-
                 $alteracoes = [];
                 $camposEditaveis = [
                     'nome',
@@ -515,6 +502,30 @@ class Acoes extends BaseController
                             ];
                         }
                     }
+                }
+
+                // Tratamento para membros da equipe
+                $alteracoesEquipe = [];
+
+                // Membros a adicionar
+                if (!empty($postData['adicionar_membro'])) {
+                    $membrosAdicionar = explode(',', $postData['adicionar_membro']);
+                    if (!empty($membrosAdicionar)) {
+                        $alteracoesEquipe['adicionar'] = $membrosAdicionar;
+                    }
+                }
+
+                // Membros a remover
+                if (!empty($postData['remover_membro'])) {
+                    $membrosRemover = explode(',', $postData['remover_membro']);
+                    if (!empty($membrosRemover)) {
+                        $alteracoesEquipe['remover'] = $membrosRemover;
+                    }
+                }
+
+                // Adiciona as alterações da equipe se houver
+                if (!empty($alteracoesEquipe)) {
+                    $alteracoes['equipe'] = $alteracoesEquipe;
                 }
 
                 if (empty($alteracoes)) {
@@ -899,35 +910,67 @@ class Acoes extends BaseController
 
     public function buscarUsuarios()
     {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
         $acaoId = $this->request->getGet('acao_id');
-        log_message('debug', 'buscarUsuarios acessado por user_id: ' . auth()->id());
+        $term = $this->request->getGet('term');
 
         try {
             $db = db_connect();
 
-            // Busca usuários que não estão na equipe desta ação
-            $subquery = $db->table('acoes_equipe')
-                ->select('usuario_id')
-                ->where('acao_id', $acaoId);
+            // Obter IDs dos usuários já na equipe (se houver ação_id)
+            $idsEquipe = [];
+            if ($acaoId) {
+                $equipe = $db->table('acoes_equipe')
+                    ->select('usuario_id')
+                    ->where('acao_id', $acaoId)
+                    ->get()
+                    ->getResultArray();
+                $idsEquipe = array_column($equipe, 'usuario_id');
+            }
 
-            $usuarios = $db->table('users')
+            // Buscar usuários ativos
+            $builder = $db->table('users')
                 ->select('users.id, users.username, auth_identities.secret as email')
                 ->join('auth_identities', 'auth_identities.user_id = users.id AND auth_identities.type = "email_password"')
-                ->where('users.active', 1)
-                ->whereNotIn('users.id', $subquery)
-                ->orderBy('users.username', 'ASC')
+                ->where('users.active', 1);
+
+            // Aplicar filtro por termo de busca
+            if (!empty($term)) {
+                $builder->groupStart()
+                    ->like('users.username', $term)
+                    ->orLike('auth_identities.secret', $term)
+                    ->groupEnd();
+            }
+
+            // Excluir usuários já na equipe
+            if (!empty($idsEquipe)) {
+                $builder->whereNotIn('users.id', $idsEquipe);
+            }
+
+            $usuarios = $builder->orderBy('users.username', 'ASC')
                 ->get()
                 ->getResultArray();
 
             return $this->response->setJSON([
                 'success' => true,
-                'data' => $usuarios
+                'results' => array_map(function ($user) {
+                    return [
+                        'id' => $user['id'],
+                        'text' => "{$user['username']} ({$user['email']})",
+                        'username' => $user['username'],
+                        'email' => $user['email']
+                    ];
+                }, $usuarios)
             ]);
         } catch (\Exception $e) {
             log_message('error', 'Erro ao buscar usuários: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Erro ao buscar usuários'
+                'message' => 'Erro ao buscar usuários',
+                'results' => []
             ]);
         }
     }

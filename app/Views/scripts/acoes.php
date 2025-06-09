@@ -302,7 +302,14 @@
 
         // Verificar alterações no modal de edição
         $('#solicitarEdicaoModal').on('shown.bs.modal', function() {
-            $('#formSolicitarEdicao').on('input change', checkForChanges);
+            const acaoId = $('#solicitarEdicaoId').val();
+            if (acaoId) {
+                carregarEquipeParaSolicitacao(acaoId);
+                carregarUsuariosDisponiveisParaSolicitacao(acaoId);
+            }
+
+            // Limpa a busca
+            $('#buscaUsuarioEquipe').val('').trigger('input');
         });
 
         function checkForChanges() {
@@ -1323,6 +1330,173 @@
             } else {
                 $('#evidenciaTexto').focus();
             }
+        });
+        // Adicione esta função no seu arquivo JavaScript (scripts/acoes.php)
+        function carregarEquipeParaSolicitacao(acaoId) {
+            $.ajax({
+                url: `<?= site_url('acoes/get-equipe/') ?>${acaoId}`,
+                type: 'GET',
+                dataType: 'json',
+                beforeSend: function() {
+                    $('#equipeAtualList').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>');
+                },
+                success: function(response) {
+                    const equipeAtualList = $('#equipeAtualList');
+                    equipeAtualList.empty();
+
+                    if (response.data && response.data.length > 0) {
+                        response.data.forEach(membro => {
+                            equipeAtualList.append(`
+                        <div class="list-group-item py-2 d-flex justify-content-between align-items-center" data-usuario-id="${membro.id}">
+                            <div>
+                                <span class="font-weight-bold">${membro.username}</span>
+                                <small class="d-block text-muted">${membro.email}</small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-danger btn-remover-equipe-solicitacao" data-usuario-id="${membro.id}">
+                                <i class="fas fa-user-minus"></i>
+                            </button>
+                        </div>
+                    `);
+                        });
+                    } else {
+                        equipeAtualList.html('<div class="text-center py-3 text-muted">Nenhum membro na equipe</div>');
+                    }
+                },
+                error: function() {
+                    $('#equipeAtualList').html('<div class="text-center py-3 text-danger">Erro ao carregar equipe</div>');
+                }
+            });
+        }
+
+        function carregarUsuariosDisponiveisParaSolicitacao(acaoId) {
+            $.ajax({
+                url: '<?= site_url('acoes/buscar-usuarios') ?>',
+                type: 'GET',
+                data: {
+                    acao_id: acaoId
+                },
+                dataType: 'json',
+                beforeSend: function() {
+                    $('#usuariosDisponiveisList').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>');
+                },
+                success: function(response) {
+                    const usuariosList = $('#usuariosDisponiveisList');
+                    usuariosList.empty();
+
+                    if (response.success && response.results && response.results.length > 0) {
+                        response.results.forEach(usuario => {
+                            usuariosList.append(`
+                        <div class="list-group-item py-2 d-flex justify-content-between align-items-center" data-usuario-id="${usuario.id}">
+                            <div>
+                                <span class="font-weight-bold">${usuario.username}</span>
+                                <small class="d-block text-muted">${usuario.email}</small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-success btn-adicionar-equipe-solicitacao" data-usuario-id="${usuario.id}">
+                                <i class="fas fa-user-plus"></i>
+                            </button>
+                        </div>
+                    `);
+                        });
+                    } else {
+                        usuariosList.html('<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Erro na requisição:', status, error);
+                    $('#usuariosDisponiveisList').html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
+                }
+            });
+        }
+
+        // Adicione este evento para carregar os dados quando o modal for aberto
+        $('#solicitarEdicaoModal').on('shown.bs.modal', function() {
+            const acaoId = $('#solicitarEdicaoId').val();
+            if (acaoId) {
+                carregarEquipeParaSolicitacao(acaoId);
+                carregarUsuariosDisponiveisParaSolicitacao(acaoId);
+            }
+        });
+
+        // Adicione esta função para filtrar usuários
+        $('#buscaUsuarioEquipe').on('input', function() {
+            const termo = $(this).val().toLowerCase();
+            if (termo.length < 2) {
+                // Mostra todos se o termo for muito curto
+                $('#usuariosDisponiveisList .list-group-item').show();
+                return;
+            }
+
+            $('#usuariosDisponiveisList .list-group-item').each(function() {
+                const texto = $(this).text().toLowerCase();
+                $(this).toggle(texto.includes(termo));
+            });
+        });
+
+        // Adicione estes eventos para os botões de adicionar/remover
+        $(document).on('click', '.btn-adicionar-equipe-solicitacao', function() {
+            const usuarioId = $(this).data('usuario-id');
+            const usuarioItem = $(this).closest('.list-group-item');
+            const usuarioHtml = usuarioItem.html();
+
+            // Move para a lista de membros atuais
+            $('#equipeAtualList').append(usuarioItem);
+            $(this).removeClass('btn-outline-success btn-adicionar-equipe-solicitacao')
+                .addClass('btn-outline-danger btn-remover-equipe-solicitacao')
+                .html('<i class="fas fa-user-minus"></i>');
+
+            // Atualiza o campo hidden com os usuários a adicionar
+            const adicionarAtual = $('#adicionarMembroInput').val();
+            const adicionarArray = adicionarAtual ? adicionarAtual.split(',') : [];
+            if (!adicionarArray.includes(usuarioId.toString())) {
+                adicionarArray.push(usuarioId);
+                $('#adicionarMembroInput').val(adicionarArray.join(','));
+            }
+
+            // Remove do campo de remoção se estava lá
+            const removerAtual = $('#removerMembroInput').val();
+            if (removerAtual) {
+                const removerArray = removerAtual.split(',');
+                const index = removerArray.indexOf(usuarioId.toString());
+                if (index > -1) {
+                    removerArray.splice(index, 1);
+                    $('#removerMembroInput').val(removerArray.join(','));
+                }
+            }
+
+            checkForChanges();
+        });
+
+        $(document).on('click', '.btn-remover-equipe-solicitacao', function() {
+            const usuarioId = $(this).data('usuario-id');
+            const usuarioItem = $(this).closest('.list-group-item');
+            const usuarioHtml = usuarioItem.html();
+
+            // Move para a lista de usuários disponíveis
+            $('#usuariosDisponiveisList').append(usuarioItem);
+            $(this).removeClass('btn-outline-danger btn-remover-equipe-solicitacao')
+                .addClass('btn-outline-success btn-adicionar-equipe-solicitacao')
+                .html('<i class="fas fa-user-plus"></i>');
+
+            // Atualiza o campo hidden com os usuários a remover
+            const removerAtual = $('#removerMembroInput').val();
+            const removerArray = removerAtual ? removerAtual.split(',') : [];
+            if (!removerArray.includes(usuarioId.toString())) {
+                removerArray.push(usuarioId);
+                $('#removerMembroInput').val(removerArray.join(','));
+            }
+
+            // Remove do campo de adição se estava lá
+            const adicionarAtual = $('#adicionarMembroInput').val();
+            if (adicionarAtual) {
+                const adicionarArray = adicionarAtual.split(',');
+                const index = adicionarArray.indexOf(usuarioId.toString());
+                if (index > -1) {
+                    adicionarArray.splice(index, 1);
+                    $('#adicionarMembroInput').val(adicionarArray.join(','));
+                }
+            }
+
+            checkForChanges();
         });
     });
 </script>
