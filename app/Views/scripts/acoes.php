@@ -715,7 +715,7 @@
                     if (response.success) {
                         $('#selectUsuarioEquipe').val(null).trigger('change');
                         carregarEquipeAcao(acaoIdEquipe);
-                        carregarUsuariosDisponiveis(acaoIdEquipe);
+                        carregarUsuariosDisponiveis(acaoIdEquipe); // Esta linha atualiza a lista
                         showSuccessAlert(response.message);
                     } else {
                         showErrorAlert(response.message);
@@ -1344,6 +1344,14 @@
                     const equipeAtualList = $('#equipeAtualList');
                     equipeAtualList.empty();
 
+                    // Armazena os IDs originais da equipe
+                    const idsOriginais = response.data.map(membro => membro.id.toString());
+                    $('#equipeOriginal').val(idsOriginais.join(','));
+
+                    // Limpa as listas de controle ao carregar nova equipe
+                    usuariosAdicionados = [];
+                    usuariosRemovidos = [];
+
                     if (response.data && response.data.length > 0) {
                         response.data.forEach(membro => {
                             equipeAtualList.append(`
@@ -1370,74 +1378,98 @@
             });
         }
 
+        // Variável global para armazenar todos os usuários disponíveis
+        let todosUsuariosDisponiveis = [];
+        let usuariosAdicionados = []; // Rastreia usuários adicionados durante a sessão
+        let usuariosRemovidos = []; // Rastreia usuários removidos durante a sessão
+
         // Função para carregar usuários disponíveis para solicitação
         function carregarUsuariosDisponiveisParaSolicitacao(acaoId, termo = '') {
-            // Obter IDs dos usuários já na equipe
             const membrosAtuais = $('#equipeAtualList .list-group-item').map(function() {
                 return $(this).data('usuario-id');
             }).get();
 
-            $.ajax({
-                url: '<?= site_url('acoes/buscar-usuarios') ?>',
-                type: 'GET',
-                data: {
-                    acao_id: acaoId,
-                    term: termo
-                },
-                dataType: 'json',
-                beforeSend: function() {
-                    $('#usuariosDisponiveisList').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>');
-                },
-                success: function(response) {
-                    const usuariosList = $('#usuariosDisponiveisList');
-                    usuariosList.empty();
+            // Filtra os usuários já carregados
+            const usuariosFiltrados = todosUsuariosDisponiveis.filter(usuario => {
+                // Verifica se o usuário:
+                // 1. Não está na equipe atual OU está na lista de removidos
+                // 2. Não está na lista de adicionados OU está na lista de removidos
+                const naoEstaNaEquipe = !membrosAtuais.includes(usuario.id.toString());
+                const foiAdicionado = usuariosAdicionados.includes(usuario.id.toString());
+                const foiRemovido = usuariosRemovidos.includes(usuario.id.toString());
 
-                    const usuarios = response.results || (response.data ? response.data : []);
-                    const usuariosFiltrados = usuarios.filter(usuario =>
-                        !membrosAtuais.includes(usuario.id.toString())
-                    );
+                const correspondeTermo = termo === '' ||
+                    usuario.username.toLowerCase().includes(termo.toLowerCase()) ||
+                    usuario.email.toLowerCase().includes(termo.toLowerCase());
 
-                    if (usuariosFiltrados.length > 0) {
-                        usuariosFiltrados.forEach(usuario => {
-                            const userId = usuario.id || usuario.user_id;
-                            const username = usuario.username || usuario.name || 'Usuário sem nome';
-                            const email = usuario.email || usuario.secret || 'Sem e-mail';
-
-                            usuariosList.append(`
-                        <div class="list-group-item py-2 d-flex justify-content-between align-items-center" data-usuario-id="${userId}">
-                            <div>
-                                <span class="font-weight-bold">${username}</span>
-                                <small class="d-block text-muted">${email}</small>
-                            </div>
-                            <button class="btn btn-sm btn-outline-success btn-adicionar-equipe-solicitacao" data-usuario-id="${userId}" title="Solicitar adição">
-                                <i class="fas fa-user-plus"></i>
-                            </button>
-                        </div>
-                    `);
-                        });
-                        $('#contadorUsuariosDisponiveis').text(usuariosFiltrados.length);
-                    } else {
-                        usuariosList.html('<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>');
-                        $('#contadorUsuariosDisponiveis').text('0');
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Erro ao carregar usuários:', status, error);
-                    $('#usuariosDisponiveisList').html('<div class="text-center py-3 text-danger">Erro ao carregar lista de usuários</div>');
-                }
+                return (naoEstaNaEquipe || foiRemovido) && (!foiAdicionado || foiRemovido) && correspondeTermo;
             });
+
+            const usuariosList = $('#usuariosDisponiveisList');
+            usuariosList.empty();
+
+            if (usuariosFiltrados.length > 0) {
+                usuariosFiltrados.forEach(usuario => {
+                    // Mostra se:
+                    // 1. Não foi adicionado durante esta sessão OU
+                    // 2. Foi removido (mesmo que tenha sido adicionado antes)
+                    if (!usuariosAdicionados.includes(usuario.id.toString()) ||
+                        usuariosRemovidos.includes(usuario.id.toString())) {
+                        usuariosList.append(`
+                    <div class="list-group-item py-2 d-flex justify-content-between align-items-center" data-usuario-id="${usuario.id}">
+                        <div>
+                            <span class="font-weight-bold">${usuario.username}</span>
+                            <small class="d-block text-muted">${usuario.email}</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-success btn-adicionar-equipe-solicitacao" data-usuario-id="${usuario.id}" title="Solicitar adição">
+                            <i class="fas fa-user-plus"></i>
+                        </button>
+                    </div>
+                `);
+                    }
+                });
+                $('#contadorUsuariosDisponiveis').text(usuariosFiltrados.length);
+            } else {
+                usuariosList.html('<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>');
+                $('#contadorUsuariosDisponiveis').text('0');
+            }
         }
 
-        // Adicione este evento para carregar os dados quando o modal for aberto
+        // Evento para carregar todos os usuários quando o modal é aberto
         $('#solicitarEdicaoModal').on('shown.bs.modal', function() {
             const acaoId = $('#solicitarEdicaoId').val();
             if (acaoId) {
                 carregarEquipeParaSolicitacao(acaoId);
-                carregarUsuariosDisponiveisParaSolicitacao(acaoId);
+
+                // Carrega todos os usuários uma única vez
+                $.ajax({
+                    url: '<?= site_url('acoes/buscar-usuarios') ?>',
+                    type: 'GET',
+                    data: {
+                        acao_id: acaoId
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success && response.data) {
+                            todosUsuariosDisponiveis = response.data;
+                        } else if (response.results) {
+                            // Adaptação para o formato retornado pelo Select2
+                            todosUsuariosDisponiveis = response.results.map(user => ({
+                                id: user.id,
+                                username: user.username || user.text.split('(')[0].trim(),
+                                email: user.email || (user.text.match(/\((.*?)\)/) ? user.text.match(/\((.*?)\)/)[1] : '')
+                            }));
+                        }
+                        carregarUsuariosDisponiveisParaSolicitacao(acaoId);
+                    },
+                    error: function() {
+                        console.error('Erro ao carregar usuários');
+                    }
+                });
             }
         });
 
-        // Evento para filtrar usuários em tempo real
+        // Evento para filtrar usuários em tempo real (agora filtra os dados já carregados)
         $('#buscaUsuarioEquipe').on('input', function() {
             const termo = $(this).val().trim();
             const acaoId = $('#solicitarEdicaoId').val();
@@ -1464,7 +1496,7 @@
             }
         });
 
-        // Eventos de clique para adicionar/remover (versão final)
+        // Evento para adicionar usuário à equipe
         $(document).on('click', '.btn-adicionar-equipe-solicitacao', function(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -1474,12 +1506,36 @@
             const acaoId = $('#solicitarEdicaoId').val();
             const termoBusca = $('#buscaUsuarioEquipe').val();
 
+            // Encontra o usuário nos dados carregados
+            const usuario = todosUsuariosDisponiveis.find(u => u.id == usuarioId);
+            if (!usuario) return;
+
+            // Remove o item da lista de disponíveis imediatamente
+            usuarioItem.remove();
+
             // Adiciona à lista de membros atuais
-            $('#equipeAtualList').append(usuarioItem);
-            $(this).removeClass('btn-outline-success btn-adicionar-equipe-solicitacao')
-                .addClass('btn-outline-danger btn-remover-equipe-solicitacao')
-                .html('<i class="fas fa-user-minus"></i>')
-                .attr('title', 'Solicitar remoção');
+            $('#equipeAtualList').append(`
+        <div class="list-group-item py-2 d-flex justify-content-between align-items-center" data-usuario-id="${usuario.id}">
+            <div>
+                <span class="font-weight-bold">${usuario.username}</span>
+                <small class="d-block text-muted">${usuario.email}</small>
+            </div>
+            <button class="btn btn-sm btn-outline-danger btn-remover-equipe-solicitacao" data-usuario-id="${usuario.id}" title="Solicitar remoção">
+                <i class="fas fa-user-minus"></i>
+            </button>
+        </div>
+    `);
+
+            // Atualiza lista de usuários adicionados
+            if (!usuariosAdicionados.includes(usuarioId.toString())) {
+                usuariosAdicionados.push(usuarioId.toString());
+            }
+
+            // Remove da lista de removidos se estiver lá
+            const indexRemovido = usuariosRemovidos.indexOf(usuarioId.toString());
+            if (indexRemovido > -1) {
+                usuariosRemovidos.splice(indexRemovido, 1);
+            }
 
             // Atualiza campos hidden
             const adicionarAtual = $('#adicionarMembroInput').val();
@@ -1499,12 +1555,14 @@
                 }
             }
 
-            // Atualiza contadores e recarrega a lista de disponíveis
+            // Atualiza contadores
             $('#contadorMembrosAtuais').text($('#equipeAtualList .list-group-item').length);
-            carregarUsuariosDisponiveisParaSolicitacao(acaoId, termoBusca);
+            $('#contadorUsuariosDisponiveis').text($('#usuariosDisponiveisList .list-group-item').length);
 
             checkForChanges();
         });
+
+
 
         // Previne o submit do formulário ao pressionar Enter na busca
         $('#buscaUsuarioEquipe').on('keydown', function(e) {
@@ -1515,7 +1573,7 @@
             }
         });
 
-        // Evento para remover usuário da lista de solicitação
+        // Evento para remover usuário da equipe
         $(document).on('click', '.btn-remover-equipe-solicitacao', function(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -1525,17 +1583,31 @@
             const acaoId = $('#solicitarEdicaoId').val();
             const termoBusca = $('#buscaUsuarioEquipe').val();
 
-            // Adiciona à lista de usuários disponíveis
-            $('#usuariosDisponiveisList').append(usuarioItem);
-            $(this).removeClass('btn-outline-danger btn-remover-equipe-solicitacao')
-                .addClass('btn-outline-success btn-adicionar-equipe-solicitacao')
-                .html('<i class="fas fa-user-plus"></i>')
-                .attr('title', 'Solicitar adição');
+            // Verifica se o usuário estava originalmente na equipe
+            const equipeOriginal = $('#equipeOriginal').val().split(',');
+            const estavaOriginalmenteNaEquipe = equipeOriginal.includes(usuarioId.toString());
+
+            // Remove o item da lista de membros
+            usuarioItem.remove();
+
+            // Atualiza listas de controle
+            if (estavaOriginalmenteNaEquipe) {
+                // Adiciona à lista de removidos se era membro original
+                if (!usuariosRemovidos.includes(usuarioId.toString())) {
+                    usuariosRemovidos.push(usuarioId.toString());
+                }
+            } else {
+                // Remove da lista de adicionados se foi adicionado durante esta sessão
+                const indexAdicionado = usuariosAdicionados.indexOf(usuarioId.toString());
+                if (indexAdicionado > -1) {
+                    usuariosAdicionados.splice(indexAdicionado, 1);
+                }
+            }
 
             // Atualiza campos hidden
             const removerAtual = $('#removerMembroInput').val();
             const removerArray = removerAtual ? removerAtual.split(',') : [];
-            if (!removerArray.includes(usuarioId.toString())) {
+            if (estavaOriginalmenteNaEquipe && !removerArray.includes(usuarioId.toString())) {
                 removerArray.push(usuarioId);
                 $('#removerMembroInput').val(removerArray.join(','));
             }
@@ -1550,9 +1622,11 @@
                 }
             }
 
-            // Atualiza contadores e recarrega a lista de disponíveis
-            $('#contadorMembrosAtuais').text($('#equipeAtualList .list-group-item').length);
+            // Recarrega a lista de disponíveis para mostrar o usuário removido
             carregarUsuariosDisponiveisParaSolicitacao(acaoId, termoBusca);
+
+            // Atualiza contadores
+            $('#contadorMembrosAtuais').text($('#equipeAtualList .list-group-item').length);
 
             checkForChanges();
         });

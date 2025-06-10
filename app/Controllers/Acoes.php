@@ -954,8 +954,10 @@ class Acoes extends BaseController
                 ->get()
                 ->getResultArray();
 
+            // Retorna no formato esperado pelo Select2 e pela nossa lista
             return $this->response->setJSON([
                 'success' => true,
+                'data' => $usuarios,
                 'results' => array_map(function ($user) {
                     return [
                         'id' => $user['id'],
@@ -970,6 +972,7 @@ class Acoes extends BaseController
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Erro ao buscar usuários',
+                'data' => [],
                 'results' => []
             ]);
         }

@@ -16,6 +16,7 @@
                 <input type="hidden" name="id_projeto" value="<?= $tipoOrigem === 'projeto' ? $idOrigem : ($tipoOrigem === 'etapa' ? $etapa['id_projeto'] : '') ?>">
                 <input type="hidden" name="adicionar_membro" id="adicionarMembroInput">
                 <input type="hidden" name="remover_membro" id="removerMembroInput">
+                <input type="hidden" id="equipeOriginal" name="equipe_original" value="">
 
                 <div class="modal-body">
                     <div id="alertNenhumaAlteracao" class="alert alert-warning d-none">
@@ -76,6 +77,12 @@
                                     <div class="form-group">
                                         <label for="solicitarEdicaoEntregaEstimada"><i class="fas fa-calendar-check mr-1"></i>Entrega Estimada</label>
                                         <input type="date" class="form-control" id="solicitarEdicaoEntregaEstimada" name="entrega_estimada">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="solicitarEdicaoOrdem"><i class="fas fa-sort-numeric-down mr-1"></i>Ordem</label>
+                                        <input type="number" class="form-control" id="solicitarEdicaoOrdem" name="ordem">
                                     </div>
                                 </div>
                             </div>
