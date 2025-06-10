@@ -1352,14 +1352,16 @@
                                 <span class="font-weight-bold">${membro.username}</span>
                                 <small class="d-block text-muted">${membro.email}</small>
                             </div>
-                            <button class="btn btn-sm btn-outline-danger btn-remover-equipe-solicitacao" data-usuario-id="${membro.id}">
+                            <button class="btn btn-sm btn-outline-danger btn-remover-equipe-solicitacao" data-usuario-id="${membro.id}" title="Solicitar remoção">
                                 <i class="fas fa-user-minus"></i>
                             </button>
                         </div>
                     `);
                         });
+                        $('#contadorMembrosAtuais').text(response.data.length);
                     } else {
                         equipeAtualList.html('<div class="text-center py-3 text-muted">Nenhum membro na equipe</div>');
+                        $('#contadorMembrosAtuais').text('0');
                     }
                 },
                 error: function() {
@@ -1368,12 +1370,19 @@
             });
         }
 
-        function carregarUsuariosDisponiveisParaSolicitacao(acaoId) {
+        // Função para carregar usuários disponíveis para solicitação
+        function carregarUsuariosDisponiveisParaSolicitacao(acaoId, termo = '') {
+            // Obter IDs dos usuários já na equipe
+            const membrosAtuais = $('#equipeAtualList .list-group-item').map(function() {
+                return $(this).data('usuario-id');
+            }).get();
+
             $.ajax({
                 url: '<?= site_url('acoes/buscar-usuarios') ?>',
                 type: 'GET',
                 data: {
-                    acao_id: acaoId
+                    acao_id: acaoId,
+                    term: termo
                 },
                 dataType: 'json',
                 beforeSend: function() {
@@ -1383,27 +1392,38 @@
                     const usuariosList = $('#usuariosDisponiveisList');
                     usuariosList.empty();
 
-                    if (response.success && response.results && response.results.length > 0) {
-                        response.results.forEach(usuario => {
+                    const usuarios = response.results || (response.data ? response.data : []);
+                    const usuariosFiltrados = usuarios.filter(usuario =>
+                        !membrosAtuais.includes(usuario.id.toString())
+                    );
+
+                    if (usuariosFiltrados.length > 0) {
+                        usuariosFiltrados.forEach(usuario => {
+                            const userId = usuario.id || usuario.user_id;
+                            const username = usuario.username || usuario.name || 'Usuário sem nome';
+                            const email = usuario.email || usuario.secret || 'Sem e-mail';
+
                             usuariosList.append(`
-                        <div class="list-group-item py-2 d-flex justify-content-between align-items-center" data-usuario-id="${usuario.id}">
+                        <div class="list-group-item py-2 d-flex justify-content-between align-items-center" data-usuario-id="${userId}">
                             <div>
-                                <span class="font-weight-bold">${usuario.username}</span>
-                                <small class="d-block text-muted">${usuario.email}</small>
+                                <span class="font-weight-bold">${username}</span>
+                                <small class="d-block text-muted">${email}</small>
                             </div>
-                            <button class="btn btn-sm btn-outline-success btn-adicionar-equipe-solicitacao" data-usuario-id="${usuario.id}">
+                            <button class="btn btn-sm btn-outline-success btn-adicionar-equipe-solicitacao" data-usuario-id="${userId}" title="Solicitar adição">
                                 <i class="fas fa-user-plus"></i>
                             </button>
                         </div>
                     `);
                         });
+                        $('#contadorUsuariosDisponiveis').text(usuariosFiltrados.length);
                     } else {
                         usuariosList.html('<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>');
+                        $('#contadorUsuariosDisponiveis').text('0');
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.error('Erro na requisição:', status, error);
-                    $('#usuariosDisponiveisList').html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
+                    console.error('Erro ao carregar usuários:', status, error);
+                    $('#usuariosDisponiveisList').html('<div class="text-center py-3 text-danger">Erro ao carregar lista de usuários</div>');
                 }
             });
         }
@@ -1417,34 +1437,51 @@
             }
         });
 
-        // Adicione esta função para filtrar usuários
+        // Evento para filtrar usuários em tempo real
         $('#buscaUsuarioEquipe').on('input', function() {
-            const termo = $(this).val().toLowerCase();
-            if (termo.length < 2) {
-                // Mostra todos se o termo for muito curto
-                $('#usuariosDisponiveisList .list-group-item').show();
-                return;
-            }
+            const termo = $(this).val().trim();
+            const acaoId = $('#solicitarEdicaoId').val();
 
-            $('#usuariosDisponiveisList .list-group-item').each(function() {
-                const texto = $(this).text().toLowerCase();
-                $(this).toggle(texto.includes(termo));
-            });
+            clearTimeout(window.buscaUsuarioTimeout);
+            window.buscaUsuarioTimeout = setTimeout(() => {
+                carregarUsuariosDisponiveisParaSolicitacao(acaoId, termo);
+            }, 300);
         });
 
-        // Adicione estes eventos para os botões de adicionar/remover
-        $(document).on('click', '.btn-adicionar-equipe-solicitacao', function() {
+        // Previne o submit do formulário ao pressionar Enter na busca
+        $('#buscaUsuarioEquipe').on('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        $('#buscaUsuarioEquipe').on('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        });
+
+        // Eventos de clique para adicionar/remover (versão final)
+        $(document).on('click', '.btn-adicionar-equipe-solicitacao', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
             const usuarioId = $(this).data('usuario-id');
             const usuarioItem = $(this).closest('.list-group-item');
-            const usuarioHtml = usuarioItem.html();
+            const acaoId = $('#solicitarEdicaoId').val();
+            const termoBusca = $('#buscaUsuarioEquipe').val();
 
-            // Move para a lista de membros atuais
+            // Adiciona à lista de membros atuais
             $('#equipeAtualList').append(usuarioItem);
             $(this).removeClass('btn-outline-success btn-adicionar-equipe-solicitacao')
                 .addClass('btn-outline-danger btn-remover-equipe-solicitacao')
-                .html('<i class="fas fa-user-minus"></i>');
+                .html('<i class="fas fa-user-minus"></i>')
+                .attr('title', 'Solicitar remoção');
 
-            // Atualiza o campo hidden com os usuários a adicionar
+            // Atualiza campos hidden
             const adicionarAtual = $('#adicionarMembroInput').val();
             const adicionarArray = adicionarAtual ? adicionarAtual.split(',') : [];
             if (!adicionarArray.includes(usuarioId.toString())) {
@@ -1452,7 +1489,6 @@
                 $('#adicionarMembroInput').val(adicionarArray.join(','));
             }
 
-            // Remove do campo de remoção se estava lá
             const removerAtual = $('#removerMembroInput').val();
             if (removerAtual) {
                 const removerArray = removerAtual.split(',');
@@ -1463,21 +1499,40 @@
                 }
             }
 
+            // Atualiza contadores e recarrega a lista de disponíveis
+            $('#contadorMembrosAtuais').text($('#equipeAtualList .list-group-item').length);
+            carregarUsuariosDisponiveisParaSolicitacao(acaoId, termoBusca);
+
             checkForChanges();
         });
 
-        $(document).on('click', '.btn-remover-equipe-solicitacao', function() {
+        // Previne o submit do formulário ao pressionar Enter na busca
+        $('#buscaUsuarioEquipe').on('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        });
+
+        // Evento para remover usuário da lista de solicitação
+        $(document).on('click', '.btn-remover-equipe-solicitacao', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
             const usuarioId = $(this).data('usuario-id');
             const usuarioItem = $(this).closest('.list-group-item');
-            const usuarioHtml = usuarioItem.html();
+            const acaoId = $('#solicitarEdicaoId').val();
+            const termoBusca = $('#buscaUsuarioEquipe').val();
 
-            // Move para a lista de usuários disponíveis
+            // Adiciona à lista de usuários disponíveis
             $('#usuariosDisponiveisList').append(usuarioItem);
             $(this).removeClass('btn-outline-danger btn-remover-equipe-solicitacao')
                 .addClass('btn-outline-success btn-adicionar-equipe-solicitacao')
-                .html('<i class="fas fa-user-plus"></i>');
+                .html('<i class="fas fa-user-plus"></i>')
+                .attr('title', 'Solicitar adição');
 
-            // Atualiza o campo hidden com os usuários a remover
+            // Atualiza campos hidden
             const removerAtual = $('#removerMembroInput').val();
             const removerArray = removerAtual ? removerAtual.split(',') : [];
             if (!removerArray.includes(usuarioId.toString())) {
@@ -1485,7 +1540,6 @@
                 $('#removerMembroInput').val(removerArray.join(','));
             }
 
-            // Remove do campo de adição se estava lá
             const adicionarAtual = $('#adicionarMembroInput').val();
             if (adicionarAtual) {
                 const adicionarArray = adicionarAtual.split(',');
@@ -1496,7 +1550,55 @@
                 }
             }
 
+            // Atualiza contadores e recarrega a lista de disponíveis
+            $('#contadorMembrosAtuais').text($('#equipeAtualList .list-group-item').length);
+            carregarUsuariosDisponiveisParaSolicitacao(acaoId, termoBusca);
+
             checkForChanges();
+        });
+
+        // Verificar alterações no formulário
+        function checkForChanges() {
+            let hasChanges = false;
+            const form = $('#formSolicitarEdicao');
+
+            // Verifica campos regulares
+            ['nome', 'responsavel', 'status', 'tempo_estimado_dias',
+                'entrega_estimada', 'data_inicio', 'data_fim'
+            ].forEach(field => {
+                const currentValue = form.find(`[name="${field}"]`).val();
+                if (formOriginalData[field] != currentValue) {
+                    hasChanges = true;
+                }
+            });
+
+            // Verifica alterações na equipe
+            const adicionarMembros = $('#adicionarMembroInput').val();
+            const removerMembros = $('#removerMembroInput').val();
+
+            if (adicionarMembros || removerMembros) {
+                hasChanges = true;
+            }
+
+            if (hasChanges) {
+                $('#alertNenhumaAlteracao').addClass('d-none');
+                $('#btnEnviarSolicitacao').prop('disabled', false);
+            } else {
+                $('#alertNenhumaAlteracao').removeClass('d-none');
+                $('#btnEnviarSolicitacao').prop('disabled', true);
+            }
+        }
+
+        // Inicializar quando o modal é aberto
+        $('#solicitarEdicaoModal').on('shown.bs.modal', function() {
+            const acaoId = $('#solicitarEdicaoId').val();
+            if (acaoId) {
+                carregarEquipeParaSolicitacao(acaoId);
+                carregarUsuariosDisponiveisParaSolicitacao(acaoId); // Sem termo inicial
+            }
+
+            // Limpa a busca
+            $('#buscaUsuarioEquipe').val('');
         });
     });
 </script>

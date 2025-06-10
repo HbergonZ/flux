@@ -14,12 +14,15 @@
                 <input type="hidden" name="id" id="solicitarEdicaoId">
                 <input type="hidden" name="id_etapa" value="<?= $tipoOrigem === 'etapa' ? $idOrigem : '' ?>">
                 <input type="hidden" name="id_projeto" value="<?= $tipoOrigem === 'projeto' ? $idOrigem : ($tipoOrigem === 'etapa' ? $etapa['id_projeto'] : '') ?>">
+                <input type="hidden" name="adicionar_membro" id="adicionarMembroInput">
+                <input type="hidden" name="remover_membro" id="removerMembroInput">
 
                 <div class="modal-body">
                     <div id="alertNenhumaAlteracao" class="alert alert-warning d-none">
                         <i class="fas fa-exclamation-triangle mr-2"></i>Você não fez nenhuma alteração nos campos. Modifique pelo menos um campo para enviar a solicitação.
                     </div>
 
+                    <!-- Informações Básicas -->
                     <div class="card mb-3">
                         <div class="card-header bg-light">
                             <h6 class="mb-0">
@@ -54,6 +57,7 @@
                         </div>
                     </div>
 
+                    <!-- Datas e Prazos -->
                     <div class="card mb-3">
                         <div class="card-header bg-light">
                             <h6 class="mb-0">
@@ -93,17 +97,22 @@
                         </div>
                     </div>
 
+                    <!-- Gerenciamento de Equipe -->
                     <div class="card mb-3">
                         <div class="card-header bg-light">
                             <h6 class="mb-0">
-                                <i class="fas fa-users mr-2"></i> Equipe
+                                <i class="fas fa-users mr-2"></i> Gerenciar Equipe
                             </h6>
                         </div>
                         <div class="card-body p-0">
                             <div class="row no-gutters">
+                                <!-- Membros Atuais -->
                                 <div class="col-md-6 border-right">
                                     <div class="p-3">
-                                        <h6 class="text-center font-weight-bold"><i class="fas fa-user-friends mr-1"></i>Membros Atuais</h6>
+                                        <h6 class="text-center font-weight-bold">
+                                            <i class="fas fa-user-friends mr-1"></i>Membros Atuais
+                                            <span class="badge badge-primary badge-pill ml-1" id="contadorMembrosAtuais">0</span>
+                                        </h6>
                                         <div id="equipeAtualList" class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
                                             <div class="text-center py-3">
                                                 <i class="fas fa-spinner fa-spin"></i> Carregando...
@@ -112,9 +121,13 @@
                                     </div>
                                 </div>
 
+                                <!-- Usuários Disponíveis -->
                                 <div class="col-md-6">
                                     <div class="p-3">
-                                        <h6 class="text-center font-weight-bold"><i class="fas fa-user-plus mr-1"></i>Usuários Disponíveis</h6>
+                                        <h6 class="text-center font-weight-bold">
+                                            <i class="fas fa-user-plus mr-1"></i>Usuários Disponíveis
+                                            <span class="badge badge-secondary badge-pill ml-1" id="contadorUsuariosDisponiveis">0</span>
+                                        </h6>
                                         <div class="input-group mb-3">
                                             <div class="input-group-prepend">
                                                 <span class="input-group-text"><i class="fas fa-search"></i></span>
@@ -129,32 +142,21 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <input type="hidden" name="adicionar_membro" id="adicionarMembroInput">
-                            <input type="hidden" name="remover_membro" id="removerMembroInput">
                         </div>
                     </div>
 
-                    <div class="card mb-3">
+                    <!-- Justificativa -->
+                    <div class="card">
                         <div class="card-header bg-light">
                             <h6 class="mb-0">
-                                <i class="fas fa-file-signature mr-2"></i>Justificativa e Evidências
+                                <i class="fas fa-comment-dots mr-2"></i>Justificativa
                             </h6>
                         </div>
                         <div class="card-body">
-                            <div class="form-group">
-                                <label><i class="fas fa-file-alt mr-1"></i>Evidências (obrigatório se estiver definindo data fim)</label>
-                                <textarea class="form-control" name="evidencias" rows="3"
-                                    <?= !empty($formOriginalData['data_fim']) && empty($this->request->getPost('data_fim')) ? '' : 'required' ?>></textarea>
-                                <small class="form-text text-muted">
-                                    Descreva as evidências que comprovam o andamento ou conclusão desta ação.
-                                    Se estiver definindo uma data fim, este campo é obrigatório.
-                                </small>
-                            </div>
-
                             <div class="form-group mb-0">
-                                <label for="solicitarEdicaoJustificativa"><i class="fas fa-comment-dots mr-1"></i>Justificativa para as alterações*</label>
+                                <label for="solicitarEdicaoJustificativa">Justificativa para as alterações*</label>
                                 <textarea class="form-control" id="solicitarEdicaoJustificativa" name="justificativa" rows="3" required></textarea>
+                                <small class="text-muted">Explique por que estas alterações são necessárias.</small>
                             </div>
                         </div>
                     </div>
@@ -163,7 +165,7 @@
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">
                         <i class="fas fa-times mr-2"></i>Cancelar
                     </button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary" id="btnEnviarSolicitacao">
                         <i class="fas fa-paper-plane mr-2"></i>Enviar Solicitação
                     </button>
                 </div>
