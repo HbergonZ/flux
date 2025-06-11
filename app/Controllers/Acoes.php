@@ -1126,4 +1126,23 @@ class Acoes extends BaseController
             ]);
         }
     }
+
+    public function carregarEquipeParaSolicitacao($acaoId)
+    {
+        try {
+            $equipeAtual = $this->acoesModel->getEquipeAcao($acaoId);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $equipeAtual,
+                'equipeOriginal' => array_column($equipeAtual, 'id') // IDs dos membros originais
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Erro ao carregar equipe: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Erro ao carregar equipe'
+            ]);
+        }
+    }
 }

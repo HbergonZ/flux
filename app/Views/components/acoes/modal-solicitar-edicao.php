@@ -14,9 +14,9 @@
                 <input type="hidden" name="id" id="solicitarEdicaoId">
                 <input type="hidden" name="id_etapa" value="<?= $tipoOrigem === 'etapa' ? $idOrigem : '' ?>">
                 <input type="hidden" name="id_projeto" value="<?= $tipoOrigem === 'projeto' ? $idOrigem : ($tipoOrigem === 'etapa' ? $etapa['id_projeto'] : '') ?>">
-                <input type="hidden" name="adicionar_membro" id="adicionarMembroInput">
-                <input type="hidden" name="remover_membro" id="removerMembroInput">
                 <input type="hidden" id="equipeOriginal" name="equipe_original" value="">
+                <input type="hidden" id="adicionarMembroInput" name="adicionar_membro" value="">
+                <input type="hidden" id="removerMembroInput" name="remover_membro" value="">
 
                 <div class="modal-body">
                     <div id="alertNenhumaAlteracao" class="alert alert-warning d-none">

@@ -300,18 +300,6 @@
             });
         }
 
-        // Verificar alterações no modal de edição
-        $('#solicitarEdicaoModal').on('shown.bs.modal', function() {
-            const acaoId = $('#solicitarEdicaoId').val();
-            if (acaoId) {
-                carregarEquipeParaSolicitacao(acaoId);
-                carregarUsuariosDisponiveisParaSolicitacao(acaoId);
-            }
-
-            // Limpa a busca
-            $('#buscaUsuarioEquipe').val('').trigger('input');
-        });
-
         function checkForChanges() {
             let hasChanges = false;
             const form = $('#formSolicitarEdicao');
@@ -1378,31 +1366,75 @@
             });
         }
 
-        // Variável global para armazenar todos os usuários disponíveis
+        // Variáveis globais para controle
         let todosUsuariosDisponiveis = [];
-        let usuariosAdicionados = []; // Rastreia usuários adicionados durante a sessão
-        let usuariosRemovidos = []; // Rastreia usuários removidos durante a sessão
+        let equipeOriginal = []; // IDs dos membros originais
+        let usuariosAdicionados = []; // Usuários adicionados durante a sessão
+        let usuariosRemovidos = []; // Usuários removidos durante a sessão
 
-        // Função para carregar usuários disponíveis para solicitação
+        // Função para carregar equipe para solicitação
+        function carregarEquipeParaSolicitacao(acaoId) {
+            $.ajax({
+                url: `<?= site_url('acoes/get-equipe/') ?>${acaoId}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        const equipeAtualList = $('#equipeAtualList');
+                        equipeAtualList.empty();
+
+                        // Armazena os IDs originais
+                        equipeOriginal = response.data.map(membro => membro.id.toString());
+                        $('#equipeOriginal').val(equipeOriginal.join(','));
+
+                        // Limpa as listas de controle
+                        usuariosAdicionados = [];
+                        usuariosRemovidos = [];
+
+                        if (response.data.length > 0) {
+                            response.data.forEach(membro => {
+                                equipeAtualList.append(`
+                            <div class="list-group-item py-2 d-flex justify-content-between align-items-center" data-usuario-id="${membro.id}">
+                                <div>
+                                    <span class="font-weight-bold">${membro.username}</span>
+                                    <small class="d-block text-muted">${membro.email}</small>
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger btn-remover-equipe-solicitacao" data-usuario-id="${membro.id}" title="Solicitar remoção">
+                                    <i class="fas fa-user-minus"></i>
+                                </button>
+                            </div>
+                        `);
+                            });
+                        } else {
+                            equipeAtualList.html('<div class="text-center py-3 text-muted">Nenhum membro na equipe</div>');
+                        }
+
+                        $('#contadorMembrosAtuais').text(response.data.length);
+                        carregarUsuariosDisponiveisParaSolicitacao(acaoId);
+                    }
+                },
+                error: function() {
+                    $('#equipeAtualList').html('<div class="text-center py-3 text-danger">Erro ao carregar equipe</div>');
+                }
+            });
+        }
+
+        // Função para carregar usuários disponíveis com filtros
         function carregarUsuariosDisponiveisParaSolicitacao(acaoId, termo = '') {
             const membrosAtuais = $('#equipeAtualList .list-group-item').map(function() {
-                return $(this).data('usuario-id');
+                return $(this).data('usuario-id').toString();
             }).get();
 
-            // Filtra os usuários já carregados
+            // Filtra os usuários considerando:
+            // 1. Não está atualmente na equipe OU
+            // 2. Foi removido da equipe original (está em usuariosRemovidos)
             const usuariosFiltrados = todosUsuariosDisponiveis.filter(usuario => {
-                // Verifica se o usuário:
-                // 1. Não está na equipe atual OU está na lista de removidos
-                // 2. Não está na lista de adicionados OU está na lista de removidos
-                const naoEstaNaEquipe = !membrosAtuais.includes(usuario.id.toString());
-                const foiAdicionado = usuariosAdicionados.includes(usuario.id.toString());
-                const foiRemovido = usuariosRemovidos.includes(usuario.id.toString());
-
+                // NÃO está na equipe atual (seja porque nunca esteve OU porque foi removido)
+                const naoEstaNaEquipeAtual = !membrosAtuais.includes(usuario.id.toString());
                 const correspondeTermo = termo === '' ||
                     usuario.username.toLowerCase().includes(termo.toLowerCase()) ||
                     usuario.email.toLowerCase().includes(termo.toLowerCase());
-
-                return (naoEstaNaEquipe || foiRemovido) && (!foiAdicionado || foiRemovido) && correspondeTermo;
+                return naoEstaNaEquipeAtual && correspondeTermo;
             });
 
             const usuariosList = $('#usuariosDisponiveisList');
@@ -1410,64 +1442,25 @@
 
             if (usuariosFiltrados.length > 0) {
                 usuariosFiltrados.forEach(usuario => {
-                    // Mostra se:
-                    // 1. Não foi adicionado durante esta sessão OU
-                    // 2. Foi removido (mesmo que tenha sido adicionado antes)
-                    if (!usuariosAdicionados.includes(usuario.id.toString()) ||
-                        usuariosRemovidos.includes(usuario.id.toString())) {
-                        usuariosList.append(`
-                    <div class="list-group-item py-2 d-flex justify-content-between align-items-center" data-usuario-id="${usuario.id}">
-                        <div>
-                            <span class="font-weight-bold">${usuario.username}</span>
-                            <small class="d-block text-muted">${usuario.email}</small>
-                        </div>
-                        <button class="btn btn-sm btn-outline-success btn-adicionar-equipe-solicitacao" data-usuario-id="${usuario.id}" title="Solicitar adição">
-                            <i class="fas fa-user-plus"></i>
-                        </button>
+                    usuariosList.append(`
+                <div class="list-group-item py-2 d-flex justify-content-between align-items-center" data-usuario-id="${usuario.id}">
+                    <div>
+                        <span class="font-weight-bold">${usuario.username}</span>
+                        <small class="d-block text-muted">${usuario.email}</small>
                     </div>
-                `);
-                    }
+                    <button class="btn btn-sm btn-outline-success btn-adicionar-equipe-solicitacao" data-usuario-id="${usuario.id}" title="Solicitar adição">
+                        <i class="fas fa-user-plus"></i>
+                    </button>
+                </div>
+            `);
                 });
-                $('#contadorUsuariosDisponiveis').text(usuariosFiltrados.length);
             } else {
                 usuariosList.html('<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>');
-                $('#contadorUsuariosDisponiveis').text('0');
             }
+
+            $('#contadorUsuariosDisponiveis').text(usuariosFiltrados.length);
         }
 
-        // Evento para carregar todos os usuários quando o modal é aberto
-        $('#solicitarEdicaoModal').on('shown.bs.modal', function() {
-            const acaoId = $('#solicitarEdicaoId').val();
-            if (acaoId) {
-                carregarEquipeParaSolicitacao(acaoId);
-
-                // Carrega todos os usuários uma única vez
-                $.ajax({
-                    url: '<?= site_url('acoes/buscar-usuarios') ?>',
-                    type: 'GET',
-                    data: {
-                        acao_id: acaoId
-                    },
-                    dataType: 'json',
-                    success: function(response) {
-                        if (response.success && response.data) {
-                            todosUsuariosDisponiveis = response.data;
-                        } else if (response.results) {
-                            // Adaptação para o formato retornado pelo Select2
-                            todosUsuariosDisponiveis = response.results.map(user => ({
-                                id: user.id,
-                                username: user.username || user.text.split('(')[0].trim(),
-                                email: user.email || (user.text.match(/\((.*?)\)/) ? user.text.match(/\((.*?)\)/)[1] : '')
-                            }));
-                        }
-                        carregarUsuariosDisponiveisParaSolicitacao(acaoId);
-                    },
-                    error: function() {
-                        console.error('Erro ao carregar usuários');
-                    }
-                });
-            }
-        });
 
         // Evento para filtrar usuários em tempo real (agora filtra os dados já carregados)
         $('#buscaUsuarioEquipe').on('input', function() {
@@ -1484,13 +1477,6 @@
         $('#buscaUsuarioEquipe').on('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                return false;
-            }
-        });
-
-        $('#buscaUsuarioEquipe').on('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
                 e.stopPropagation();
                 return false;
             }
@@ -1499,8 +1485,6 @@
         // Evento para adicionar usuário à equipe
         $(document).on('click', '.btn-adicionar-equipe-solicitacao', function(e) {
             e.preventDefault();
-            e.stopPropagation();
-
             const usuarioId = $(this).data('usuario-id');
             const usuarioItem = $(this).closest('.list-group-item');
             const acaoId = $('#solicitarEdicaoId').val();
@@ -1510,10 +1494,10 @@
             const usuario = todosUsuariosDisponiveis.find(u => u.id == usuarioId);
             if (!usuario) return;
 
-            // Remove o item da lista de disponíveis imediatamente
+            // Remove o item da lista de disponíveis
             usuarioItem.remove();
 
-            // Adiciona à lista de membros atuais
+            // Adiciona à lista de membros
             $('#equipeAtualList').append(`
         <div class="list-group-item py-2 d-flex justify-content-between align-items-center" data-usuario-id="${usuario.id}">
             <div>
@@ -1555,9 +1539,9 @@
                 }
             }
 
-            // Atualiza contadores
+            // Atualiza contadores e recarrega a lista
             $('#contadorMembrosAtuais').text($('#equipeAtualList .list-group-item').length);
-            $('#contadorUsuariosDisponiveis').text($('#usuariosDisponiveisList .list-group-item').length);
+            carregarUsuariosDisponiveisParaSolicitacao(acaoId, termoBusca);
 
             checkForChanges();
         });
@@ -1576,28 +1560,19 @@
         // Evento para remover usuário da equipe
         $(document).on('click', '.btn-remover-equipe-solicitacao', function(e) {
             e.preventDefault();
-            e.stopPropagation();
-
             const usuarioId = $(this).data('usuario-id');
             const usuarioItem = $(this).closest('.list-group-item');
             const acaoId = $('#solicitarEdicaoId').val();
             const termoBusca = $('#buscaUsuarioEquipe').val();
-
-            // Verifica se o usuário estava originalmente na equipe
-            const equipeOriginal = $('#equipeOriginal').val().split(',');
             const estavaOriginalmenteNaEquipe = equipeOriginal.includes(usuarioId.toString());
 
-            // Remove o item da lista de membros
             usuarioItem.remove();
 
-            // Atualiza listas de controle
             if (estavaOriginalmenteNaEquipe) {
-                // Adiciona à lista de removidos se era membro original
                 if (!usuariosRemovidos.includes(usuarioId.toString())) {
                     usuariosRemovidos.push(usuarioId.toString());
                 }
             } else {
-                // Remove da lista de adicionados se foi adicionado durante esta sessão
                 const indexAdicionado = usuariosAdicionados.indexOf(usuarioId.toString());
                 if (indexAdicionado > -1) {
                     usuariosAdicionados.splice(indexAdicionado, 1);
@@ -1622,13 +1597,42 @@
                 }
             }
 
-            // Recarrega a lista de disponíveis para mostrar o usuário removido
+            // Força a atualização da lista de disponíveis
             carregarUsuariosDisponiveisParaSolicitacao(acaoId, termoBusca);
-
-            // Atualiza contadores
             $('#contadorMembrosAtuais').text($('#equipeAtualList .list-group-item').length);
-
             checkForChanges();
+        });
+
+        // Inicialização quando o modal é aberto
+        $('#solicitarEdicaoModal').on('shown.bs.modal', function() {
+            const acaoId = $('#solicitarEdicaoId').val();
+            if (acaoId) {
+                carregarEquipeParaSolicitacao(acaoId);
+
+                $.ajax({
+                    url: '<?= site_url('acoes/buscar-usuarios') ?>',
+                    type: 'GET',
+                    data: {
+                        acao_id: acaoId
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success && response.data) {
+                            todosUsuariosDisponiveis = response.data;
+                        } else if (response.results) {
+                            todosUsuariosDisponiveis = response.results.map(user => ({
+                                id: user.id,
+                                username: user.username || user.text.split('(')[0].trim(),
+                                email: user.email || (user.text.match(/\((.*?)\)/) ? user.text.match(/\((.*?)\)/)[1] : '')
+                            }));
+                        }
+                        carregarUsuariosDisponiveisParaSolicitacao(acaoId);
+                    },
+                    complete: function() {
+                        $('#buscaUsuarioEquipe').val('');
+                    }
+                });
+            }
         });
 
         // Verificar alterações no formulário
@@ -1663,16 +1667,5 @@
             }
         }
 
-        // Inicializar quando o modal é aberto
-        $('#solicitarEdicaoModal').on('shown.bs.modal', function() {
-            const acaoId = $('#solicitarEdicaoId').val();
-            if (acaoId) {
-                carregarEquipeParaSolicitacao(acaoId);
-                carregarUsuariosDisponiveisParaSolicitacao(acaoId); // Sem termo inicial
-            }
-
-            // Limpa a busca
-            $('#buscaUsuarioEquipe').val('');
-        });
     });
 </script>
