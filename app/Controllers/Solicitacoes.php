@@ -87,14 +87,61 @@ class Solicitacoes extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Solicitação não encontrada']);
         }
 
+        $dadosAtuais = $this->parseSolicitacaoData($solicitacao['dados_atuais']);
+        $dadosAlterados = $this->parseSolicitacaoData($solicitacao['dados_alterados']);
+
+        // Se for uma ação, buscar os nomes dos usuários da equipe
+        if ($solicitacao['nivel'] === 'acao') {
+            // Processar equipe atual
+            if (isset($dadosAtuais['id'])) {
+                $equipeAtual = $this->acoesModel->getEquipeAcao($dadosAtuais['id']);
+                $dadosAtuais['equipe'] = array_column($equipeAtual, 'username');
+            }
+
+            // Processar alterações na equipe
+            if (isset($dadosAlterados['equipe'])) {
+                $dadosAlterados['equipe'] = $this->processarAlteracoesEquipeNomes($dadosAlterados['equipe']);
+            }
+        }
+
         return $this->response->setJSON([
             'success' => true,
             'data' => $solicitacao,
-            'dados_atuais' => $this->parseSolicitacaoData($solicitacao['dados_atuais']),
-            'dados_alterados' => $this->parseSolicitacaoData($solicitacao['dados_alterados']),
+            'dados_atuais' => $dadosAtuais,
+            'dados_alterados' => $dadosAlterados,
             'tipo' => $solicitacao['tipo'],
             'nivel' => $solicitacao['nivel']
         ]);
+    }
+
+    protected function processarAlteracoesEquipeNomes($equipeData)
+    {
+        if (!is_array($equipeData)) return $equipeData;
+
+        $result = [];
+        foreach ($equipeData as $action => $userIds) {
+            if (!is_array($userIds)) continue;
+
+            $users = $this->userModel->whereIn('id', $userIds)->findAll();
+            $result[$action] = array_column($users, 'username');
+        }
+
+        return $result;
+    }
+
+    protected function replaceUserIdsWithNames($equipeData)
+    {
+        if (!is_array($equipeData)) return $equipeData;
+
+        $result = [];
+        foreach ($equipeData as $action => $userIds) {
+            if (!is_array($userIds)) continue;
+
+            $users = $this->userModel->whereIn('id', $userIds)->findAll();
+            $result[$action] = array_column($users, 'username');
+        }
+
+        return !empty($result) ? $result : $equipeData;
     }
 
     protected function parseSolicitacaoData($data)
@@ -223,26 +270,20 @@ class Solicitacoes extends BaseController
         $dados = json_decode($solicitacao['dados_alterados'], true) ?? [];
         $dados = $this->prepararDadosInclusao($dados, $solicitacao);
 
-        // Insere o registro
         if (!$model->insert($dados)) {
             throw new \Exception('Falha na inserção: ' . implode(', ', $model->errors()));
         }
 
-        // Obtém o ID do novo registro
         $insertId = $model->getInsertID();
-
-        // Obtém os dados completos do registro criado
         $registro = $model->find($insertId);
         if (!$registro) {
             throw new \Exception('Falha ao recuperar registro criado');
         }
 
-        // Atualiza a solicitação com o ID do novo registro
         $this->solicitacoesModel->update($solicitacao['id'], [
             $this->getIdField($solicitacao['nivel']) => $insertId
         ]);
 
-        // Registra no log administrativo com o ID gerado
         $this->logController->registrarCriacao(
             $solicitacao['nivel'],
             $registro,
@@ -267,7 +308,14 @@ class Solicitacoes extends BaseController
         $dadosAlterados = json_decode($solicitacao['dados_alterados'], true) ?? [];
         $dadosAtualizar = $this->prepararDadosEdicao($dadosAlterados);
 
-        if (!$model->update($idRegistro, $dadosAtualizar)) {
+        if ($solicitacao['nivel'] === 'acao' && isset($dadosAlterados['equipe'])) {
+            if (!$this->processarAlteracoesEquipe($idRegistro, $dadosAlterados['equipe'])) {
+                throw new \Exception('Falha ao processar alterações na equipe');
+            }
+            unset($dadosAtualizar['equipe']);
+        }
+
+        if (!empty($dadosAtualizar) && !$model->update($idRegistro, $dadosAtualizar)) {
             throw new \Exception('Falha na atualização: ' . implode(', ', $model->errors()));
         }
 
@@ -281,6 +329,11 @@ class Solicitacoes extends BaseController
         );
 
         return true;
+    }
+
+    protected function processarAlteracoesEquipe($acaoId, $alteracoesEquipe)
+    {
+        return $this->acoesModel->processarAlteracoesEquipe($acaoId, $alteracoesEquipe);
     }
 
     protected function processarExclusao($solicitacao, $model, $idField)
@@ -319,7 +372,6 @@ class Solicitacoes extends BaseController
             $base = array_merge($base, [
                 'nome' => $dados['nome'] ?? 'Nova Ação',
                 'responsavel' => $dados['responsavel'] ?? null,
-                'equipe' => $dados['equipe'] ?? null,
                 'tempo_estimado_dias' => !empty($dados['tempo_estimado_dias']) ? (int)$dados['tempo_estimado_dias'] : null,
                 'entrega_estimada' => $this->formatarData($dados['entrega_estimada'] ?? null),
                 'data_inicio' => $this->formatarData($dados['data_inicio'] ?? null),
@@ -336,7 +388,13 @@ class Solicitacoes extends BaseController
     {
         $resultado = [];
         foreach ($dadosAlterados as $campo => $valor) {
-            $resultado[$campo] = is_array($valor) ? ($valor['para'] ?? null) : $valor;
+            if ($campo === 'equipe') continue;
+
+            if (is_array($valor)) {
+                $resultado[$campo] = $valor['para'] ?? null;
+            } else {
+                $resultado[$campo] = $valor;
+            }
         }
         return $resultado;
     }

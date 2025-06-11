@@ -256,9 +256,35 @@
                             return names[name] || name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                         }
 
-                        function formatFieldValue(value) {
+                        function formatFieldValue(value, key) {
                             if (value === null || value === '' || value === undefined)
                                 return '<span class="text-muted">Não informado</span>';
+
+                            // Tratamento especial para o campo equipe
+                            if (key === 'equipe') {
+                                if (Array.isArray(value)) {
+                                    // Equipe atual - array de usernames
+                                    return value.join(', ');
+                                } else if (typeof value === 'object' && value !== null) {
+                                    // Alterações na equipe
+                                    let html = '';
+                                    if (value.adicionar && value.adicionar.length > 0) {
+                                        html += '<div class="text-success"><small>Adicionar:</small><br>';
+                                        html += value.adicionar.join(', ');
+                                        html += '</div>';
+                                    }
+                                    if (value.remover && value.remover.length > 0) {
+                                        html += '<div class="text-danger"><small>Remover:</small><br>';
+                                        html += value.remover.join(', ');
+                                        html += '</div>';
+                                    }
+                                    return html || '<span class="text-muted">Nenhuma alteração na equipe</span>';
+                                } else if (typeof value === 'string') {
+                                    return value;
+                                }
+                            }
+
+                            // Restante da formatação padrão...
                             if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
                                 const [year, month, day] = value.split('-');
                                 return `${day}/${month}/${year}`;
@@ -285,29 +311,21 @@
 
                         if (isInclusao) {
                             htmlAtuais = `
-                                <tr>
-                                    <th width="30%">Tipo</th>
-                                    <td>Novo(a) ${nivelFormatado}</td>
-                                </tr>
-                                <tr>
-                                    <th width="30%">Status</th>
-                                    <td><span class="badge badge-info">Novo Registro</span></td>
-                                </tr>`;
-                        } else if (isExclusao) {
-                            for (let key in response.dados_atuais) {
-                                htmlAtuais += `
-                                <tr>
-                                    <th width="30%">${formatFieldName(key)}</th>
-                                    <td>${formatFieldValue(response.dados_atuais[key])}</td>
-                                </tr>`;
-                            }
+                            <tr>
+                                <th width="30%">Tipo</th>
+                                <td>Novo(a) ${nivelFormatado}</td>
+                            </tr>
+                            <tr>
+                                <th width="30%">Status</th>
+                                <td><span class="badge badge-info">Novo Registro</span></td>
+                            </tr>`;
                         } else {
                             for (let key in response.dados_atuais) {
                                 htmlAtuais += `
-                                <tr>
-                                    <th width="30%">${formatFieldName(key)}</th>
-                                    <td>${formatFieldValue(response.dados_atuais[key])}</td>
-                                </tr>`;
+                            <tr>
+                                <th width="30%">${formatFieldName(key)}</th>
+                                <td>${formatFieldValue(response.dados_atuais[key], key)}</td>
+                            </tr>`;
                             }
                         }
                         $('#tabelaDadosAtuais').html(htmlAtuais);
@@ -318,48 +336,55 @@
                         if (isInclusao) {
                             for (let key in response.dados_alterados) {
                                 htmlAlterados += `
-                                <tr>
-                                    <th width="30%">${formatFieldName(key)}</th>
-                                    <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key])}</strong></td>
-                                </tr>`;
+                            <tr>
+                                <th width="30%">${formatFieldName(key)}</th>
+                                <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key], key)}</strong></td>
+                            </tr>`;
                             }
                         } else if (isExclusao) {
                             htmlAlterados = `
-                                <tr>
-                                    <th width="30%">Tipo</th>
-                                    <td class="text-danger"><strong>Exclusão de ${nivelFormatado}</strong></td>
-                                </tr>
-                                <tr>
-                                    <th width="30%">Status</th>
-                                    <td><span class="badge badge-danger">Registro será removido</span></td>
-                                </tr>`;
+                            <tr>
+                                <th width="30%">Tipo</th>
+                                <td class="text-danger"><strong>Exclusão de ${nivelFormatado}</strong></td>
+                            </tr>
+                            <tr>
+                                <th width="30%">Status</th>
+                                <td><span class="badge badge-danger">Registro será removido</span></td>
+                            </tr>`;
                         } else {
                             for (let key in response.dados_alterados) {
-                                if (response.dados_alterados[key] && typeof response.dados_alterados[key] === 'object') {
+                                if (key === 'equipe' && typeof response.dados_alterados[key] === 'object') {
+                                    // Tratamento especial para equipe
                                     htmlAlterados += `
-                                    <tr>
-                                        <th width="30%">${formatFieldName(key)}</th>
-                                        <td>
-                                            <div class="text-danger mb-1"><small>Atual:</small><br><s>${formatFieldValue(response.dados_alterados[key].de)}</s></div>
-                                            <div class="text-success"><small>Novo:</small><br><strong>${formatFieldValue(response.dados_alterados[key].para)}</strong></div>
-                                        </td>
-                                    </tr>`;
+                                <tr>
+                                    <th width="30%">${formatFieldName(key)}</th>
+                                    <td>${formatFieldValue(response.dados_alterados[key], key)}</td>
+                                </tr>`;
+                                } else if (response.dados_alterados[key] && typeof response.dados_alterados[key] === 'object') {
+                                    htmlAlterados += `
+                                <tr>
+                                    <th width="30%">${formatFieldName(key)}</th>
+                                    <td>
+                                        <div class="text-danger mb-1"><small>Atual:</small><br><s>${formatFieldValue(response.dados_alterados[key].de, key)}</s></div>
+                                        <div class="text-success"><small>Novo:</small><br><strong>${formatFieldValue(response.dados_alterados[key].para, key)}</strong></div>
+                                    </td>
+                                </tr>`;
                                 } else {
                                     htmlAlterados += `
-                                    <tr>
-                                        <th width="30%">${formatFieldName(key)}</th>
-                                        <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key])}</strong></td>
-                                    </tr>`;
+                                <tr>
+                                    <th width="30%">${formatFieldName(key)}</th>
+                                    <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key], key)}</strong></td>
+                                </tr>`;
                                 }
                             }
 
                             if (htmlAlterados === '') {
                                 htmlAlterados = `
-                                <tr>
-                                    <td colspan="2" class="text-center text-muted">
-                                        Nenhuma alteração detectada nos campos
-                                    </td>
-                                </tr>`;
+                            <tr>
+                                <td colspan="2" class="text-center text-muted">
+                                    Nenhuma alteração detectada nos campos
+                                </td>
+                            </tr>`;
                             }
                         }
                         $('#tabelaDadosAlterados').html(htmlAlterados);
