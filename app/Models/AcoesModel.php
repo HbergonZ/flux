@@ -170,4 +170,42 @@ class AcoesModel extends Model
 
         return $evidencias > 0;
     }
+
+    public function processarAlteracoesEquipe($acaoId, $alteracoesEquipe)
+    {
+        $db = \Config\Database::connect();
+
+        try {
+            $db->transStart();
+
+            // Remover membros
+            if (!empty($alteracoesEquipe['remover'])) {
+                $db->table('acoes_equipe')
+                    ->where('acao_id', $acaoId)
+                    ->whereIn('usuario_id', $alteracoesEquipe['remover'])
+                    ->delete();
+            }
+
+            // Adicionar membros
+            if (!empty($alteracoesEquipe['adicionar'])) {
+                $dadosInserir = array_map(function ($usuarioId) use ($acaoId) {
+                    return [
+                        'acao_id' => $acaoId,
+                        'usuario_id' => $usuarioId,
+                        'created_at' => date('Y-m-d H:i:s')
+                    ];
+                }, $alteracoesEquipe['adicionar']);
+
+                $db->table('acoes_equipe')->insertBatch($dadosInserir);
+            }
+
+            $db->transComplete();
+
+            return $db->transStatus();
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', 'Erro ao processar alterações da equipe: ' . $e->getMessage());
+            return false;
+        }
+    }
 }

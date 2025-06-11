@@ -1382,14 +1382,23 @@
                     if (response.success) {
                         const equipeAtualList = $('#equipeAtualList');
                         equipeAtualList.empty();
-
                         // Armazena os IDs originais
                         equipeOriginal = response.data.map(membro => membro.id.toString());
                         $('#equipeOriginal').val(equipeOriginal.join(','));
-
                         // Limpa as listas de controle
                         usuariosAdicionados = [];
                         usuariosRemovidos = [];
+
+                        // Garante que todos os membros atuais estão em todosUsuariosDisponiveis, evitando duplicidade
+                        response.data.forEach(membro => {
+                            if (!todosUsuariosDisponiveis.some(u => u.id == membro.id)) {
+                                todosUsuariosDisponiveis.push({
+                                    id: membro.id,
+                                    username: membro.username,
+                                    email: membro.email
+                                });
+                            }
+                        });
 
                         if (response.data.length > 0) {
                             response.data.forEach(membro => {
@@ -1408,7 +1417,6 @@
                         } else {
                             equipeAtualList.html('<div class="text-center py-3 text-muted">Nenhum membro na equipe</div>');
                         }
-
                         $('#contadorMembrosAtuais').text(response.data.length);
                         carregarUsuariosDisponiveisParaSolicitacao(acaoId);
                     }
@@ -1436,10 +1444,8 @@
                     usuario.email.toLowerCase().includes(termo.toLowerCase());
                 return naoEstaNaEquipeAtual && correspondeTermo;
             });
-
             const usuariosList = $('#usuariosDisponiveisList');
             usuariosList.empty();
-
             if (usuariosFiltrados.length > 0) {
                 usuariosFiltrados.forEach(usuario => {
                     usuariosList.append(`
@@ -1457,16 +1463,13 @@
             } else {
                 usuariosList.html('<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>');
             }
-
             $('#contadorUsuariosDisponiveis').text(usuariosFiltrados.length);
         }
-
 
         // Evento para filtrar usuários em tempo real (agora filtra os dados já carregados)
         $('#buscaUsuarioEquipe').on('input', function() {
             const termo = $(this).val().trim();
             const acaoId = $('#solicitarEdicaoId').val();
-
             clearTimeout(window.buscaUsuarioTimeout);
             window.buscaUsuarioTimeout = setTimeout(() => {
                 carregarUsuariosDisponiveisParaSolicitacao(acaoId, termo);
@@ -1489,14 +1492,11 @@
             const usuarioItem = $(this).closest('.list-group-item');
             const acaoId = $('#solicitarEdicaoId').val();
             const termoBusca = $('#buscaUsuarioEquipe').val();
-
             // Encontra o usuário nos dados carregados
             const usuario = todosUsuariosDisponiveis.find(u => u.id == usuarioId);
             if (!usuario) return;
-
             // Remove o item da lista de disponíveis
             usuarioItem.remove();
-
             // Adiciona à lista de membros
             $('#equipeAtualList').append(`
         <div class="list-group-item py-2 d-flex justify-content-between align-items-center" data-usuario-id="${usuario.id}">
@@ -1509,18 +1509,15 @@
             </button>
         </div>
     `);
-
             // Atualiza lista de usuários adicionados
             if (!usuariosAdicionados.includes(usuarioId.toString())) {
                 usuariosAdicionados.push(usuarioId.toString());
             }
-
             // Remove da lista de removidos se estiver lá
             const indexRemovido = usuariosRemovidos.indexOf(usuarioId.toString());
             if (indexRemovido > -1) {
                 usuariosRemovidos.splice(indexRemovido, 1);
             }
-
             // Atualiza campos hidden
             const adicionarAtual = $('#adicionarMembroInput').val();
             const adicionarArray = adicionarAtual ? adicionarAtual.split(',') : [];
@@ -1528,7 +1525,6 @@
                 adicionarArray.push(usuarioId);
                 $('#adicionarMembroInput').val(adicionarArray.join(','));
             }
-
             const removerAtual = $('#removerMembroInput').val();
             if (removerAtual) {
                 const removerArray = removerAtual.split(',');
@@ -1538,23 +1534,10 @@
                     $('#removerMembroInput').val(removerArray.join(','));
                 }
             }
-
             // Atualiza contadores e recarrega a lista
             $('#contadorMembrosAtuais').text($('#equipeAtualList .list-group-item').length);
             carregarUsuariosDisponiveisParaSolicitacao(acaoId, termoBusca);
-
             checkForChanges();
-        });
-
-
-
-        // Previne o submit do formulário ao pressionar Enter na busca
-        $('#buscaUsuarioEquipe').on('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            }
         });
 
         // Evento para remover usuário da equipe
@@ -1565,9 +1548,7 @@
             const acaoId = $('#solicitarEdicaoId').val();
             const termoBusca = $('#buscaUsuarioEquipe').val();
             const estavaOriginalmenteNaEquipe = equipeOriginal.includes(usuarioId.toString());
-
             usuarioItem.remove();
-
             if (estavaOriginalmenteNaEquipe) {
                 if (!usuariosRemovidos.includes(usuarioId.toString())) {
                     usuariosRemovidos.push(usuarioId.toString());
@@ -1578,7 +1559,6 @@
                     usuariosAdicionados.splice(indexAdicionado, 1);
                 }
             }
-
             // Atualiza campos hidden
             const removerAtual = $('#removerMembroInput').val();
             const removerArray = removerAtual ? removerAtual.split(',') : [];
@@ -1586,7 +1566,6 @@
                 removerArray.push(usuarioId);
                 $('#removerMembroInput').val(removerArray.join(','));
             }
-
             const adicionarAtual = $('#adicionarMembroInput').val();
             if (adicionarAtual) {
                 const adicionarArray = adicionarAtual.split(',');
@@ -1596,7 +1575,6 @@
                     $('#adicionarMembroInput').val(adicionarArray.join(','));
                 }
             }
-
             // Força a atualização da lista de disponíveis
             carregarUsuariosDisponiveisParaSolicitacao(acaoId, termoBusca);
             $('#contadorMembrosAtuais').text($('#equipeAtualList .list-group-item').length);
@@ -1607,8 +1585,7 @@
         $('#solicitarEdicaoModal').on('shown.bs.modal', function() {
             const acaoId = $('#solicitarEdicaoId').val();
             if (acaoId) {
-                carregarEquipeParaSolicitacao(acaoId);
-
+                // Primeiro, carrega todos os usuários possíveis do sistema
                 $.ajax({
                     url: '<?= site_url('acoes/buscar-usuarios') ?>',
                     type: 'GET',
@@ -1626,7 +1603,8 @@
                                 email: user.email || (user.text.match(/\((.*?)\)/) ? user.text.match(/\((.*?)\)/)[1] : '')
                             }));
                         }
-                        carregarUsuariosDisponiveisParaSolicitacao(acaoId);
+                        // Agora, carrega a equipe (que garante todos da equipe em todosUsuariosDisponiveis)
+                        carregarEquipeParaSolicitacao(acaoId);
                     },
                     complete: function() {
                         $('#buscaUsuarioEquipe').val('');
@@ -1639,7 +1617,6 @@
         function checkForChanges() {
             let hasChanges = false;
             const form = $('#formSolicitarEdicao');
-
             // Verifica campos regulares
             ['nome', 'responsavel', 'status', 'tempo_estimado_dias',
                 'entrega_estimada', 'data_inicio', 'data_fim'
@@ -1649,15 +1626,12 @@
                     hasChanges = true;
                 }
             });
-
             // Verifica alterações na equipe
             const adicionarMembros = $('#adicionarMembroInput').val();
             const removerMembros = $('#removerMembroInput').val();
-
             if (adicionarMembros || removerMembros) {
                 hasChanges = true;
             }
-
             if (hasChanges) {
                 $('#alertNenhumaAlteracao').addClass('d-none');
                 $('#btnEnviarSolicitacao').prop('disabled', false);
@@ -1666,6 +1640,7 @@
                 $('#btnEnviarSolicitacao').prop('disabled', true);
             }
         }
+
 
     });
 </script>
