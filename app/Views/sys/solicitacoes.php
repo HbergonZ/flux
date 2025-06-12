@@ -232,7 +232,6 @@
                         console.log('Dados atuais recebidos:', response.dados_atuais);
                         console.log('Dados alterados recebidos:', response.dados_alterados);
 
-
                         // Formatadores para melhor exibição
                         function formatFieldName(name) {
                             const names = {
@@ -261,7 +260,6 @@
                             return names[name] || name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                         }
 
-                        // Dentro do success do AJAX, ajuste a parte de formatação dos valores:
                         function formatFieldValue(value, key) {
                             if (value === null || value === '' || value === undefined)
                                 return '<span class="text-muted">Não informado</span>';
@@ -274,7 +272,7 @@
                                     }
                                     return value.join(', ');
                                 }
-                                return value; // Retorna o valor original se não for array
+                                return value;
                             }
 
                             // Tratamento especial para o campo equipe (alterações)
@@ -323,36 +321,55 @@
 
                         if (isInclusao) {
                             htmlAtuais = `
-        <tr>
-            <th width="30%">Tipo</th>
-            <td>Novo(a) ${nivelFormatado}</td>
-        </tr>
-        <tr>
-            <th width="30%">Status</th>
-            <td><span class="badge badge-info">Novo Registro</span></td>
-        </tr>`;
+                        <tr>
+                            <th width="30%">Tipo</th>
+                            <td>Novo(a) ${nivelFormatado}</td>
+                        </tr>
+                        <tr>
+                            <th width="30%">Status</th>
+                            <td><span class="badge badge-info">Novo Registro</span></td>
+                        </tr>`;
                         } else {
-                            // Primeiro verifica e adiciona a equipe_real se existir
-                            if (response.dados_atuais.equipe_real !== undefined) {
-                                htmlAtuais += `
-    <tr>
-        <th width="30%">Equipe</th>
-        <td>${formatFieldValue(response.dados_atuais.equipe_real, 'equipe_real')}</td>
-    </tr>`;
-                            }
+                            // Ordem específica dos campos
+                            const ordemCampos = [
+                                'nome',
+                                'projeto',
+                                'responsavel',
+                                'equipe_real',
+                                'tempo_estimado_dias',
+                                'entrega_estimada',
+                                'data_inicio',
+                                'data_fim',
+                                'status',
+                                'projeto_vinculado',
+                                'ordem',
+                                'etapa'
+                            ];
 
-                            // Depois processa os outros campos
-                            for (let key in response.dados_atuais) {
-                                // Ignora o campo equipe e equipe_real (já tratado acima)
-                                if (key !== 'equipe' && key !== 'equipe_real') {
+                            // Monta a tabela na ordem especificada
+                            ordemCampos.forEach(campo => {
+                                if (response.dados_atuais[campo] !== undefined) {
+                                    const displayName = campo === 'equipe_real' ? 'Equipe' : formatFieldName(campo);
                                     htmlAtuais += `
-                <tr>
-                    <th width="30%">${formatFieldName(key)}</th>
-                    <td>${formatFieldValue(response.dados_atuais[key], key)}</td>
-                </tr>`;
+                                <tr>
+                                    <th width="30%">${displayName}</th>
+                                    <td>${formatFieldValue(response.dados_atuais[campo], campo)}</td>
+                                </tr>`;
+                                }
+                            });
+
+                            // Adiciona outros campos que não estão na ordem especificada
+                            for (let key in response.dados_atuais) {
+                                if (!ordemCampos.includes(key) && key !== 'equipe') {
+                                    htmlAtuais += `
+                                <tr>
+                                    <th width="30%">${formatFieldName(key)}</th>
+                                    <td>${formatFieldValue(response.dados_atuais[key], key)}</td>
+                                </tr>`;
                                 }
                             }
                         }
+
                         $('#tabelaDadosAtuais').html(htmlAtuais);
 
                         // Preenche tabela de alterações
@@ -368,18 +385,17 @@
                             }
                         } else if (isExclusao) {
                             htmlAlterados = `
-                            <tr>
-                                <th width="30%">Tipo</th>
-                                <td class="text-danger"><strong>Exclusão de ${nivelFormatado}</strong></td>
-                            </tr>
-                            <tr>
-                                <th width="30%">Status</th>
-                                <td><span class="badge badge-danger">Registro será removido</span></td>
-                            </tr>`;
+                        <tr>
+                            <th width="30%">Tipo</th>
+                            <td class="text-danger"><strong>Exclusão de ${nivelFormatado}</strong></td>
+                        </tr>
+                        <tr>
+                            <th width="30%">Status</th>
+                            <td><span class="badge badge-danger">Registro será removido</span></td>
+                        </tr>`;
                         } else {
                             for (let key in response.dados_alterados) {
                                 if (key === 'equipe' && typeof response.dados_alterados[key] === 'object') {
-                                    // Tratamento especial para equipe
                                     htmlAlterados += `
                                 <tr>
                                     <th width="30%">${formatFieldName(key)}</th>
@@ -414,8 +430,8 @@
                         }
                         $('#tabelaDadosAlterados').html(htmlAlterados);
 
+                        // Preenche informações do solicitante
                         $('#nomeSolicitante').text(response.data.solicitante || 'Não informado');
-
                         const dataSolicitacao = response.data.data_solicitacao ?
                             new Date(response.data.data_solicitacao).toLocaleString('pt-BR') :
                             'Não informado';

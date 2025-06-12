@@ -124,9 +124,16 @@ class Solicitacoes extends BaseController
             }
         }
 
+        // Obter nome do solicitante
+        $solicitante = $this->getSolicitanteName($solicitacao['id_solicitante']);
+
         return $this->response->setJSON([
             'success' => true,
-            'data' => $solicitacao,
+            'data' => [
+                'solicitante' => $solicitante,
+                'data_solicitacao' => $solicitacao['data_solicitacao'],
+                'justificativa_solicitante' => $solicitacao['justificativa_solicitante']
+            ],
             'dados_atuais' => $dadosAtuais,
             'dados_alterados' => $dadosAlterados,
             'tipo' => $solicitacao['tipo'],
