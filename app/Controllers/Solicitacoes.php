@@ -78,29 +78,49 @@ class Solicitacoes extends BaseController
 
     public function avaliar($id)
     {
+        log_message('debug', 'Iniciando avaliação da solicitação ID: ' . $id);
+
         if (!$this->request->isAJAX()) {
+            log_message('debug', 'Acesso não é AJAX - redirecionando');
             return redirect()->back();
         }
 
         $solicitacao = $this->solicitacoesModel->find($id);
         if (!$solicitacao) {
+            log_message('error', 'Solicitação não encontrada - ID: ' . $id);
             return $this->response->setJSON(['success' => false, 'message' => 'Solicitação não encontrada']);
         }
+
+        log_message('debug', 'Solicitação encontrada: ' . print_r($solicitacao, true));
 
         $dadosAtuais = $this->parseSolicitacaoData($solicitacao['dados_atuais']);
         $dadosAlterados = $this->parseSolicitacaoData($solicitacao['dados_alterados']);
 
-        // Se for uma ação, buscar os nomes dos usuários da equipe
-        if ($solicitacao['nivel'] === 'acao') {
-            // Processar equipe atual
-            if (isset($dadosAtuais['id'])) {
-                $equipeAtual = $this->acoesModel->getEquipeAcao($dadosAtuais['id']);
-                $dadosAtuais['equipe'] = array_column($equipeAtual, 'username');
-            }
+        log_message('debug', 'Dados atuais brutos: ' . print_r($dadosAtuais, true));
+        log_message('debug', 'Dados alterados brutos: ' . print_r($dadosAlterados, true));
 
-            // Processar alterações na equipe
-            if (isset($dadosAlterados['equipe'])) {
-                $dadosAlterados['equipe'] = $this->processarAlteracoesEquipeNomes($dadosAlterados['equipe']);
+        // Se for uma ação, buscar os usuários da tabela acoes_equipe
+        if ($solicitacao['nivel'] === 'acao' && !empty($solicitacao['id_acao'])) {
+            $equipeAtual = $this->acoesModel->getEquipeAcao($solicitacao['id_acao']);
+
+            if (!empty($equipeAtual)) {
+                $dadosAtuais['equipe_real'] = array_map(function ($membro) {
+                    return $membro['username'] ?? 'Membro sem nome';
+                }, $equipeAtual);
+            } else {
+                $dadosAtuais['equipe_real'] = [];
+            }
+        }
+
+        // Processar alterações na equipe (se houver)
+        if (isset($dadosAlterados['equipe']) && is_array($dadosAlterados['equipe'])) {
+            foreach ($dadosAlterados['equipe'] as $acao => $ids) {
+                if (is_array($ids)) {
+                    // Usar a tabela users do Shield
+                    $usuarios = $this->userModel->whereIn('id', $ids)->findAll();
+                    $nomesUsuarios = array_column($usuarios, 'username');
+                    $dadosAlterados['equipe'][$acao] = $nomesUsuarios;
+                }
             }
         }
 

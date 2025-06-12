@@ -125,10 +125,9 @@ class AcoesModel extends Model
     }
     public function getEquipeAcao($acaoId)
     {
-        $builder = $this->db->table('acoes_equipe');
-        return $builder->select('users.id, users.username, auth_identities.secret as email')
+        return $this->db->table('acoes_equipe')
             ->join('users', 'users.id = acoes_equipe.usuario_id')
-            ->join('auth_identities', 'auth_identities.user_id = users.id AND auth_identities.type = "email_password"')
+            ->select('users.username')
             ->where('acao_id', $acaoId)
             ->get()
             ->getResultArray();
@@ -207,5 +206,17 @@ class AcoesModel extends Model
             log_message('error', 'Erro ao processar alterações da equipe: ' . $e->getMessage());
             return false;
         }
+    }
+
+    public function getEquipeComUsernames($idAcao)
+    {
+        $result = $this->db->table('acoes_equipe')
+            ->select('users.username')
+            ->join('users', 'users.id = acoes_equipe.id_usuario')
+            ->where('acoes_equipe.id_acao', $idAcao)
+            ->get()
+            ->getResultArray();
+
+        return array_column($result, 'username');
     }
 }

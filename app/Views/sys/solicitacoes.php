@@ -225,8 +225,13 @@
                 type: 'GET',
                 dataType: 'json',
                 success: function(response) {
+                    console.log('Resposta completa:', response);
+
                     if (response.success) {
                         $('#solicitacaoId').val(id);
+                        console.log('Dados atuais recebidos:', response.dados_atuais);
+                        console.log('Dados alterados recebidos:', response.dados_alterados);
+
 
                         // Formatadores para melhor exibição
                         function formatFieldName(name) {
@@ -256,17 +261,25 @@
                             return names[name] || name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                         }
 
+                        // Dentro do success do AJAX, ajuste a parte de formatação dos valores:
                         function formatFieldValue(value, key) {
                             if (value === null || value === '' || value === undefined)
                                 return '<span class="text-muted">Não informado</span>';
 
-                            // Tratamento especial para o campo equipe
-                            if (key === 'equipe') {
+                            // Tratamento especial para equipe_real
+                            if (key === 'equipe_real') {
                                 if (Array.isArray(value)) {
-                                    // Equipe atual - array de usernames
+                                    if (value.length === 0) {
+                                        return '<span class="text-muted">Nenhum membro na equipe</span>';
+                                    }
                                     return value.join(', ');
-                                } else if (typeof value === 'object' && value !== null) {
-                                    // Alterações na equipe
+                                }
+                                return value; // Retorna o valor original se não for array
+                            }
+
+                            // Tratamento especial para o campo equipe (alterações)
+                            if (key === 'equipe') {
+                                if (typeof value === 'object' && value !== null) {
                                     let html = '';
                                     if (value.adicionar && value.adicionar.length > 0) {
                                         html += '<div class="text-success"><small>Adicionar:</small><br>';
@@ -279,12 +292,11 @@
                                         html += '</div>';
                                     }
                                     return html || '<span class="text-muted">Nenhuma alteração na equipe</span>';
-                                } else if (typeof value === 'string') {
-                                    return value;
                                 }
+                                return value;
                             }
 
-                            // Restante da formatação padrão...
+                            // Formatação de datas
                             if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
                                 const [year, month, day] = value.split('-');
                                 return `${day}/${month}/${year}`;
@@ -311,21 +323,34 @@
 
                         if (isInclusao) {
                             htmlAtuais = `
-                            <tr>
-                                <th width="30%">Tipo</th>
-                                <td>Novo(a) ${nivelFormatado}</td>
-                            </tr>
-                            <tr>
-                                <th width="30%">Status</th>
-                                <td><span class="badge badge-info">Novo Registro</span></td>
-                            </tr>`;
+        <tr>
+            <th width="30%">Tipo</th>
+            <td>Novo(a) ${nivelFormatado}</td>
+        </tr>
+        <tr>
+            <th width="30%">Status</th>
+            <td><span class="badge badge-info">Novo Registro</span></td>
+        </tr>`;
                         } else {
-                            for (let key in response.dados_atuais) {
+                            // Primeiro verifica e adiciona a equipe_real se existir
+                            if (response.dados_atuais.equipe_real !== undefined) {
                                 htmlAtuais += `
-                            <tr>
-                                <th width="30%">${formatFieldName(key)}</th>
-                                <td>${formatFieldValue(response.dados_atuais[key], key)}</td>
-                            </tr>`;
+    <tr>
+        <th width="30%">Equipe</th>
+        <td>${formatFieldValue(response.dados_atuais.equipe_real, 'equipe_real')}</td>
+    </tr>`;
+                            }
+
+                            // Depois processa os outros campos
+                            for (let key in response.dados_atuais) {
+                                // Ignora o campo equipe e equipe_real (já tratado acima)
+                                if (key !== 'equipe' && key !== 'equipe_real') {
+                                    htmlAtuais += `
+                <tr>
+                    <th width="30%">${formatFieldName(key)}</th>
+                    <td>${formatFieldValue(response.dados_atuais[key], key)}</td>
+                </tr>`;
+                                }
                             }
                         }
                         $('#tabelaDadosAtuais').html(htmlAtuais);
@@ -464,8 +489,11 @@
                     let errorMsg = 'Falha ao processar solicitação';
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMsg = xhr.responseJSON.message;
+                    } else if (xhr.statusText) {
+                        errorMsg += ` (${xhr.statusText})`;
                     }
                     Swal.fire('Erro!', errorMsg, 'error');
+                    $('#avaliarModal').modal('hide');
                 },
                 complete: function() {
                     buttons.prop('disabled', false);
