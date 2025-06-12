@@ -1611,12 +1611,24 @@
                     }
                 });
             }
+
+            // Configuração do campo de evidências
+            $('input[name="evidencia_tipo"]').change(function() {
+                if ($(this).val() === 'link') {
+                    $('#solicitarEdicaoGrupoTexto').addClass('d-none');
+                    $('#solicitarEdicaoGrupoLink').removeClass('d-none');
+                } else {
+                    $('#solicitarEdicaoGrupoTexto').removeClass('d-none');
+                    $('#solicitarEdicaoGrupoLink').addClass('d-none');
+                }
+            });
         });
 
         // Verificar alterações no formulário
         function checkForChanges() {
             let hasChanges = false;
             const form = $('#formSolicitarEdicao');
+
             // Verifica campos regulares
             ['nome', 'responsavel', 'status', 'tempo_estimado_dias',
                 'entrega_estimada', 'data_inicio', 'data_fim'
@@ -1626,12 +1638,19 @@
                     hasChanges = true;
                 }
             });
+
             // Verifica alterações na equipe
             const adicionarMembros = $('#adicionarMembroInput').val();
             const removerMembros = $('#removerMembroInput').val();
             if (adicionarMembros || removerMembros) {
                 hasChanges = true;
             }
+
+            // Verifica se há evidências adicionadas
+            if ($('#solicitarEdicaoEvidenciaTexto').val() || $('#solicitarEdicaoEvidenciaLink').val()) {
+                hasChanges = true;
+            }
+
             if (hasChanges) {
                 $('#alertNenhumaAlteracao').addClass('d-none');
                 $('#btnEnviarSolicitacao').prop('disabled', false);
@@ -1642,5 +1661,185 @@
         }
 
 
+        // Variáveis para controle de evidências
+        let evidenciasSolicitadas = [];
+
+        // Alternar entre tipos de evidência
+        $('input[name="evidencia_tipo"]').change(function() {
+            if ($(this).val() === 'link') {
+                $('#solicitarEdicaoGrupoTexto').addClass('d-none');
+                $('#solicitarEdicaoGrupoLink').removeClass('d-none');
+            } else {
+                $('#solicitarEdicaoGrupoTexto').removeClass('d-none');
+                $('#solicitarEdicaoGrupoLink').addClass('d-none');
+            }
+        });
+
+        // Adicionar evidência à lista de solicitação
+        $('#btnAdicionarEvidencia').click(function() {
+            const tipo = $('input[name="evidencia_tipo"]:checked').val();
+            const conteudo = tipo === 'texto' ?
+                $('#solicitarEdicaoEvidenciaTexto').val().trim() :
+                $('#solicitarEdicaoEvidenciaLink').val().trim();
+            const descricao = $('#solicitarEdicaoEvidenciaDescricao').val().trim();
+
+            if ((tipo === 'texto' && conteudo.length < 3) || (tipo === 'link' && !isValidUrl(conteudo))) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro',
+                    text: tipo === 'texto' ? 'O texto da evidência deve ter pelo menos 3 caracteres' : 'Por favor, insira uma URL válida',
+                    confirmButtonText: 'Entendi'
+                });
+                return;
+            }
+
+            const novaEvidencia = {
+                id: Date.now(), // ID temporário
+                tipo: tipo,
+                conteudo: conteudo,
+                descricao: descricao,
+                data: new Date().toLocaleString('pt-BR'),
+                acao: 'incluir' // Marcamos como inclusão para a solicitação
+            };
+
+            evidenciasSolicitadas.push(novaEvidencia);
+            atualizarListaEvidenciasSolicitadas();
+
+            // Limpar campos
+            $('#solicitarEdicaoEvidenciaTexto, #solicitarEdicaoEvidenciaLink, #solicitarEdicaoEvidenciaDescricao').val('');
+            $('#solicitarEdicaoGrupoTexto').removeClass('d-none');
+            $('#solicitarEdicaoGrupoLink').addClass('d-none');
+            $('input[name="evidencia_tipo"][value="texto"]').prop('checked', true);
+
+            checkForChanges();
+        });
+
+        // Função para validar URL
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        // Atualizar lista de evidências adicionadas
+        function atualizarListaEvidenciasAdicionadas() {
+            const lista = $('#evidenciasAdicionadasList');
+            lista.empty();
+
+            if (evidenciasAdicionadas.length === 0) {
+                lista.append('<div class="text-center py-3"><i class="fas fa-info-circle"></i> Nenhuma evidência adicionada</div>');
+            } else {
+                evidenciasAdicionadas.forEach((evidencia, index) => {
+                    const item = `
+                <div class="list-group-item py-2" data-id="${evidencia.id}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <strong>Evidência #${index + 1}</strong>
+                                <small class="text-muted">${evidencia.data}</small>
+                            </div>
+                            ${evidencia.tipo === 'texto'
+                                ? `<div class="bg-light p-2 rounded mb-1">${evidencia.conteudo.substring(0, 50)}${evidencia.conteudo.length > 50 ? '...' : ''}</div>`
+                                : `<div class="mb-1"><small class="text-truncate d-block">${evidencia.conteudo}</small></div>`}
+                            ${evidencia.descricao ? `<small class="text-muted">${evidencia.descricao.substring(0, 30)}${evidencia.descricao.length > 30 ? '...' : ''}</small>` : ''}
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger btn-remover-evidencia" data-id="${evidencia.id}">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+                    lista.append(item);
+                });
+            }
+
+            $('#contadorEvidenciasAdicionadas').text(evidenciasAdicionadas.length);
+        }
+
+        // Remover evidência da lista
+        $(document).on('click', '.btn-remover-evidencia', function() {
+            const id = $(this).data('id');
+            evidenciasAdicionadas = evidenciasAdicionadas.filter(e => e.id != id);
+            atualizarListaEvidenciasAdicionadas();
+            checkForChanges();
+        });
+
+        // Atualizar a função checkForChanges para incluir verificação de evidências
+        function checkForChanges() {
+            let hasChanges = false;
+            const form = $('#formSolicitarEdicao');
+
+            // Verifica campos regulares
+            ['nome', 'responsavel', 'status', 'tempo_estimado_dias',
+                'entrega_estimada', 'data_inicio', 'data_fim'
+            ].forEach(field => {
+                const currentValue = form.find(`[name="${field}"]`).val();
+                if (formOriginalData[field] != currentValue) {
+                    hasChanges = true;
+                }
+            });
+
+            // Verifica alterações na equipe
+            const adicionarMembros = $('#adicionarMembroInput').val();
+            const removerMembros = $('#removerMembroInput').val();
+            if (adicionarMembros || removerMembros) {
+                hasChanges = true;
+            }
+
+            // Verifica se há evidências adicionadas
+            if (evidenciasAdicionadas.length > 0) {
+                hasChanges = true;
+            }
+
+            if (hasChanges) {
+                $('#alertNenhumaAlteracao').addClass('d-none');
+                $('#btnEnviarSolicitacao').prop('disabled', false);
+            } else {
+                $('#alertNenhumaAlteracao').removeClass('d-none');
+                $('#btnEnviarSolicitacao').prop('disabled', true);
+            }
+        }
+
+        // Modificar o submit do formulário para incluir as evidências
+        $('#formSolicitarEdicao').submit(function(e) {
+            e.preventDefault();
+
+            // Adicionar as evidências ao FormData
+            const formData = new FormData(this);
+            formData.append('evidencias', JSON.stringify(evidenciasAdicionadas));
+
+            const submitBtn = $(this).find('button[type="submit"]');
+            const originalBtnText = submitBtn.html();
+
+            submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...');
+
+            $.ajax({
+                type: "POST",
+                url: $(this).attr('action'),
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        $('#solicitarEdicaoModal').modal('hide');
+                        showSuccessAlert(response.message || 'Solicitação enviada com sucesso!');
+                        evidenciasAdicionadas = []; // Limpa as evidências após envio
+                    } else {
+                        showErrorAlert(response.message || 'Ocorreu um erro ao enviar a solicitação.');
+                    }
+                },
+                error: function(xhr) {
+                    console.error(xhr.responseText);
+                    showErrorAlert('Erro na comunicação com o servidor.');
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).html(originalBtnText);
+                }
+            });
+        });
     });
 </script>

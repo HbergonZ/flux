@@ -1,3 +1,4 @@
+<!-- Modal: modal-solicitar-edicao -->
 <div class="modal fade" id="solicitarEdicaoModal" tabindex="-1" role="dialog" aria-labelledby="solicitarEdicaoModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -152,6 +153,75 @@
                         </div>
                     </div>
 
+                    <!-- Evidências - Nova Seção -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-file-alt mr-2"></i>Gerenciar Evidências
+                            </h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="row no-gutters">
+                                <!-- Evidências Adicionadas -->
+                                <div class="col-md-6 border-right">
+                                    <div class="p-3">
+                                        <h6 class="text-center font-weight-bold">
+                                            <i class="fas fa-list-ul mr-1"></i>Evidências para Enviar
+                                            <span class="badge badge-primary badge-pill ml-1" id="contadorEvidenciasAdicionadas">0</span>
+                                        </h6>
+                                        <div id="evidenciasAdicionadasList" class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+                                            <div class="text-center py-3">
+                                                <i class="fas fa-info-circle"></i> Nenhuma evidência adicionada
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Adicionar Nova Evidência -->
+                                <div class="col-md-6">
+                                    <div class="p-3">
+                                        <h6 class="text-center font-weight-bold">
+                                            <i class="fas fa-plus-circle mr-1"></i>Adicionar Evidência
+                                        </h6>
+
+                                        <div class="form-group">
+                                            <label>Tipo de Evidência</label>
+                                            <div class="d-flex">
+                                                <div class="form-check mr-3">
+                                                    <input class="form-check-input" type="radio" name="evidencia_tipo" id="solicitarEdicaoEvidenciaTipoTexto" value="texto" checked>
+                                                    <label class="form-check-label" for="solicitarEdicaoEvidenciaTipoTexto">Texto</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="evidencia_tipo" id="solicitarEdicaoEvidenciaTipoLink" value="link">
+                                                    <label class="form-check-label" for="solicitarEdicaoEvidenciaTipoLink">Link</label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group" id="solicitarEdicaoGrupoTexto">
+                                            <label for="solicitarEdicaoEvidenciaTexto">Evidência (Texto)</label>
+                                            <textarea class="form-control" id="solicitarEdicaoEvidenciaTexto" rows="3"></textarea>
+                                        </div>
+
+                                        <div class="form-group d-none" id="solicitarEdicaoGrupoLink">
+                                            <label for="solicitarEdicaoEvidenciaLink">URL</label>
+                                            <input type="url" class="form-control" id="solicitarEdicaoEvidenciaLink" placeholder="https://exemplo.com">
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="solicitarEdicaoEvidenciaDescricao">Descrição</label>
+                                            <textarea class="form-control" id="solicitarEdicaoEvidenciaDescricao" rows="2" placeholder="Explique a evidência"></textarea>
+                                        </div>
+
+                                        <button type="button" class="btn btn-primary btn-block" id="btnAdicionarEvidencia">
+                                            <i class="fas fa-plus mr-2"></i> Adicionar à Lista
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Justificativa -->
                     <div class="card">
                         <div class="card-header bg-light">
@@ -167,6 +237,7 @@
                             </div>
                         </div>
                     </div>
+
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">

@@ -528,6 +528,14 @@ class Acoes extends BaseController
                     $alteracoes['equipe'] = $alteracoesEquipe;
                 }
 
+                // Processar evidências se houver
+                if (!empty($postData['evidencias'])) {
+                    $evidencias = json_decode($postData['evidencias'], true);
+                    if (!empty($evidencias)) {
+                        $alteracoes['evidencias'] = $evidencias;
+                    }
+                }
+
                 if (empty($alteracoes)) {
                     $response['message'] = 'Nenhuma alteração detectada';
                     return $this->response->setJSON($response);

@@ -219,4 +219,39 @@ class AcoesModel extends Model
 
         return array_column($result, 'username');
     }
+
+    public function processarEvidencias($acaoId, $evidencias)
+    {
+        if (empty($evidencias)) {
+            return true;
+        }
+
+        $db = \Config\Database::connect();
+
+        try {
+            $db->transStart();
+
+            $dadosInserir = array_map(function ($evidencia) use ($acaoId) {
+                return [
+                    'tipo' => $evidencia['tipo'],
+                    'evidencia' => $evidencia['conteudo'],
+                    'descricao' => $evidencia['descricao'] ?? null,
+                    'nivel' => 'acao',
+                    'id_nivel' => $acaoId,
+                    'created_by' => auth()->id(),
+                    'created_at' => date('Y-m-d H:i:s')
+                ];
+            }, $evidencias);
+
+            $db->table('evidencias')->insertBatch($dadosInserir);
+
+            $db->transComplete();
+
+            return $db->transStatus();
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', 'Erro ao processar evidências: ' . $e->getMessage());
+            return false;
+        }
+    }
 }
