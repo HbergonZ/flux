@@ -162,29 +162,48 @@
                         </div>
                         <div class="card-body p-0">
                             <div class="row no-gutters">
-                                <!-- Evidências Adicionadas -->
-                                <div class="col-md-6 border-right">
-                                    <div class="p-3">
-                                        <h6 class="text-center font-weight-bold">
-                                            <i class="fas fa-list-ul mr-1"></i>Evidências para Enviar
-                                            <span class="badge badge-primary badge-pill ml-1" id="contadorEvidenciasAdicionadas">0</span>
-                                        </h6>
-                                        <div id="evidenciasAdicionadasList" class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
-                                            <div class="text-center py-3">
-                                                <i class="fas fa-info-circle"></i> Nenhuma evidência adicionada
+                                <!-- Coluna de Evidências (Atuais e para Remover) -->
+                                <div class="col-md-6">
+                                    <div class="p-3 d-flex flex-column" style="height: 100%; min-height: 400px;">
+                                        <!-- Seção de Evidências Atuais -->
+                                        <div class="mb-3">
+                                            <h6 class="font-weight-bold mb-2">
+                                                <i class="fas fa-list-ul mr-1"></i>Evidências Atuais
+                                                <span class="badge badge-primary badge-pill ml-1" id="contadorEvidenciasAtuais">0</span>
+                                            </h6>
+                                            <div id="evidenciasAtuaisList" style="overflow-y: auto; max-height: 150px;">
+                                                <div class="list-group">
+                                                    <!-- Evidências serão carregadas aqui -->
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Separador -->
+                                        <hr class="my-2">
+
+                                        <!-- Seção de Evidências para Remover -->
+                                        <div class="flex-grow-1">
+                                            <h6 class="font-weight-bold mb-2">
+                                                <i class="fas fa-trash-alt mr-1"></i>Evidências a serem removidas
+                                                <span class="badge badge-secondary badge-pill ml-1" id="contadorEvidenciasRemover">0</span>
+                                            </h6>
+                                            <div id="evidenciasRemoverList" style="overflow-y: auto; max-height: 150px;">
+                                                <div class="list-group">
+                                                    <!-- Evidências marcadas para remoção serão exibidas aqui -->
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Adicionar Nova Evidência -->
+                                <!-- Coluna de Adicionar Evidência -->
                                 <div class="col-md-6">
                                     <div class="p-3">
-                                        <h6 class="text-center font-weight-bold">
+                                        <h6 class="font-weight-bold mb-3">
                                             <i class="fas fa-plus-circle mr-1"></i>Adicionar Evidência
                                         </h6>
 
-                                        <div class="form-group">
+                                        <div class="form-group mb-3">
                                             <label>Tipo de Evidência</label>
                                             <div class="d-flex">
                                                 <div class="form-check mr-3">
@@ -198,17 +217,17 @@
                                             </div>
                                         </div>
 
-                                        <div class="form-group" id="solicitarEdicaoGrupoTexto">
+                                        <div class="form-group mb-3" id="solicitarEdicaoGrupoTexto">
                                             <label for="solicitarEdicaoEvidenciaTexto">Evidência (Texto)</label>
                                             <textarea class="form-control" id="solicitarEdicaoEvidenciaTexto" rows="3"></textarea>
                                         </div>
 
-                                        <div class="form-group d-none" id="solicitarEdicaoGrupoLink">
+                                        <div class="form-group mb-3 d-none" id="solicitarEdicaoGrupoLink">
                                             <label for="solicitarEdicaoEvidenciaLink">URL</label>
                                             <input type="url" class="form-control" id="solicitarEdicaoEvidenciaLink" placeholder="https://exemplo.com">
                                         </div>
 
-                                        <div class="form-group">
+                                        <div class="form-group mb-3">
                                             <label for="solicitarEdicaoEvidenciaDescricao">Descrição</label>
                                             <textarea class="form-control" id="solicitarEdicaoEvidenciaDescricao" rows="2" placeholder="Explique a evidência"></textarea>
                                         </div>

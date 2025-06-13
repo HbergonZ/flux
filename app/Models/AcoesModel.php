@@ -220,38 +220,56 @@ class AcoesModel extends Model
         return array_column($result, 'username');
     }
 
-    public function processarEvidencias($acaoId, $evidencias)
+    public function processarSolicitacaoEdicao($dadosAprovados)
     {
-        if (empty($evidencias)) {
-            return true;
-        }
-
         $db = \Config\Database::connect();
 
         try {
             $db->transStart();
 
-            $dadosInserir = array_map(function ($evidencia) use ($acaoId) {
-                return [
-                    'tipo' => $evidencia['tipo'],
-                    'evidencia' => $evidencia['conteudo'],
-                    'descricao' => $evidencia['descricao'] ?? null,
-                    'nivel' => 'acao',
-                    'id_nivel' => $acaoId,
-                    'created_by' => auth()->id(),
-                    'created_at' => date('Y-m-d H:i:s')
-                ];
-            }, $evidencias);
+            // Atualizar dados básicos da ação
+            if (isset($dadosAprovados['dados_acao'])) {
+                $this->update($dadosAprovados['id_acao'], $dadosAprovados['dados_acao']);
+            }
 
-            $db->table('evidencias')->insertBatch($dadosInserir);
+            // Processar alterações na equipe
+            if (isset($dadosAprovados['alteracoes_equipe'])) {
+                $this->processarAlteracoesEquipe($dadosAprovados['id_acao'], $dadosAprovados['alteracoes_equipe']);
+            }
+
+            // Processar evidências solicitadas
+            if (isset($dadosAprovados['evidencias_solicitadas'])) {
+                $this->processarEvidenciasSolicitadas($dadosAprovados['id_acao'], $dadosAprovados['evidencias_solicitadas']);
+            }
 
             $db->transComplete();
 
             return $db->transStatus();
         } catch (\Exception $e) {
             $db->transRollback();
-            log_message('error', 'Erro ao processar evidências: ' . $e->getMessage());
+            log_message('error', 'Erro ao processar solicitação de edição: ' . $e->getMessage());
             return false;
         }
+    }
+
+    protected function processarEvidenciasSolicitadas($acaoId, $evidencias)
+    {
+        if (empty($evidencias)) {
+            return true;
+        }
+
+        $dadosInserir = array_map(function ($evidencia) use ($acaoId) {
+            return [
+                'tipo' => $evidencia['tipo'],
+                'evidencia' => $evidencia['conteudo'],
+                'descricao' => $evidencia['descricao'] ?? null,
+                'nivel' => 'acao',
+                'id_nivel' => $acaoId,
+                'created_by' => $evidencia['solicitante_id'] ?? auth()->id(),
+                'created_at' => date('Y-m-d H:i:s')
+            ];
+        }, $evidencias);
+
+        return $this->db->table('evidencias')->insertBatch($dadosInserir);
     }
 }

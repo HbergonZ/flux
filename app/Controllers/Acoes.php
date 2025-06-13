@@ -507,7 +507,6 @@ class Acoes extends BaseController
                 // Tratamento para membros da equipe
                 $alteracoesEquipe = [];
 
-                // Membros a adicionar
                 if (!empty($postData['adicionar_membro'])) {
                     $membrosAdicionar = explode(',', $postData['adicionar_membro']);
                     if (!empty($membrosAdicionar)) {
@@ -515,7 +514,6 @@ class Acoes extends BaseController
                     }
                 }
 
-                // Membros a remover
                 if (!empty($postData['remover_membro'])) {
                     $membrosRemover = explode(',', $postData['remover_membro']);
                     if (!empty($membrosRemover)) {
@@ -523,16 +521,15 @@ class Acoes extends BaseController
                     }
                 }
 
-                // Adiciona as alterações da equipe se houver
                 if (!empty($alteracoesEquipe)) {
                     $alteracoes['equipe'] = $alteracoesEquipe;
                 }
 
-                // Processar evidências se houver
-                if (!empty($postData['evidencias'])) {
-                    $evidencias = json_decode($postData['evidencias'], true);
-                    if (!empty($evidencias)) {
-                        $alteracoes['evidencias'] = $evidencias;
+                // Processar evidências solicitadas
+                if (!empty($postData['evidencias_solicitadas'])) {
+                    $evidenciasSolicitadas = json_decode($postData['evidencias_solicitadas'], true);
+                    if (!empty($evidenciasSolicitadas)) {
+                        $alteracoes['evidencias_solicitadas'] = $evidenciasSolicitadas;
                     }
                 }
 
