@@ -1624,6 +1624,8 @@
             });
         });
 
+        // PARTE DE EVIDÊNCIAS --------------------------
+
         // Variáveis para controle de evidências
         let evidenciasSolicitadas = [];
 

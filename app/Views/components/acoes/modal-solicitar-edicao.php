@@ -109,7 +109,7 @@
                     <div class="card mb-3">
                         <div class="card-header bg-light">
                             <h6 class="mb-0">
-                                <i class="fas fa-users mr-2"></i> Gerenciar Equipe
+                                <i class="fas fa-users mr-2"></i>Gerenciar Equipe
                             </h6>
                         </div>
                         <div class="card-body p-0">
@@ -163,31 +163,28 @@
                         <div class="card-body p-0">
                             <div class="row no-gutters">
                                 <!-- Coluna de Evidências (Atuais e para Remover) -->
-                                <div class="col-md-6">
+                                <div class="col-md-6 border-right">
                                     <div class="p-3 d-flex flex-column" style="height: 100%; min-height: 400px;">
                                         <!-- Seção de Evidências Atuais -->
-                                        <div class="mb-3">
+                                        <div class="mb-3 border-bottom flex-grow-1" style="height: 50%;">
                                             <h6 class="font-weight-bold mb-2">
                                                 <i class="fas fa-list-ul mr-1"></i>Evidências Atuais
                                                 <span class="badge badge-primary badge-pill ml-1" id="contadorEvidenciasAtuais">0</span>
                                             </h6>
-                                            <div id="evidenciasAtuaisList" style="overflow-y: auto; max-height: 150px;">
+                                            <div id="evidenciasAtuaisList" style="overflow-y: auto; height: calc(100% - 30px);">
                                                 <div class="list-group">
                                                     <!-- Evidências serão carregadas aqui -->
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <!-- Separador -->
-                                        <hr class="my-2">
-
                                         <!-- Seção de Evidências para Remover -->
-                                        <div class="flex-grow-1">
+                                        <div class="flex-grow-1" style="height: 50%;">
                                             <h6 class="font-weight-bold mb-2">
                                                 <i class="fas fa-trash-alt mr-1"></i>Evidências a serem removidas
                                                 <span class="badge badge-secondary badge-pill ml-1" id="contadorEvidenciasRemover">0</span>
                                             </h6>
-                                            <div id="evidenciasRemoverList" style="overflow-y: auto; max-height: 150px;">
+                                            <div id="evidenciasRemoverList" style="overflow-y: auto; height: calc(100% - 30px);">
                                                 <div class="list-group">
                                                     <!-- Evidências marcadas para remoção serão exibidas aqui -->
                                                 </div>
