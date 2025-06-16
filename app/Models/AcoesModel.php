@@ -258,18 +258,34 @@ class AcoesModel extends Model
             return true;
         }
 
-        $dadosInserir = array_map(function ($evidencia) use ($acaoId) {
-            return [
-                'tipo' => $evidencia['tipo'],
-                'evidencia' => $evidencia['conteudo'],
-                'descricao' => $evidencia['descricao'] ?? null,
-                'nivel' => 'acao',
-                'id_nivel' => $acaoId,
-                'created_by' => $evidencia['solicitante_id'] ?? auth()->id(),
-                'created_at' => date('Y-m-d H:i:s')
-            ];
-        }, $evidencias);
+        // Processar evidências a serem adicionadas
+        if (isset($evidencias['adicionar']) && is_array($evidencias['adicionar'])) {
+            $dadosInserir = array_map(function ($evidencia) use ($acaoId) {
+                return [
+                    'tipo' => $evidencia['tipo'],
+                    'evidencia' => $evidencia['conteudo'],
+                    'descricao' => $evidencia['descricao'] ?? null,
+                    'nivel' => 'acao',
+                    'id_nivel' => $acaoId,
+                    'created_by' => auth()->id(),
+                    'created_at' => date('Y-m-d H:i:s')
+                ];
+            }, $evidencias['adicionar']);
 
-        return $this->db->table('evidencias')->insertBatch($dadosInserir);
+            if (!empty($dadosInserir)) {
+                $this->db->table('evidencias')->insertBatch($dadosInserir);
+            }
+        }
+
+        // Processar evidências a serem removidas
+        if (isset($evidencias['remover']) && is_array($evidencias['remover'])) {
+            $this->db->table('evidencias')
+                ->whereIn('id', $evidencias['remover'])
+                ->where('nivel', 'acao')
+                ->where('id_nivel', $acaoId)
+                ->delete();
+        }
+
+        return true;
     }
 }

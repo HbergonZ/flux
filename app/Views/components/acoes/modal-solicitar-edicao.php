@@ -171,7 +171,7 @@
                                                 <i class="fas fa-list-ul mr-1"></i>Evidências Atuais
                                                 <span class="badge badge-primary badge-pill ml-1" id="contadorEvidenciasAtuais">0</span>
                                             </h6>
-                                            <div id="evidenciasAtuaisList" style="overflow-y: auto; height: calc(100% - 30px);">
+                                            <div id="evidenciasAtuaisList" class="overflow-auto" style="max-height: calc(100% - 30px);">
                                                 <div class="list-group">
                                                     <!-- Evidências serão carregadas aqui -->
                                                 </div>
@@ -184,7 +184,7 @@
                                                 <i class="fas fa-trash-alt mr-1"></i>Evidências a serem removidas
                                                 <span class="badge badge-secondary badge-pill ml-1" id="contadorEvidenciasRemover">0</span>
                                             </h6>
-                                            <div id="evidenciasRemoverList" style="overflow-y: auto; height: calc(100% - 30px);">
+                                            <div id="evidenciasRemoverList" class="overflow-auto" style="max-height: calc(100% - 30px);">
                                                 <div class="list-group">
                                                     <!-- Evidências marcadas para remoção serão exibidas aqui -->
                                                 </div>

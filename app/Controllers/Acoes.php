@@ -476,6 +476,7 @@ class Acoes extends BaseController
                     return $this->response->setJSON($response);
                 }
 
+                // Remove campos que não devem ser incluídos nos dados atuais
                 unset($acaoAtual['id'], $acaoAtual['created_at'], $acaoAtual['updated_at']);
 
                 $alteracoes = [];
@@ -495,7 +496,8 @@ class Acoes extends BaseController
                         $valorAtual = $acaoAtual[$campo] ?? null;
                         $valorNovo = $postData[$campo] ?? null;
 
-                        if ($valorAtual != $valorNovo) {
+                        // Comparação mais robusta considerando tipos diferentes
+                        if ((string)$valorAtual !== (string)$valorNovo) {
                             $alteracoes[$campo] = [
                                 'de' => $valorAtual,
                                 'para' => $valorNovo
@@ -504,35 +506,42 @@ class Acoes extends BaseController
                     }
                 }
 
-                // Tratamento para membros da equipe
-                $alteracoesEquipe = [];
-
+                // Processar equipe
                 if (!empty($postData['adicionar_membro'])) {
-                    $membrosAdicionar = explode(',', $postData['adicionar_membro']);
-                    if (!empty($membrosAdicionar)) {
-                        $alteracoesEquipe['adicionar'] = $membrosAdicionar;
-                    }
+                    $alteracoes['equipe']['adicionar'] = explode(',', $postData['adicionar_membro']);
                 }
-
                 if (!empty($postData['remover_membro'])) {
-                    $membrosRemover = explode(',', $postData['remover_membro']);
-                    if (!empty($membrosRemover)) {
-                        $alteracoesEquipe['remover'] = $membrosRemover;
+                    $alteracoes['equipe']['remover'] = explode(',', $postData['remover_membro']);
+                }
+
+                // Processar evidências
+                $evidenciasSolicitadas = [];
+
+                if (!empty($postData['evidencias_adicionadas'])) {
+                    $evidenciasAdicionadas = json_decode($postData['evidencias_adicionadas'], true);
+                    if (!empty($evidenciasAdicionadas)) {
+                        $evidenciasSolicitadas['adicionar'] = array_map(function ($ev) {
+                            return [
+                                'tipo' => $ev['tipo'],
+                                'conteudo' => $ev['conteudo'],
+                                'descricao' => $ev['descricao'] ?? null
+                            ];
+                        }, $evidenciasAdicionadas);
                     }
                 }
 
-                if (!empty($alteracoesEquipe)) {
-                    $alteracoes['equipe'] = $alteracoesEquipe;
-                }
-
-                // Processar evidências solicitadas
-                if (!empty($postData['evidencias_solicitadas'])) {
-                    $evidenciasSolicitadas = json_decode($postData['evidencias_solicitadas'], true);
-                    if (!empty($evidenciasSolicitadas)) {
-                        $alteracoes['evidencias_solicitadas'] = $evidenciasSolicitadas;
+                if (!empty($postData['evidencias_removidas'])) {
+                    $evidenciasRemovidas = json_decode($postData['evidencias_removidas'], true);
+                    if (!empty($evidenciasRemovidas)) {
+                        $evidenciasSolicitadas['remover'] = $evidenciasRemovidas;
                     }
                 }
 
+                if (!empty($evidenciasSolicitadas)) {
+                    $alteracoes['evidencias'] = $evidenciasSolicitadas;
+                }
+
+                // Verificar se há alterações válidas
                 if (empty($alteracoes)) {
                     $response['message'] = 'Nenhuma alteração detectada';
                     return $this->response->setJSON($response);
@@ -1147,6 +1156,30 @@ class Acoes extends BaseController
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Erro ao carregar equipe'
+            ]);
+        }
+    }
+    public function listarEvidencias($acaoId)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $evidencias = $this->evidenciasModel->where('nivel', 'acao')
+                ->where('id_nivel', $acaoId)
+                ->orderBy('created_at', 'DESC')
+                ->findAll();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'evidencias' => $evidencias
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Erro ao listar evidências: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Erro ao listar evidências'
             ]);
         }
     }
