@@ -542,10 +542,10 @@ class Acoes extends BaseController
                 }
 
                 // Verificar se há alterações válidas
-                if (empty($alteracoes)) {
+                /* if (empty($alteracoes)) {
                     $response['message'] = 'Nenhuma alteração detectada';
                     return $this->response->setJSON($response);
-                }
+                } */
 
                 $data = [
                     'nivel' => 'acao',

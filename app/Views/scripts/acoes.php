@@ -789,11 +789,6 @@
                         if (modalId) {
                             $(modalId).modal('hide');
                         }
-                        if (successMessage) {
-                            showSuccessAlert(successMessage);
-                        } else if (response.message) {
-                            showSuccessAlert(response.message);
-                        }
 
                         if (!modalId || (modalId !== '#solicitarEdicaoModal' && modalId !== '#solicitarExclusaoModal' && modalId !== '#solicitarInclusaoModal')) {
                             setTimeout(() => location.reload(), 1500);
