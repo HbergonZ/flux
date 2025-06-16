@@ -310,6 +310,24 @@
                             return value;
                         }
 
+                        // Função para formatar evidências
+                        function formatEvidence(evidence) {
+                            if (!evidence) return '';
+
+                            let html = '';
+                            if (evidence.tipo === 'texto') {
+                                html += `<div class="p-2 bg-light rounded mb-2">${evidence.conteudo}</div>`;
+                            } else if (evidence.tipo === 'link') {
+                                html += `<a href="${evidence.conteudo}" target="_blank" class="d-block mb-2">${evidence.conteudo}</a>`;
+                            }
+
+                            if (evidence.descricao) {
+                                html += `<small class="text-muted">${evidence.descricao}</small>`;
+                            }
+
+                            return html;
+                        }
+
                         const tipoSolicitacao = response.tipo.toLowerCase();
                         const isInclusao = tipoSolicitacao === 'inclusão';
                         const isExclusao = tipoSolicitacao === 'exclusão';
@@ -321,14 +339,14 @@
 
                         if (isInclusao) {
                             htmlAtuais = `
-                        <tr>
-                            <th width="30%">Tipo</th>
-                            <td>Novo(a) ${nivelFormatado}</td>
-                        </tr>
-                        <tr>
-                            <th width="30%">Status</th>
-                            <td><span class="badge badge-info">Novo Registro</span></td>
-                        </tr>`;
+                <tr>
+                    <th width="30%">Tipo</th>
+                    <td>Novo(a) ${nivelFormatado}</td>
+                </tr>
+                <tr>
+                    <th width="30%">Status</th>
+                    <td><span class="badge badge-info">Novo Registro</span></td>
+                </tr>`;
                         } else {
                             // Ordem específica dos campos
                             const ordemCampos = [
@@ -351,10 +369,10 @@
                                 if (response.dados_atuais[campo] !== undefined) {
                                     const displayName = campo === 'equipe_real' ? 'Equipe' : formatFieldName(campo);
                                     htmlAtuais += `
-                                <tr>
-                                    <th width="30%">${displayName}</th>
-                                    <td>${formatFieldValue(response.dados_atuais[campo], campo)}</td>
-                                </tr>`;
+                        <tr>
+                            <th width="30%">${displayName}</th>
+                            <td>${formatFieldValue(response.dados_atuais[campo], campo)}</td>
+                        </tr>`;
                                 }
                             });
 
@@ -362,10 +380,10 @@
                             for (let key in response.dados_atuais) {
                                 if (!ordemCampos.includes(key) && key !== 'equipe') {
                                     htmlAtuais += `
-                                <tr>
-                                    <th width="30%">${formatFieldName(key)}</th>
-                                    <td>${formatFieldValue(response.dados_atuais[key], key)}</td>
-                                </tr>`;
+                        <tr>
+                            <th width="30%">${formatFieldName(key)}</th>
+                            <td>${formatFieldValue(response.dados_atuais[key], key)}</td>
+                        </tr>`;
                                 }
                             }
                         }
@@ -378,54 +396,99 @@
                         if (isInclusao) {
                             for (let key in response.dados_alterados) {
                                 htmlAlterados += `
-                            <tr>
-                                <th width="30%">${formatFieldName(key)}</th>
-                                <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key], key)}</strong></td>
-                            </tr>`;
+                    <tr>
+                        <th width="30%">${formatFieldName(key)}</th>
+                        <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key], key)}</strong></td>
+                    </tr>`;
                             }
                         } else if (isExclusao) {
                             htmlAlterados = `
-                        <tr>
-                            <th width="30%">Tipo</th>
-                            <td class="text-danger"><strong>Exclusão de ${nivelFormatado}</strong></td>
-                        </tr>
-                        <tr>
-                            <th width="30%">Status</th>
-                            <td><span class="badge badge-danger">Registro será removido</span></td>
-                        </tr>`;
+                <tr>
+                    <th width="30%">Tipo</th>
+                    <td class="text-danger"><strong>Exclusão de ${nivelFormatado}</strong></td>
+                </tr>
+                <tr>
+                    <th width="30%">Status</th>
+                    <td><span class="badge badge-danger">Registro será removido</span></td>
+                </tr>`;
                         } else {
                             for (let key in response.dados_alterados) {
+                                // Pular evidências - trataremos separadamente
+                                if (key === 'evidencias') continue;
+
                                 if (key === 'equipe' && typeof response.dados_alterados[key] === 'object') {
                                     htmlAlterados += `
-                                <tr>
-                                    <th width="30%">${formatFieldName(key)}</th>
-                                    <td>${formatFieldValue(response.dados_alterados[key], key)}</td>
-                                </tr>`;
+                        <tr>
+                            <th width="30%">${formatFieldName(key)}</th>
+                            <td>${formatFieldValue(response.dados_alterados[key], key)}</td>
+                        </tr>`;
                                 } else if (response.dados_alterados[key] && typeof response.dados_alterados[key] === 'object') {
                                     htmlAlterados += `
-                                <tr>
-                                    <th width="30%">${formatFieldName(key)}</th>
-                                    <td>
-                                        <div class="text-danger mb-1"><small>Atual:</small><br><s>${formatFieldValue(response.dados_alterados[key].de, key)}</s></div>
-                                        <div class="text-success"><small>Novo:</small><br><strong>${formatFieldValue(response.dados_alterados[key].para, key)}</strong></div>
-                                    </td>
-                                </tr>`;
+                        <tr>
+                            <th width="30%">${formatFieldName(key)}</th>
+                            <td>
+                                <div class="text-danger mb-1"><small>Atual:</small><br><s>${formatFieldValue(response.dados_alterados[key].de, key)}</s></div>
+                                <div class="text-success"><small>Novo:</small><br><strong>${formatFieldValue(response.dados_alterados[key].para, key)}</strong></div>
+                            </td>
+                        </tr>`;
                                 } else {
                                     htmlAlterados += `
-                                <tr>
-                                    <th width="30%">${formatFieldName(key)}</th>
-                                    <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key], key)}</strong></td>
-                                </tr>`;
+                        <tr>
+                            <th width="30%">${formatFieldName(key)}</th>
+                            <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key], key)}</strong></td>
+                        </tr>`;
+                                }
+                            }
+
+                            // Tratamento especial para evidências
+                            if (response.dados_alterados.evidencias) {
+                                const evidencias = response.dados_alterados.evidencias;
+
+                                // Evidências para adicionar
+                                if (evidencias.adicionar && evidencias.adicionar.length > 0) {
+                                    htmlAlterados += `
+                        <tr>
+                            <th width="30%">Evidências a Adicionar</th>
+                            <td>
+                                <div class="text-success">
+                                    ${evidencias.adicionar.map(ev => `
+                                        <div class="mb-3 p-2 border border-success rounded">
+                                            <strong>Tipo:</strong> ${ev.tipo}<br>
+                                            ${formatEvidence(ev)}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </td>
+                        </tr>`;
+                                }
+
+                                // Evidências para remover
+                                if (evidencias.remover && evidencias.remover.length > 0) {
+                                    htmlAlterados += `
+                        <tr>
+                            <th width="30%">Evidências a Remover</th>
+                            <td>
+                                <div class="text-danger">
+                                    ${evidencias.remover.map(ev => `
+                                        <div class="mb-3 p-2 border border-danger rounded">
+                                            <strong>ID:</strong> ${ev.id}<br>
+                                            <strong>Tipo:</strong> ${ev.tipo}<br>
+                                            ${formatEvidence(ev)}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </td>
+                        </tr>`;
                                 }
                             }
 
                             if (htmlAlterados === '') {
                                 htmlAlterados = `
-                            <tr>
-                                <td colspan="2" class="text-center text-muted">
-                                    Nenhuma alteração detectada nos campos
-                                </td>
-                            </tr>`;
+                    <tr>
+                        <td colspan="2" class="text-center text-muted">
+                            Nenhuma alteração detectada nos campos
+                        </td>
+                    </tr>`;
                             }
                         }
                         $('#tabelaDadosAlterados').html(htmlAlterados);

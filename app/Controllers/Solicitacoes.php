@@ -335,11 +335,47 @@ class Solicitacoes extends BaseController
         $dadosAlterados = json_decode($solicitacao['dados_alterados'], true) ?? [];
         $dadosAtualizar = $this->prepararDadosEdicao($dadosAlterados);
 
+        $this->solicitacoesModel->transStart();
+
+        // Processar alterações na equipe (se houver)
         if ($solicitacao['nivel'] === 'acao' && isset($dadosAlterados['equipe'])) {
             if (!$this->processarAlteracoesEquipe($idRegistro, $dadosAlterados['equipe'])) {
                 throw new \Exception('Falha ao processar alterações na equipe');
             }
             unset($dadosAtualizar['equipe']);
+        }
+
+        // Processar alterações nas evidências (se houver)
+        if ($solicitacao['nivel'] === 'acao' && isset($dadosAlterados['evidencias'])) {
+            $evidenciasModel = new \App\Models\EvidenciasModel();
+
+            // Adicionar novas evidências
+            if (!empty($dadosAlterados['evidencias']['adicionar'])) {
+                foreach ($dadosAlterados['evidencias']['adicionar'] as $evidencia) {
+                    $data = [
+                        'tipo' => $evidencia['tipo'],
+                        'evidencia' => $evidencia['conteudo'],
+                        'descricao' => $evidencia['descricao'] ?? null,
+                        'nivel' => 'acao',
+                        'id_nivel' => $idRegistro,
+                        'created_by' => auth()->id(),
+                        'created_at' => date('Y-m-d H:i:s')
+                    ];
+
+                    if (!$evidenciasModel->insert($data)) {
+                        throw new \Exception('Falha ao adicionar evidência: ' . implode(', ', $evidenciasModel->errors()));
+                    }
+                }
+            }
+
+            // Remover evidências solicitadas
+            if (!empty($dadosAlterados['evidencias']['remover'])) {
+                foreach ($dadosAlterados['evidencias']['remover'] as $evidencia) {
+                    if (!$evidenciasModel->delete($evidencia['id'])) {
+                        throw new \Exception('Falha ao remover evidência ID: ' . $evidencia['id']);
+                    }
+                }
+            }
         }
 
         if (!empty($dadosAtualizar) && !$model->update($idRegistro, $dadosAtualizar)) {
@@ -355,6 +391,7 @@ class Solicitacoes extends BaseController
             $this->getJustificativa($solicitacao)
         );
 
+        $this->solicitacoesModel->transComplete();
         return true;
     }
 

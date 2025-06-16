@@ -3,7 +3,7 @@
 
 <!-- Bootstrap -->
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap4.min.css" />
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script> -->
 
 <!-- DataTables -->
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
@@ -321,12 +321,6 @@
                 $('#formSolicitarEdicao button[type="submit"]').prop('disabled', true);
             }
         }
-
-        // Enviar solicitação de edição
-        $('#formSolicitarEdicao').submit(function(e) {
-            e.preventDefault();
-            submitForm($(this), '#solicitarEdicaoModal', 'Solicitação de edição enviada com sucesso!');
-        });
 
         // Solicitar exclusão de ação - Abrir modal (para não-admins)
         $(document).on('click', '.btn-danger[title="Solicitar Exclusão"]', function() {
