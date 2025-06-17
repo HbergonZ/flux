@@ -44,17 +44,6 @@
                                         <input type="text" class="form-control" id="solicitarEdicaoResponsavel" name="responsavel" maxlength="255">
                                     </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="solicitarEdicaoStatus"><i class="fas fa-tasks mr-1"></i>Status</label>
-                                        <select class="form-control" id="solicitarEdicaoStatus" name="status">
-                                            <option value="Não iniciado">Não iniciado</option>
-                                            <option value="Em andamento">Em andamento</option>
-                                            <option value="Paralisado">Paralisado</option>
-                                            <option value="Finalizado">Finalizado</option>
-                                        </select>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -68,22 +57,10 @@
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="solicitarEdicaoTempoEstimado"><i class="fas fa-clock mr-1"></i>Tempo Estimado (dias)</label>
-                                        <input type="number" class="form-control" id="solicitarEdicaoTempoEstimado" name="tempo_estimado_dias">
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="solicitarEdicaoEntregaEstimada"><i class="fas fa-calendar-check mr-1"></i>Entrega Estimada</label>
                                         <input type="date" class="form-control" id="solicitarEdicaoEntregaEstimada" name="entrega_estimada">
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="solicitarEdicaoOrdem"><i class="fas fa-sort-numeric-down mr-1"></i>Ordem</label>
-                                        <input type="number" class="form-control" id="solicitarEdicaoOrdem" name="ordem">
                                     </div>
                                 </div>
                             </div>
@@ -98,7 +75,7 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="solicitarEdicaoDataFim"><i class="fas fa-flag-checkered mr-1"></i>Data Fim Real</label>
-                                        <input type="date" class="form-control" id="solicitarEdicaoDataFim" name="data_fim">
+                                        <input type="date" class="form-control" id="solicitarEdicaoDataFim" name="data_fim" disabled>
                                     </div>
                                 </div>
                             </div>

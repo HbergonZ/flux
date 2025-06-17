@@ -260,20 +260,41 @@ class Acoes extends BaseController
             'nome' => 'required|min_length[3]|max_length[255]',
             'ordem' => 'required|integer',
             'responsavel' => 'permit_empty|max_length[255]',
-            'equipe' => 'permit_empty|max_length[255]',
-            'tempo_estimado_dias' => 'permit_empty|integer',
             'entrega_estimada' => 'permit_empty|valid_date',
             'data_inicio' => 'permit_empty|valid_date',
-            'data_fim' => 'permit_empty|valid_date',
+            'data_fim' => [
+                'permit_empty',
+                'valid_date',
+                function ($value, $data, &$error) {
+                    if (!empty($value) && empty($data['data_inicio'])) {
+                        $error = 'Não é possível definir data de fim sem data de início';
+                        return false;
+                    }
+                    return true;
+                }
+            ],
         ];
 
         if ($this->validate($rules)) {
             try {
                 $id = $this->request->getPost('id');
                 $acaoAntiga = $this->acoesModel->find($id);
+
                 if (!$acaoAntiga) {
                     $response['message'] = 'Ação não encontrada';
                     return $this->response->setJSON($response);
+                }
+
+                // Validação de evidências para data fim
+                if (!empty($this->request->getPost('data_fim'))) {
+                    $temEvidencias = $this->evidenciasModel->where('nivel', 'acao')
+                        ->where('id_nivel', $id)
+                        ->countAllResults() > 0;
+
+                    if (!$temEvidencias) {
+                        $response['message'] = 'Para definir uma data de fim, é necessário cadastrar pelo menos uma evidência.';
+                        return $this->response->setJSON($response);
+                    }
                 }
 
                 $data = [
@@ -282,21 +303,11 @@ class Acoes extends BaseController
                     'ordem' => $this->request->getPost('ordem'),
                     'responsavel' => $this->request->getPost('responsavel'),
                     'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias'),
-                    'entrega_estimada' => $this->request->getPost('entrega_estimada') ?: null,
-                    'data_inicio' => $this->request->getPost('data_inicio') ?: null,
-                    'data_fim' => $this->request->getPost('data_fim') ?: null
+                    'entrega_estimada' => $this->ajustarData($this->request->getPost('entrega_estimada')),
+                    'data_inicio' => $this->ajustarData($this->request->getPost('data_inicio')),
+                    'data_fim' => $this->ajustarData($this->request->getPost('data_fim')),
+                    'status' => $this->calcularStatusNovo($this->request->getPost()) // Nova função para calcular status
                 ];
-
-                if ($tipoOrigem === 'projeto') {
-                    $data['id_etapa'] = null;
-                    $data['id_projeto'] = $idOrigem;
-                } else {
-                    $data['id_etapa'] = $idOrigem;
-                }
-
-                // Calculate status automatically
-                $statusProjeto = $this->projetosModel->find($data['id_projeto'])['status'] ?? null;
-                $data['status'] = $this->acoesModel->calcularStatus($data, $statusProjeto);
 
                 $this->acoesModel->transStart();
                 $updated = $this->acoesModel->save($data);
@@ -311,21 +322,11 @@ class Acoes extends BaseController
                     throw new \Exception('Falha ao registrar log de edição');
                 }
 
-                if (!empty($data['data_fim'])) {
-                    $temEvidencias = $this->evidenciasModel->where('nivel', 'acao')
-                        ->where('id_nivel', $id)
-                        ->countAllResults() > 0;
-
-                    if (!$temEvidencias) {
-                        $response['message'] = 'Para definir uma data de fim, é necessário cadastrar pelo menos uma evidência.';
-                        return $this->response->setJSON($response);
-                    }
-                }
-
                 $this->acoesModel->transComplete();
 
                 $response['success'] = true;
                 $response['message'] = 'Ação atualizada com sucesso!';
+                $response['data'] = $acaoAtualizada; // Incluir dados atualizados na resposta
             } catch (\Exception $e) {
                 $this->acoesModel->transRollback();
                 $response['message'] = 'Erro ao atualizar ação: ' . $e->getMessage();
@@ -336,6 +337,27 @@ class Acoes extends BaseController
         }
 
         return $this->response->setJSON($response);
+    }
+
+    private function calcularStatusNovo($postData)
+    {
+        if (!empty($postData['data_fim'])) {
+            return 'Finalizado';
+        } elseif (!empty($postData['data_inicio'])) {
+            return 'Em andamento';
+        }
+        return $postData['status'] ?? 'Não iniciado';
+    }
+
+    private function ajustarData($dataString)
+    {
+        if (empty($dataString)) {
+            return null;
+        }
+
+        // Converte para objeto DateTime e formata corretamente
+        $date = new \DateTime($dataString);
+        return $date->format('Y-m-d');
     }
 
     public function excluir($idOrigem, $tipoOrigem = 'etapa')

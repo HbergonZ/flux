@@ -73,28 +73,28 @@
                     },
                     {
                         "data": "entrega_estimada",
-                        "className": "text-center",
+                        "className": "text-center align-middle",
                         "render": function(data) {
                             return data ? formatDate(data) : '';
                         }
                     },
                     {
                         "data": "data_inicio",
-                        "className": "text-center",
+                        "className": "text-center align-middle",
                         "render": function(data) {
                             return data ? formatDate(data) : '';
                         }
                     },
                     {
                         "data": "data_fim",
-                        "className": "text-center",
+                        "className": "text-center align-middle",
                         "render": function(data) {
                             return data ? formatDate(data) : '';
                         }
                     },
                     {
                         "data": "status",
-                        "className": "text-center",
+                        "className": "text-center align-middle",
                         "render": function(data) {
                             if (!data) data = 'Não iniciado';
                             const badgeClass = {
@@ -109,7 +109,7 @@
                     },
                     {
                         "data": null,
-                        "className": "text-center",
+                        "className": "text-center align-middle",
                         "orderable": false,
                         "render": function(data, type, row) {
                             const id = row.id + '-' + row.nome.toLowerCase().replace(/\s+/g, '-');
@@ -239,6 +239,15 @@
             loadAcaoData(acaoId, '#solicitarEdicaoModal', 'dados-acao');
         });
 
+        // Controlar habilitação do campo data fim baseado na data início
+        $('#editAcaoDataInicio').on('change', function() {
+            if ($(this).val()) {
+                $('#editAcaoDataFim').prop('disabled', false);
+            } else {
+                $('#editAcaoDataFim').val('').prop('disabled', true);
+            }
+        });
+
         // Função para carregar dados da ação
         function loadAcaoData(acaoId, modalId, endpoint) {
             $.ajax({
@@ -253,9 +262,6 @@
                         $(`#${prefix}Id`).val(acao.id);
                         $(`#${prefix}Nome`).val(acao.nome);
                         $(`#${prefix}Responsavel`).val(acao.responsavel);
-                        $(`#${prefix}Equipe`).val(acao.equipe);
-                        $(`#${prefix}Status`).val(acao.status || 'Não iniciado');
-                        $(`#${prefix}TempoEstimado`).val(acao.tempo_estimado_dias);
 
                         // Tratamento de datas
                         const setDateValue = (field, value) => {
@@ -270,6 +276,13 @@
                         setDateValue('EntregaEstimada', acao.entrega_estimada);
                         setDateValue('DataInicio', acao.data_inicio);
                         setDateValue('DataFim', acao.data_fim);
+
+                        // Habilitar data fim se data início estiver preenchida
+                        if (acao.data_inicio) {
+                            $('#editAcaoDataFim').prop('disabled', false);
+                        } else {
+                            $('#editAcaoDataFim').prop('disabled', true);
+                        }
 
                         $(`#${prefix}Ordem`).val(acao.ordem);
                         $(modalId).modal('show');
@@ -763,16 +776,6 @@
 
             submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...');
 
-            // Verificação adicional para formulário de exclusão
-            if (form.attr('id') === 'formDeleteAcao') {
-                const acaoId = form.find('input[name="id"]').val();
-                if (!acaoId) {
-                    showErrorAlert('ID da ação não especificado');
-                    submitBtn.prop('disabled', false).html(originalBtnText);
-                    return;
-                }
-            }
-
             $.ajax({
                 type: "POST",
                 url: form.attr('action'),
@@ -780,11 +783,21 @@
                 dataType: "json",
                 success: function(response) {
                     if (response.success) {
+                        // Exibir alerta de sucesso sempre que houver uma mensagem
+                        if (response.message) {
+                            showSuccessAlert(response.message);
+                        } else if (successMessage) {
+                            showSuccessAlert(successMessage);
+                        }
+
                         if (modalId) {
                             $(modalId).modal('hide');
                         }
 
-                        if (!modalId || (modalId !== '#solicitarEdicaoModal' && modalId !== '#solicitarExclusaoModal' && modalId !== '#solicitarInclusaoModal')) {
+                        // Recarregar apenas se não for uma solicitação
+                        if (!modalId || (modalId !== '#solicitarEdicaoModal' &&
+                                modalId !== '#solicitarExclusaoModal' &&
+                                modalId !== '#solicitarInclusaoModal')) {
                             setTimeout(() => location.reload(), 1500);
                         }
                     } else {
@@ -812,10 +825,15 @@
         // Função para formatar data
         function formatDate(dateString) {
             if (!dateString || !isValidDate(dateString)) return '';
+
+            // Ajuste para garantir que a data seja tratada corretamente
             const date = new Date(dateString);
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
+            // Ajuste para o fuso horário local
+            const adjustedDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+
+            const day = String(adjustedDate.getDate()).padStart(2, '0');
+            const month = String(adjustedDate.getMonth() + 1).padStart(2, '0');
+            const year = adjustedDate.getFullYear();
             return `${day}/${month}/${year}`;
         }
 
@@ -2020,6 +2038,23 @@
             evidenciasRemovidas = [];
             atualizarListaEvidenciasAdicionadas();
             atualizarContadoresEvidencias();
+        });
+
+        // Controlar habilitação do campo data fim baseado na data início
+        $('#solicitarEdicaoDataInicio').on('change', function() {
+            if ($(this).val()) {
+                $('#solicitarEdicaoDataFim').prop('disabled', false);
+            } else {
+                $('#solicitarEdicaoDataFim').val('').prop('disabled', true);
+            }
+        });
+
+        $('#solicitarInclusaoDataInicio').on('change', function() {
+            if ($(this).val()) {
+                $('#solicitarInclusaoDataFim').prop('disabled', false);
+            } else {
+                $('#solicitarInclusaoDataFim').val('').prop('disabled', true);
+            }
         });
     });
 </script>

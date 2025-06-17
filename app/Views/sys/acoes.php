@@ -170,23 +170,23 @@
                             <?php foreach ($acoes as $acao) :
                                 $id = $acao['id'] . '-' . str_replace(' ', '', strtolower($acao['nome'])); ?>
                                 <tr>
-                                    <td><?= $acao['ordem'] ?></td> <!-- Coluna oculta -->
-                                    <td class="text-wrap"><?= $acao['nome'] ?></td>
+                                    <td class="align-middle"><?= $acao['ordem'] ?></td> <!-- Coluna oculta -->
+                                    <td class="text-wrap align-middle"><?= $acao['nome'] ?></td>
                                     <?php if (!isset($acessoDireto) || !$acessoDireto): ?>
-                                        <td><?= $etapa['nome'] ?></td>
+                                        <td class="align-middle"><?= $etapa['nome'] ?></td>
                                     <?php endif; ?>
-                                    <td><?= $acao['responsavel'] ?? '' ?></td>
-                                    <td><!-- O conteúdo será preenchido via AJAX --></td>
-                                    <td class="text-center"><?= $acao['entrega_estimada'] ? date('d/m/Y', strtotime($acao['entrega_estimada'])) : '' ?></td>
-                                    <td class="text-center"><?= $acao['data_inicio'] ? date('d/m/Y', strtotime($acao['data_inicio'])) : '' ?></td>
-                                    <td class="text-center"><?= $acao['data_fim'] ? date('d/m/Y', strtotime($acao['data_fim'])) : '' ?></td>
-                                    <td class="text-center">
+                                    <td class="align-middle"><?= $acao['responsavel'] ?? '' ?></td>
+                                    <td class="align-middle"><!-- O conteúdo será preenchido via AJAX --></td>
+                                    <td class="text-center align-middle"><?= $acao['entrega_estimada'] ? date('d/m/Y', strtotime($acao['entrega_estimada'])) : '' ?></td>
+                                    <td class="text-center align-middle"><?= $acao['data_inicio'] ? date('d/m/Y', strtotime($acao['data_inicio'])) : '' ?></td>
+                                    <td class="text-center align-middle"><?= $acao['data_fim'] ? date('d/m/Y', strtotime($acao['data_fim'])) : '' ?></td>
+                                    <td class="text-center align-middle">
                                         <span class="badge badge-<?=
                                                                     $acao['status'] == 'Finalizado' ? 'success' : ($acao['status'] == 'Em andamento' ? 'primary' : ($acao['status'] == 'Paralisado' ? 'danger' : 'secondary')) ?>">
                                             <?= $acao['status'] ?? 'Não iniciado' ?>
                                         </span>
                                     </td>
-                                    <td class="text-center">
+                                    <td class="text-center align-middle">
                                         <div class="d-inline-flex">
                                             <?php if (auth()->user()->inGroup('admin')): ?>
                                                 <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Editar">

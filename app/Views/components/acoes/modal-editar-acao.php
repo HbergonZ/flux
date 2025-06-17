@@ -45,30 +45,10 @@
                                 <input type="text" class="form-control" id="editAcaoResponsavel" name="responsavel" maxlength="255">
                             </div>
                         </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="editAcaoTempoEstimado">Tempo Estimado (dias)</label>
-                                <input type="number" class="form-control" id="editAcaoTempoEstimado" name="tempo_estimado_dias" min="0">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <div class="form-group">
                                 <label for="editAcaoEntregaEstimada">Entrega Estimada</label>
                                 <input type="date" class="form-control" id="editAcaoEntregaEstimada" name="entrega_estimada">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="editAcaoStatus">Status</label>
-                                <select class="form-control" id="editAcaoStatus" name="status">
-                                    <option value="Não iniciado">Não iniciado</option>
-                                    <option value="Em andamento">Em andamento</option>
-                                    <option value="Paralisado">Paralisado</option>
-                                    <option value="Finalizado">Finalizado</option>
-                                </select>
                             </div>
                         </div>
                     </div>
@@ -83,16 +63,13 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="editAcaoDataFim">Data Fim Real</label>
-                                <input type="date" class="form-control" id="editAcaoDataFim" name="data_fim">
+                                <input type="date" class="form-control" id="editAcaoDataFim" name="data_fim" disabled>
                             </div>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="editAcaoOrdem">Ordem</label>
-                        <input type="number" class="form-control" id="editAcaoOrdem" name="ordem" min="1" readonly>
-                    </div>
-
+                    <input type="hidden" class="form-control" id="editAcaoOrdem" name="ordem" min="1" readonly>
+                    <input type="hidden" id="editAcaoStatus" name="status" value="">
                 </div>
 
                 <div class="modal-footer">

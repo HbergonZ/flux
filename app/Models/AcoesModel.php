@@ -28,12 +28,12 @@ class AcoesModel extends Model
     protected $createdField = 'created_at';
     protected $updatedField = 'updated_at';
     protected $returnType = 'array';
+    protected $beforeUpdate = ['calcularStatusAntesDeAtualizar'];
 
     // Validações
     protected $validationRules = [
         'nome' => 'required|min_length[3]|max_length[255]',
         'id_projeto' => 'required|numeric',
-        'status' => 'permit_empty|in_list[Não iniciado,Em andamento,Concluído,Cancelado]',
         'ordem' => 'permit_empty|numeric'
     ];
 
@@ -80,17 +80,20 @@ class AcoesModel extends Model
             return 'Paralisado';
         }
 
-        // Lógica original de status
-        if (empty($acao['data_inicio']) && empty($acao['data_fim'])) {
-            return 'Não iniciado';
-        }
-        if (!empty($acao['data_inicio']) && empty($acao['data_fim'])) {
-            return 'Em andamento';
-        }
-        if (!empty($acao['data_inicio']) && !empty($acao['data_fim'])) {
+        // Se tem data_fim, status é Finalizado (desde que tenha data_inicio)
+        if (!empty($acao['data_fim'])) {
+            if (empty($acao['data_inicio'])) {
+                throw new \RuntimeException('Não é possível definir data de fim sem data de início');
+            }
             return 'Finalizado';
         }
 
+        // Se tem data_inicio, status é Em andamento
+        if (!empty($acao['data_inicio'])) {
+            return 'Em andamento';
+        }
+
+        // Caso contrário, Não iniciado
         return 'Não iniciado';
     }
 
@@ -287,5 +290,21 @@ class AcoesModel extends Model
         }
 
         return true;
+    }
+
+    protected function calcularStatusAntesDeAtualizar(array $data)
+    {
+        if (isset($data['data']['data_fim']) && !empty($data['data']['data_fim'])) {
+            if (empty($data['data']['data_inicio'])) {
+                throw new \RuntimeException('Não é possível definir data de fim sem data de início');
+            }
+            $data['data']['status'] = 'Finalizado';
+        } elseif (isset($data['data']['data_inicio']) && !empty($data['data']['data_inicio'])) {
+            $data['data']['status'] = 'Em andamento';
+        } elseif (!isset($data['data']['status'])) {
+            $data['data']['status'] = 'Não iniciado';
+        }
+
+        return $data;
     }
 }

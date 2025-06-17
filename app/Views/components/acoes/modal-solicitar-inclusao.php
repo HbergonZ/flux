@@ -28,13 +28,7 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="solicitarInclusaoTempoEstimado">Tempo Estimado (dias)</label>
-                                <input type="number" class="form-control" id="solicitarInclusaoTempoEstimado" name="tempo_estimado_dias">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <div class="form-group">
                                 <label for="solicitarInclusaoEntregaEstimada">Entrega Estimada</label>
                                 <input type="date" class="form-control" id="solicitarInclusaoEntregaEstimada" name="entrega_estimada">
@@ -52,19 +46,9 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="solicitarInclusaoDataFim">Data Fim Real</label>
-                                <input type="date" class="form-control" id="solicitarInclusaoDataFim" name="data_fim">
+                                <input type="date" class="form-control" id="solicitarInclusaoDataFim" name="data_fim" disabled>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="solicitarInclusaoStatus">Status</label>
-                        <select class="form-control" id="solicitarInclusaoStatus" name="status">
-                            <option value="Não iniciado">Não iniciado</option>
-                            <option value="Em andamento">Em andamento</option>
-                            <option value="Paralisado">Paralisado</option>
-                            <option value="Finalizado">Finalizado</option>
-                        </select>
                     </div>
 
                     <div class="form-group">
