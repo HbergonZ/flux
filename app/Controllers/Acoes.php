@@ -411,6 +411,7 @@ class Acoes extends BaseController
         $filters = $this->request->getPost();
 
         $builder = $this->acoesModel;
+        $builder->select('acoes.*'); // Especifica explicitamente quais colunas selecionar
 
         if ($tipoOrigem === 'etapa') {
             $builder->where('id_etapa', $idOrigem);
@@ -419,34 +420,40 @@ class Acoes extends BaseController
                 ->where('id_etapa IS NULL');
         }
 
+        // Aplicar filtros
         if (!empty($filters['nome'])) {
-            $builder->like('nome', $filters['nome']);
+            $builder->like('acoes.nome', $filters['nome']);
         }
 
         if (!empty($filters['responsavel'])) {
-            $builder->like('responsavel', $filters['responsavel']);
+            $builder->like('acoes.responsavel', $filters['responsavel']);
         }
 
         if (!empty($filters['equipe'])) {
-            $builder->like('equipe', $filters['equipe']);
+            $builder->join('acoes_equipe', 'acoes_equipe.acao_id = acoes.id', 'left')
+                ->join('users', 'users.id = acoes_equipe.usuario_id', 'left')
+                ->groupStart()
+                ->like('users.username', $filters['equipe'])
+                ->groupEnd()
+                ->groupBy('acoes.id'); // Agrupa apenas pela PK da ação
         }
 
         if (!empty($filters['status'])) {
-            $builder->where('status', $filters['status']);
+            $builder->where('acoes.status', $filters['status']);
         }
 
         if (!empty($filters['data_filtro'])) {
             $dataFiltro = $filters['data_filtro'];
             $builder->groupStart()
-                ->where('data_inicio <=', $dataFiltro)
+                ->where('acoes.data_inicio <=', $dataFiltro)
                 ->groupStart()
-                ->where('data_fim >=', $dataFiltro)
-                ->orWhere('data_fim IS NULL')
+                ->where('acoes.data_fim >=', $dataFiltro)
+                ->orWhere('acoes.data_fim IS NULL')
                 ->groupEnd()
                 ->groupEnd();
         }
 
-        $acoes = $builder->orderBy('ordem', 'ASC')->findAll();
+        $acoes = $builder->orderBy('acoes.ordem', 'ASC')->findAll();
 
         return $this->response->setJSON(['success' => true, 'data' => $acoes]);
     }

@@ -427,11 +427,8 @@
 
         // Função para aplicar filtros
         function applyFilters() {
-            const hasFilters = $('#formFiltros').find('input, select').toArray().some(el => {
-                const $el = $(el);
-                return ($el.val() !== '' && $el.val() !== null) ||
-                    ($el.is('select') && $el.val() !== '');
-            });
+            const formData = $('#formFiltros').serializeArray();
+            const hasFilters = formData.some(item => item.value !== '' && item.name !== 'csrf_test_name');
 
             if (!hasFilters) {
                 location.reload();
@@ -440,7 +437,7 @@
 
             $.ajax({
                 type: "POST",
-                url: `<?= site_url("acoes/filtrar/$idOrigem/$tipoOrigem") ?>`,
+                url: `<?= site_url("acoes/filtrar/{$idOrigem}/{$tipoOrigem}") ?>`,
                 data: $('#formFiltros').serialize(),
                 dataType: "json",
                 beforeSend: function() {
@@ -450,11 +447,14 @@
                     if (response.success) {
                         updateTableWithFilteredData(response.data);
                     } else {
-                        showErrorAlert('Erro ao filtrar ações: ' + response.message);
+                        showErrorAlert(response.message || 'Erro ao filtrar ações');
+                        console.error('Erro detalhado:', response);
                     }
                 },
-                error: function(xhr) {
-                    showErrorAlert('Erro na requisição.');
+                error: function(xhr, status, error) {
+                    console.error('Erro completo:', xhr.responseText);
+                    showErrorAlert('Erro ao filtrar ações. Detalhes no console.');
+                    $('#dataTable').css('opacity', '1');
                 },
                 complete: function() {
                     $('#dataTable').css('opacity', '1');
@@ -473,15 +473,30 @@
             $('#dataTable tbody').empty();
 
             if (acoes.length === 0) {
-                const colCount = acessoDireto ? 9 : 10; // Ajustado para coluna oculta
+                const colCount = acessoDireto ? 9 : 10;
                 $('#dataTable tbody').append(`
-                            <tr>
-                                <td colspan="${colCount}" class="text-center">Nenhuma ação encontrada com os filtros aplicados</td>
-                            </tr>
-                        `);
+            <tr>
+                <td colspan="${colCount}" class="text-center">Nenhuma ação encontrada com os filtros aplicados</td>
+            </tr>
+        `);
             } else {
                 // Reconstruir a tabela com os dados filtrados
                 dataTable = initializeDataTable();
+
+                // Atualizar os dados da tabela
+                dataTable.clear();
+                dataTable.rows.add(acoes.map(acao => ({
+                    id: acao.id,
+                    nome: acao.nome,
+                    etapa: !acessoDireto ? (etapaNome || '') : '',
+                    responsavel: acao.responsavel || '',
+                    equipe: acao.equipe || '', // Isso será atualizado via AJAX depois
+                    entrega_estimada: acao.entrega_estimada || null,
+                    data_inicio: acao.data_inicio || null,
+                    data_fim: acao.data_fim || null,
+                    status: acao.status || 'Não iniciado',
+                    ordem: acao.ordem || 0
+                }))).draw();
             }
         }
 
