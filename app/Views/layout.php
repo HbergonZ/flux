@@ -156,7 +156,32 @@
                             </div>
                         </li>
 
+                        <!-- Nav Item - Alerts -->
+                        <li class="nav-item dropdown no-arrow mx-1">
+                            <a class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-bell fa-fw"></i>
+                                <!-- Counter - Alerts -->
+                                <span class="badge badge-danger badge-counter" id="contadorAcoesAtrasadas">0</span>
+                            </a>
+                            <!-- Dropdown - Alerts -->
+                            <div class="dropdown-list dropdown-menu dropdown-menu-right shadow animated--grow-in"
+                                aria-labelledby="alertsDropdown">
+                                <h6 class="dropdown-header">
+                                    Ações Atrasadas
+                                </h6>
+                                <div id="listaAcoesAtrasadas">
+                                    <!-- Conteúdo será carregado via AJAX -->
+                                    <div class="text-center py-3">
+                                        <i class="fas fa-spinner fa-spin"></i> Carregando...
+                                    </div>
+                                </div>
+                                <a class="dropdown-item text-center small text-gray-500" href="<?= site_url('/planos') ?>">Ver todas as ações</a>
+                            </div>
+                        </li>
+
                         <div class="topbar-divider d-none d-sm-block"></div>
+
 
                         <!-- Nav Item - User Information -->
                         <li class="nav-item dropdown no-arrow">
@@ -251,6 +276,70 @@
     <!-- Page level plugins -->
     <script src=<?php echo base_url("template/vendor/datatables/jquery.dataTables.min.js"); ?>></script>
     <script src=<?php echo base_url("template/vendor/datatables/dataTables.bootstrap4.min.js"); ?>></script>
+
+    <script>
+        $(document).ready(function() {
+            // Carregar ações atrasadas
+            function carregarAcoesAtrasadas() {
+                $.ajax({
+                    url: '<?= site_url('acoes/acoes-atrasadas-usuario') ?>',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            const lista = $('#listaAcoesAtrasadas');
+                            const contador = $('#contadorAcoesAtrasadas');
+
+                            // Atualizar contador
+                            contador.text(response.data.length);
+                            contador.toggleClass('d-none', response.data.length === 0);
+
+                            // Atualizar lista
+                            if (response.data.length > 0) {
+                                let html = '';
+                                response.data.forEach(acao => {
+                                    const diasAtraso = acao.dias_atraso;
+                                    const dataFormatada = new Date(acao.entrega_estimada).toLocaleDateString('pt-BR');
+
+                                    html += `
+                                    <a class="dropdown-item d-flex align-items-center" href="<?= site_url('acoes') ?>/${acao.id}">
+                                        <div class="mr-3">
+                                            <div class="icon-circle bg-danger">
+                                                <i class="fas fa-exclamation-triangle text-white"></i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="small text-gray-500">
+                                                <span class="font-weight-bold">Projeto:</span> ${acao.projeto_nome}
+                                            </div>
+                                            <span class="font-weight-bold">${acao.nome}</span>
+                                            <div class="small">
+                                                <span class="text-danger">Data máxima: ${dataFormatada}</span> |
+                                                Atraso: ${diasAtraso} ${diasAtraso > 1 ? 'dias' : 'dia'}
+                                            </div>
+                                        </div>
+                                    </a>`;
+                                });
+
+                                lista.html(html);
+                            } else {
+                                lista.html('<div class="text-center py-3 text-muted">Nenhuma ação atrasada</div>');
+                            }
+                        }
+                    },
+                    error: function() {
+                        $('#listaAcoesAtrasadas').html('<div class="text-center py-3 text-danger">Erro ao carregar notificações</div>');
+                    }
+                });
+            }
+
+            // Carregar inicialmente
+            carregarAcoesAtrasadas();
+
+            // Atualizar a cada 5 minutos (300000 ms)
+            setInterval(carregarAcoesAtrasadas, 300000);
+        });
+    </script>
 
 
 </body>

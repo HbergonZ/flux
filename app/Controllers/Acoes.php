@@ -1274,4 +1274,41 @@ class Acoes extends BaseController
             ]);
         }
     }
+    public function getAcoesAtrasadasUsuario()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $userId = auth()->id();
+
+        try {
+            $db = db_connect();
+
+            $builder = $db->table('acoes as a')
+                ->select('a.id, a.nome, a.entrega_estimada,
+                     DATEDIFF(CURDATE(), a.entrega_estimada) as dias_atraso,
+                     p.nome as projeto_nome')
+                ->join('acoes_equipe as ae', 'ae.acao_id = a.id')
+                ->join('projetos as p', 'p.id = a.id_projeto')
+                ->where('ae.usuario_id', $userId)
+                ->where('a.status', 'Atrasado')
+                ->where('a.data_fim IS NULL') // Ainda não foi finalizada
+                ->orderBy('a.entrega_estimada', 'ASC')
+                ->get();
+
+            $acoesAtrasadas = $builder->getResultArray();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $acoesAtrasadas
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Erro ao buscar ações atrasadas: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Erro ao buscar ações atrasadas'
+            ]);
+        }
+    }
 }

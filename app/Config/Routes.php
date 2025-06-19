@@ -72,6 +72,7 @@ $routes->group('', function ($routes) {
     $routes->get('acoes/listar-evidencias/(:num)', 'Acoes::listarEvidencias/$1');
     $routes->post('acoes/filtrar/(:num)/(:segment)', 'Acoes::filtrar/$1/$2');
     $routes->get('acoes/get-acoes/(:num)/(:segment)', 'Acoes::getAcoes/$1/$2');
+    $routes->get('acoes/acoes-atrasadas-usuario', 'Acoes::getAcoesAtrasadasUsuario');
 });
 
 // Rotas administrativas
