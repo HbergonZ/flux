@@ -48,7 +48,7 @@
                         "sSortDescending": ": Ordenar colunas de forma descendente"
                     }
                 },
-                searching: true,
+                searching: false,
                 responsive: true,
                 autoWidth: false,
                 lengthMenu: [5, 10, 25, 50, 100],
@@ -368,11 +368,27 @@
         // Excluir ação - Abrir modal de confirmação (apenas admin)
         $(document).on('click', '.btn-danger[title="Excluir"]', function() {
             var acaoId = $(this).data('id').split('-')[0];
-            var acaoName = $(this).closest('tr').find('td:nth-child(2)').text();
 
-            $('#deleteAcaoId').val(acaoId);
-            $('#acaoNameToDelete').text(acaoName);
-            $('#deleteAcaoModal').modal('show');
+            $.ajax({
+                url: `<?= site_url('acoes/dados-acao/') ?>${acaoId}`,
+                type: 'GET',
+                dataType: 'json',
+                beforeSend: function() {
+                    // Mostrar loading se necessário
+                },
+                success: function(response) {
+                    if (response.success && response.data) {
+                        $('#deleteAcaoId').val(acaoId);
+                        $('#acaoNameToDelete').text(response.data.nome);
+                        $('#deleteAcaoModal').modal('show');
+                    } else {
+                        showErrorAlert(response.message || "Erro ao carregar ação");
+                    }
+                },
+                error: function() {
+                    showErrorAlert("Falha na comunicação com o servidor.");
+                }
+            });
         });
 
         // Função para carregar dados para solicitação
@@ -1076,10 +1092,9 @@
         $('body').on('submit', '#formAdicionarEvidencia', function(e) {
             e.preventDefault();
             const form = $(this);
-            const acaoId = form.find('input[name="acao_id"]').val();
             const submitBtn = form.find('button[type="submit"]');
             const originalBtnText = submitBtn.html();
-            const tipoSelecionado = form.find('input[name="tipo"]:checked').val(); // Captura o tipo selecionado
+            const acaoId = form.find('input[name="acao_id"]').val();
 
             submitBtn.prop('disabled', true)
                 .html('<span class="spinner-border spinner-border-sm" role="status"></span> Enviando...');
@@ -1091,26 +1106,15 @@
                 dataType: "json",
                 success: function(response) {
                     if (response.success) {
-                        // Reset mais inteligente que mantém o tipo selecionado
+                        // Reset do formulário mantendo o tipo selecionado
+                        const tipoSelecionado = form.find('input[name="tipo"]:checked').val();
                         form.trigger('reset');
                         form.find(`input[name="tipo"][value="${tipoSelecionado}"]`).prop('checked', true);
 
-                        // Atualiza a visibilidade dos campos baseado no tipo selecionado
-                        if (tipoSelecionado === 'link') {
-                            $('#grupoTexto').addClass('d-none');
-                            $('#evidenciaTexto').prop('required', false);
-                            $('#grupoLink').removeClass('d-none');
-                            $('#evidenciaLink').prop('required', true);
-                        } else {
-                            $('#grupoTexto').removeClass('d-none');
-                            $('#evidenciaTexto').prop('required', true);
-                            $('#grupoLink').addClass('d-none');
-                            $('#evidenciaLink').prop('required', false);
-                        }
+                        // Atualizar a lista de evidências
+                        adicionarEvidenciaNaLista(response.evidencia);
 
-                        // Atualiza a lista diretamente com a resposta
-                        adicionarEvidenciaNaLista(response.evidencia, response.totalEvidencias);
-
+                        // Mostrar mensagem de sucesso
                         Swal.fire({
                             icon: 'success',
                             title: 'Sucesso!',
@@ -1141,7 +1145,7 @@
             });
         });
 
-        function adicionarEvidenciaNaLista(evidencia, totalEvidencias) {
+        function adicionarEvidenciaNaLista(evidencia) {
             const lista = $('#listaEvidencias .list-group');
 
             // Se não houver list-group (lista vazia), cria a estrutura
@@ -1201,6 +1205,7 @@
             // Atualiza o contador
             atualizarContadorEvidencias();
         }
+
 
         function setupEvidenciasModal(acaoId) {
             $('#evidenciasAcaoModal').on('hidden.bs.modal', function() {

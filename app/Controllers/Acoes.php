@@ -1091,7 +1091,6 @@ class Acoes extends BaseController
             'descricao' => 'permit_empty'
         ];
 
-        // Adiciona regras condicionais baseadas no tipo
         if ($tipo === 'texto') {
             $rules['evidencia_texto'] = 'required|min_length[3]';
         } else {
@@ -1115,20 +1114,11 @@ class Acoes extends BaseController
                 $insertId = $this->evidenciasModel->insert($data);
                 $novaEvidencia = $this->evidenciasModel->find($insertId);
 
-                // Obter todas as evidências atualizadas
-                $evidencias = $this->evidenciasModel->where('nivel', 'acao')
-                    ->where('id_nivel', $acaoId)
-                    ->orderBy('created_at', 'DESC')
-                    ->findAll();
-
+                // Retornar a evidência criada para atualização em tempo real
                 return $this->response->setJSON([
                     'success' => true,
                     'message' => 'Evidência adicionada com sucesso!',
-                    'html' => view('components/acoes/conteudo-evidencias', [
-                        'acao' => $this->acoesModel->find($acaoId),
-                        'evidencias' => $evidencias,
-                        'totalEvidencias' => count($evidencias)
-                    ])
+                    'evidencia' => $novaEvidencia
                 ]);
             } catch (\Exception $e) {
                 log_message('error', 'Erro ao adicionar evidência: ' . $e->getMessage());
