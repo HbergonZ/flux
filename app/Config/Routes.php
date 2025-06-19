@@ -71,6 +71,7 @@ $routes->group('', function ($routes) {
     $routes->get('acoes/buscar-usuarios', 'Acoes::buscarUsuarios');
     $routes->get('acoes/listar-evidencias/(:num)', 'Acoes::listarEvidencias/$1');
     $routes->post('acoes/filtrar/(:num)/(:segment)', 'Acoes::filtrar/$1/$2');
+    $routes->get('acoes/get-acoes/(:num)/(:segment)', 'Acoes::getAcoes/$1/$2');
 });
 
 // Rotas administrativas
@@ -110,6 +111,7 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
     $routes->post('acoes/adicionar-evidencia/(:num)', 'Acoes::adicionarEvidencia/$1');
     $routes->post('acoes/remover-evidencia/(:num)', 'Acoes::removerEvidencia/$1');
     $routes->get('acoes/gerenciar-evidencias/(:num)', 'Acoes::gerenciarEvidencias/$1');
+    $routes->get('acoes/carregar-para-ordenacao/(:num)/(:segment)', 'Acoes::carregarAcoesParaOrdenacao/$1/$2');
 
     // Solicitações
     $routes->get('solicitacoes', 'Solicitacoes::index');

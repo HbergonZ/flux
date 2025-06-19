@@ -70,68 +70,38 @@ class Acoes extends BaseController
         }
     }
 
+    // No controller Acoes.php
     public function index($idOrigem = null, $tipoOrigem = 'etapa')
     {
         if (empty($idOrigem)) {
             return redirect()->back();
         }
 
+        // Apenas carrega informações básicas para o template
         $data = [];
-        $etapa = null;
 
         if ($tipoOrigem === 'etapa') {
             $etapa = $this->etapasModel->find($idOrigem);
-            if (!$etapa) {
-                return redirect()->back();
-            }
+            if (!$etapa) return redirect()->back();
 
             $projeto = $this->projetosModel->find($etapa['id_projeto']);
-            if (!$projeto) {
-                return redirect()->back();
-            }
-
             $plano = $this->planosModel->find($projeto['id_plano']);
-            if (!$plano) {
-                return redirect()->back();
-            }
-
-            $acoes = $this->acoesModel->where('id_etapa', $idOrigem)
-                ->orderBy('ordem', 'ASC')
-                ->findAll();
 
             $data = [
                 'etapa' => $etapa,
                 'projeto' => $projeto,
                 'plano' => $plano,
-                'acoes' => $acoes,
                 'idOrigem' => $idOrigem,
                 'tipoOrigem' => 'etapa',
                 'acessoDireto' => false
             ];
         } else {
             $projeto = $this->projetosModel->find($idOrigem);
-            if (!$projeto) {
-                return redirect()->back();
-            }
-
             $plano = $this->planosModel->find($projeto['id_plano']);
-            if (!$plano) {
-                return redirect()->back();
-            }
-
-            $acoes = $this->acoesModel->where('id_projeto', $idOrigem)
-                ->orderBy('ordem', 'ASC')
-                ->findAll();
-
-            $etapas = $this->etapasModel->where('id_projeto', $idOrigem)
-                ->findAll();
 
             $data = [
-                'etapa' => null,
                 'projeto' => $projeto,
                 'plano' => $plano,
-                'acoes' => $acoes,
-                'etapas' => $etapas,
                 'idOrigem' => $idOrigem,
                 'tipoOrigem' => 'projeto',
                 'acessoDireto' => true
@@ -140,6 +110,30 @@ class Acoes extends BaseController
 
         $this->content_data['content'] = view('sys/acoes', $data);
         return view('layout', $this->content_data);
+    }
+
+    // Novo endpoint para carregar dados via AJAX
+    public function getAcoes($idOrigem, $tipoOrigem)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(403);
+        }
+
+        $builder = $this->acoesModel;
+
+        if ($tipoOrigem === 'etapa') {
+            $builder->where('id_etapa', $idOrigem);
+        } else {
+            $builder->where('id_projeto', $idOrigem)
+                ->where('id_etapa IS NULL');
+        }
+
+        $acoes = $builder->orderBy('ordem', 'ASC')->findAll();
+
+        return $this->response->setJSON([
+            'success' => true,
+            'data' => $acoes
+        ]);
     }
 
     public function cadastrar($idOrigem, $tipoOrigem = 'etapa')
@@ -306,7 +300,7 @@ class Acoes extends BaseController
                     'entrega_estimada' => $this->ajustarData($this->request->getPost('entrega_estimada')),
                     'data_inicio' => $this->ajustarData($this->request->getPost('data_inicio')),
                     'data_fim' => $this->ajustarData($this->request->getPost('data_fim')),
-                    'status' => $this->calcularStatusNovo($this->request->getPost()) // Nova função para calcular status
+                    'status' => $this->calcularStatusNovo($this->request->getPost())
                 ];
 
                 $this->acoesModel->transStart();
@@ -341,11 +335,29 @@ class Acoes extends BaseController
 
     private function calcularStatusNovo($postData)
     {
+        // 1. Se tem data_fim, status é Finalizado
         if (!empty($postData['data_fim'])) {
+            if (empty($postData['data_inicio'])) {
+                throw new \RuntimeException('Não é possível definir data de fim sem data de início');
+            }
             return 'Finalizado';
-        } elseif (!empty($postData['data_inicio'])) {
+        }
+
+        // 2. Verifica se está atrasado
+        if (
+            !empty($postData['entrega_estimada']) &&
+            empty($postData['data_fim']) &&
+            strtotime($postData['entrega_estimada']) < strtotime(date('Y-m-d'))
+        ) {
+            return 'Atrasado';
+        }
+
+        // 3. Se tem data_inicio, status é Em andamento
+        if (!empty($postData['data_inicio'])) {
             return 'Em andamento';
         }
+
+        // 4. Caso contrário, mantém o status atual ou define como Não iniciado
         return $postData['status'] ?? 'Não iniciado';
     }
 
@@ -1209,6 +1221,66 @@ class Acoes extends BaseController
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Erro ao listar evidências'
+            ]);
+        }
+    }
+    public function carregarAcoesParaOrdenacao($idOrigem, $tipoOrigem)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $builder = $this->acoesModel;
+
+            if ($tipoOrigem === 'etapa') {
+                $builder->where('id_etapa', $idOrigem);
+            } else {
+                $builder->where('id_projeto', $idOrigem)
+                    ->where('id_etapa IS NULL');
+            }
+
+            $acoes = $builder->orderBy('ordem', 'ASC')->findAll();
+
+            if (empty($acoes)) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'html' => '<tr><td colspan="3" class="text-center">Nenhuma ação encontrada</td></tr>'
+                ]);
+            }
+
+            $html = '';
+            foreach ($acoes as $acao) {
+                $html .= '
+            <tr data-id="' . $acao['id'] . '">
+                <td>' . esc($acao['nome']) . '</td>
+                <td class="text-center">' . $acao['ordem'] . '</td>
+                <td>
+                    <select name="ordem[' . $acao['id'] . ']"
+                        class="form-control form-control-sm ordem-select"
+                        data-original="' . $acao['ordem'] . '">';
+
+                for ($i = 1; $i <= count($acoes); $i++) {
+                    $selected = $i == $acao['ordem'] ? 'selected' : '';
+                    $html .= '<option value="' . $i . '" ' . $selected . '>' . $i . '</option>';
+                }
+
+                $html .= '
+                    </select>
+                </td>
+            </tr>';
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'html' => $html
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Erro ao carregar ações para ordenação: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Erro ao carregar ações para ordenação',
+                'html' => '<tr><td colspan="3" class="text-center text-danger">Erro ao carregar ações</td></tr>'
             ]);
         }
     }

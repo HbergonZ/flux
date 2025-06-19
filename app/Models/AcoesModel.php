@@ -75,12 +75,12 @@ class AcoesModel extends Model
 
     public function calcularStatus(array $acao, ?string $statusProjeto = null): string
     {
-        // Força Paralisado se o projeto estiver Paralisado
+        // 1. Força Paralisado se o projeto estiver Paralisado
         if ($statusProjeto === 'Paralisado' && ($acao['status'] ?? null) !== 'Finalizado') {
             return 'Paralisado';
         }
 
-        // Se tem data_fim, status é Finalizado (desde que tenha data_inicio)
+        // 2. Se tem data_fim, status é Finalizado (desde que tenha data_inicio)
         if (!empty($acao['data_fim'])) {
             if (empty($acao['data_inicio'])) {
                 throw new \RuntimeException('Não é possível definir data de fim sem data de início');
@@ -88,12 +88,21 @@ class AcoesModel extends Model
             return 'Finalizado';
         }
 
-        // Se tem data_inicio, status é Em andamento
+        // 3. Verifica se está atrasado (data atual > entrega estimada)
+        if (
+            !empty($acao['entrega_estimada']) &&
+            empty($acao['data_fim']) &&
+            strtotime($acao['entrega_estimada']) < strtotime(date('Y-m-d'))
+        ) {
+            return 'Atrasado';
+        }
+
+        // 4. Se tem data_inicio, status é Em andamento
         if (!empty($acao['data_inicio'])) {
             return 'Em andamento';
         }
 
-        // Caso contrário, Não iniciado
+        // 5. Caso contrário, Não iniciado
         return 'Não iniciado';
     }
 

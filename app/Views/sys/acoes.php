@@ -82,6 +82,7 @@
                                 <option value="Em andamento">Em andamento</option>
                                 <option value="Paralisado">Paralisado</option>
                                 <option value="Finalizado">Finalizado</option>
+                                <option value="Atrasado">Atrasado</option>
                             </select>
                         </div>
                     </div>
@@ -151,7 +152,7 @@
                 <table class="table table-bordered align-middle" id="dataTable" cellspacing="0">
                     <thead>
                         <tr class="text-center">
-                            <th>Ordem</th> <!-- Coluna oculta -->
+                            <th>Ordem</th>
                             <th>Nome</th>
                             <?php if (!isset($acessoDireto) || !$acessoDireto): ?>
                                 <th>Etapa</th>
@@ -166,52 +167,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if (isset($acoes) && !empty($acoes)) : ?>
-                            <?php foreach ($acoes as $acao) :
-                                $id = $acao['id'] . '-' . str_replace(' ', '', strtolower($acao['nome'])); ?>
-                                <tr>
-                                    <td class="align-middle"><?= $acao['ordem'] ?></td> <!-- Coluna oculta -->
-                                    <td class="text-wrap align-middle"><?= $acao['nome'] ?></td>
-                                    <?php if (!isset($acessoDireto) || !$acessoDireto): ?>
-                                        <td class="align-middle"><?= $etapa['nome'] ?></td>
-                                    <?php endif; ?>
-                                    <td class="align-middle"><?= $acao['responsavel'] ?? '' ?></td>
-                                    <td class="align-middle"><!-- O conteúdo será preenchido via AJAX --></td>
-                                    <td class="text-center align-middle"><?= $acao['entrega_estimada'] ? date('d/m/Y', strtotime($acao['entrega_estimada'])) : '' ?></td>
-                                    <td class="text-center align-middle"><?= $acao['data_inicio'] ? date('d/m/Y', strtotime($acao['data_inicio'])) : '' ?></td>
-                                    <td class="text-center align-middle"><?= $acao['data_fim'] ? date('d/m/Y', strtotime($acao['data_fim'])) : '' ?></td>
-                                    <td class="text-center align-middle">
-                                        <span class="badge badge-<?=
-                                                                    $acao['status'] == 'Finalizado' ? 'success' : ($acao['status'] == 'Em andamento' ? 'primary' : ($acao['status'] == 'Paralisado' ? 'danger' : 'secondary')) ?>">
-                                            <?= $acao['status'] ?? 'Não iniciado' ?>
-                                        </span>
-                                    </td>
-                                    <td class="text-center align-middle">
-                                        <div class="d-inline-flex">
-                                            <?php if (auth()->user()->inGroup('admin')): ?>
-                                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Editar">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Excluir">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                            <?php else: ?>
-                                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Edição">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Exclusão">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else : ?>
-                            <tr>
-                                <td colspan="<?= (isset($acessoDireto) && $acessoDireto ? '9' : '10') ?>" class="text-center">Nenhuma ação encontrada</td>
-                            </tr>
-                        <?php endif; ?>
+                        <!-- Vazio - será preenchido via JavaScript -->
                     </tbody>
                 </table>
             </div>

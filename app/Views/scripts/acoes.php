@@ -24,8 +24,8 @@
         // Configuração do DataTables
         function initializeDataTable() {
             return $('#dataTable').DataTable({
-                "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-                "language": {
+                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                language: {
                     "sEmptyTable": "Nenhum registro encontrado",
                     "sInfo": "Mostrando de _START_ até _END_ de _TOTAL_ registros",
                     "sInfoEmpty": "Mostrando 0 até 0 de 0 registros",
@@ -48,12 +48,12 @@
                         "sSortDescending": ": Ordenar colunas de forma descendente"
                     }
                 },
-                "searching": false,
-                "responsive": true,
-                "autoWidth": false,
-                "lengthMenu": [5, 10, 25, 50, 100],
-                "pageLength": 10,
-                "columns": [{
+                searching: true,
+                responsive: true,
+                autoWidth: false,
+                lengthMenu: [5, 10, 25, 50, 100],
+                pageLength: 10,
+                columns: [{
                         "data": "ordem",
                         "visible": false,
                         "searchable": false
@@ -72,23 +72,8 @@
                     },
                     {
                         "data": "id",
-                        "render": function(data, type, row) {
-                            if (type === 'display') {
-                                let equipe = 'Carregando...';
-                                $.ajax({
-                                    url: `<?= site_url('acoes/get-equipe-formatada/') ?>${data}`,
-                                    type: 'GET',
-                                    async: false,
-                                    success: function(response) {
-                                        equipe = response.success ? response.equipe : 'Erro ao carregar';
-                                    },
-                                    error: function() {
-                                        equipe = 'Erro ao carregar';
-                                    }
-                                });
-                                return equipe;
-                            }
-                            return '';
+                        "render": function(data) {
+                            return `<span class="equipe-placeholder" data-id="${data}"></span>`;
                         }
                     },
                     {
@@ -120,7 +105,8 @@
                             const badgeClass = {
                                 'Finalizado': 'badge-success',
                                 'Em andamento': 'badge-primary',
-                                'Paralisado': 'badge-danger',
+                                'Paralisado': 'badge-dark',
+                                'Atrasado': 'badge-danger', // Classe para o novo status
                                 'Não iniciado': 'badge-secondary'
                             } [data] || 'badge-secondary';
 
@@ -163,25 +149,41 @@
                 "order": [
                     [0, 'asc']
                 ],
-                "data": <?= json_encode(array_map(function ($acao) use ($acessoDireto, $etapa) {
-                            return [
-                                'id' => $acao['id'],
-                                'nome' => $acao['nome'],
-                                'etapa' => !$acessoDireto ? ($etapa['nome'] ?? '') : '',
-                                'responsavel' => $acao['responsavel'] ?? '',
-                                'equipe' => $acao['equipe'] ?? '',
-                                'entrega_estimada' => $acao['entrega_estimada'] ?? null,
-                                'data_inicio' => $acao['data_inicio'] ?? null,
-                                'data_fim' => $acao['data_fim'] ?? null,
-                                'status' => $acao['status'] ?? 'Não iniciado',
-                                'ordem' => $acao['ordem'] ?? 0
-                            ];
-                        }, $acoes ?? [])) ?>
+                order: [
+                    [0, 'asc']
+                ],
+                ajax: {
+                    url: `<?= site_url("acoes/get-acoes/${idOrigem}/${tipoOrigem}") ?>`,
+                    dataSrc: 'data'
+                }
             });
         }
 
         // Inicializa a tabela
         dataTable = initializeDataTable();
+
+        // Carregar equipe após a tabela ser renderizada
+        dataTable.on('draw', function() {
+            $('.equipe-placeholder').each(function() {
+                const acaoId = $(this).data('id');
+                const placeholder = $(this);
+
+                $.ajax({
+                    url: `<?= site_url('acoes/get-equipe-formatada/') ?>${acaoId}`,
+                    type: 'GET',
+                    success: function(response) {
+                        if (response.success) {
+                            placeholder.text(response.equipe);
+                        } else {
+                            placeholder.text('Erro ao carregar');
+                        }
+                    },
+                    error: function() {
+                        placeholder.text('Erro ao carregar');
+                    }
+                });
+            });
+        });
 
         // Configuração do AJAX
         $.ajaxSetup({
@@ -451,7 +453,7 @@
             const hasFilters = formData.some(item => item.value !== '' && item.name !== 'csrf_test_name');
 
             if (!hasFilters) {
-                location.reload();
+                dataTable.ajax.url(`<?= site_url("acoes/get-acoes/${idOrigem}/${tipoOrigem}") ?>`).load();
                 return;
             }
 
@@ -465,16 +467,15 @@
                 },
                 success: function(response) {
                     if (response.success) {
-                        updateTableWithFilteredData(response.data);
+                        dataTable.clear();
+                        dataTable.rows.add(response.data);
+                        dataTable.draw();
                     } else {
                         showErrorAlert(response.message || 'Erro ao filtrar ações');
-                        console.error('Erro detalhado:', response);
                     }
                 },
-                error: function(xhr, status, error) {
-                    console.error('Erro completo:', xhr.responseText);
-                    showErrorAlert('Erro ao filtrar ações. Detalhes no console.');
-                    $('#dataTable').css('opacity', '1');
+                error: function() {
+                    showErrorAlert('Erro ao filtrar ações');
                 },
                 complete: function() {
                     $('#dataTable').css('opacity', '1');
@@ -549,10 +550,48 @@
             $(selectAtual).data('original', novaOrdem);
         });
 
-        // Inicializar ordens originais quando o modal é aberto
-        $('#ordenarAcoesModal').on('shown.bs.modal', function() {
-            $('.ordem-select').each(function() {
-                $(this).data('original', $(this).val());
+        // Inicialização quando o modal é aberto
+        $('#ordenarAcoesModal').on('show.bs.modal', function() {
+            const modal = $(this);
+            modal.find('.modal-body').html('<div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x"></i><p>Carregando ações...</p></div>');
+
+            $.ajax({
+                url: `<?= site_url("acoes/carregar-para-ordenacao/${idOrigem}/${tipoOrigem}") ?>`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        // Construir a tabela completa
+                        const tableHtml = `
+                    <div class="alert alert-info mb-3">
+                        Selecione a nova posição para cada ação (a posição atual permanecerá visível como referência)
+                    </div>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Ação</th>
+                                <th style="width: 120px;">Ordem atual</th>
+                                <th style="width: 120px;">Nova ordem</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${response.html}
+                        </tbody>
+                    </table>`;
+
+                        modal.find('.modal-body').html(tableHtml);
+
+                        // Configuração original quando o modal é aberto
+                        $('.ordem-select').each(function() {
+                            $(this).data('original', $(this).val());
+                        });
+                    } else {
+                        modal.find('.modal-body').html('<div class="alert alert-danger">Erro ao carregar ações</div>');
+                    }
+                },
+                error: function() {
+                    modal.find('.modal-body').html('<div class="alert alert-danger">Erro ao carregar ações</div>');
+                }
             });
         });
 
