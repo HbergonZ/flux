@@ -58,6 +58,7 @@ $routes->group('', function ($routes) {
     $routes->post('projetos/solicitar-edicao', 'Projetos::solicitarEdicao');
     $routes->post('projetos/solicitar-exclusao', 'Projetos::solicitarExclusao');
     $routes->post('projetos/solicitar-inclusao', 'Projetos::solicitarInclusao');
+    $routes->get('projetos/listar-evidencias/(:num)', 'Projetos::listarEvidencias/$1');
 
     $routes->post('planos/solicitar-edicao', 'Planos::solicitarEdicao');
     $routes->post('planos/solicitar-exclusao', 'Planos::solicitarExclusao');
@@ -90,6 +91,8 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
     $routes->post('projetos/atualizar/(:num)', 'Projetos::atualizar/$1');
     $routes->post('projetos/excluir/(:num)', 'Projetos::excluir/$1');
     $routes->post('projetos/cadastrar-acao-direta/(:num)', 'Projetos::cadastrarAcaoDireta/$1');
+    $routes->post('projetos/editar/(:num)', 'Projetos::editar/$1');
+
 
     // Etapas
     $routes->post('etapas/cadastrar/(:num)', 'Etapas::cadastrar/$1');

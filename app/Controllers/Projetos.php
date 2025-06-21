@@ -163,23 +163,30 @@ class Projetos extends BaseController
 
     public function editar($idProjeto = null)
     {
-        log_message('debug', 'Acessando método editar para o projeto ID: ' . $idProjeto);
-
-        if (!$this->request->isAJAX()) {
-            log_message('debug', 'Requisição não é AJAX, redirecionando');
-            return redirect()->to('/planos');
-        }
-
         $response = ['success' => false, 'message' => '', 'data' => null];
-        $projeto = $this->projetosModel->find($idProjeto);
 
-        if ($projeto) {
-            log_message('debug', 'Projeto encontrado: ' . print_r($projeto, true));
-            $response['success'] = true;
-            $response['data'] = $projeto;
-        } else {
-            log_message('debug', 'Projeto não encontrado');
-            $response['message'] = 'Projeto não encontrado';
+        try {
+            $projeto = $this->projetosModel->find($idProjeto);
+
+            if ($projeto) {
+                $response['success'] = true;
+                $response['data'] = [
+                    'id' => $projeto['id'],
+                    'identificador' => $projeto['identificador'],
+                    'nome' => $projeto['nome'],
+                    'descricao' => $projeto['descricao'],
+                    'projeto_vinculado' => $projeto['projeto_vinculado'],
+                    'priorizacao_gab' => $projeto['priorizacao_gab'],
+                    'id_eixo' => $projeto['id_eixo'],
+                    'id_plano' => $projeto['id_plano'],
+                    'responsaveis' => $projeto['responsaveis'],
+                    'status' => $projeto['status'] ?? 'Ativo' // Adicione todos os campos necessários
+                ];
+            } else {
+                $response['message'] = 'Projeto não encontrado';
+            }
+        } catch (\Exception $e) {
+            $response['message'] = 'Erro ao carregar projeto: ' . $e->getMessage();
         }
 
         return $this->response->setJSON($response);
@@ -216,7 +223,7 @@ class Projetos extends BaseController
 
         if ($this->validate($rules)) {
             $db = \Config\Database::connect();
-            $db->transStart(); // Inicia transação manualmente
+            $db->transStart();
 
             try {
                 $id = $this->request->getPost('id');
@@ -248,31 +255,102 @@ class Projetos extends BaseController
                 // 1. Atualiza o projeto
                 $this->projetosModel->save($data);
 
-                // 2. Se o status foi alterado, atualiza as ações
+                // 2. Processar evidências
+                $evidenciasAdicionar = json_decode($this->request->getPost('evidencias_adicionar'), true) ?? [];
+                $evidenciasRemover = json_decode($this->request->getPost('evidencias_remover'), true) ?? [];
+
+                $evidenciasModel = new \App\Models\EvidenciasModel();
+
+                // Adicionar novas evidências
+                foreach ($evidenciasAdicionar as $evidencia) {
+                    $evidenciaData = [
+                        'tipo' => $evidencia['tipo'],
+                        'descricao' => $evidencia['descricao'] ?? '',
+                        'nivel' => 'projeto',
+                        'id_nivel' => $id,
+                        'created_by' => auth()->id(),
+                        'created_at' => date('Y-m-d H:i:s')
+                    ];
+
+                    // Definir o campo correto baseado no tipo
+                    if ($evidencia['tipo'] === 'texto') {
+                        $evidenciaData['evidencia'] = $evidencia['conteudo'];
+                        $evidenciaData['link'] = null;
+                    } else {
+                        $evidenciaData['link'] = $evidencia['conteudo'];
+                        $evidenciaData['evidencia'] = null;
+
+                        // Validação básica de URL
+                        if (!filter_var($evidencia['conteudo'], FILTER_VALIDATE_URL)) {
+                            throw new \Exception('O link fornecido não é válido: ' . $evidencia['conteudo']);
+                        }
+                    }
+
+                    $insertId = $evidenciasModel->insert($evidenciaData);
+
+                    // Registrar log de criação da evidência
+                    $this->logController->registrarCriacao('evidencia', $evidenciaData, 'Evidência adicionada ao projeto');
+                    log_message('debug', 'Evidência adicionada com ID: ' . $insertId);
+                }
+
+                // Remover evidências marcadas
+                foreach ($evidenciasRemover as $idEvidencia) {
+                    $evidencia = $evidenciasModel->find($idEvidencia);
+                    if ($evidencia) {
+                        // Verificar se a evidência pertence ao projeto
+                        if ($evidencia['nivel'] === 'projeto' && $evidencia['id_nivel'] == $id) {
+                            // Registrar log de exclusão
+                            $this->logController->registrarExclusao('evidencia', $evidencia, 'Evidência removida do projeto');
+                            $evidenciasModel->delete($idEvidencia);
+                            log_message('debug', 'Evidência removida: ' . $idEvidencia);
+                        } else {
+                            log_message('warning', 'Tentativa de remover evidência não pertencente ao projeto: ' . $idEvidencia);
+                        }
+                    }
+                }
+
+                // 3. Se o status foi alterado, atualiza as ações
                 if ($statusAlterado) {
                     log_message('debug', 'Status alterado de ' . $projetoAntigo['status'] . ' para ' . $novoStatus . '. Atualizando ações...');
 
                     $acoesModel = new \App\Models\AcoesModel();
-                    $result = $acoesModel->atualizarStatusAcoesProjeto($id, $novoStatus, $db); // Passa a conexão
+                    $result = $acoesModel->atualizarStatusAcoesProjeto($id, $novoStatus, $db);
 
                     log_message('debug', 'Resultado da atualização de ações: ' . print_r($result, true));
                 }
 
                 $projetoAtualizado = $this->projetosModel->find($id);
 
-                // Registrar log de edição
-                if (!$this->logController->registrarEdicao('projeto', $projetoAntigo, $projetoAtualizado, 'Edição realizada via interface')) {
-                    throw new \Exception('Falha ao registrar log de edição');
-                }
+                // Registrar log de edição do projeto
+                $this->logController->registrarEdicao('projeto', $projetoAntigo, $projetoAtualizado, 'Edição realizada via interface');
 
-                $db->transComplete(); // Confirma a transação
+                $db->transComplete();
 
                 if ($db->transStatus() === false) {
                     throw new \Exception('Falha na transação do banco de dados');
                 }
 
+                // 4. Obter evidências atualizadas para resposta
+                $evidenciasAtualizadas = $evidenciasModel
+                    ->where('nivel', 'projeto')
+                    ->where('id_nivel', $id)
+                    ->orderBy('created_at', 'DESC')
+                    ->findAll();
+
+                $formattedEvidencias = [];
+                foreach ($evidenciasAtualizadas as $ev) {
+                    $formattedEvidencias[] = [
+                        'id' => $ev['id'],
+                        'descricao' => $ev['descricao'],
+                        'tipo' => $ev['tipo'],
+                        'conteudo' => $ev['tipo'] === 'texto' ? $ev['evidencia'] : $ev['link'],
+                        'created_at' => $ev['created_at']
+                    ];
+                }
+
                 $response['success'] = true;
                 $response['message'] = 'Projeto atualizado com sucesso!';
+                $response['evidencias'] = $formattedEvidencias;
 
                 log_message('debug', 'Projeto atualizado com sucesso');
             } catch (\Exception $e) {
@@ -1022,5 +1100,52 @@ class Projetos extends BaseController
             'success' => true,
             'message' => 'Status do projeto e ações atualizados!'
         ]);
+    }
+
+    public function listarEvidencias($idProjeto)
+    {
+        log_message('debug', '--- INÍCIO listarEvidencias ---');
+        log_message('debug', 'ID Projeto recebido: ' . $idProjeto);
+
+        $response = ['success' => false, 'message' => '', 'data' => []];
+
+        try {
+            $evidenciasModel = new \App\Models\EvidenciasModel();
+
+            log_message('debug', 'Executando query para buscar evidências');
+
+            $evidencias = $evidenciasModel
+                ->select('id, descricao, tipo, evidencia, link, created_at')
+                ->where('nivel', 'projeto')
+                ->where('id_nivel', $idProjeto)
+                ->orderBy('created_at', 'DESC')
+                ->findAll();
+
+            log_message('debug', 'Total de evidências encontradas: ' . count($evidencias));
+
+            $formattedEvidencias = [];
+            foreach ($evidencias as $evidencia) {
+                $formattedEvidencias[] = [
+                    'id' => $evidencia['id'],
+                    'descricao' => $evidencia['descricao'] ?? 'Sem descrição',
+                    'tipo' => $evidencia['tipo'],
+                    'conteudo' => $evidencia['tipo'] === 'texto'
+                        ? $evidencia['evidencia']
+                        : $evidencia['link'],
+                    'created_at' => $evidencia['created_at']
+                ];
+            }
+
+            $response['success'] = true;
+            $response['data'] = $formattedEvidencias;
+
+            log_message('debug', 'Evidências formatadas com sucesso');
+        } catch (\Exception $e) {
+            log_message('error', 'Erro em listarEvidencias: ' . $e->getMessage());
+            $response['message'] = 'Erro ao carregar evidências: ' . $e->getMessage();
+        }
+
+        log_message('debug', '--- FIM listarEvidencias ---');
+        return $this->response->setJSON($response);
     }
 }

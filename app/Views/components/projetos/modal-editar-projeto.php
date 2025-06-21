@@ -1,9 +1,11 @@
 <div class="modal fade" id="editProjetoModal" tabindex="-1" role="dialog" aria-labelledby="editProjetoModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editProjetoModalLabel">Editar Projeto</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit mr-2"></i>Editar Projeto
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Fechar">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -12,77 +14,178 @@
                 <input type="hidden" name="id" id="editProjetoId">
 
                 <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="editProjetoIdentificador">Identificador*</label>
-                                <input type="text" class="form-control" id="editProjetoIdentificador" name="identificador" required maxlength="10">
-                            </div>
+                    <!-- Informações Básicas -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-info-circle mr-2"></i>Informações Básicas
+                            </h6>
                         </div>
-                        <div class="col-md-6">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="editProjetoIdentificador"><i class="fas fa-hashtag mr-1"></i>Identificador*</label>
+                                        <input type="text" class="form-control" id="editProjetoIdentificador" name="identificador" required maxlength="10">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="editProjetoNome"><i class="fas fa-tag mr-1"></i>Nome*</label>
+                                        <input type="text" class="form-control" id="editProjetoNome" name="nome" required maxlength="255">
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="form-group">
-                                <label for="editProjetoNome">Nome*</label>
-                                <input type="text" class="form-control" id="editProjetoNome" name="nome" required maxlength="255">
+                                <label for="editProjetoDescricao"><i class="fas fa-align-left mr-1"></i>Descrição</label>
+                                <textarea class="form-control" id="editProjetoDescricao" name="descricao" rows="3"></textarea>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="editProjetoVinculado"><i class="fas fa-link mr-1"></i>Projeto Vinculado</label>
+                                        <input type="text" class="form-control" id="editProjetoVinculado" name="projeto_vinculado" maxlength="255">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="editProjetoEixo"><i class="fas fa-project-diagram mr-1"></i>Eixo</label>
+                                        <select class="form-control" id="editProjetoEixo" name="id_eixo">
+                                            <option value="">Selecione um eixo</option>
+                                            <?php foreach ($eixos as $eixo): ?>
+                                                <option value="<?= $eixo['id'] ?>"><?= $eixo['nome'] ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="editProjetoPriorizacao"><i class="fas fa-star mr-1"></i>Priorização GAB</label>
+                                        <select class="form-control" id="editProjetoPriorizacao" name="priorizacao_gab">
+                                            <option value="0">Não</option>
+                                            <option value="1">Sim</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="projetoStatus"><i class="fas fa-info-circle mr-1"></i>Status do Projeto*</label>
+                                        <select class="form-control" id="projetoStatus" name="status" required>
+                                            <option value="Ativo">Ativo</option>
+                                            <option value="Paralisado">Paralisado</option>
+                                            <option value="Concluído">Concluído</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="editProjetoResponsaveis"><i class="fas fa-users mr-1"></i>Responsáveis</label>
+                                <textarea class="form-control" id="editProjetoResponsaveis" name="responsaveis" rows="2"></textarea>
                             </div>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="editProjetoDescricao">Descrição</label>
-                        <textarea class="form-control" id="editProjetoDescricao" name="descricao" rows="3"></textarea>
-                    </div>
+                    <!-- Seção de Evidências -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-file-alt mr-2"></i>Gerenciar Evidências
+                            </h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="row no-gutters">
+                                <!-- Coluna de Evidências (Atuais e para Remover) -->
+                                <div class="col-md-6 border-right">
+                                    <div class="p-3 d-flex flex-column" style="height: 100%; min-height: 400px;">
+                                        <!-- Seção de Evidências Atuais -->
+                                        <div class="mb-3 border-bottom flex-grow-1" style="height: 50%;">
+                                            <h6 class="font-weight-bold mb-2">
+                                                <i class="fas fa-list-ul mr-1"></i>Evidências Atuais
+                                                <span class="badge badge-primary badge-pill ml-1" id="contadorEvidenciasProjetoAtuais">0</span>
+                                            </h6>
+                                            <div id="loadingEvidencias" class="text-center py-3 d-none">
+                                                <i class="fas fa-spinner fa-spin"></i> Carregando evidências...
+                                            </div>
+                                            <div id="evidenciasProjetoAtuaisList" class="overflow-auto" style="max-height: calc(100% - 30px);">
+                                                <div class="list-group">
+                                                    <!-- As evidências serão inseridas aqui -->
+                                                </div>
+                                            </div>
+                                        </div>
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="editProjetoVinculado">Projeto Vinculado</label>
-                                <input type="text" class="form-control" id="editProjetoVinculado" name="projeto_vinculado" maxlength="255">
+                                        <!-- Seção de Evidências para Remover -->
+                                        <div class="flex-grow-1" style="height: 50%;">
+                                            <h6 class="font-weight-bold mb-2">
+                                                <i class="fas fa-trash-alt mr-1"></i>Evidências a serem removidas
+                                                <span class="badge badge-secondary badge-pill ml-1" id="contadorEvidenciasProjetoRemover">0</span>
+                                            </h6>
+                                            <div id="evidenciasProjetoRemoverList" class="overflow-auto" style="max-height: calc(100% - 30px);">
+                                                <div class="list-group">
+                                                    <!-- Evidências marcadas para remoção serão exibidas aqui -->
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Coluna de Adicionar Evidência -->
+                                <div class="col-md-6">
+                                    <div class="p-3">
+                                        <h6 class="font-weight-bold mb-3">
+                                            <i class="fas fa-plus-circle mr-1"></i>Adicionar Evidência
+                                        </h6>
+
+                                        <div class="form-group mb-3">
+                                            <label>Tipo de Evidência</label>
+                                            <div class="d-flex">
+                                                <div class="form-check mr-3">
+                                                    <input class="form-check-input" type="radio" name="evidencia_projeto_tipo" id="editProjetoEvidenciaTipoTexto" value="texto" checked>
+                                                    <label class="form-check-label" for="editProjetoEvidenciaTipoTexto">Texto</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="evidencia_projeto_tipo" id="editProjetoEvidenciaTipoLink" value="link">
+                                                    <label class="form-check-label" for="editProjetoEvidenciaTipoLink">Link</label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group mb-3" id="editProjetoGrupoTexto">
+                                            <label for="editProjetoEvidenciaTexto">Evidência (Texto)</label>
+                                            <textarea class="form-control" id="editProjetoEvidenciaTexto" rows="3"></textarea>
+                                        </div>
+
+                                        <div class="form-group mb-3 d-none" id="editProjetoGrupoLink">
+                                            <label for="editProjetoEvidenciaLink">URL</label>
+                                            <input type="url" class="form-control" id="editProjetoEvidenciaLink" placeholder="https://exemplo.com">
+                                        </div>
+
+                                        <div class="form-group mb-3">
+                                            <label for="editProjetoEvidenciaDescricao">Descrição</label>
+                                            <textarea class="form-control" id="editProjetoEvidenciaDescricao" rows="2" placeholder="Explique a evidência"></textarea>
+                                        </div>
+
+                                        <button type="button" class="btn btn-primary btn-block" id="btnAdicionarEvidenciaProjeto">
+                                            <i class="fas fa-plus mr-2"></i> Adicionar à Lista
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="editProjetoEixo">Eixo</label>
-                                <select class="form-control" id="editProjetoEixo" name="id_eixo">
-                                    <option value="">Selecione um eixo</option>
-                                    <?php foreach ($eixos as $eixo): ?>
-                                        <option value="<?= $eixo['id'] ?>"><?= $eixo['nome'] ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="editProjetoPriorizacao">Priorização GAB</label>
-                                <select class="form-control" id="editProjetoPriorizacao" name="priorizacao_gab">
-                                    <option value="0">Não</option>
-                                    <option value="1">Sim</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="projetoStatus">Status do Projeto*</label>
-                                <select class="form-control" id="projetoStatus" name="status" required>
-                                    <option value="Ativo" <?= ($projeto['status'] ?? 'Ativo') === 'Ativo' ? 'selected' : '' ?>>Ativo</option>
-                                    <option value="Paralisado" <?= ($projeto['status'] ?? 'Ativo') === 'Paralisado' ? 'selected' : '' ?>>Paralisado</option>
-                                    <option value="Concluído" <?= ($projeto['status'] ?? 'Ativo') === 'Concluído' ? 'selected' : '' ?>>Concluído</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="editProjetoResponsaveis">Responsáveis</label>
-                        <textarea class="form-control" id="editProjetoResponsaveis" name="responsaveis" rows="2"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times mr-2"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save mr-2"></i>Salvar Alterações
+                    </button>
                 </div>
             </form>
         </div>
