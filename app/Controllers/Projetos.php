@@ -324,33 +324,34 @@ class Projetos extends BaseController
                 // Registrar log de edição do projeto
                 $this->logController->registrarEdicao('projeto', $projetoAntigo, $projetoAtualizado, 'Edição realizada via interface');
 
-                $db->transComplete();
-
-                if ($db->transStatus() === false) {
-                    throw new \Exception('Falha na transação do banco de dados');
-                }
-
                 // 4. Obter evidências atualizadas para resposta
                 $evidenciasAtualizadas = $evidenciasModel
+                    ->select('id, descricao, tipo, evidencia, link, created_at')
                     ->where('nivel', 'projeto')
                     ->where('id_nivel', $id)
                     ->orderBy('created_at', 'DESC')
                     ->findAll();
 
-                $formattedEvidencias = [];
-                foreach ($evidenciasAtualizadas as $ev) {
-                    $formattedEvidencias[] = [
+                // Formatar as evidências para a resposta
+                $evidenciasFormatadas = array_map(function ($ev) {
+                    return [
                         'id' => $ev['id'],
                         'descricao' => $ev['descricao'],
                         'tipo' => $ev['tipo'],
                         'conteudo' => $ev['tipo'] === 'texto' ? $ev['evidencia'] : $ev['link'],
                         'created_at' => $ev['created_at']
                     ];
+                }, $evidenciasAtualizadas);
+
+                $db->transComplete();
+
+                if ($db->transStatus() === false) {
+                    throw new \Exception('Falha na transação do banco de dados');
                 }
 
                 $response['success'] = true;
                 $response['message'] = 'Projeto atualizado com sucesso!';
-                $response['evidencias'] = $formattedEvidencias;
+                $response['evidencias'] = $evidenciasFormatadas;
 
                 log_message('debug', 'Projeto atualizado com sucesso');
             } catch (\Exception $e) {
@@ -569,76 +570,144 @@ class Projetos extends BaseController
 
     public function solicitarEdicao()
     {
-        log_message('debug', 'Processando solicitação de edição de projeto');
+        $response = ['success' => false, 'message' => ''];
+        log_message('debug', 'Iniciando solicitarEdicao - Método acessado');
 
         if (!$this->request->isAJAX()) {
-            log_message('debug', 'Requisição não é AJAX, redirecionando');
-            return redirect()->back();
+            return $this->response->setStatusCode(405)->setJSON([
+                'success' => false,
+                'message' => 'Método permitido apenas via AJAX'
+            ]);
         }
 
-        $response = ['success' => false, 'message' => ''];
-        $postData = $this->request->getPost();
+        $db = \Config\Database::connect();
+        $db->transStart();
 
-        $rules = [
-            'id_projeto' => 'required',
-            'justificativa' => 'required'
-        ];
+        try {
+            // Obter os dados da requisição
+            $postData = $this->request->getJSON(true);
+            if (empty($postData)) {
+                $postData = $this->request->getPost();
+            }
 
-        if ($this->validate($rules)) {
-            try {
-                $projetoAtual = $this->projetosModel->find($postData['id_projeto']);
-                if (!$projetoAtual) {
-                    log_message('debug', 'Projeto não encontrado para solicitação de edição');
-                    $response['message'] = 'Projeto não encontrado';
-                    return $this->response->setJSON($response);
-                }
+            log_message('debug', 'Dados recebidos: ' . print_r($postData, true));
 
-                $alteracoes = [];
-                $camposEditaveis = ['identificador', 'nome', 'descricao', 'projeto_vinculado', 'priorizacao_gab', 'id_eixo', 'responsaveis'];
+            // Validações básicas
+            $rules = [
+                'id_projeto' => 'required|integer',
+                'id_plano' => 'required|integer',
+                'justificativa' => 'required|min_length[10]|max_length[2000]',
+                'identificador' => 'required|max_length[10]',
+                'nome' => 'required|max_length[255]',
+                'status' => 'required|in_list[Ativo,Paralisado,Concluído]'
+            ];
 
-                foreach ($camposEditaveis as $campo) {
-                    if (isset($postData[$campo]) && $postData[$campo] != $projetoAtual[$campo]) {
+            if (!$this->validate($rules)) {
+                throw new \Exception(implode("\n", $this->validator->getErrors()));
+            }
+
+            // Verifica se o projeto existe
+            $projeto = $this->projetosModel->find($postData['id_projeto']);
+            if (!$projeto || $projeto['id_plano'] != $postData['id_plano']) {
+                throw new \Exception('Projeto não encontrado ou não pertence ao plano especificado');
+            }
+
+            // Processar evidências
+            $evidenciasAdicionar = is_array($postData['evidencias_adicionar'] ?? null)
+                ? $postData['evidencias_adicionar']
+                : [];
+
+            $evidenciasRemover = is_array($postData['evidencias_remover'] ?? null)
+                ? $postData['evidencias_remover']
+                : [];
+
+            // Preparar dados das alterações
+            $alteracoes = [];
+            $camposEditaveis = [
+                'identificador',
+                'nome',
+                'descricao',
+                'projeto_vinculado',
+                'priorizacao_gab',
+                'id_eixo',
+                'responsaveis',
+                'status'
+            ];
+
+            foreach ($camposEditaveis as $campo) {
+                if (isset($postData[$campo])) {
+                    $valorAtual = $projeto[$campo] ?? null;
+                    $valorNovo = $postData[$campo];
+
+                    if ($valorAtual != $valorNovo) {
                         $alteracoes[$campo] = [
-                            'de' => $projetoAtual[$campo],
-                            'para' => $postData[$campo]
+                            'de' => $valorAtual,
+                            'para' => $valorNovo
                         ];
                     }
                 }
-
-                if (empty($alteracoes)) {
-                    log_message('debug', 'Nenhuma alteração detectada na solicitação de edição');
-                    $response['message'] = 'Nenhuma alteração detectada';
-                    return $this->response->setJSON($response);
-                }
-
-                $data = [
-                    'nivel' => 'projeto',
-                    'id_solicitante' => auth()->id(),
-                    'id_projeto' => $postData['id_projeto'],
-                    'id_plano' => $projetoAtual['id_plano'],
-                    'tipo' => 'Edição',
-                    'dados_atuais' => json_encode($projetoAtual, JSON_UNESCAPED_UNICODE),
-                    'dados_alterados' => json_encode($alteracoes, JSON_UNESCAPED_UNICODE),
-                    'justificativa_solicitante' => $postData['justificativa'],
-                    'status' => 'pendente',
-                    'data_solicitacao' => date('Y-m-d H:i:s')
-                ];
-
-                log_message('debug', 'Dados da solicitação de edição: ' . print_r($data, true));
-
-                $this->solicitacoesModel->insert($data);
-                $response['success'] = true;
-                $response['message'] = 'Solicitação de edição enviada com sucesso!';
-
-                log_message('debug', 'Solicitação de edição registrada com sucesso');
-            } catch (\Exception $e) {
-                log_message('error', 'Erro em solicitarEdicao: ' . $e->getMessage());
-                $response['message'] = 'Erro ao processar solicitação: ' . $e->getMessage();
             }
-        } else {
-            $errors = $this->validator->getErrors();
-            log_message('debug', 'Erros de validação na solicitação de edição: ' . print_r($errors, true));
-            $response['message'] = implode('<br>', $errors);
+
+            // Adicionar alterações de evidências se houver
+            $alteracoesEvidencias = [];
+
+            if (!empty($evidenciasAdicionar)) {
+                $alteracoesEvidencias['adicionar'] = $evidenciasAdicionar;
+            }
+
+            if (!empty($evidenciasRemover)) {
+                $alteracoesEvidencias['remover'] = $evidenciasRemover;
+            }
+
+            if (!empty($alteracoesEvidencias)) {
+                $alteracoes['evidencias'] = $alteracoesEvidencias;
+            }
+
+            // Verificar se há alterações válidas
+            if (empty($alteracoes)) {
+                throw new \Exception('Nenhuma alteração detectada. Modifique pelo menos um campo para enviar a solicitação.');
+            }
+
+            // Prepara dados para a solicitação
+            $solicitacaoData = [
+                'nivel' => 'projeto',
+                'id_solicitante' => auth()->id(),
+                'id_projeto' => $postData['id_projeto'],
+                'id_plano' => $postData['id_plano'],
+                'tipo' => 'edicao',
+                'dados_atuais' => json_encode($projeto, JSON_UNESCAPED_UNICODE),
+                'dados_alterados' => json_encode($alteracoes, JSON_UNESCAPED_UNICODE),
+                'justificativa_solicitante' => $postData['justificativa'],
+                'status' => 'pendente',
+                'data_solicitacao' => date('Y-m-d H:i:s'),
+                'evidencias_adicionar' => !empty($evidenciasAdicionar) ? json_encode($evidenciasAdicionar) : null,
+                'evidencias_remover' => !empty($evidenciasRemover) ? json_encode($evidenciasRemover) : null
+            ];
+
+            // Insere a solicitação
+            $solicitacaoId = $this->solicitacoesModel->insert($solicitacaoData);
+            if (!$solicitacaoId) {
+                throw new \Exception('Falha ao registrar solicitação no banco de dados');
+            }
+
+            // Registrar log
+            $this->logController->registrarCriacao(
+                'solicitacao_edicao',
+                $solicitacaoData,
+                'Solicitação de edição de projeto enviada'
+            );
+
+            $db->transComplete();
+
+            $response = [
+                'success' => true,
+                'message' => 'Solicitação de edição enviada com sucesso!',
+                'data' => ['solicitacao_id' => $solicitacaoId]
+            ];
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', 'Erro em solicitarEdicao: ' . $e->getMessage());
+            $response['message'] = $e->getMessage();
         }
 
         return $this->response->setJSON($response);
@@ -1114,6 +1183,7 @@ class Projetos extends BaseController
 
             log_message('debug', 'Executando query para buscar evidências');
 
+            // Busca todas as evidências sem o CASE WHEN
             $evidencias = $evidenciasModel
                 ->select('id, descricao, tipo, evidencia, link, created_at')
                 ->where('nivel', 'projeto')
@@ -1121,23 +1191,21 @@ class Projetos extends BaseController
                 ->orderBy('created_at', 'DESC')
                 ->findAll();
 
-            log_message('debug', 'Total de evidências encontradas: ' . count($evidencias));
-
-            $formattedEvidencias = [];
-            foreach ($evidencias as $evidencia) {
-                $formattedEvidencias[] = [
-                    'id' => $evidencia['id'],
-                    'descricao' => $evidencia['descricao'] ?? 'Sem descrição',
-                    'tipo' => $evidencia['tipo'],
-                    'conteudo' => $evidencia['tipo'] === 'texto'
-                        ? $evidencia['evidencia']
-                        : $evidencia['link'],
-                    'created_at' => $evidencia['created_at']
+            // Processa os resultados para formatar conforme necessário
+            $evidenciasFormatadas = array_map(function ($ev) {
+                return [
+                    'id' => $ev['id'],
+                    'descricao' => $ev['descricao'],
+                    'tipo' => $ev['tipo'],
+                    'conteudo' => $ev['tipo'] === 'texto' ? $ev['evidencia'] : $ev['link'],
+                    'created_at' => $ev['created_at']
                 ];
-            }
+            }, $evidencias);
+
+            log_message('debug', 'Total de evidências encontradas: ' . count($evidenciasFormatadas));
 
             $response['success'] = true;
-            $response['data'] = $formattedEvidencias;
+            $response['data'] = $evidenciasFormatadas;
 
             log_message('debug', 'Evidências formatadas com sucesso');
         } catch (\Exception $e) {

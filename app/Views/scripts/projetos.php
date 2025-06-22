@@ -196,10 +196,129 @@
             submitForm($(this), '#addProjetoModal', 'Projeto cadastrado com sucesso!', true);
         });
 
+        // No evento de submit do formulário de solicitação de edição
         $('#formSolicitarEdicao').submit(function(e) {
             e.preventDefault();
-            submitForm($(this), '#solicitarEdicaoModal', 'Solicitação de edição enviada com sucesso!');
+            e.stopPropagation();
+
+            const form = $(this);
+            const submitBtn = form.find('button[type="submit"]');
+            const originalBtnText = submitBtn.html();
+
+            // Mostrar indicador de carregamento
+            submitBtn.prop('disabled', true).html(
+                '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Enviando...'
+            );
+
+            // Coletar todos os dados do formulário
+            const formData = {
+                id_projeto: $('#solicitarEdicaoId').val(),
+                id_plano: $('#idPlano').val(),
+                identificador: $('#solicitarEdicaoIdentificador').val(),
+                nome: $('#solicitarEdicaoNome').val(),
+                descricao: $('#solicitarEdicaoDescricao').val(),
+                projeto_vinculado: $('#solicitarEdicaoVinculado').val(),
+                priorizacao_gab: $('#solicitarEdicaoPriorizacao').val(),
+                id_eixo: $('#solicitarEdicaoEixo').val(),
+                responsaveis: $('#solicitarEdicaoResponsaveis').val(),
+                status: $('#solicitarEdicaoStatus').val(),
+                justificativa: $('#solicitarEdicaoJustificativa').val(),
+                evidencias_adicionar: getEvidenciasParaAdicionar(),
+                evidencias_remover: getEvidenciasParaRemover()
+            };
+
+            // Verificar se há alterações
+            const projetoOriginal = window.projetoOriginalData || {};
+            let hasChanges = false;
+
+            // Verificar alterações nos campos básicos
+            const camposParaComparar = [
+                'identificador', 'nome', 'descricao', 'projeto_vinculado',
+                'priorizacao_gab', 'id_eixo', 'responsaveis', 'status'
+            ];
+
+            camposParaComparar.forEach(campo => {
+                if (JSON.stringify(projetoOriginal[campo]) !== JSON.stringify(formData[campo])) {
+                    hasChanges = true;
+                }
+            });
+
+            // Verificar alterações nas evidências
+            if (formData.evidencias_adicionar.length > 0 || formData.evidencias_remover.length > 0) {
+                hasChanges = true;
+            }
+
+            if (!hasChanges) {
+                submitBtn.prop('disabled', false).html(originalBtnText);
+                showErrorAlert('Nenhuma alteração detectada. Modifique pelo menos um campo para enviar a solicitação.');
+                return;
+            }
+
+            // Enviar via AJAX
+            $.ajax({
+                url: form.attr('action'),
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
+                },
+                success: function(response) {
+                    submitBtn.prop('disabled', false).html(originalBtnText);
+
+                    if (response.success) {
+                        showSuccessAlert(response.message);
+                        $('#solicitarEdicaoModal').modal('hide');
+                        form[0].reset();
+
+                        if (typeof dataTable !== 'undefined') {
+                            dataTable.ajax.reload(null, false);
+                        }
+                    } else {
+                        showErrorAlert(response.message);
+                    }
+                },
+                error: function(xhr) {
+                    submitBtn.prop('disabled', false).html(originalBtnText);
+
+                    let errorMessage = 'Erro na comunicação com o servidor';
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.message) {
+                            errorMessage = response.message;
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse error response:', e);
+                    }
+                    showErrorAlert(errorMessage);
+                }
+            });
         });
+
+        // Funções auxiliares para evidências
+        function getEvidenciasParaAdicionar() {
+            const evidencias = [];
+            $('#evidenciasProjetoAtuaisList .list-group-item').each(function() {
+                if (!$(this).data('id')) { // Se não tem ID, é nova
+                    evidencias.push({
+                        tipo: $(this).data('tipo'),
+                        conteudo: $(this).data('conteudo'),
+                        descricao: $(this).data('descricao') || 'Sem descrição'
+                    });
+                }
+            });
+            return evidencias;
+        }
+
+        function getEvidenciasParaRemover() {
+            const ids = [];
+            $('#evidenciasProjetoRemoverListSolicitacao .list-group-item').each(function() {
+                const id = $(this).data('id');
+                if (id) ids.push(id);
+            });
+            return ids;
+        }
 
         $('#formSolicitarExclusao').submit(function(e) {
             e.preventDefault();
@@ -310,39 +429,115 @@
 
             $botao.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
 
-            // Sempre use a mesma rota
-            var url = '<?= site_url("projetos/editar/") ?>' + projetoId;
+            // Determinar a URL correta baseada no tipo de usuário
+            var url = isAdmin ?
+                '<?= site_url("projetos/editar/") ?>' + projetoId :
+                '<?= site_url("projetos/dados-projeto/") ?>' + projetoId;
 
             $.ajax({
                 url: url,
                 type: 'GET',
                 dataType: 'json',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
+                },
                 success: function(response) {
                     $botao.html(originalHtml).prop('disabled', false);
 
                     if (response.success && response.data) {
-                        // Preenche todos os campos do modal
-                        $('#editProjetoId').val(response.data.id);
-                        $('#editProjetoIdentificador').val(response.data.identificador);
-                        $('#editProjetoNome').val(response.data.nome);
-                        $('#editProjetoDescricao').val(response.data.descricao);
-                        $('#editProjetoVinculado').val(response.data.projeto_vinculado);
-                        $('#editProjetoEixo').val(response.data.id_eixo);
-                        $('#editProjetoPriorizacao').val(response.data.priorizacao_gab);
-                        $('#projetoStatus').val(response.data.status);
-                        $('#editProjetoResponsaveis').val(response.data.responsaveis);
+                        if (isAdmin) {
+                            // Preencher modal de edição normal para admin
+                            $('#editProjetoId').val(response.data.id);
+                            $('#editProjetoIdentificador').val(response.data.identificador);
+                            $('#editProjetoNome').val(response.data.nome);
+                            $('#editProjetoDescricao').val(response.data.descricao);
+                            $('#editProjetoVinculado').val(response.data.projeto_vinculado);
+                            $('#editProjetoEixo').val(response.data.id_eixo);
+                            $('#editProjetoPriorizacao').val(response.data.priorizacao_gab);
+                            $('#projetoStatus').val(response.data.status);
+                            $('#editProjetoResponsaveis').val(response.data.responsaveis);
 
-                        // Carrega evidências
-                        carregarEvidenciasProjeto(projetoId);
+                            // Carregar evidências
+                            carregarEvidenciasProjeto(projetoId);
 
-                        $('#editProjetoModal').modal('show');
+                            $('#editProjetoModal').modal('show');
+                        } else {
+                            // Preencher modal de solicitação de edição para não-admin
+                            $('#solicitarEdicaoId').val(response.data.id);
+                            $('#solicitarEdicaoIdentificador').val(response.data.identificador);
+                            $('#solicitarEdicaoNome').val(response.data.nome);
+                            $('#solicitarEdicaoDescricao').val(response.data.descricao);
+                            $('#solicitarEdicaoVinculado').val(response.data.projeto_vinculado);
+                            $('#solicitarEdicaoEixo').val(response.data.id_eixo);
+                            $('#solicitarEdicaoPriorizacao').val(response.data.priorizacao_gab);
+                            $('#solicitarEdicaoStatus').val(response.data.status);
+                            $('#solicitarEdicaoResponsaveis').val(response.data.responsaveis);
+
+                            // Armazenar dados originais para comparação
+                            window.projetoOriginalData = response.data;
+
+                            // Carregar evidências para solicitação
+                            $.ajax({
+                                url: '<?= site_url("projetos/listar-evidencias/") ?>' + projetoId,
+                                type: 'GET',
+                                dataType: 'json',
+                                success: function(evResponse) {
+                                    if (evResponse.success && evResponse.data) {
+                                        var $container = $('#evidenciasProjetoAtuaisListSolicitacao .list-group');
+                                        $container.empty();
+
+                                        evResponse.data.forEach(function(evidencia) {
+                                            var html = `
+                                        <div class="list-group-item"
+                                             data-id="${evidencia.id}"
+                                             data-tipo="${evidencia.tipo}"
+                                             data-conteudo="${evidencia.conteudo}"
+                                             data-descricao="${evidencia.descricao}">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <h6 class="mb-1">${evidencia.descricao || 'Sem descrição'}</h6>
+                                                    <small class="text-muted">${evidencia.tipo === 'texto' ? 'Texto' : 'Link'}</small>
+                                                </div>
+                                                <button class="btn btn-sm btn-outline-danger btn-remover-evidencia-solicitacao">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </div>
+                                            <div class="mt-2">
+                                                ${evidencia.tipo === 'texto'
+                                                    ? `<p class="mb-0">${evidencia.conteudo}</p>`
+                                                    : `<a href="${evidencia.conteudo}" target="_blank">${evidencia.conteudo}</a>`}
+                                            </div>
+                                        </div>`;
+                                            $container.append(html);
+                                        });
+                                        $('#contadorEvidenciasProjetoAtuaisSolicitacao').text(evResponse.data.length);
+                                    }
+                                },
+                                error: function() {
+                                    $('#evidenciasProjetoAtuaisListSolicitacao .list-group').html(
+                                        '<div class="text-center py-3 text-danger">Erro ao carregar evidências</div>'
+                                    );
+                                }
+                            });
+
+                            $('#solicitarEdicaoModal').modal('show');
+                        }
                     } else {
                         showErrorAlert(response.message || 'Erro ao carregar dados do projeto');
                     }
                 },
                 error: function(xhr, status, error) {
                     $botao.html(originalHtml).prop('disabled', false);
-                    showErrorAlert('Falha ao carregar projeto: ' + error);
+
+                    // Verificar se a resposta contém HTML (possível redirecionamento)
+                    if (xhr.responseText && xhr.responseText.startsWith('<!')) {
+                        showErrorAlert('Sessão expirada ou acesso não autorizado. Por favor, faça login novamente.');
+                        // Redirecionar para login se necessário
+                        window.location.href = '<?= site_url("login") ?>';
+                    } else {
+                        showErrorAlert('Falha ao carregar projeto: ' + error);
+                    }
                 }
             });
         });
@@ -360,26 +555,27 @@
 
                     response.data.forEach(function(evidencia) {
                         var html = `
-                    <div class="list-group-item"
-                         data-id="${evidencia.id}"
-                         data-tipo="${evidencia.tipo}"
-                         data-conteudo="${evidencia.conteudo}"
-                         data-descricao="${evidencia.descricao}">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="mb-1">${evidencia.descricao || 'Sem descrição'}</h6>
-                                <small class="text-muted">${evidencia.tipo === 'texto' ? 'Texto' : 'Link'}</small>
-                            </div>
-                            <button class="btn btn-sm btn-outline-danger btn-remover-evidencia">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
+                <div class="list-group-item"
+                     data-id="${evidencia.id}"
+                     data-tipo="${evidencia.tipo}"
+                     data-conteudo="${evidencia.conteudo}"
+                     data-descricao="${evidencia.descricao}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1"><strong>Descrição:</strong> ${evidencia.descricao || 'Sem descrição'}</h6>
+                            <small class="text-muted">${evidencia.tipo === 'texto' ? 'Texto' : 'Link'}</small>
                         </div>
-                        <div class="mt-2">
-                            ${evidencia.tipo === 'texto' ?
-                                `<p class="mb-0">${evidencia.conteudo}</p>` :
-                                `<a href="${evidencia.conteudo}" target="_blank">${evidencia.conteudo}</a>`}
-                        </div>
-                    </div>`;
+                        <button class="btn btn-sm btn-outline-danger btn-remover-evidencia">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                    <div class="mt-2">
+                        <strong>Evidência:</strong>
+                        ${evidencia.tipo === 'texto' ?
+                            `<p class="mb-0">${evidencia.conteudo}</p>` :
+                            `<a href="${evidencia.conteudo}" target="_blank">${evidencia.conteudo}</a>`}
+                    </div>
+                </div>`;
                         $container.append(html);
                     });
                     $('#contadorEvidenciasProjetoAtuais').text(response.data.length);
@@ -432,28 +628,187 @@
             }
         });
 
-        // Verificar alterações em tempo real no modal de edição
+        // Evento quando o modal de solicitação de edição é aberto
         $('#solicitarEdicaoModal').on('shown.bs.modal', function() {
-            $('#formSolicitarEdicao').on('input change', function() {
-                let hasChanges = false;
-                const form = $(this);
+            const projetoId = $('#solicitarEdicaoId').val();
+            if (!projetoId) return;
 
-                ['identificador', 'nome', 'descricao', 'projeto_vinculado', 'id_eixo', 'responsaveis'].forEach(field => {
-                    const currentValue = form.find(`[name="${field}"]`).val();
-                    if (formOriginalData[field] != currentValue) {
-                        hasChanges = true;
+            // Resetar contadores e listas
+            $('#evidenciasProjetoAtuaisListSolicitacao .list-group').html(
+                '<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Carregando evidências...</div>'
+            );
+            $('#evidenciasProjetoRemoverListSolicitacao .list-group').empty();
+            $('#contadorEvidenciasProjetoAtuaisSolicitacao, #contadorEvidenciasProjetoRemoverSolicitacao').text('0');
+
+            // Carregar evidências
+            $.ajax({
+                url: `<?= site_url('projetos/listar-evidencias/') ?>${projetoId}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success && response.data) {
+                        renderizarEvidenciasSolicitacao(response.data, '#evidenciasProjetoAtuaisListSolicitacao .list-group');
+                        $('#contadorEvidenciasProjetoAtuaisSolicitacao').text(response.data.length || 0);
+                    } else {
+                        $('#evidenciasProjetoAtuaisListSolicitacao .list-group').html(
+                            '<div class="text-center py-3 text-muted"><i class="fas fa-info-circle"></i> Nenhuma evidência encontrada</div>'
+                        );
                     }
-                });
-
-                if (hasChanges) {
-                    $('#alertNenhumaAlteracao').addClass('d-none');
-                    $('#formSolicitarEdicao button[type="submit"]').prop('disabled', false);
-                } else {
-                    $('#alertNenhumaAlteracao').removeClass('d-none');
-                    $('#formSolicitarEdicao button[type="submit"]').prop('disabled', true);
+                },
+                error: function(xhr, status, error) {
+                    $('#evidenciasProjetoAtuaisListSolicitacao .list-group').html(
+                        '<div class="text-center py-3 text-danger"><i class="fas fa-exclamation-circle"></i> Erro ao carregar evidências</div>'
+                    );
                 }
             });
         });
+
+        // Função para renderizar evidências no modal de solicitação
+        function renderizarEvidenciasSolicitacao(evidencias, containerSelector) {
+            const $container = $(containerSelector);
+            $container.empty();
+
+            if (evidencias && evidencias.length > 0) {
+                evidencias.forEach(evidencia => {
+                    const html = `
+                <div class="list-group-item"
+                     data-id="${evidencia.id}"
+                     data-tipo="${evidencia.tipo}"
+                     data-conteudo="${evidencia.conteudo}"
+                     data-descricao="${evidencia.descricao}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">${evidencia.descricao || 'Sem descrição'}</h6>
+                            <small class="text-muted">${evidencia.tipo === 'texto' ? 'Texto' : 'Link'}</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger btn-remover-evidencia-solicitacao" title="Remover evidência">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                    <div class="mt-2">
+                        ${evidencia.tipo === 'texto' ?
+                            `<p class="mb-0">${evidencia.conteudo}</p>` :
+                            `<a href="${evidencia.conteudo}" target="_blank">${evidencia.conteudo}</a>`}
+                    </div>
+                </div>`;
+                    $container.append(html);
+                });
+            } else {
+                $container.html('<div class="text-center py-3 text-muted"><i class="fas fa-info-circle"></i> Nenhuma evidência encontrada</div>');
+            }
+        }
+
+        // Alternar entre tipos de evidência (texto/link) no modal de solicitação
+        $('input[name="evidencia_projeto_tipo_solicitacao"]').change(function() {
+            if ($(this).val() === 'texto') {
+                $('#solicitarEdicaoGrupoTexto').removeClass('d-none');
+                $('#solicitarEdicaoGrupoLink').addClass('d-none');
+            } else {
+                $('#solicitarEdicaoGrupoTexto').addClass('d-none');
+                $('#solicitarEdicaoGrupoLink').removeClass('d-none');
+            }
+        });
+
+        // Adicionar evidência à lista (apenas localmente) no modal de solicitação
+        $('#btnAdicionarEvidenciaProjetoSolicitacao').click(function() {
+            var tipo = $('input[name="evidencia_projeto_tipo_solicitacao"]:checked').val();
+            var conteudo = tipo === 'texto' ? $('#solicitarEdicaoEvidenciaTexto').val() : $('#solicitarEdicaoEvidenciaLink').val();
+            var descricao = $('#solicitarEdicaoEvidenciaDescricao').val();
+
+            if (!conteudo) {
+                showErrorAlert('Preencha o conteúdo da evidência');
+                return;
+            }
+
+            var html = `
+        <div class="list-group-item evidencia-nova"
+             data-tipo="${tipo}"
+             data-conteudo="${conteudo}"
+             data-descricao="${descricao}">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">${descricao || 'Sem descrição'}</h6>
+                    <small class="text-muted">${tipo === 'texto' ? 'Texto' : 'Link'}</small>
+                </div>
+                <button class="btn btn-sm btn-outline-danger btn-remover-evidencia-solicitacao" title="Remover evidência">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+            <div class="mt-2">
+                ${tipo === 'texto' ?
+                    `<p class="mb-0">${conteudo}</p>` :
+                    `<a href="${conteudo}" target="_blank">${conteudo}</a>`}
+            </div>
+        </div>`;
+
+            $('#evidenciasProjetoAtuaisListSolicitacao .list-group').append(html);
+
+            // Limpa os campos
+            if (tipo === 'texto') {
+                $('#solicitarEdicaoEvidenciaTexto').val('');
+            } else {
+                $('#solicitarEdicaoEvidenciaLink').val('');
+            }
+            $('#solicitarEdicaoEvidenciaDescricao').val('');
+
+            // Atualiza o contador
+            var count = $('#evidenciasProjetoAtuaisListSolicitacao .list-group-item').length;
+            $('#contadorEvidenciasProjetoAtuaisSolicitacao').text(count);
+        });
+
+        // Remover evidência da lista (apenas localmente) no modal de solicitação
+        $(document).on('click', '.btn-remover-evidencia-solicitacao', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            var $item = $(this).closest('.list-group-item');
+            var id = $item.data('id');
+
+            if (id) {
+                // Apenas move para a lista de remoção (não remove do banco ainda)
+                $item.removeClass('list-group-item-danger')
+                    .addClass('list-group-item-warning')
+                    .find('.btn-remover-evidencia-solicitacao')
+                    .removeClass('btn-outline-danger')
+                    .addClass('btn-outline-secondary')
+                    .html('<i class="fas fa-undo"></i>')
+                    .attr('title', 'Desfazer remoção');
+
+                // Move o item para a lista de remoção
+                $('#evidenciasProjetoRemoverListSolicitacao .list-group').append($item);
+
+                // Atualiza contadores
+                $('#contadorEvidenciasProjetoAtuaisSolicitacao').text($('#evidenciasProjetoAtuaisListSolicitacao .list-group-item').length);
+                $('#contadorEvidenciasProjetoRemoverSolicitacao').text($('#evidenciasProjetoRemoverListSolicitacao .list-group-item').length);
+            } else {
+                // Se não tem ID, é nova - pode remover imediatamente
+                $item.remove();
+                $('#contadorEvidenciasProjetoAtuaisSolicitacao').text($('#evidenciasProjetoAtuaisListSolicitacao .list-group-item').length);
+            }
+        });
+
+        // Desfazer remoção de evidência no modal de solicitação
+        $(document).on('click', '.btn-remover-evidencia-solicitacao.btn-outline-secondary', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            var $item = $(this).closest('.list-group-item');
+            $item.removeClass('list-group-item-warning')
+                .find('.btn-remover-evidencia-solicitacao')
+                .removeClass('btn-outline-secondary')
+                .addClass('btn-outline-danger')
+                .html('<i class="fas fa-trash-alt"></i>')
+                .attr('title', 'Remover evidência');
+
+            // Move de volta para a lista atual
+            $('#evidenciasProjetoAtuaisListSolicitacao .list-group').append($item);
+
+            // Atualiza contadores
+            $('#contadorEvidenciasProjetoAtuaisSolicitacao').text($('#evidenciasProjetoAtuaisListSolicitacao .list-group-item').length);
+            $('#contadorEvidenciasProjetoRemoverSolicitacao').text($('#evidenciasProjetoRemoverListSolicitacao .list-group-item').length);
+        });
+
+
 
         // Função para renderizar evidências
         function renderizarEvidencias(evidencias, containerSelector) {
@@ -470,7 +825,7 @@
                  data-descricao="${evidencia.descricao}">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="mb-1">${evidencia.descricao || 'Sem descrição'}</h6>
+                        <h6 class="mb-1"><strong>Descrição:</strong> ${evidencia.descricao || 'Sem descrição'}</h6>
                         <small class="text-muted">${evidencia.tipo === 'texto' ? 'Texto' : 'Link'}</small>
                     </div>
                     <button class="btn btn-sm btn-outline-danger btn-remover-evidencia" title="Remover evidência">
@@ -478,9 +833,10 @@
                     </button>
                 </div>
                 <div class="mt-2">
-                    ${evidencia.tipo === 'texto' ?
-                        `<p class="mb-0">${evidencia.conteudo}</p>` :
-                        `<a href="${evidencia.conteudo}" target="_blank">${evidencia.conteudo}</a>`}
+                    <strong>Evidência:</strong>
+                    ${evidencia.tipo === 'texto'
+                        ? `<p class="mb-0">${evidencia.conteudo}</p>`
+                        : `<a href="${evidencia.conteudo}" target="_blank">${evidencia.conteudo}</a>`}
                 </div>
             </div>`;
                     $container.append(html);
@@ -542,8 +898,10 @@
         // Adicionar evidência à lista (apenas localmente)
         $('#btnAdicionarEvidenciaProjeto').click(function() {
             var tipo = $('input[name="evidencia_projeto_tipo"]:checked').val();
-            var conteudo = tipo === 'texto' ? $('#editProjetoEvidenciaTexto').val() : $('#editProjetoEvidenciaLink').val();
-            var descricao = $('#editProjetoEvidenciaDescricao').val();
+            var conteudo = tipo === 'texto' ?
+                $('#editProjetoEvidenciaTexto').val().trim() :
+                $('#editProjetoEvidenciaLink').val().trim();
+            var descricao = $('#editProjetoEvidenciaDescricao').val().trim();
 
             if (!conteudo) {
                 showErrorAlert('Preencha o conteúdo da evidência');
@@ -557,7 +915,7 @@
          data-descricao="${descricao}">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <h6 class="mb-1">${descricao || 'Sem descrição'}</h6>
+                <h6 class="mb-1"><strong>Descrição:</strong> ${descricao || 'Sem descrição'}</h6>
                 <small class="text-muted">${tipo === 'texto' ? 'Texto' : 'Link'}</small>
             </div>
             <button class="btn btn-sm btn-outline-danger btn-remover-evidencia" title="Remover evidência">
@@ -565,9 +923,10 @@
             </button>
         </div>
         <div class="mt-2">
-            ${tipo === 'texto' ?
-                `<p class="mb-0">${conteudo}</p>` :
-                `<a href="${conteudo}" target="_blank">${conteudo}</a>`}
+            <strong>Evidência:</strong>
+            ${tipo === 'texto'
+                ? `<p class="mb-0">${conteudo}</p>`
+                : `<a href="${conteudo}" target="_blank">${conteudo}</a>`}
         </div>
     </div>`;
 

@@ -150,26 +150,7 @@
         $('#dataTable').DataTable({
             "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json",
-                "emptyTable": "Nenhum dado disponível na tabela",
-                "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
-                "infoEmpty": "Mostrando 0 a 0 de 0 registros",
-                "infoFiltered": "(filtrado de _MAX_ registros no total)",
-                "lengthMenu": "Mostrar _MENU_ registros por página",
-                "loadingRecords": "Carregando...",
-                "processing": "Processando...",
-                "search": "Pesquisar:",
-                "zeroRecords": "Nenhum registro correspondente encontrado",
-                "paginate": {
-                    "first": "Primeira",
-                    "last": "Última",
-                    "next": "Próxima",
-                    "previous": "Anterior"
-                },
-                "aria": {
-                    "sortAscending": ": ativar para ordenar coluna ascendente",
-                    "sortDescending": ": ativar para ordenar coluna descendente"
-                }
+                "url": "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json"
             },
             "responsive": true,
             "autoWidth": false,
@@ -177,350 +158,260 @@
             "pageLength": 10,
             "order": [
                 [4, 'desc']
-            ],
-            "columnDefs": [{
-                    responsivePriority: 1,
-                    targets: 0
-                },
-                {
-                    responsivePriority: 2,
-                    targets: 6
-                },
-                {
-                    responsivePriority: 3,
-                    targets: 4
-                },
-                {
-                    responsivePriority: 4,
-                    targets: 5
-                },
-                {
-                    responsivePriority: 5,
-                    targets: 2
-                },
-                {
-                    responsivePriority: 6,
-                    targets: 3
-                },
-                {
-                    responsivePriority: 7,
-                    targets: 1
-                }
             ]
         });
 
         // Abre modal de avaliação
         $(document).on('click', '.avaliar-btn', function() {
             var id = $(this).data('id');
+            console.log('[FRONTEND] Botão avaliar clicado para solicitação ID:', id);
 
-            // Reset do modal
+            // Mostra loading e reseta o modal
             $('#formAvaliar')[0].reset();
             $('#modalLoading').show();
             $('#modalContent').hide();
-
             $('#avaliarModal').modal('show');
 
             $.ajax({
                 url: '<?= site_url('solicitacoes/avaliar') ?>/' + id,
                 type: 'GET',
                 dataType: 'json',
+                beforeSend: function() {
+                    console.log('[FRONTEND] Enviando requisição AJAX para:', this.url);
+                },
                 success: function(response) {
-                    console.log('Resposta completa:', response);
+                    console.groupCollapsed('[FRONTEND] Resposta completa da API - Solicitação ID:', id);
+                    console.log('Status:', response.success ? 'SUCESSO' : 'ERRO');
+                    console.log('Dados básicos:', {
+                        tipo: response.tipo,
+                        nivel: response.nivel,
+                        solicitante: response.data.solicitante
+                    });
+
+                    console.log('Dados atuais (antes das alterações):', response.dados_atuais);
+                    console.log('Dados alterados (solicitados):', response.dados_alterados);
+
+                    if (response.dados_alterados.evidencias) {
+                        console.group('Evidências:');
+                        console.log('Total a adicionar:', response.dados_alterados.evidencias.adicionar?.length || 0);
+                        console.log('Total a remover:', response.dados_alterados.evidencias.remover?.length || 0);
+                        console.log('Detalhes:', response.dados_alterados.evidencias);
+                        console.groupEnd();
+                    }
+                    console.groupEnd();
 
                     if (response.success) {
                         $('#solicitacaoId').val(id);
-                        console.log('Dados atuais recebidos:', response.dados_atuais);
-                        console.log('Dados alterados recebidos:', response.dados_alterados);
-
-                        // Formatadores para melhor exibição
-                        function formatFieldName(name) {
-                            const names = {
-                                'id': 'ID',
-                                'nome': 'Nome',
-                                'sigla': 'Sigla',
-                                'descricao': 'Descrição',
-                                'identificador': 'Identificador',
-                                'projeto_vinculado': 'Projeto Vinculado',
-                                'priorizacao_gab': 'Priorização GAB',
-                                'id_eixo': 'Eixo',
-                                'id_plano': 'Plano',
-                                'responsaveis': 'Responsáveis',
-                                'projeto': 'Projeto',
-                                'responsavel': 'Responsável',
-                                'equipe': 'Equipe',
-                                'tempo_estimado_dias': 'Tempo Estimado (dias)',
-                                'entrega_estimada': 'Entrega Estimada',
-                                'data_inicio': 'Data Início',
-                                'data_fim': 'Data Fim',
-                                'status': 'Status',
-                                'ordem': 'Ordem',
-                                'id_projeto': 'Projeto',
-                                'id_etapa': 'Etapa'
-                            };
-                            return names[name] || name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                        }
-
-                        function formatFieldValue(value, key) {
-                            if (value === null || value === '' || value === undefined)
-                                return '<span class="text-muted">Não informado</span>';
-
-                            // Tratamento especial para equipe_real
-                            if (key === 'equipe_real') {
-                                if (Array.isArray(value)) {
-                                    if (value.length === 0) {
-                                        return '<span class="text-muted">Nenhum membro na equipe</span>';
-                                    }
-                                    return value.join(', ');
-                                }
-                                return value;
-                            }
-
-                            // Tratamento especial para o campo equipe (alterações)
-                            if (key === 'equipe') {
-                                if (typeof value === 'object' && value !== null) {
-                                    let html = '';
-                                    if (value.adicionar && value.adicionar.length > 0) {
-                                        html += '<div class="text-success"><small>Adicionar:</small><br>';
-                                        html += value.adicionar.join(', ');
-                                        html += '</div>';
-                                    }
-                                    if (value.remover && value.remover.length > 0) {
-                                        html += '<div class="text-danger"><small>Remover:</small><br>';
-                                        html += value.remover.join(', ');
-                                        html += '</div>';
-                                    }
-                                    return html || '<span class="text-muted">Nenhuma alteração na equipe</span>';
-                                }
-                                return value;
-                            }
-
-                            // Formatação de datas
-                            if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                                const [year, month, day] = value.split('-');
-                                return `${day}/${month}/${year}`;
-                            }
-                            if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
-                                const [date, time] = value.split(' ');
-                                const [year, month, day] = date.split('-');
-                                return `${day}/${month}/${year} ${time}`;
-                            }
-                            if (typeof value === 'boolean') {
-                                return value ? 'Sim' : 'Não';
-                            }
-                            return value;
-                        }
-
-                        // Função para formatar evidências
-                        function formatEvidence(evidence) {
-                            if (!evidence) return '';
-
-                            let html = '';
-                            if (evidence.tipo === 'texto') {
-                                html += `<div class="p-2 bg-light rounded mb-2">${evidence.conteudo}</div>`;
-                            } else if (evidence.tipo === 'link') {
-                                html += `<a href="${evidence.conteudo}" target="_blank" class="d-block mb-2">${evidence.conteudo}</a>`;
-                            }
-
-                            if (evidence.descricao) {
-                                html += `<small class="text-muted">${evidence.descricao}</small>`;
-                            }
-
-                            return html;
-                        }
-
-                        const tipoSolicitacao = response.tipo.toLowerCase();
-                        const isInclusao = tipoSolicitacao === 'inclusão';
-                        const isExclusao = tipoSolicitacao === 'exclusão';
-                        const nivel = response.nivel || 'registro';
-                        const nivelFormatado = nivel.charAt(0).toUpperCase() + nivel.slice(1);
 
                         // Preenche tabela de dados atuais
                         let htmlAtuais = '';
-
-                        if (isInclusao) {
+                        if (response.tipo.toLowerCase() === 'inclusão') {
                             htmlAtuais = `
-                <tr>
-                    <th width="30%">Tipo</th>
-                    <td>Novo(a) ${nivelFormatado}</td>
-                </tr>
-                <tr>
-                    <th width="30%">Status</th>
-                    <td><span class="badge badge-info">Novo Registro</span></td>
-                </tr>`;
+                        <tr><th width="30%">Tipo</th><td>Novo(a) ${response.nivel.charAt(0).toUpperCase() + response.nivel.slice(1)}</td></tr>
+                        <tr><th width="30%">Status</th><td><span class="badge badge-info">Novo Registro</span></td></tr>`;
                         } else {
-                            // Ordem específica dos campos
-                            const ordemCampos = [
-                                'nome',
-                                'projeto',
-                                'responsavel',
-                                'equipe_real',
-                                'tempo_estimado_dias',
-                                'entrega_estimada',
-                                'data_inicio',
-                                'data_fim',
-                                'status',
-                                'projeto_vinculado',
-                                'ordem',
-                                'etapa'
-                            ];
-
-                            // Monta a tabela na ordem especificada
-                            ordemCampos.forEach(campo => {
-                                if (response.dados_atuais[campo] !== undefined) {
-                                    const displayName = campo === 'equipe_real' ? 'Equipe' : formatFieldName(campo);
-                                    htmlAtuais += `
-                        <tr>
-                            <th width="30%">${displayName}</th>
-                            <td>${formatFieldValue(response.dados_atuais[campo], campo)}</td>
-                        </tr>`;
-                                }
-                            });
-
-                            // Adiciona outros campos que não estão na ordem especificada
                             for (let key in response.dados_atuais) {
-                                if (!ordemCampos.includes(key) && key !== 'equipe') {
+                                if (key !== 'equipe') {
                                     htmlAtuais += `
-                        <tr>
-                            <th width="30%">${formatFieldName(key)}</th>
-                            <td>${formatFieldValue(response.dados_atuais[key], key)}</td>
-                        </tr>`;
+                                <tr>
+                                    <th width="30%">${formatFieldName(key)}</th>
+                                    <td>${formatFieldValue(response.dados_atuais[key], key)}</td>
+                                </tr>`;
                                 }
                             }
                         }
-
                         $('#tabelaDadosAtuais').html(htmlAtuais);
 
                         // Preenche tabela de alterações
                         let htmlAlterados = '';
-
-                        if (isInclusao) {
+                        if (response.tipo.toLowerCase() === 'inclusão') {
                             for (let key in response.dados_alterados) {
                                 htmlAlterados += `
-                    <tr>
-                        <th width="30%">${formatFieldName(key)}</th>
-                        <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key], key)}</strong></td>
-                    </tr>`;
+                            <tr>
+                                <th width="30%">${formatFieldName(key)}</th>
+                                <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key], key)}</strong></td>
+                            </tr>`;
                             }
-                        } else if (isExclusao) {
+                        } else if (response.tipo.toLowerCase() === 'exclusão') {
                             htmlAlterados = `
-                <tr>
-                    <th width="30%">Tipo</th>
-                    <td class="text-danger"><strong>Exclusão de ${nivelFormatado}</strong></td>
-                </tr>
-                <tr>
-                    <th width="30%">Status</th>
-                    <td><span class="badge badge-danger">Registro será removido</span></td>
-                </tr>`;
+                        <tr><th width="30%">Tipo</th><td class="text-danger"><strong>Exclusão de ${response.nivel.charAt(0).toUpperCase() + response.nivel.slice(1)}</strong></td></tr>
+                        <tr><th width="30%">Status</th><td><span class="badge badge-danger">Registro será removido</span></td></tr>`;
                         } else {
+                            // Processa alterações normais
                             for (let key in response.dados_alterados) {
-                                // Pular evidências - trataremos separadamente
-                                if (key === 'evidencias') continue;
+                                if (key === 'evidencias') {
+                                    // Evidências a adicionar
+                                    if (response.dados_alterados.evidencias.adicionar?.length > 0) {
+                                        htmlAlterados += `
+                                    <tr>
+                                        <th width="30%">Evidências a Adicionar</th>
+                                        <td>
+                                            <div class="text-success">`;
 
-                                if (key === 'equipe' && typeof response.dados_alterados[key] === 'object') {
-                                    htmlAlterados += `
-                        <tr>
-                            <th width="30%">${formatFieldName(key)}</th>
-                            <td>${formatFieldValue(response.dados_alterados[key], key)}</td>
-                        </tr>`;
-                                } else if (response.dados_alterados[key] && typeof response.dados_alterados[key] === 'object') {
-                                    htmlAlterados += `
-                        <tr>
-                            <th width="30%">${formatFieldName(key)}</th>
-                            <td>
-                                <div class="text-danger mb-1"><small>Atual:</small><br><s>${formatFieldValue(response.dados_alterados[key].de, key)}</s></div>
-                                <div class="text-success"><small>Novo:</small><br><strong>${formatFieldValue(response.dados_alterados[key].para, key)}</strong></div>
-                            </td>
-                        </tr>`;
-                                } else {
-                                    htmlAlterados += `
-                        <tr>
-                            <th width="30%">${formatFieldName(key)}</th>
-                            <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key], key)}</strong></td>
-                        </tr>`;
-                                }
-                            }
-
-                            // Tratamento especial para evidências
-                            if (response.dados_alterados.evidencias) {
-                                const evidencias = response.dados_alterados.evidencias;
-
-                                // Evidências para adicionar
-                                if (evidencias.adicionar && evidencias.adicionar.length > 0) {
-                                    htmlAlterados += `
-                        <tr>
-                            <th width="30%">Evidências a Adicionar</th>
-                            <td>
-                                <div class="text-success">
-                                    ${evidencias.adicionar.map(ev => `
+                                        response.dados_alterados.evidencias.adicionar.forEach(ev => {
+                                            htmlAlterados += `
                                         <div class="mb-3 p-2 border border-success rounded">
-                                            <strong>Tipo:</strong> ${ev.tipo}<br>
                                             ${formatEvidence(ev)}
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </td>
-                        </tr>`;
-                                }
+                                        </div>`;
+                                        });
 
-                                // Evidências para remover
-                                if (evidencias.remover && evidencias.remover.length > 0) {
-                                    htmlAlterados += `
-                        <tr>
-                            <th width="30%">Evidências a Remover</th>
-                            <td>
-                                <div class="text-danger">
-                                    ${evidencias.remover.map(ev => `
+                                        htmlAlterados += `</div></td></tr>`;
+                                    }
+
+                                    // Evidências a remover
+                                    if (response.dados_alterados.evidencias.remover?.length > 0) {
+                                        htmlAlterados += `
+                                    <tr>
+                                        <th width="30%">Evidências a Remover</th>
+                                        <td>
+                                            <div class="text-danger">`;
+
+                                        response.dados_alterados.evidencias.remover.forEach(ev => {
+                                            htmlAlterados += `
                                         <div class="mb-3 p-2 border border-danger rounded">
-                                            <strong>ID:</strong> ${ev.id}<br>
-                                            <strong>Tipo:</strong> ${ev.tipo}<br>
                                             ${formatEvidence(ev)}
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </td>
-                        </tr>`;
-                                }
-                            }
+                                        </div>`;
+                                        });
 
-                            if (htmlAlterados === '') {
-                                htmlAlterados = `
-                    <tr>
-                        <td colspan="2" class="text-center text-muted">
-                            Nenhuma alteração detectada nos campos
-                        </td>
-                    </tr>`;
+                                        htmlAlterados += `</div></td></tr>`;
+                                    }
+                                } else if (key !== 'equipe') {
+                                    htmlAlterados += `
+                                <tr>
+                                    <th width="30%">${formatFieldName(key)}</th>
+                                    <td>${formatFieldValue(response.dados_alterados[key], key)}</td>
+                                </tr>`;
+                                }
                             }
                         }
                         $('#tabelaDadosAlterados').html(htmlAlterados);
 
                         // Preenche informações do solicitante
                         $('#nomeSolicitante').text(response.data.solicitante || 'Não informado');
-                        const dataSolicitacao = response.data.data_solicitacao ?
-                            new Date(response.data.data_solicitacao).toLocaleString('pt-BR') :
-                            'Não informado';
-                        $('#dataSolicitacao').text(dataSolicitacao);
+                        $('#dataSolicitacao').text(response.data.data_solicitacao ?
+                            new Date(response.data.data_solicitacao).toLocaleString('pt-BR') : 'Não informado');
 
-                        if (response.data.justificativa_solicitante && response.data.justificativa_solicitante.trim() !== '') {
+                        if (response.data.justificativa_solicitante?.trim()) {
                             $('#justificativaSolicitacao').html(response.data.justificativa_solicitante);
-                        } else {
-                            $('#justificativaSolicitacao').html('<em class="text-muted">Nenhuma justificativa fornecida.</em>');
                         }
 
-                        // Mostra conteúdo e esconde loader
+                        // Mostra conteúdo
                         $('#modalLoading').hide();
                         $('#modalContent').show();
-
+                        console.log('[FRONTEND] Modal preenchido com sucesso');
                     } else {
+                        console.error('[FRONTEND] Erro na resposta:', response.message);
                         Swal.fire('Erro', response.message || 'Erro ao carregar solicitação', 'error');
                         $('#avaliarModal').modal('hide');
                     }
                 },
-                error: function() {
-                    Swal.fire('Erro', 'Falha ao comunicar com o servidor', 'error');
+                error: function(xhr, status, error) {
+                    console.groupCollapsed('[FRONTEND] Erro na requisição AJAX');
+                    console.error('Status:', status);
+                    console.error('Mensagem:', error);
+                    console.error('Resposta:', xhr.responseText);
+                    console.groupEnd();
+
+                    Swal.fire({
+                        title: 'Erro de Comunicação',
+                        text: 'Falha ao carregar dados da solicitação. Verifique sua conexão e tente novamente.',
+                        icon: 'error'
+                    });
                     $('#avaliarModal').modal('hide');
                 }
             });
         });
+
+        // Funções auxiliares
+        function formatFieldName(name) {
+            const names = {
+                'id': 'ID',
+                'nome': 'Nome',
+                'sigla': 'Sigla',
+                'descricao': 'Descrição',
+                'identificador': 'Identificador',
+                'projeto_vinculado': 'Projeto Vinculado',
+                'priorizacao_gab': 'Priorização GAB',
+                'id_eixo': 'Eixo',
+                'id_plano': 'Plano',
+                'responsaveis': 'Responsáveis',
+                'projeto': 'Projeto',
+                'responsavel': 'Responsável',
+                'equipe': 'Equipe',
+                'tempo_estimado_dias': 'Tempo Estimado (dias)',
+                'entrega_estimada': 'Entrega Estimada',
+                'data_inicio': 'Data Início',
+                'data_fim': 'Data Fim',
+                'status': 'Status',
+                'ordem': 'Ordem'
+            };
+            return names[name] || name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+        function formatFieldValue(value, key) {
+            if (value === null || value === '' || value === undefined) {
+                return '<span class="text-muted">Não informado</span>';
+            }
+
+            // Formatação especial para equipe
+            if (key === 'equipe_real' && Array.isArray(value)) {
+                return value.length > 0 ? value.join(', ') : '<span class="text-muted">Nenhum membro</span>';
+            }
+
+            // Formatação de datas
+            if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                const [y, m, d] = value.split('-');
+                return `${d}/${m}/${y}`;
+            }
+            if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+                const [date, time] = value.split(' ');
+                const [y, m, d] = date.split('-');
+                return `${d}/${m}/${y} ${time}`;
+            }
+
+            return value;
+        }
+
+        function formatEvidence(evidence) {
+            console.log('[FRONTEND] Formatando evidência:', evidence);
+
+            if (!evidence) {
+                return '<em class="text-muted">Sem conteúdo</em>';
+            }
+
+            let html = '<div class="p-2 mb-2">';
+
+            // Determina o conteúdo real da evidência
+            let conteudo = evidence.link || evidence.evidencia || evidence.conteudo;
+            let isLink = false;
+
+            // Verifica se é um link (começa com http ou https)
+            if (typeof conteudo === 'string' && (conteudo.startsWith('http://') || conteudo.startsWith('https://'))) {
+                isLink = true;
+            }
+
+            // Exibe o conteúdo
+            if (isLink) {
+                html += `<div class="mb-1"><strong>Evidência:</strong> <a href="${conteudo}" target="_blank">${conteudo}</a></div>`;
+            } else if (conteudo) {
+                html += `<div class="mb-1"><strong>Evidência:</strong> ${conteudo}</div>`;
+            } else {
+                html += `<div class="mb-1"><strong>Evidência:</strong> <em class="text-muted">Sem conteúdo</em></div>`;
+            }
+
+            // Descrição (se existir)
+            if (evidence.descricao) {
+                html += `<div class="mb-1"><strong>Descrição:</strong> ${evidence.descricao}</div>`;
+            }
+
+            // ID (se existir)
+            if (evidence.id) {
+                html += `<div class="text-muted small">ID: ${evidence.id}</div>`;
+            }
+
+            html += '</div>';
+            return html;
+        }
 
         // Processa aceitação
         $('.aceitar-btn').click(function() {

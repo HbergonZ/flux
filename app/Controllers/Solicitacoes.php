@@ -78,30 +78,32 @@ class Solicitacoes extends BaseController
 
     public function avaliar($id)
     {
-        log_message('debug', 'Iniciando avaliação da solicitação ID: ' . $id);
+        log_message('debug', '==== INÍCIO avaliar() ====');
+        log_message('debug', '[Solicitacoes] Iniciando avaliação da solicitação ID: ' . $id);
 
         if (!$this->request->isAJAX()) {
-            log_message('debug', 'Acesso não é AJAX - redirecionando');
+            log_message('debug', '[Solicitacoes] Acesso não é AJAX - redirecionando');
             return redirect()->back();
         }
 
         $solicitacao = $this->solicitacoesModel->find($id);
         if (!$solicitacao) {
-            log_message('error', 'Solicitação não encontrada - ID: ' . $id);
+            log_message('error', '[Solicitacoes] Solicitação não encontrada - ID: ' . $id);
             return $this->response->setJSON(['success' => false, 'message' => 'Solicitação não encontrada']);
         }
 
-        log_message('debug', 'Solicitação encontrada: ' . print_r($solicitacao, true));
+        log_message('debug', '[Solicitacoes] Dados brutos da solicitação: ' . print_r($solicitacao, true));
 
         $dadosAtuais = $this->parseSolicitacaoData($solicitacao['dados_atuais']);
         $dadosAlterados = $this->parseSolicitacaoData($solicitacao['dados_alterados']);
 
-        log_message('debug', 'Dados atuais brutos: ' . print_r($dadosAtuais, true));
-        log_message('debug', 'Dados alterados brutos: ' . print_r($dadosAlterados, true));
+        log_message('debug', '[Solicitacoes] Dados atuais decodificados:' . print_r($dadosAtuais, true));
+        log_message('debug', '[Solicitacoes] Dados alterados decodificados:' . print_r($dadosAlterados, true));
 
-        // Se for uma ação, buscar os usuários da tabela acoes_equipe
+        // Se for uma ação, buscar equipe atual
         if ($solicitacao['nivel'] === 'acao' && !empty($solicitacao['id_acao'])) {
             $equipeAtual = $this->acoesModel->getEquipeAcao($solicitacao['id_acao']);
+            log_message('debug', '[Solicitacoes] Equipe atual:' . print_r($equipeAtual, true));
 
             if (!empty($equipeAtual)) {
                 $dadosAtuais['equipe_real'] = array_map(function ($membro) {
@@ -112,22 +114,21 @@ class Solicitacoes extends BaseController
             }
         }
 
-        // Processar alterações na equipe (se houver)
-        if (isset($dadosAlterados['equipe']) && is_array($dadosAlterados['equipe'])) {
-            foreach ($dadosAlterados['equipe'] as $acao => $ids) {
-                if (is_array($ids)) {
-                    // Usar a tabela users do Shield
-                    $usuarios = $this->userModel->whereIn('id', $ids)->findAll();
-                    $nomesUsuarios = array_column($usuarios, 'username');
-                    $dadosAlterados['equipe'][$acao] = $nomesUsuarios;
-                }
-            }
+        // Processar evidências para projeto
+        if ($solicitacao['nivel'] === 'projeto' && isset($dadosAlterados['evidencias'])) {
+            log_message('debug', '[Solicitacoes] Processando evidências para projeto');
+            $dadosAlterados['evidencias'] = $this->processarEvidenciasParaVisualizacao(
+                $dadosAlterados['evidencias'],
+                $solicitacao['id_projeto']
+            );
+            log_message('debug', '[Solicitacoes] Evidências processadas:' . print_r($dadosAlterados['evidencias'], true));
         }
 
         // Obter nome do solicitante
         $solicitante = $this->getSolicitanteName($solicitacao['id_solicitante']);
 
-        return $this->response->setJSON([
+        log_message('debug', '[Solicitacoes] Preparando resposta JSON');
+        $response = [
             'success' => true,
             'data' => [
                 'solicitante' => $solicitante,
@@ -138,7 +139,12 @@ class Solicitacoes extends BaseController
             'dados_alterados' => $dadosAlterados,
             'tipo' => $solicitacao['tipo'],
             'nivel' => $solicitacao['nivel']
-        ]);
+        ];
+
+        log_message('debug', '[Solicitacoes] Resposta final:' . print_r($response, true));
+        log_message('debug', '==== FIM avaliar() ====');
+
+        return $this->response->setJSON($response);
     }
 
     protected function processarAlteracoesEquipeNomes($equipeData)
@@ -477,5 +483,34 @@ class Solicitacoes extends BaseController
     protected function getIdField($nivel)
     {
         return 'id_' . $nivel;
+    }
+
+    protected function processarEvidenciasParaVisualizacao($evidenciasSolicitadas, $idRegistro)
+    {
+        $resultado = ['adicionar' => [], 'remover' => []];
+
+        if (empty($evidenciasSolicitadas)) {
+            return $resultado;
+        }
+
+        // Tratar evidências para adicionar
+        if (isset($evidenciasSolicitadas['adicionar'])) {
+            // Caso direto: {'adicionar': [...]}
+            $resultado['adicionar'] = $evidenciasSolicitadas['adicionar'];
+        } elseif (isset($evidenciasSolicitadas['evidencias']['adicionar'])) {
+            // Caso aninhado: {'evidencias': {'adicionar': [...]}}
+            $resultado['adicionar'] = $evidenciasSolicitadas['evidencias']['adicionar'];
+        }
+
+        // Tratar evidências para remover
+        if (isset($evidenciasSolicitadas['remover'])) {
+            // Caso direto: {'remover': [...]}
+            $resultado['remover'] = $evidenciasSolicitadas['remover'];
+        } elseif (isset($evidenciasSolicitadas['evidencias']['remover'])) {
+            // Caso aninhado: {'evidencias': {'remover': [...]}}
+            $resultado['remover'] = $evidenciasSolicitadas['evidencias']['remover'];
+        }
+
+        return $resultado;
     }
 }

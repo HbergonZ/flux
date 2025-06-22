@@ -43,10 +43,22 @@ class EvidenciasModel extends Model
 
     public function getEvidenciasByNivel($nivel, $idNivel)
     {
-        return $this->where('nivel', $nivel)
+        $evidencias = $this->select('id, descricao, tipo, evidencia, link, created_at')
+            ->where('nivel', $nivel)
             ->where('id_nivel', $idNivel)
             ->orderBy('created_at', 'DESC')
             ->findAll();
+
+        // Processa os resultados
+        return array_map(function ($ev) {
+            return [
+                'id' => $ev['id'],
+                'descricao' => $ev['descricao'],
+                'tipo' => $ev['tipo'],
+                'conteudo' => $ev['tipo'] === 'texto' ? $ev['evidencia'] : $ev['link'],
+                'created_at' => $ev['created_at']
+            ];
+        }, $evidencias);
     }
 
     public function addEvidencia($data)
