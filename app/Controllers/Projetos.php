@@ -651,20 +651,25 @@ class Projetos extends BaseController
             // Adicionar alterações de evidências se houver
             $alteracoesEvidencias = [];
 
+            // Verificar se há evidências para adicionar ou remover
+            $hasEvidenciasChanges = false;
+
             if (!empty($evidenciasAdicionar)) {
                 $alteracoesEvidencias['adicionar'] = $evidenciasAdicionar;
+                $hasEvidenciasChanges = true;
             }
 
             if (!empty($evidenciasRemover)) {
                 $alteracoesEvidencias['remover'] = $evidenciasRemover;
+                $hasEvidenciasChanges = true;
             }
 
-            if (!empty($alteracoesEvidencias)) {
+            if ($hasEvidenciasChanges) {
                 $alteracoes['evidencias'] = $alteracoesEvidencias;
             }
 
-            // Verificar se há alterações válidas
-            if (empty($alteracoes)) {
+            // Verificar se há alterações válidas (campos ou evidências)
+            if (empty($alteracoes) && !$hasEvidenciasChanges) {
                 throw new \Exception('Nenhuma alteração detectada. Modifique pelo menos um campo para enviar a solicitação.');
             }
 

@@ -197,6 +197,7 @@
         });
 
         // No evento de submit do formulário de solicitação de edição
+        // No evento de submit do formulário de solicitação de edição
         $('#formSolicitarEdicao').submit(function(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -299,7 +300,7 @@
         // Funções auxiliares para evidências
         function getEvidenciasParaAdicionar() {
             const evidencias = [];
-            $('#evidenciasProjetoAtuaisList .list-group-item').each(function() {
+            $('#evidenciasProjetoAtuaisListSolicitacao .list-group-item').each(function() {
                 if (!$(this).data('id')) { // Se não tem ID, é nova
                     evidencias.push({
                         tipo: $(this).data('tipo'),
@@ -468,8 +469,6 @@
             var isAdmin = $(this).attr('title') === 'Editar';
             var projetoCompletoId = $(this).data('id');
             var projetoId = projetoCompletoId.split('-')[0];
-            var $botao = $(this);
-            var originalHtml = $botao.html();
 
 
             // Determinar a URL correta baseada no tipo de usuário
