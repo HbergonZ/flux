@@ -104,7 +104,7 @@
                             <th>Nome</th>
                             <th>Data Criação</th>
                             <th>Data Atualização</th>
-                            <th>Ações</th>
+                            <th>Opções</th>
                         </tr>
                     </thead>
                     <tbody>

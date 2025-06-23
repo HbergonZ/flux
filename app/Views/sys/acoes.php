@@ -163,7 +163,7 @@
                             <th>Data Início</th>
                             <th>Data Fim</th>
                             <th>Status</th>
-                            <th>Ações</th>
+                            <th>Opções</th>
                         </tr>
                     </thead>
                     <tbody>

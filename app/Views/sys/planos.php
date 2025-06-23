@@ -88,7 +88,7 @@
                             <th>Nome</th>
                             <th>Sigla</th>
                             <th>Descrição</th>
-                            <th>Ações</th>
+                            <th>Opções</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -101,8 +101,8 @@
                                     <td class="text-wrap align-middle"><?= $plano['descricao'] ?></td>
                                     <td class="text-center align-middle">
                                         <div class="d-inline-flex">
-                                            <!-- Botão Visualizar Ações -->
-                                            <a href="<?= site_url('planos/' . $plano['id'] . '/projetos') ?>" class="btn btn-info btn-sm mx-1 d-flex justify-content-center align-items-center" style="width: 32px; height: 32px;" title="Visualizar Ações">
+                                            <!-- Botão Visualizar Projetos -->
+                                            <a href="<?= site_url('planos/' . $plano['id'] . '/projetos') ?>" class="btn btn-info btn-sm mx-1 d-flex justify-content-center align-items-center" style="width: 32px; height: 32px;" title="Visualizar Projetos">
                                                 <i class="fas fa-eye"></i>
                                             </a>
 

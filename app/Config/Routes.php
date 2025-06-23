@@ -59,6 +59,7 @@ $routes->group('', function ($routes) {
     $routes->post('projetos/solicitar-exclusao', 'Projetos::solicitarExclusao');
     $routes->post('projetos/solicitar-inclusao', 'Projetos::solicitarInclusao');
     $routes->get('projetos/listar-evidencias/(:num)', 'Projetos::listarEvidencias/$1');
+    $routes->get('projetos/progresso/(:num)', 'Projetos::progresso/$1');
 
     $routes->post('planos/solicitar-edicao', 'Planos::solicitarEdicao');
     $routes->post('planos/solicitar-exclusao', 'Planos::solicitarExclusao');

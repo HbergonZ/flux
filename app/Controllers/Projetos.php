@@ -525,23 +525,67 @@ class Projetos extends BaseController
 
     public function filtrar($idPlano)
     {
-        log_message('debug', 'Aplicando filtros para projetos no plano: ' . $idPlano);
-
         if (!$this->request->isAJAX()) {
-            log_message('debug', 'Requisição não é AJAX, redirecionando');
             return redirect()->to("/planos/$idPlano/projetos");
         }
 
         $filtros = [
             'nome' => $this->request->getPost('nome'),
             'projeto_vinculado' => $this->request->getPost('projeto_vinculado'),
-            'id_eixo' => $this->request->getPost('id_eixo')
+            'id_eixo' => $this->request->getPost('id_eixo'),
+            'draw' => $this->request->getPost('draw'), // Adicionado para DataTables
+            'start' => $this->request->getPost('start'),
+            'length' => $this->request->getPost('length')
         ];
 
-        log_message('debug', 'Filtros aplicados: ' . print_r($filtros, true));
-
+        // Obter dados paginados
         $projetos = $this->projetosModel->getProjetosFiltrados($idPlano, $filtros);
-        return $this->response->setJSON(['success' => true, 'data' => $projetos]);
+        $totalRegistros = $this->projetosModel->getTotalProjetos($idPlano);
+        $totalFiltrados = $this->projetosModel->getTotalProjetos($idPlano, $filtros);
+
+        // Formatar os dados
+        $data = [];
+        foreach ($projetos as $projeto) {
+            $totalAcoes = $projeto['total_acoes'] ?? 0;
+            $acoesFinalizadas = $projeto['acoes_finalizadas'] ?? 0;
+            $percentual = ($totalAcoes > 0) ? round(($acoesFinalizadas / $totalAcoes) * 100) : 0;
+
+            $data[] = [
+                'identificador' => $projeto['identificador'],
+                'nome' => $projeto['nome'],
+                'descricao' => $projeto['descricao'],
+                'projeto_vinculado' => $projeto['projeto_vinculado'],
+                'responsaveis' => $projeto['responsaveis'],
+                'progresso' => [
+                    'percentual' => $percentual,
+                    'total_acoes' => $totalAcoes,
+                    'acoes_finalizadas' => $acoesFinalizadas,
+                    'class' => $this->getProgressClass($percentual),
+                    'texto' => ($totalAcoes > 0)
+                        ? "{$acoesFinalizadas} de {$totalAcoes} ações finalizadas"
+                        : "Nenhuma ação registrada"
+                ],
+                'acoes' => [
+                    'id' => $projeto['id'] . '-' . str_replace(' ', '-', strtolower($projeto['nome'])),
+                    'isAdmin' => auth()->user()->inGroup('admin')
+                ]
+            ];
+        }
+
+        return $this->response->setJSON([
+            'draw' => (int) $filtros['draw'],
+            'recordsTotal' => $totalRegistros,
+            'recordsFiltered' => $totalFiltrados,
+            'data' => $data
+        ]);
+    }
+
+    // Adicione este método auxiliar na classe
+    private function getProgressClass($percentual)
+    {
+        if ($percentual >= 80) return 'bg-success';
+        if ($percentual >= 50) return 'bg-warning';
+        return 'bg-danger';
     }
 
     public function dadosProjeto($idProjeto = null)
@@ -1206,6 +1250,39 @@ class Projetos extends BaseController
         } catch (\Exception $e) {
             log_message('error', 'Erro em listarEvidencias: ' . $e->getMessage());
             $response['message'] = 'Erro ao carregar evidências: ' . $e->getMessage();
+        }
+
+        return $this->response->setJSON($response);
+    }
+
+    public function progresso($idProjeto)
+    {
+        $response = ['success' => false];
+
+        try {
+            // Obter a instância do banco de dados
+            $db = \Config\Database::connect();
+
+            $totalAcoes = $db->table('acoes')
+                ->where('id_projeto', $idProjeto)
+                ->countAllResults();
+
+            $acoesFinalizadas = $db->table('acoes')
+                ->where('id_projeto', $idProjeto)
+                ->where('status', 'Finalizado')
+                ->countAllResults();
+
+            $percentual = $totalAcoes > 0 ? round(($acoesFinalizadas / $totalAcoes) * 100) : 0;
+
+            $response = [
+                'success' => true,
+                'total_acoes' => $totalAcoes,
+                'acoes_finalizadas' => $acoesFinalizadas,
+                'percentual' => $percentual
+            ];
+        } catch (\Exception $e) {
+            log_message('error', 'Erro ao calcular progresso: ' . $e->getMessage());
+            $response['message'] = 'Erro ao calcular progresso';
         }
 
         return $this->response->setJSON($response);

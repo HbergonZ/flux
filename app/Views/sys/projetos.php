@@ -118,61 +118,12 @@
                             <th>Descrição</th>
                             <th>Projeto Vinculado</th>
                             <th>Responsáveis</th>
-                            <th>Ações</th>
+                            <th>Progresso</th>
+                            <th>Opções</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if (isset($projetos) && !empty($projetos)) : ?>
-                            <?php foreach ($projetos as $projeto) :
-                                $id = $projeto['id'] . '-' . str_replace(' ', '-', strtolower($projeto['nome'])); ?>
-                                <tr>
-                                    <td class="text-wrap align-middle"><?= $projeto['identificador'] ?></td>
-                                    <td class="text-wrap align-middle"><?= $projeto['nome'] ?></td>
-                                    <td class="text-wrap align-middle"><?= $projeto['descricao'] ?></td>
-                                    <td class="text-wrap align-middle"><?= $projeto['projeto_vinculado'] ?></td>
-                                    <td class="text-wrap align-middle"><?= $projeto['responsaveis'] ?></td>
-                                    <td class="text-center align-middle">
-                                        <div class="d-inline-flex">
-                                            <!-- Botão Visualizar Etapas -->
-                                            <a href="<?= site_url("planos/{$plano['id']}/projetos/{$projeto['id']}/etapas") ?>" class="btn btn-secondary btn-sm mx-1" title="Visualizar Etapas">
-                                                <i class="fas fa-tasks"></i>
-                                            </a>
-
-                                            <!-- Botão Acessar Ações -->
-                                            <a href="<?= site_url("planos/{$plano['id']}/projetos/{$projeto['id']}/acoes") ?>" class="btn btn-info btn-sm mx-1" title="Acessar Ações">
-                                                <i class="fas fa-th-list"></i>
-                                            </a>
-
-                                            <?php if (auth()->user()->inGroup('admin')): ?>
-                                                <!-- Botão Editar -->
-                                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Editar">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-
-                                                <!-- Botão Excluir -->
-                                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Excluir">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                            <?php else: ?>
-                                                <!-- Botão Solicitar Edição -->
-                                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Edição">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-
-                                                <!-- Botão Solicitar Exclusão -->
-                                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Exclusão">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else : ?>
-                            <tr>
-                                <td colspan="6" class="text-center">Nenhum projeto encontrado</td>
-                            </tr>
-                        <?php endif; ?>
+                        <!-- Os dados serão carregados via AJAX -->
                     </tbody>
                 </table>
             </div>
