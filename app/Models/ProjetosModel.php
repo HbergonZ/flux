@@ -106,18 +106,26 @@ class ProjetosModel extends Model
 
     public function getProjetosFiltrados($idPlano, $filtros = [])
     {
-        $subquery = $this->db->table('acoes')
-            ->select('id_projeto, COUNT(*) as total_acoes, SUM(CASE WHEN status = "Finalizado" THEN 1 ELSE 0 END) as acoes_finalizadas')
+        // Subquery para cálculo do progresso
+        $subqueryAcoes = $this->db->table('acoes')
+            ->select('id_projeto,
+                 COUNT(*) as total_acoes,
+                 SUM(CASE WHEN status = "Finalizado" THEN 1 ELSE 0 END) as acoes_finalizadas,
+                 CASE
+                    WHEN COUNT(*) = 0 THEN 0
+                    ELSE (SUM(CASE WHEN status = "Finalizado" THEN 1 ELSE 0 END) / COUNT(*)) * 100
+                 END as percentual_progresso')
             ->where('id_projeto IS NOT NULL')
             ->groupBy('id_projeto')
             ->getCompiledSelect();
 
         $builder = $this->db->table('projetos')
             ->select('projetos.*, eixos.nome as nome_eixo,
-             COALESCE(progresso.total_acoes, 0) as total_acoes,
-             COALESCE(progresso.acoes_finalizadas, 0) as acoes_finalizadas')
+                 COALESCE(progresso.total_acoes, 0) as total_acoes,
+                 COALESCE(progresso.acoes_finalizadas, 0) as acoes_finalizadas,
+                 COALESCE(progresso.percentual_progresso, 0) as percentual_progresso')
             ->join('eixos', 'eixos.id = projetos.id_eixo', 'left')
-            ->join("($subquery) as progresso", 'progresso.id_projeto = projetos.id', 'left')
+            ->join("($subqueryAcoes) as progresso", 'progresso.id_projeto = projetos.id', 'left')
             ->where('projetos.id_plano', $idPlano);
 
         // Aplicar filtros
@@ -133,11 +141,42 @@ class ProjetosModel extends Model
             $builder->where('projetos.id_eixo', $filtros['id_eixo']);
         }
 
+        // Busca global
+        if (!empty($filtros['search']['value'])) {
+            $searchValue = $filtros['search']['value'];
+            $builder->groupStart()
+                ->like('projetos.identificador', $searchValue)
+                ->orLike('projetos.nome', $searchValue)
+                ->orLike('projetos.descricao', $searchValue)
+                ->orLike('projetos.projeto_vinculado', $searchValue)
+                ->orLike('projetos.responsaveis', $searchValue)
+                ->groupEnd();
+        }
+
+        // Ordenação
+        if (!empty($filtros['order'])) {
+            $columnIndex = $filtros['order'][0]['column'];
+            $direction = $filtros['order'][0]['dir'];
+
+            $columns = [
+                0 => 'projetos.identificador',
+                1 => 'projetos.nome',
+                2 => 'projetos.descricao',
+                3 => 'projetos.projeto_vinculado',
+                4 => 'projetos.responsaveis',
+                5 => 'percentual_progresso' // Agora usamos o campo calculado na subquery
+            ];
+
+            if (isset($columns[$columnIndex])) {
+                $builder->orderBy($columns[$columnIndex], $direction);
+            }
+        }
+
         // Paginação
-        if (isset($filtros['start']) && isset($filtros['length'])) {
+        if (isset($filtros['start']) && $filtros['length'] != -1) {
             $builder->limit($filtros['length'], $filtros['start']);
         }
 
-        return $builder->orderBy('projetos.nome', 'ASC')->get()->getResultArray();
+        return $builder->get()->getResultArray();
     }
 }

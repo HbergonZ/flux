@@ -143,15 +143,15 @@
                 {
                     "data": "progresso",
                     "className": "text-center align-middle",
+                    "type": "num", // Importante para ordenação numérica
                     "render": function(data, type, row) {
                         if (type === 'display') {
-                            // Verifica se os dados de progresso existem
                             const percentual = data?.percentual || 0;
                             const texto = data?.texto || 'Dados de progresso não disponíveis';
                             const progressClass = data?.class || 'bg-secondary';
 
                             return `
-                <div class="progress-container" title="${texto} (${percentual}%)">
+                <div class="progress-container" title="${texto}" data-sort="${percentual}">
                     <div class="progress progress-sm">
                         <div class="progress-bar progress-bar-striped ${progressClass}"
                             role="progressbar" style="width: ${percentual}%"
@@ -162,6 +162,7 @@
                 </div>
             `;
                         }
+                        // Para ordenação e filtro, retorna apenas o valor numérico
                         return data?.percentual || 0;
                     }
                 },
@@ -1005,15 +1006,17 @@
 
         // Função para carregar progresso dos projetos
         function carregarProgressoProjetos() {
-            // Se estiver usando DataTables com server-side processing, você precisará
-            // adaptar esta função para carregar junto com os dados
-
             $('.progress-container').each(function() {
                 const container = $(this);
                 const projetoId = container.data('projeto-id');
 
+                if (!projetoId) {
+                    console.error('ID do projeto não encontrado no container de progresso');
+                    return;
+                }
+
                 $.ajax({
-                    url: '<?= site_url("projetos/progresso/") ?>' + projetoId,
+                    url: `<?= site_url("projetos/progresso/") ?>${projetoId}`,
                     type: 'GET',
                     dataType: 'json',
                     success: function(response) {
@@ -1029,35 +1032,37 @@
                             // Atualiza o texto
                             progressText.text(percentual + '%');
 
-                            // Atualiza o tooltip
-                            container.attr('title',
-                                `${response.acoes_finalizadas} de ${response.total_acoes} ações finalizadas (${percentual}%)`);
+                            // Atualiza o tooltip com o texto formatado
+                            container.attr('title', response.texto ||
+                                `${response.acoes_finalizadas} de ${response.total_acoes} ações finalizadas`);
 
                             // Muda a cor baseada no percentual
-                            if (percentual >= 80) {
-                                progressBar.removeClass('bg-warning bg-danger').addClass('bg-success');
-                            } else if (percentual >= 50) {
-                                progressBar.removeClass('bg-success bg-danger').addClass('bg-warning');
-                            } else {
-                                progressBar.removeClass('bg-success bg-warning').addClass('bg-danger');
-                            }
+                            progressBar.removeClass('bg-success bg-warning bg-danger')
+                                .addClass(getProgressClass(percentual));
+                        } else {
+                            container.attr('title', 'Erro ao carregar progresso');
+                            console.error('Erro no progresso:', response.message);
                         }
                     },
-                    error: function() {
+                    error: function(xhr, status, error) {
                         container.attr('title', 'Erro ao carregar progresso');
+                        console.error('Erro na requisição de progresso:', error);
                     }
                 });
             });
+        }
+
+        // Função auxiliar para determinar a classe CSS do progresso
+        function getProgressClass(percentual) {
+            if (percentual >= 80) return 'bg-success';
+            if (percentual >= 50) return 'bg-warning';
+            return 'bg-danger';
         }
 
         // Chamada inicial quando a página carrega
         $(document).ready(function() {
             carregarProgressoProjetos();
 
-            // Se estiver usando DataTables com server-side, chame esta função após cada carregamento
-            dataTable.on('draw', function() {
-                carregarProgressoProjetos();
-            });
         });
     });
 </script>

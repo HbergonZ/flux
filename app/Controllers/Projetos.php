@@ -529,21 +529,31 @@ class Projetos extends BaseController
             return redirect()->to("/planos/$idPlano/projetos");
         }
 
+        // Obter parâmetros do DataTables
+        $draw = $this->request->getPost('draw');
+        $start = $this->request->getPost('start');
+        $length = $this->request->getPost('length');
+        $order = $this->request->getPost('order');
+        $search = $this->request->getPost('search');
+
+        // Obter filtros adicionais
         $filtros = [
             'nome' => $this->request->getPost('nome'),
             'projeto_vinculado' => $this->request->getPost('projeto_vinculado'),
             'id_eixo' => $this->request->getPost('id_eixo'),
-            'draw' => $this->request->getPost('draw'), // Adicionado para DataTables
-            'start' => $this->request->getPost('start'),
-            'length' => $this->request->getPost('length')
+            'draw' => $draw,
+            'start' => $start,
+            'length' => $length,
+            'order' => $order,
+            'search' => $search
         ];
 
-        // Obter dados paginados
+        // Obter dados paginados e filtrados
         $projetos = $this->projetosModel->getProjetosFiltrados($idPlano, $filtros);
         $totalRegistros = $this->projetosModel->getTotalProjetos($idPlano);
         $totalFiltrados = $this->projetosModel->getTotalProjetos($idPlano, $filtros);
 
-        // Formatar os dados
+        // Formatar os dados para resposta
         $data = [];
         foreach ($projetos as $projeto) {
             $totalAcoes = $projeto['total_acoes'] ?? 0;
@@ -573,7 +583,7 @@ class Projetos extends BaseController
         }
 
         return $this->response->setJSON([
-            'draw' => (int) $filtros['draw'],
+            'draw' => (int) $draw,
             'recordsTotal' => $totalRegistros,
             'recordsFiltered' => $totalFiltrados,
             'data' => $data
@@ -1260,7 +1270,6 @@ class Projetos extends BaseController
         $response = ['success' => false];
 
         try {
-            // Obter a instância do banco de dados
             $db = \Config\Database::connect();
 
             $totalAcoes = $db->table('acoes')
@@ -1278,7 +1287,10 @@ class Projetos extends BaseController
                 'success' => true,
                 'total_acoes' => $totalAcoes,
                 'acoes_finalizadas' => $acoesFinalizadas,
-                'percentual' => $percentual
+                'percentual' => $percentual,
+                'texto' => $totalAcoes > 0
+                    ? "{$acoesFinalizadas} de {$totalAcoes} ações finalizadas"
+                    : "Nenhuma ação registrada"
             ];
         } catch (\Exception $e) {
             log_message('error', 'Erro ao calcular progresso: ' . $e->getMessage());
