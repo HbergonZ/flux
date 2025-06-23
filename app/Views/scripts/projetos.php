@@ -419,6 +419,50 @@
             dataTable.ajax.reload();
         });
 
+        $(document).on('click', '.btn-primary[title="Solicitar Edição"]', function() {
+            var projetoCompletoId = $(this).data('id');
+            var projetoId = projetoCompletoId.split('-')[0];
+
+            $.ajax({
+                url: '<?= site_url("projetos/dados-projeto/") ?>' + projetoId,
+                type: 'GET',
+                dataType: 'json',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
+                },
+                success: function(response) {
+
+                    if (response.success && response.data) {
+                        // Preencher modal de solicitação de edição
+                        $('#solicitarEdicaoId').val(response.data.id);
+                        $('#solicitarEdicaoIdentificador').val(response.data.identificador);
+                        $('#solicitarEdicaoNome').val(response.data.nome);
+                        $('#solicitarEdicaoDescricao').val(response.data.descricao);
+                        $('#solicitarEdicaoVinculado').val(response.data.projeto_vinculado);
+                        $('#solicitarEdicaoEixo').val(response.data.id_eixo);
+                        $('#solicitarEdicaoPriorizacao').val(response.data.priorizacao_gab);
+                        $('#solicitarEdicaoStatus').val(response.data.status);
+                        $('#solicitarEdicaoResponsaveis').val(response.data.responsaveis);
+
+                        // Armazenar dados originais para comparação
+                        window.projetoOriginalData = response.data;
+
+                        // Carregar evidências
+                        carregarEvidenciasSolicitacao(projetoId);
+
+                        $('#solicitarEdicaoModal').modal('show');
+                    } else {
+                        showErrorAlert(response.message || "Erro ao carregar projeto");
+                    }
+                },
+                error: function(xhr, status, error) {
+                    showErrorAlert("Falha ao carregar projeto: " + error);
+                }
+            });
+        });
+
+
         // Botões de ação
         $(document).on('click', '.btn-primary[title="Editar"], .btn-primary[title="Solicitar Edição"]', function() {
             var isAdmin = $(this).attr('title') === 'Editar';
@@ -427,7 +471,6 @@
             var $botao = $(this);
             var originalHtml = $botao.html();
 
-            $botao.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
 
             // Determinar a URL correta baseada no tipo de usuário
             var url = isAdmin ?
@@ -443,7 +486,6 @@
                     '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
                 },
                 success: function(response) {
-                    $botao.html(originalHtml).prop('disabled', false);
 
                     if (response.success && response.data) {
                         if (isAdmin) {
@@ -478,48 +520,6 @@
                             window.projetoOriginalData = response.data;
 
                             // Carregar evidências para solicitação
-                            $.ajax({
-                                url: '<?= site_url("projetos/listar-evidencias/") ?>' + projetoId,
-                                type: 'GET',
-                                dataType: 'json',
-                                success: function(evResponse) {
-                                    if (evResponse.success && evResponse.data) {
-                                        var $container = $('#evidenciasProjetoAtuaisListSolicitacao .list-group');
-                                        $container.empty();
-
-                                        evResponse.data.forEach(function(evidencia) {
-                                            var html = `
-                                        <div class="list-group-item"
-                                             data-id="${evidencia.id}"
-                                             data-tipo="${evidencia.tipo}"
-                                             data-conteudo="${evidencia.conteudo}"
-                                             data-descricao="${evidencia.descricao}">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <h6 class="mb-1">${evidencia.descricao || 'Sem descrição'}</h6>
-                                                    <small class="text-muted">${evidencia.tipo === 'texto' ? 'Texto' : 'Link'}</small>
-                                                </div>
-                                                <button class="btn btn-sm btn-outline-danger btn-remover-evidencia-solicitacao">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                            </div>
-                                            <div class="mt-2">
-                                                ${evidencia.tipo === 'texto'
-                                                    ? `<p class="mb-0">${evidencia.conteudo}</p>`
-                                                    : `<a href="${evidencia.conteudo}" target="_blank">${evidencia.conteudo}</a>`}
-                                            </div>
-                                        </div>`;
-                                            $container.append(html);
-                                        });
-                                        $('#contadorEvidenciasProjetoAtuaisSolicitacao').text(evResponse.data.length);
-                                    }
-                                },
-                                error: function() {
-                                    $('#evidenciasProjetoAtuaisListSolicitacao .list-group').html(
-                                        '<div class="text-center py-3 text-danger">Erro ao carregar evidências</div>'
-                                    );
-                                }
-                            });
 
                             $('#solicitarEdicaoModal').modal('show');
                         }
@@ -528,7 +528,6 @@
                     }
                 },
                 error: function(xhr, status, error) {
-                    $botao.html(originalHtml).prop('disabled', false);
 
                     // Verificar se a resposta contém HTML (possível redirecionamento)
                     if (xhr.responseText && xhr.responseText.startsWith('<!')) {
@@ -544,9 +543,6 @@
 
         // Função auxiliar para carregar evidências
         function carregarEvidenciasProjeto(projetoId) {
-            $('#evidenciasProjetoAtuaisList .list-group').html(
-                '<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Carregando evidências...</div>'
-            );
 
             $.get('<?= site_url("projetos/listar-evidencias/") ?>' + projetoId, function(response) {
                 if (response.success && response.data) {
@@ -588,6 +584,45 @@
                 $('#evidenciasProjetoAtuaisList .list-group').html(
                     '<div class="text-center py-3 text-danger">Erro ao carregar evidências</div>'
                 );
+            });
+        }
+
+        // Função auxiliar para carregar evidências na solicitação
+        function carregarEvidenciasSolicitacao(projetoId) {
+            $('#loadingEvidenciasSolicitacao').removeClass('d-none');
+            $('#evidenciasProjetoAtuaisListSolicitacao .list-group').empty();
+
+            $.ajax({
+                url: '<?= site_url("projetos/listar-evidencias/") ?>' + projetoId,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    $('#loadingEvidenciasSolicitacao').addClass('d-none');
+
+                    if (response.success && response.data) {
+                        var $container = $('#evidenciasProjetoAtuaisListSolicitacao .list-group');
+                        $container.empty();
+
+                        response.data.forEach(function(ev) {
+                            $container.append(renderizarEvidencia({
+                                id: ev.id,
+                                tipo: ev.tipo,
+                                conteudo: ev.tipo === 'texto' ? ev.evidencia : ev.link,
+                                descricao: ev.descricao
+                            }));
+                        });
+
+                        $('#contadorEvidenciasProjetoAtuaisSolicitacao').text(response.data.length);
+                    } else {
+                        $container.html('<div class="text-center py-3 text-muted">Nenhuma evidência encontrada</div>');
+                    }
+                },
+                error: function() {
+                    $('#loadingEvidenciasSolicitacao').addClass('d-none');
+                    $('#evidenciasProjetoAtuaisListSolicitacao .list-group').html(
+                        '<div class="text-center py-3 text-danger">Erro ao carregar evidências</div>'
+                    );
+                }
             });
         }
 
@@ -633,70 +668,17 @@
             const projetoId = $('#solicitarEdicaoId').val();
             if (!projetoId) return;
 
-            // Resetar contadores e listas
-            $('#evidenciasProjetoAtuaisListSolicitacao .list-group').html(
-                '<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Carregando evidências...</div>'
+            carregarEvidencias(
+                projetoId,
+                '#evidenciasProjetoAtuaisListSolicitacao .list-group',
+                '#contadorEvidenciasProjetoAtuaisSolicitacao',
+                true
             );
-            $('#evidenciasProjetoRemoverListSolicitacao .list-group').empty();
-            $('#contadorEvidenciasProjetoAtuaisSolicitacao, #contadorEvidenciasProjetoRemoverSolicitacao').text('0');
 
-            // Carregar evidências
-            $.ajax({
-                url: `<?= site_url('projetos/listar-evidencias/') ?>${projetoId}`,
-                type: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success && response.data) {
-                        renderizarEvidenciasSolicitacao(response.data, '#evidenciasProjetoAtuaisListSolicitacao .list-group');
-                        $('#contadorEvidenciasProjetoAtuaisSolicitacao').text(response.data.length || 0);
-                    } else {
-                        $('#evidenciasProjetoAtuaisListSolicitacao .list-group').html(
-                            '<div class="text-center py-3 text-muted"><i class="fas fa-info-circle"></i> Nenhuma evidência encontrada</div>'
-                        );
-                    }
-                },
-                error: function(xhr, status, error) {
-                    $('#evidenciasProjetoAtuaisListSolicitacao .list-group').html(
-                        '<div class="text-center py-3 text-danger"><i class="fas fa-exclamation-circle"></i> Erro ao carregar evidências</div>'
-                    );
-                }
-            });
+            $('#evidenciasProjetoRemoverListSolicitacao .list-group').empty();
+            $('#contadorEvidenciasProjetoRemoverSolicitacao').text('0');
         });
 
-        // Função para renderizar evidências no modal de solicitação
-        function renderizarEvidenciasSolicitacao(evidencias, containerSelector) {
-            const $container = $(containerSelector);
-            $container.empty();
-
-            if (evidencias && evidencias.length > 0) {
-                evidencias.forEach(evidencia => {
-                    const html = `
-                <div class="list-group-item"
-                     data-id="${evidencia.id}"
-                     data-tipo="${evidencia.tipo}"
-                     data-conteudo="${evidencia.conteudo}"
-                     data-descricao="${evidencia.descricao}">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-1">${evidencia.descricao || 'Sem descrição'}</h6>
-                            <small class="text-muted">${evidencia.tipo === 'texto' ? 'Texto' : 'Link'}</small>
-                        </div>
-                        <button class="btn btn-sm btn-outline-danger btn-remover-evidencia-solicitacao" title="Remover evidência">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>
-                    <div class="mt-2">
-                        ${evidencia.tipo === 'texto' ?
-                            `<p class="mb-0">${evidencia.conteudo}</p>` :
-                            `<a href="${evidencia.conteudo}" target="_blank">${evidencia.conteudo}</a>`}
-                    </div>
-                </div>`;
-                    $container.append(html);
-                });
-            } else {
-                $container.html('<div class="text-center py-3 text-muted"><i class="fas fa-info-circle"></i> Nenhuma evidência encontrada</div>');
-            }
-        }
 
         // Alternar entre tipos de evidência (texto/link) no modal de solicitação
         $('input[name="evidencia_projeto_tipo_solicitacao"]').change(function() {
@@ -712,46 +694,28 @@
         // Adicionar evidência à lista (apenas localmente) no modal de solicitação
         $('#btnAdicionarEvidenciaProjetoSolicitacao').click(function() {
             var tipo = $('input[name="evidencia_projeto_tipo_solicitacao"]:checked').val();
-            var conteudo = tipo === 'texto' ? $('#solicitarEdicaoEvidenciaTexto').val() : $('#solicitarEdicaoEvidenciaLink').val();
-            var descricao = $('#solicitarEdicaoEvidenciaDescricao').val();
+            var conteudo = tipo === 'texto' ?
+                $('#solicitarEdicaoEvidenciaTexto').val().trim() :
+                $('#solicitarEdicaoEvidenciaLink').val().trim();
+            var descricao = $('#solicitarEdicaoEvidenciaDescricao').val().trim();
 
             if (!conteudo) {
                 showErrorAlert('Preencha o conteúdo da evidência');
                 return;
             }
 
-            var html = `
-        <div class="list-group-item evidencia-nova"
-             data-tipo="${tipo}"
-             data-conteudo="${conteudo}"
-             data-descricao="${descricao}">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="mb-1">${descricao || 'Sem descrição'}</h6>
-                    <small class="text-muted">${tipo === 'texto' ? 'Texto' : 'Link'}</small>
-                </div>
-                <button class="btn btn-sm btn-outline-danger btn-remover-evidencia-solicitacao" title="Remover evidência">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
-            </div>
-            <div class="mt-2">
-                ${tipo === 'texto' ?
-                    `<p class="mb-0">${conteudo}</p>` :
-                    `<a href="${conteudo}" target="_blank">${conteudo}</a>`}
-            </div>
-        </div>`;
+            var novaEvidencia = {
+                tipo: tipo,
+                conteudo: conteudo,
+                descricao: descricao
+            };
 
-            $('#evidenciasProjetoAtuaisListSolicitacao .list-group').append(html);
+            $('#evidenciasProjetoAtuaisListSolicitacao .list-group').append(renderizarEvidencia(novaEvidencia, true));
 
-            // Limpa os campos
-            if (tipo === 'texto') {
-                $('#solicitarEdicaoEvidenciaTexto').val('');
-            } else {
-                $('#solicitarEdicaoEvidenciaLink').val('');
-            }
-            $('#solicitarEdicaoEvidenciaDescricao').val('');
+            // Limpar campos
+            $('#solicitarEdicaoEvidenciaTexto, #solicitarEdicaoEvidenciaLink, #solicitarEdicaoEvidenciaDescricao').val('');
 
-            // Atualiza o contador
+            // Atualizar contador
             var count = $('#evidenciasProjetoAtuaisListSolicitacao .list-group-item').length;
             $('#contadorEvidenciasProjetoAtuaisSolicitacao').text(count);
         });
@@ -811,39 +775,80 @@
 
 
         // Função para renderizar evidências
-        function renderizarEvidencias(evidencias, containerSelector) {
-            const $container = $(containerSelector);
-            $container.empty();
+        function renderizarEvidencia(evidencia, isSolicitacao = false) {
+            // Garante valores padrão consistentes
+            const id = evidencia.id || '';
+            const tipo = evidencia.tipo || 'texto';
+            const conteudo = evidencia.conteudo || '';
+            const descricao = evidencia.descricao || 'Sem descrição';
+            const btnClass = isSolicitacao ? 'btn-remover-evidencia-solicitacao' : 'btn-remover-evidencia';
 
-            if (evidencias && evidencias.length > 0) {
-                evidencias.forEach(evidencia => {
-                    const html = `
-            <div class="list-group-item"
-                 data-id="${evidencia.id}"
-                 data-tipo="${evidencia.tipo}"
-                 data-conteudo="${evidencia.conteudo}"
-                 data-descricao="${evidencia.descricao}">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="mb-1"><strong>Descrição:</strong> ${evidencia.descricao || 'Sem descrição'}</h6>
-                        <small class="text-muted">${evidencia.tipo === 'texto' ? 'Texto' : 'Link'}</small>
-                    </div>
-                    <button class="btn btn-sm btn-outline-danger btn-remover-evidencia" title="Remover evidência">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </div>
-                <div class="mt-2">
-                    <strong>Evidência:</strong>
-                    ${evidencia.tipo === 'texto'
-                        ? `<p class="mb-0">${evidencia.conteudo}</p>`
-                        : `<a href="${evidencia.conteudo}" target="_blank">${evidencia.conteudo}</a>`}
-                </div>
-            </div>`;
-                    $container.append(html);
-                });
-            } else {
-                $container.html('<div class="text-center py-3 text-muted"><i class="fas fa-info-circle"></i> Nenhuma evidência encontrada</div>');
-            }
+            return `
+<div class="list-group-item ${!id ? 'evidencia-nova' : ''}"
+     data-id="${id}"
+     data-tipo="${tipo}"
+     data-conteudo="${conteudo}"
+     data-descricao="${descricao}">
+    <!-- Container principal com posicionamento relativo -->
+    <div class="position-relative">
+        <!-- Botão de remover posicionado absolutamente no topo direito -->
+        <button class="btn btn-sm btn-outline-danger ${btnClass} position-absolute"
+                style="top: 0; right: 0;"
+                title="Remover evidência">
+            <i class="fas fa-trash-alt"></i>
+        </button>
+
+        <!-- Conteúdo da evidência com padding para não sobrepor o botão -->
+        <div style="padding-right: 30px;">
+            <!-- Conteúdo da evidência -->
+            <div class="mb-2">
+                <strong>Evidência:</strong>
+                ${tipo === 'texto'
+                    ? `<p class="mb-1">${conteudo}</p>`
+                    : `<a href="${conteudo}" target="_blank">${conteudo}</a>`}
+            </div>
+
+            <!-- Descrição -->
+            <div>
+                <strong>Descrição:</strong>
+                <p class="mb-1">${descricao}</p>
+            </div>
+
+            <!-- Tipo -->
+            <small class="text-muted">${tipo === 'texto' ? 'Texto' : 'Link'}</small>
+        </div>
+    </div>
+</div>`;
+        }
+
+        function carregarEvidencias(projetoId, containerSelector, contadorSelector, isSolicitacao = false) {
+
+            $.ajax({
+                url: `<?= site_url('projetos/listar-evidencias/') ?>${projetoId}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success && response.data) {
+                        var $container = $(containerSelector);
+                        $container.empty();
+
+                        response.data.forEach(function(ev) {
+                            $container.append(renderizarEvidencia(ev, isSolicitacao));
+                        });
+
+                        $(contadorSelector).text(response.data.length || 0);
+                    } else {
+                        $(containerSelector).html(
+                            '<div class="text-center py-3 text-muted">Nenhuma evidência encontrada</div>'
+                        );
+                    }
+                },
+                error: function() {
+                    $(containerSelector).html(
+                        '<div class="text-center py-3 text-danger">Erro ao carregar evidências</div>'
+                    );
+                }
+            });
         }
 
         // Evento quando o modal de edição é aberto
@@ -851,37 +856,14 @@
             const projetoId = $('#editProjetoId').val();
             if (!projetoId) return;
 
-            // Resetar contadores e listas
-            $('#evidenciasProjetoAtuaisList .list-group').html(
-                '<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Carregando evidências...</div>'
+            carregarEvidencias(
+                projetoId,
+                '#evidenciasProjetoAtuaisList .list-group',
+                '#contadorEvidenciasProjetoAtuais'
             );
+
             $('#evidenciasProjetoRemoverList .list-group').empty();
-            $('#contadorEvidenciasProjetoAtuais, #contadorEvidenciasProjetoRemover').text('0');
-
-            // Carregar evidências
-            $.ajax({
-                url: `<?= site_url('projetos/listar-evidencias/') ?>${projetoId}`,
-                type: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success && response.data) {
-                        // Armazenar evidências originais para comparação
-                        window.evidenciasOriginais = response.data;
-
-                        renderizarEvidencias(response.data, '#evidenciasProjetoAtuaisList .list-group');
-                        $('#contadorEvidenciasProjetoAtuais').text(response.data.length || 0);
-                    } else {
-                        $('#evidenciasProjetoAtuaisList .list-group').html(
-                            '<div class="text-center py-3 text-muted"><i class="fas fa-info-circle"></i> Nenhuma evidência encontrada</div>'
-                        );
-                    }
-                },
-                error: function(xhr, status, error) {
-                    $('#evidenciasProjetoAtuaisList .list-group').html(
-                        '<div class="text-center py-3 text-danger"><i class="fas fa-exclamation-circle"></i> Erro ao carregar evidências</div>'
-                    );
-                }
-            });
+            $('#contadorEvidenciasProjetoRemover').text('0');
         });
 
         // Alternar entre tipos de evidência (texto/link)

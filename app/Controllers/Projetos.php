@@ -1173,17 +1173,11 @@ class Projetos extends BaseController
 
     public function listarEvidencias($idProjeto)
     {
-        log_message('debug', '--- INÍCIO listarEvidencias ---');
-        log_message('debug', 'ID Projeto recebido: ' . $idProjeto);
-
         $response = ['success' => false, 'message' => '', 'data' => []];
 
         try {
             $evidenciasModel = new \App\Models\EvidenciasModel();
 
-            log_message('debug', 'Executando query para buscar evidências');
-
-            // Busca todas as evidências sem o CASE WHEN
             $evidencias = $evidenciasModel
                 ->select('id, descricao, tipo, evidencia, link, created_at')
                 ->where('nivel', 'projeto')
@@ -1191,29 +1185,24 @@ class Projetos extends BaseController
                 ->orderBy('created_at', 'DESC')
                 ->findAll();
 
-            // Processa os resultados para formatar conforme necessário
+            // Padroniza a estrutura para ser igual em ambos os modais
             $evidenciasFormatadas = array_map(function ($ev) {
                 return [
                     'id' => $ev['id'],
-                    'descricao' => $ev['descricao'],
                     'tipo' => $ev['tipo'],
                     'conteudo' => $ev['tipo'] === 'texto' ? $ev['evidencia'] : $ev['link'],
+                    'descricao' => $ev['descricao'] ?? 'Sem descrição',
                     'created_at' => $ev['created_at']
                 ];
             }, $evidencias);
 
-            log_message('debug', 'Total de evidências encontradas: ' . count($evidenciasFormatadas));
-
             $response['success'] = true;
             $response['data'] = $evidenciasFormatadas;
-
-            log_message('debug', 'Evidências formatadas com sucesso');
         } catch (\Exception $e) {
             log_message('error', 'Erro em listarEvidencias: ' . $e->getMessage());
             $response['message'] = 'Erro ao carregar evidências: ' . $e->getMessage();
         }
 
-        log_message('debug', '--- FIM listarEvidencias ---');
         return $this->response->setJSON($response);
     }
 }

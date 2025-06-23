@@ -120,7 +120,7 @@
                                             </div>
                                             <div id="evidenciasProjetoAtuaisListSolicitacao" class="overflow-auto" style="max-height: calc(100% - 30px);">
                                                 <div class="list-group">
-                                                    <!-- As evidências serão inseridas aqui -->
+                                                    <!-- As evidências serão inseridas aqui via JavaScript -->
                                                 </div>
                                             </div>
                                         </div>
