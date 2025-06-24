@@ -138,7 +138,19 @@
                 },
                 {
                     "data": "responsaveis",
-                    "className": "text-wrap align-middle"
+                    "className": "text-wrap align-middle",
+                    "render": function(data, type, row) {
+                        if (type === 'display') {
+                            if (data && data.length > 0) {
+                                return data.map(user => user ? user.username || '' : '').filter(Boolean).join(', ');
+                            }
+                            return 'Nenhum responsável';
+                        }
+                        // Para ordenação/filtro, retorna texto simples
+                        return data && data.length > 0 ?
+                            data.map(u => u ? `${u.username || ''}` : '').filter(Boolean).join(', ') :
+                            'Nenhum responsável';
+                    }
                 },
                 {
                     "data": "progresso",
@@ -383,9 +395,27 @@
                 }
             });
 
+            // Coletar responsáveis atuais
+            var responsaveisAtuaisIds = [];
+            $('#responsaveisAtuaisList .list-group-item').each(function() {
+                responsaveisAtuaisIds.push($(this).data('user-id'));
+            });
+
+            // Obter responsáveis originais (carregados quando o modal foi aberto)
+            var responsaveisOriginais = window.responsaveisOriginais || [];
+            var responsaveisOriginaisIds = responsaveisOriginais.map(u => u.usuario_id);
+
+            // Determinar quais usuários foram adicionados e removidos
+            var responsaveisAdicionar = responsaveisAtuaisIds.filter(id =>
+                !responsaveisOriginaisIds.includes(id));
+            var responsaveisRemover = responsaveisOriginaisIds.filter(id =>
+                !responsaveisAtuaisIds.includes(id));
+
             // Adicionar dados ao formulário como campos hidden
             form.find('input[name="evidencias_adicionar"]').remove();
             form.find('input[name="evidencias_remover"]').remove();
+            form.find('input[name="responsaveis_adicionar"]').remove();
+            form.find('input[name="responsaveis_remover"]').remove();
 
             form.append(
                 $('<input>').attr({
@@ -397,6 +427,16 @@
                     type: 'hidden',
                     name: 'evidencias_remover',
                     value: JSON.stringify(evidenciasRemover)
+                }),
+                $('<input>').attr({
+                    type: 'hidden',
+                    name: 'responsaveis_adicionar',
+                    value: JSON.stringify(responsaveisAdicionar)
+                }),
+                $('<input>').attr({
+                    type: 'hidden',
+                    name: 'responsaveis_remover',
+                    value: JSON.stringify(responsaveisRemover)
                 })
             );
 
@@ -446,56 +486,11 @@
             dataTable.ajax.reload();
         });
 
-        $(document).on('click', '.btn-primary[title="Solicitar Edição"]', function() {
-            var projetoCompletoId = $(this).data('id');
-            var projetoId = projetoCompletoId.split('-')[0];
-
-            $.ajax({
-                url: '<?= site_url("projetos/dados-projeto/") ?>' + projetoId,
-                type: 'GET',
-                dataType: 'json',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
-                },
-                success: function(response) {
-
-                    if (response.success && response.data) {
-                        // Preencher modal de solicitação de edição
-                        $('#solicitarEdicaoId').val(response.data.id);
-                        $('#solicitarEdicaoIdentificador').val(response.data.identificador);
-                        $('#solicitarEdicaoNome').val(response.data.nome);
-                        $('#solicitarEdicaoDescricao').val(response.data.descricao);
-                        $('#solicitarEdicaoVinculado').val(response.data.projeto_vinculado);
-                        $('#solicitarEdicaoEixo').val(response.data.id_eixo);
-                        $('#solicitarEdicaoPriorizacao').val(response.data.priorizacao_gab);
-                        $('#solicitarEdicaoStatus').val(response.data.status);
-                        $('#solicitarEdicaoResponsaveis').val(response.data.responsaveis);
-
-                        // Armazenar dados originais para comparação
-                        window.projetoOriginalData = response.data;
-
-                        // Carregar evidências
-                        carregarEvidenciasSolicitacao(projetoId);
-
-                        $('#solicitarEdicaoModal').modal('show');
-                    } else {
-                        showErrorAlert(response.message || "Erro ao carregar projeto");
-                    }
-                },
-                error: function(xhr, status, error) {
-                    showErrorAlert("Falha ao carregar projeto: " + error);
-                }
-            });
-        });
-
-
         // Botões de ação
         $(document).on('click', '.btn-primary[title="Editar"], .btn-primary[title="Solicitar Edição"]', function() {
             var isAdmin = $(this).attr('title') === 'Editar';
             var projetoCompletoId = $(this).data('id');
             var projetoId = projetoCompletoId.split('-')[0];
-
 
             // Determinar a URL correta baseada no tipo de usuário
             var url = isAdmin ?
@@ -511,7 +506,6 @@
                     '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
                 },
                 success: function(response) {
-
                     if (response.success && response.data) {
                         if (isAdmin) {
                             // Preencher modal de edição normal para admin
@@ -524,6 +518,10 @@
                             $('#editProjetoPriorizacao').val(response.data.priorizacao_gab);
                             $('#projetoStatus').val(response.data.status);
                             $('#editProjetoResponsaveis').val(response.data.responsaveis);
+
+                            // Carregar responsáveis e usuários disponíveis
+                            carregarResponsaveis(projetoId);
+                            carregarUsuariosDisponiveis(projetoId);
 
                             // Carregar evidências
                             carregarEvidenciasProjeto(projetoId);
@@ -545,6 +543,7 @@
                             window.projetoOriginalData = response.data;
 
                             // Carregar evidências para solicitação
+                            carregarEvidenciasSolicitacao(projetoId);
 
                             $('#solicitarEdicaoModal').modal('show');
                         }
@@ -553,7 +552,6 @@
                     }
                 },
                 error: function(xhr, status, error) {
-
                     // Verificar se a resposta contém HTML (possível redirecionamento)
                     if (xhr.responseText && xhr.responseText.startsWith('<!')) {
                         showErrorAlert('Sessão expirada ou acesso não autorizado. Por favor, faça login novamente.');
@@ -566,91 +564,99 @@
             });
         });
 
-        // Função auxiliar para carregar evidências
-        function carregarEvidenciasProjeto(projetoId) {
-
-            $.get('<?= site_url("projetos/listar-evidencias/") ?>' + projetoId, function(response) {
-                if (response.success && response.data) {
-                    var $container = $('#evidenciasProjetoAtuaisList .list-group');
-                    $container.empty();
-
-                    response.data.forEach(function(evidencia) {
-                        var html = `
-                <div class="list-group-item"
-                     data-id="${evidencia.id}"
-                     data-tipo="${evidencia.tipo}"
-                     data-conteudo="${evidencia.conteudo}"
-                     data-descricao="${evidencia.descricao}">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-1"><strong>Descrição:</strong> ${evidencia.descricao || 'Sem descrição'}</h6>
-                            <small class="text-muted">${evidencia.tipo === 'texto' ? 'Texto' : 'Link'}</small>
-                        </div>
-                        <button class="btn btn-sm btn-outline-danger btn-remover-evidencia">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>
-                    <div class="mt-2">
-                        <strong>Evidência:</strong>
-                        ${evidencia.tipo === 'texto' ?
-                            `<p class="mb-0">${evidencia.conteudo}</p>` :
-                            `<a href="${evidencia.conteudo}" target="_blank">${evidencia.conteudo}</a>`}
-                    </div>
-                </div>`;
-                        $container.append(html);
-                    });
-                    $('#contadorEvidenciasProjetoAtuais').text(response.data.length);
-                } else {
-                    $('#evidenciasProjetoAtuaisList .list-group').html(
-                        '<div class="text-center py-3 text-muted">Nenhuma evidência encontrada</div>'
-                    );
-                }
-            }).fail(function() {
-                $('#evidenciasProjetoAtuaisList .list-group').html(
-                    '<div class="text-center py-3 text-danger">Erro ao carregar evidências</div>'
-                );
-            });
-        }
-
-        // Função auxiliar para carregar evidências na solicitação
-        function carregarEvidenciasSolicitacao(projetoId) {
-            $('#loadingEvidenciasSolicitacao').removeClass('d-none');
-            $('#evidenciasProjetoAtuaisListSolicitacao .list-group').empty();
+        // Função para carregar responsáveis atualizados
+        function carregarResponsaveis(projetoId) {
+            console.log('Carregando responsáveis para o projeto:', projetoId);
 
             $.ajax({
-                url: '<?= site_url("projetos/listar-evidencias/") ?>' + projetoId,
+                url: `<?= site_url('projetos/responsaveis/') ?>${projetoId}`,
                 type: 'GET',
                 dataType: 'json',
                 success: function(response) {
-                    $('#loadingEvidenciasSolicitacao').addClass('d-none');
+                    console.log('Resposta de responsáveis:', response);
+                    const $container = $('#responsaveisAtuaisList');
+                    $container.empty();
 
                     if (response.success && response.data) {
-                        var $container = $('#evidenciasProjetoAtuaisListSolicitacao .list-group');
-                        $container.empty();
+                        // Armazenar os responsáveis originais para comparação posterior
+                        window.responsaveisOriginais = response.data;
 
-                        response.data.forEach(function(ev) {
-                            $container.append(renderizarEvidencia({
-                                id: ev.id,
-                                tipo: ev.tipo,
-                                conteudo: ev.tipo === 'texto' ? ev.evidencia : ev.link,
-                                descricao: ev.descricao
-                            }));
-                        });
-
-                        $('#contadorEvidenciasProjetoAtuaisSolicitacao').text(response.data.length);
+                        if (response.data.length > 0) {
+                            response.data.forEach(user => {
+                                $container.append(`
+                            <div class="list-group-item d-flex justify-content-between align-items-center"
+                                 data-user-id="${user.usuario_id}">
+                                <div>
+                                    <strong>${user.username}</strong>
+                                    ${user.email ? `<div class="text-muted small">${user.email}</div>` : ''}
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger btn-remover-responsavel"
+                                        title="Remover responsável">
+                                    <i class="fas fa-user-minus"></i>
+                                </button>
+                            </div>
+                        `);
+                            });
+                            $('#contadorResponsaveisAtuais').text(response.data.length);
+                        } else {
+                            $container.html('<div class="text-center py-3 text-muted">Nenhum responsável</div>');
+                            $('#contadorResponsaveisAtuais').text('0');
+                        }
                     } else {
-                        $container.html('<div class="text-center py-3 text-muted">Nenhuma evidência encontrada</div>');
+                        $container.html('<div class="text-center py-3 text-danger">Erro ao carregar responsáveis</div>');
                     }
                 },
-                error: function() {
-                    $('#loadingEvidenciasSolicitacao').addClass('d-none');
-                    $('#evidenciasProjetoAtuaisListSolicitacao .list-group').html(
-                        '<div class="text-center py-3 text-danger">Erro ao carregar evidências</div>'
-                    );
+                error: function(xhr, status, error) {
+                    console.error('Erro ao carregar responsáveis:', error);
+                    $('#responsaveisAtuaisList').html('<div class="text-center py-3 text-danger">Erro ao carregar responsáveis</div>');
                 }
             });
         }
 
+        // Função para carregar usuários disponíveis
+        function carregarUsuariosDisponiveis(projetoId) {
+            console.log('Carregando usuários disponíveis para o projeto:', projetoId);
+
+            $.ajax({
+                url: `<?= site_url('projetos/usuarios-disponiveis/') ?>${projetoId}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    console.log('Resposta de usuários disponíveis:', response);
+                    const $container = $('#usuariosDisponiveisList');
+                    $container.empty();
+
+                    if (response.success && response.data) {
+                        if (response.data.length > 0) {
+                            response.data.forEach(user => {
+                                $container.append(`
+                            <div class="list-group-item d-flex justify-content-between align-items-center"
+                                 data-user-id="${user.id}">
+                                <div>
+                                    <strong>${user.username}</strong>
+                                    ${user.email ? `<div class="text-muted small">${user.email}</div>` : ''}
+                                </div>
+                                <button class="btn btn-sm btn-outline-primary btn-adicionar-responsavel"
+                                        title="Adicionar como responsável">
+                                    <i class="fas fa-user-plus"></i>
+                                </button>
+                            </div>
+                        `);
+                            });
+                        } else {
+                            $container.html('<div class="text-center py-3 text-muted">Todos os usuários já são responsáveis</div>');
+                        }
+                        $('#contadorUsuariosDisponiveis').text(response.data.length);
+                    } else {
+                        $container.html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Erro ao carregar usuários disponíveis:', error);
+                    $('#usuariosDisponiveisList').html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
+                }
+            });
+        }
 
         $(document).on('click', '.btn-danger[title="Excluir"], .btn-danger[title="Solicitar Exclusão"]', function() {
             var isAdmin = $(this).attr('title') === 'Excluir';
@@ -703,7 +709,6 @@
             $('#evidenciasProjetoRemoverListSolicitacao .list-group').empty();
             $('#contadorEvidenciasProjetoRemoverSolicitacao').text('0');
         });
-
 
         // Alternar entre tipos de evidência (texto/link) no modal de solicitação
         $('input[name="evidencia_projeto_tipo_solicitacao"]').change(function() {
@@ -797,8 +802,6 @@
             $('#contadorEvidenciasProjetoRemoverSolicitacao').text($('#evidenciasProjetoRemoverListSolicitacao .list-group-item').length);
         });
 
-
-
         // Função para renderizar evidências
         function renderizarEvidencia(evidencia, isSolicitacao = false) {
             // Garante valores padrão consistentes
@@ -847,7 +850,6 @@
         }
 
         function carregarEvidencias(projetoId, containerSelector, contadorSelector, isSolicitacao = false) {
-
             $.ajax({
                 url: `<?= site_url('projetos/listar-evidencias/') ?>${projetoId}`,
                 type: 'GET',
@@ -876,19 +878,115 @@
             });
         }
 
+        // Função auxiliar para carregar evidências do projeto
+        function carregarEvidenciasProjeto(projetoId) {
+            $.get(`<?= site_url('projetos/listar-evidencias/') ?>${projetoId}`, function(response) {
+                if (response.success && response.data) {
+                    var $container = $('#evidenciasProjetoAtuaisList .list-group');
+                    $container.empty();
+
+                    response.data.forEach(function(evidencia) {
+                        var html = `
+                <div class="list-group-item"
+                     data-id="${evidencia.id}"
+                     data-tipo="${evidencia.tipo}"
+                     data-conteudo="${evidencia.conteudo}"
+                     data-descricao="${evidencia.descricao}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1"><strong>Descrição:</strong> ${evidencia.descricao || 'Sem descrição'}</h6>
+                            <small class="text-muted">${evidencia.tipo === 'texto' ? 'Texto' : 'Link'}</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger btn-remover-evidencia">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                    <div class="mt-2">
+                        <strong>Evidência:</strong>
+                        ${evidencia.tipo === 'texto' ?
+                            `<p class="mb-0">${evidencia.conteudo}</p>` :
+                            `<a href="${evidencia.conteudo}" target="_blank">${evidencia.conteudo}</a>`}
+                    </div>
+                </div>`;
+                        $container.append(html);
+                    });
+                    $('#contadorEvidenciasProjetoAtuais').text(response.data.length);
+                } else {
+                    $('#evidenciasProjetoAtuaisList .list-group').html(
+                        '<div class="text-center py-3 text-muted">Nenhuma evidência encontrada</div>'
+                    );
+                }
+            }).fail(function() {
+                $('#evidenciasProjetoAtuaisList .list-group').html(
+                    '<div class="text-center py-3 text-danger">Erro ao carregar evidências</div>'
+                );
+            });
+        }
+
+        // Função auxiliar para carregar evidências na solicitação
+        function carregarEvidenciasSolicitacao(projetoId) {
+            $('#loadingEvidenciasSolicitacao').removeClass('d-none');
+            $('#evidenciasProjetoAtuaisListSolicitacao .list-group').empty();
+
+            $.ajax({
+                url: '<?= site_url("projetos/listar-evidencias/") ?>' + projetoId,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    $('#loadingEvidenciasSolicitacao').addClass('d-none');
+
+                    if (response.success && response.data) {
+                        var $container = $('#evidenciasProjetoAtuaisListSolicitacao .list-group');
+                        $container.empty();
+
+                        response.data.forEach(function(ev) {
+                            $container.append(renderizarEvidencia({
+                                id: ev.id,
+                                tipo: ev.tipo,
+                                conteudo: ev.tipo === 'texto' ? ev.evidencia : ev.link,
+                                descricao: ev.descricao
+                            }));
+                        });
+
+                        $('#contadorEvidenciasProjetoAtuaisSolicitacao').text(response.data.length);
+                    } else {
+                        $container.html('<div class="text-center py-3 text-muted">Nenhuma evidência encontrada</div>');
+                    }
+                },
+                error: function() {
+                    $('#loadingEvidenciasSolicitacao').addClass('d-none');
+                    $('#evidenciasProjetoAtuaisListSolicitacao .list-group').html(
+                        '<div class="text-center py-3 text-danger">Erro ao carregar evidências</div>'
+                    );
+                }
+            });
+        }
+
         // Evento quando o modal de edição é aberto
         $('#editProjetoModal').on('shown.bs.modal', function() {
             const projetoId = $('#editProjetoId').val();
-            if (!projetoId) return;
-
-            carregarEvidencias(
-                projetoId,
-                '#evidenciasProjetoAtuaisList .list-group',
-                '#contadorEvidenciasProjetoAtuais'
-            );
-
-            $('#evidenciasProjetoRemoverList .list-group').empty();
-            $('#contadorEvidenciasProjetoRemover').text('0');
+            if (projetoId) {
+                // Carrega dados básicos do projeto
+                $.ajax({
+                    url: `<?= site_url('projetos/editar/') ?>${projetoId}`,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success && response.data) {
+                            $('#editProjetoIdentificador').val(response.data.identificador);
+                            $('#editProjetoNome').val(response.data.nome);
+                            $('#editProjetoDescricao').val(response.data.descricao);
+                            $('#editProjetoVinculado').val(response.data.projeto_vinculado);
+                            $('#editProjetoEixo').val(response.data.id_eixo);
+                            $('#editProjetoPriorizacao').val(response.data.priorizacao_gab);
+                            $('#projetoStatus').val(response.data.status);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Erro ao carregar dados do projeto:', error);
+                    }
+                });
+            }
         });
 
         // Alternar entre tipos de evidência (texto/link)
@@ -1062,7 +1160,91 @@
         // Chamada inicial quando a página carrega
         $(document).ready(function() {
             carregarProgressoProjetos();
-
         });
+
+        // Eventos para o modal de edição
+        $(document).on('click', '.btn-adicionar-responsavel', function() {
+            const $item = $(this).closest('.list-group-item');
+            const userId = $item.data('user-id');
+            const projetoId = $('#editProjetoId').val();
+
+            // Adiciona à lista de responsáveis
+            const userData = {
+                usuario_id: userId,
+                username: $item.find('strong').text(),
+                email: $item.find('.text-muted').text() || ''
+            };
+
+            $('#responsaveisAtuaisList').append(renderizarResponsavel(userData));
+            $('#contadorResponsaveisAtuais').text(parseInt($('#contadorResponsaveisAtuais').text()) + 1);
+
+            // Remove da lista de disponíveis
+            $item.remove();
+            $('#contadorUsuariosDisponiveis').text(parseInt($('#contadorUsuariosDisponiveis').text()) - 1);
+        });
+
+        $(document).on('click', '.btn-remover-responsavel', function() {
+            const $item = $(this).closest('.list-group-item');
+            const userId = $item.data('user-id');
+            const projetoId = $('#editProjetoId').val();
+
+            // Adiciona à lista de disponíveis
+            const userData = {
+                id: userId,
+                username: $item.find('strong').text(),
+                email: $item.find('.text-muted').text() || ''
+            };
+
+            $('#usuariosDisponiveisList').append(renderizarUsuarioDisponivel(userData));
+            $('#contadorUsuariosDisponiveis').text(parseInt($('#contadorUsuariosDisponiveis').text()) + 1);
+
+            // Remove da lista de responsáveis
+            $item.remove();
+            $('#contadorResponsaveisAtuais').text(parseInt($('#contadorResponsaveisAtuais').text()) - 1);
+        });
+
+        // Busca de usuários
+        $('#buscaUsuarioResponsavel').on('input', function() {
+            const searchTerm = $(this).val().toLowerCase();
+
+            $('#usuariosDisponiveisList .list-group-item').each(function() {
+                const $item = $(this);
+                const text = $item.text().toLowerCase();
+                $item.toggle(text.includes(searchTerm));
+            });
+        });
+
+        // Botão de limpar busca
+        $('#btnLimparBuscaResponsaveis').click(function() {
+            $('#buscaUsuarioResponsavel').val('');
+            $('#usuariosDisponiveisList .list-group-item').show();
+        });
+
+        // Funções de renderização
+        function renderizarResponsavel(user) {
+            return `
+<div class="list-group-item d-flex justify-content-between align-items-center" data-user-id="${user.usuario_id}">
+    <div>
+        <strong>${user.username}</strong>
+        ${user.email ? `<div class="text-muted small">${user.email}</div>` : ''}
+    </div>
+    <button class="btn btn-sm btn-outline-danger btn-remover-responsavel" title="Remover responsável">
+        <i class="fas fa-user-minus"></i>
+    </button>
+</div>`;
+        }
+
+        function renderizarUsuarioDisponivel(user) {
+            return `
+<div class="list-group-item d-flex justify-content-between align-items-center" data-user-id="${user.id}">
+    <div>
+        <strong>${user.username}</strong>
+        ${user.email ? `<div class="text-muted small">${user.email}</div>` : ''}
+    </div>
+    <button class="btn btn-sm btn-outline-primary btn-adicionar-responsavel" title="Adicionar como responsável">
+        <i class="fas fa-user-plus"></i>
+    </button>
+</div>`;
+        }
     });
 </script>

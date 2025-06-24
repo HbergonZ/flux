@@ -217,7 +217,6 @@ class Projetos extends BaseController
             'projeto_vinculado' => 'permit_empty|max_length[255]',
             'priorizacao_gab' => 'permit_empty|in_list[0,1]',
             'id_eixo' => 'permit_empty|integer',
-            'responsaveis' => 'permit_empty',
             'status' => 'required|in_list[Ativo,Paralisado,Concluído]'
         ];
 
@@ -246,7 +245,6 @@ class Projetos extends BaseController
                     'projeto_vinculado' => $this->request->getPost('projeto_vinculado'),
                     'priorizacao_gab' => $this->request->getPost('priorizacao_gab') ?? 0,
                     'id_eixo' => $this->request->getPost('id_eixo') ?: null,
-                    'responsaveis' => $this->request->getPost('responsaveis'),
                     'status' => $novoStatus
                 ];
 
@@ -272,7 +270,6 @@ class Projetos extends BaseController
                         'created_at' => date('Y-m-d H:i:s')
                     ];
 
-                    // Definir o campo correto baseado no tipo
                     if ($evidencia['tipo'] === 'texto') {
                         $evidenciaData['evidencia'] = $evidencia['conteudo'];
                         $evidenciaData['link'] = null;
@@ -280,15 +277,12 @@ class Projetos extends BaseController
                         $evidenciaData['link'] = $evidencia['conteudo'];
                         $evidenciaData['evidencia'] = null;
 
-                        // Validação básica de URL
                         if (!filter_var($evidencia['conteudo'], FILTER_VALIDATE_URL)) {
                             throw new \Exception('O link fornecido não é válido: ' . $evidencia['conteudo']);
                         }
                     }
 
                     $insertId = $evidenciasModel->insert($evidenciaData);
-
-                    // Registrar log de criação da evidência
                     $this->logController->registrarCriacao('evidencia', $evidenciaData, 'Evidência adicionada ao projeto');
                     log_message('debug', 'Evidência adicionada com ID: ' . $insertId);
                 }
@@ -296,26 +290,32 @@ class Projetos extends BaseController
                 // Remover evidências marcadas
                 foreach ($evidenciasRemover as $idEvidencia) {
                     $evidencia = $evidenciasModel->find($idEvidencia);
-                    if ($evidencia) {
-                        // Verificar se a evidência pertence ao projeto
-                        if ($evidencia['nivel'] === 'projeto' && $evidencia['id_nivel'] == $id) {
-                            // Registrar log de exclusão
-                            $this->logController->registrarExclusao('evidencia', $evidencia, 'Evidência removida do projeto');
-                            $evidenciasModel->delete($idEvidencia);
-                            log_message('debug', 'Evidência removida: ' . $idEvidencia);
-                        } else {
-                            log_message('warning', 'Tentativa de remover evidência não pertencente ao projeto: ' . $idEvidencia);
-                        }
+                    if ($evidencia && $evidencia['nivel'] === 'projeto' && $evidencia['id_nivel'] == $id) {
+                        $this->logController->registrarExclusao('evidencia', $evidencia, 'Evidência removida do projeto');
+                        $evidenciasModel->delete($idEvidencia);
+                        log_message('debug', 'Evidência removida: ' . $idEvidencia);
                     }
                 }
 
-                // 3. Se o status foi alterado, atualiza as ações
+                // 3. Processar responsáveis - ESSA É A PARTE QUE VOCÊ SOLICITOU
+                $responsaveisAdicionar = json_decode($this->request->getPost('responsaveis_adicionar'), true) ?? [];
+                $responsaveisRemover = json_decode($this->request->getPost('responsaveis_remover'), true) ?? [];
+
+                foreach ($responsaveisAdicionar as $usuarioId) {
+                    $this->projetosModel->adicionarResponsavel($id, $usuarioId);
+                    log_message('debug', 'Responsável adicionado: ' . $usuarioId);
+                }
+
+                foreach ($responsaveisRemover as $usuarioId) {
+                    $this->projetosModel->removerResponsavel($id, $usuarioId);
+                    log_message('debug', 'Responsável removido: ' . $usuarioId);
+                }
+
+                // 4. Se o status foi alterado, atualiza as ações
                 if ($statusAlterado) {
                     log_message('debug', 'Status alterado de ' . $projetoAntigo['status'] . ' para ' . $novoStatus . '. Atualizando ações...');
-
                     $acoesModel = new \App\Models\AcoesModel();
                     $result = $acoesModel->atualizarStatusAcoesProjeto($id, $novoStatus, $db);
-
                     log_message('debug', 'Resultado da atualização de ações: ' . print_r($result, true));
                 }
 
@@ -324,7 +324,7 @@ class Projetos extends BaseController
                 // Registrar log de edição do projeto
                 $this->logController->registrarEdicao('projeto', $projetoAntigo, $projetoAtualizado, 'Edição realizada via interface');
 
-                // 4. Obter evidências atualizadas para resposta
+                // 5. Obter evidências e responsáveis atualizados para resposta
                 $evidenciasAtualizadas = $evidenciasModel
                     ->select('id, descricao, tipo, evidencia, link, created_at')
                     ->where('nivel', 'projeto')
@@ -332,16 +332,7 @@ class Projetos extends BaseController
                     ->orderBy('created_at', 'DESC')
                     ->findAll();
 
-                // Formatar as evidências para a resposta
-                $evidenciasFormatadas = array_map(function ($ev) {
-                    return [
-                        'id' => $ev['id'],
-                        'descricao' => $ev['descricao'],
-                        'tipo' => $ev['tipo'],
-                        'conteudo' => $ev['tipo'] === 'texto' ? $ev['evidencia'] : $ev['link'],
-                        'created_at' => $ev['created_at']
-                    ];
-                }, $evidenciasAtualizadas);
+                $responsaveisAtuais = $this->projetosModel->getResponsaveis($id);
 
                 $db->transComplete();
 
@@ -351,7 +342,16 @@ class Projetos extends BaseController
 
                 $response['success'] = true;
                 $response['message'] = 'Projeto atualizado com sucesso!';
-                $response['evidencias'] = $evidenciasFormatadas;
+                $response['evidencias'] = array_map(function ($ev) {
+                    return [
+                        'id' => $ev['id'],
+                        'descricao' => $ev['descricao'],
+                        'tipo' => $ev['tipo'],
+                        'conteudo' => $ev['tipo'] === 'texto' ? $ev['evidencia'] : $ev['link'],
+                        'created_at' => $ev['created_at']
+                    ];
+                }, $evidenciasAtualizadas);
+                $response['responsaveis'] = $responsaveisAtuais;
 
                 log_message('debug', 'Projeto atualizado com sucesso');
             } catch (\Exception $e) {
@@ -560,12 +560,33 @@ class Projetos extends BaseController
             $acoesFinalizadas = $projeto['acoes_finalizadas'] ?? 0;
             $percentual = ($totalAcoes > 0) ? round(($acoesFinalizadas / $totalAcoes) * 100) : 0;
 
+            // Processar responsáveis
+            $responsaveis = [];
+            if (!empty($projeto['responsaveis'])) {
+                // Se já é um array (pode ser JSON decodificado)
+                if (is_array($projeto['responsaveis'])) {
+                    $responsaveis = $projeto['responsaveis'];
+                }
+                // Se for string JSON
+                elseif (is_string($projeto['responsaveis']) && json_decode($projeto['responsaveis'])) {
+                    $responsaveis = json_decode($projeto['responsaveis'], true);
+                }
+                // Se for string simples
+                else {
+                    $responsaveisNomes = array_map('trim', explode(',', $projeto['responsaveis']));
+                    $responsaveisNomes = array_filter($responsaveisNomes);
+                    $responsaveis = array_map(function ($nome) {
+                        return ['username' => $nome];
+                    }, $responsaveisNomes);
+                }
+            }
+
             $data[] = [
                 'identificador' => $projeto['identificador'],
                 'nome' => $projeto['nome'],
                 'descricao' => $projeto['descricao'],
                 'projeto_vinculado' => $projeto['projeto_vinculado'],
-                'responsaveis' => $projeto['responsaveis'],
+                'responsaveis' => $responsaveis,
                 'progresso' => [
                     'percentual' => $percentual,
                     'total_acoes' => $totalAcoes,
@@ -1295,6 +1316,115 @@ class Projetos extends BaseController
         } catch (\Exception $e) {
             log_message('error', 'Erro ao calcular progresso: ' . $e->getMessage());
             $response['message'] = 'Erro ao calcular progresso';
+        }
+
+        return $this->response->setJSON($response);
+    }
+    public function getResponsaveis($idProjeto)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $response = ['success' => false, 'data' => []];
+
+        try {
+            $responsaveis = $this->projetosModel->getResponsaveis($idProjeto);
+
+            $formatted = array_map(function ($user) {
+                return [
+                    'usuario_id' => $user['usuario_id'],
+                    'username' => $user['username'],
+                    'email' => $user['email'] ?? null,
+                    'display_name' => $user['username']
+                ];
+            }, $responsaveis);
+
+            $response['success'] = true;
+            $response['data'] = $formatted;
+        } catch (\Exception $e) {
+            $response['message'] = $e->getMessage();
+        }
+
+        return $this->response->setJSON($response);
+    }
+
+    public function getUsuariosDisponiveis($idProjeto)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $response = ['success' => false, 'data' => []];
+
+        try {
+            $usuarios = $this->projetosModel->getUsuariosDisponiveis($idProjeto);
+
+            // Filtra usuários que já são responsáveis
+            $responsaveis = $this->projetosModel->getResponsaveis($idProjeto);
+            $responsaveisIds = array_column($responsaveis, 'usuario_id');
+
+            $usuariosDisponiveis = array_filter($usuarios, function ($user) use ($responsaveisIds) {
+                return !in_array($user['id'], $responsaveisIds);
+            });
+
+            $formatted = array_map(function ($user) {
+                return [
+                    'id' => $user['id'],
+                    'username' => $user['username'],
+                    'email' => $user['email'] ?? null,
+                    'display_name' => $user['username']
+                ];
+            }, $usuariosDisponiveis);
+
+            $response['success'] = true;
+            $response['data'] = array_values($formatted); // Reindexa o array
+        } catch (\Exception $e) {
+            $response['message'] = 'Erro ao buscar usuários disponíveis';
+        }
+
+        return $this->response->setJSON($response);
+    }
+
+    public function adicionarResponsavel($idProjeto)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $response = ['success' => false];
+        $usuarioId = $this->request->getPost('usuario_id');
+
+        try {
+            $result = $this->projetosModel->adicionarResponsavel($idProjeto, $usuarioId);
+            if ($result) {
+                $response['success'] = true;
+                $response['message'] = 'Responsável adicionado com sucesso!';
+            } else {
+                $response['message'] = 'Usuário já é responsável por este projeto';
+            }
+        } catch (\Exception $e) {
+            $response['message'] = $e->getMessage();
+        }
+
+        return $this->response->setJSON($response);
+    }
+
+    public function removerResponsavel($idProjeto)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $response = ['success' => false];
+        $usuarioId = $this->request->getPost('usuario_id');
+
+        try {
+            $result = $this->projetosModel->removerResponsavel($idProjeto, $usuarioId);
+            $response['success'] = (bool)$result;
+            $response['message'] = $result ? 'Responsável removido com sucesso!' : 'Falha ao remover responsável';
+        } catch (\Exception $e) {
+            $response['message'] = $e->getMessage();
         }
 
         return $this->response->setJSON($response);

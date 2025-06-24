@@ -12,6 +12,10 @@
             <form id="formEditProjeto" method="post" action="<?= site_url("projetos/atualizar/$idPlano") ?>">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                 <input type="hidden" name="id" id="editProjetoId">
+                <input type="hidden" name="evidencias_adicionar" value="">
+                <input type="hidden" name="evidencias_remover" value="">
+                <input type="hidden" name="responsaveis_adicionar" value="">
+                <input type="hidden" name="responsaveis_remover" value="">
 
                 <div class="modal-body">
                     <!-- Informações Básicas -->
@@ -83,10 +87,58 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
 
-                            <div class="form-group">
-                                <label for="editProjetoResponsaveis"><i class="fas fa-users mr-1"></i>Responsáveis</label>
-                                <textarea class="form-control" id="editProjetoResponsaveis" name="responsaveis" rows="2"></textarea>
+                    <!-- Gerenciamento de Responsáveis -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-users mr-2"></i>Gerenciar Responsáveis
+                            </h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="row no-gutters">
+                                <!-- Responsáveis Atuais -->
+                                <div class="col-md-6 border-right">
+                                    <div class="p-3">
+                                        <h6 class="text-center font-weight-bold">
+                                            <i class="fas fa-user-friends mr-1"></i>Responsáveis Atuais
+                                            <span class="badge badge-primary badge-pill ml-1" id="contadorResponsaveisAtuais">0</span>
+                                        </h6>
+                                        <div id="responsaveisAtuaisList" class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+                                            <div class="text-center py-3">
+                                                <i class="fas fa-spinner fa-spin"></i> Carregando...
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Usuários Disponíveis -->
+                                <div class="col-md-6">
+                                    <div class="p-3">
+                                        <h6 class="text-center font-weight-bold">
+                                            <i class="fas fa-user-plus mr-1"></i>Usuários Disponíveis
+                                            <span class="badge badge-secondary badge-pill ml-1" id="contadorUsuariosDisponiveis">0</span>
+                                        </h6>
+                                        <div class="input-group mb-3">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                            </div>
+                                            <input type="text" id="buscaUsuarioResponsavel" class="form-control" placeholder="Buscar usuário...">
+                                            <div class="input-group-append">
+                                                <button class="btn btn-outline-secondary" type="button" id="btnLimparBuscaResponsaveis" title="Limpar busca">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div id="usuariosDisponiveisList" class="list-group list-group-flush" style="max-height: 150px; overflow-y: auto;">
+                                            <div class="text-center py-3">
+                                                <i class="fas fa-spinner fa-spin"></i> Carregando...
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

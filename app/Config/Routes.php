@@ -60,6 +60,9 @@ $routes->group('', function ($routes) {
     $routes->post('projetos/solicitar-inclusao', 'Projetos::solicitarInclusao');
     $routes->get('projetos/listar-evidencias/(:num)', 'Projetos::listarEvidencias/$1');
     $routes->get('projetos/progresso/(:num)', 'Projetos::progresso/$1');
+    $routes->get('projetos/responsaveis/(:num)', 'Projetos::getResponsaveis/$1');
+    $routes->get('projetos/usuarios-disponiveis/(:num)', 'Projetos::getUsuariosDisponiveis/$1');
+
 
     $routes->post('planos/solicitar-edicao', 'Planos::solicitarEdicao');
     $routes->post('planos/solicitar-exclusao', 'Planos::solicitarExclusao');
@@ -93,6 +96,8 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
     $routes->post('projetos/excluir/(:num)', 'Projetos::excluir/$1');
     $routes->post('projetos/cadastrar-acao-direta/(:num)', 'Projetos::cadastrarAcaoDireta/$1');
     $routes->post('projetos/editar/(:num)', 'Projetos::editar/$1');
+    $routes->post('projetos/adicionar-responsavel/(:num)', 'Projetos::adicionarResponsavel/$1');
+    $routes->post('projetos/remover-responsavel/(:num)', 'Projetos::removerResponsavel/$1');
 
 
     // Etapas
