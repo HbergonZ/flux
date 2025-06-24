@@ -203,12 +203,14 @@ class Projetos extends BaseController
 
         $response = ['success' => false, 'message' => ''];
 
+        // Verificar permissões
         if (!auth()->user()->inGroup('admin')) {
             log_message('debug', 'Usuário não tem permissão para esta ação');
             $response['message'] = 'Você não tem permissão para esta ação';
             return $this->response->setJSON($response);
         }
 
+        // Regras de validação
         $rules = [
             'id' => 'required',
             'identificador' => 'required|max_length[10]|alpha_numeric',
@@ -220,149 +222,182 @@ class Projetos extends BaseController
             'status' => 'required|in_list[Ativo,Paralisado,Concluído]'
         ];
 
-        if ($this->validate($rules)) {
-            $db = \Config\Database::connect();
-            $db->transStart();
-
-            try {
-                $id = $this->request->getPost('id');
-                $projetoAntigo = $this->projetosModel->find($id);
-
-                if (!$projetoAntigo || $projetoAntigo['id_plano'] != $idPlano) {
-                    log_message('debug', 'Projeto não encontrado ou não pertence ao plano');
-                    $response['message'] = 'Projeto não encontrado ou não pertence a este plano';
-                    return $this->response->setJSON($response);
-                }
-
-                $novoStatus = $this->request->getPost('status');
-                $statusAlterado = ($projetoAntigo['status'] !== $novoStatus);
-
-                $data = [
-                    'id' => $id,
-                    'identificador' => $this->request->getPost('identificador'),
-                    'nome' => $this->request->getPost('nome'),
-                    'descricao' => $this->request->getPost('descricao'),
-                    'projeto_vinculado' => $this->request->getPost('projeto_vinculado'),
-                    'priorizacao_gab' => $this->request->getPost('priorizacao_gab') ?? 0,
-                    'id_eixo' => $this->request->getPost('id_eixo') ?: null,
-                    'status' => $novoStatus
-                ];
-
-                log_message('debug', 'Dados preparados para atualização: ' . print_r($data, true));
-
-                // 1. Atualiza o projeto
-                $this->projetosModel->save($data);
-
-                // 2. Processar evidências
-                $evidenciasAdicionar = json_decode($this->request->getPost('evidencias_adicionar'), true) ?? [];
-                $evidenciasRemover = json_decode($this->request->getPost('evidencias_remover'), true) ?? [];
-
-                $evidenciasModel = new \App\Models\EvidenciasModel();
-
-                // Adicionar novas evidências
-                foreach ($evidenciasAdicionar as $evidencia) {
-                    $evidenciaData = [
-                        'tipo' => $evidencia['tipo'],
-                        'descricao' => $evidencia['descricao'] ?? '',
-                        'nivel' => 'projeto',
-                        'id_nivel' => $id,
-                        'created_by' => auth()->id(),
-                        'created_at' => date('Y-m-d H:i:s')
-                    ];
-
-                    if ($evidencia['tipo'] === 'texto') {
-                        $evidenciaData['evidencia'] = $evidencia['conteudo'];
-                        $evidenciaData['link'] = null;
-                    } else {
-                        $evidenciaData['link'] = $evidencia['conteudo'];
-                        $evidenciaData['evidencia'] = null;
-
-                        if (!filter_var($evidencia['conteudo'], FILTER_VALIDATE_URL)) {
-                            throw new \Exception('O link fornecido não é válido: ' . $evidencia['conteudo']);
-                        }
-                    }
-
-                    $insertId = $evidenciasModel->insert($evidenciaData);
-                    $this->logController->registrarCriacao('evidencia', $evidenciaData, 'Evidência adicionada ao projeto');
-                    log_message('debug', 'Evidência adicionada com ID: ' . $insertId);
-                }
-
-                // Remover evidências marcadas
-                foreach ($evidenciasRemover as $idEvidencia) {
-                    $evidencia = $evidenciasModel->find($idEvidencia);
-                    if ($evidencia && $evidencia['nivel'] === 'projeto' && $evidencia['id_nivel'] == $id) {
-                        $this->logController->registrarExclusao('evidencia', $evidencia, 'Evidência removida do projeto');
-                        $evidenciasModel->delete($idEvidencia);
-                        log_message('debug', 'Evidência removida: ' . $idEvidencia);
-                    }
-                }
-
-                // 3. Processar responsáveis - ESSA É A PARTE QUE VOCÊ SOLICITOU
-                $responsaveisAdicionar = json_decode($this->request->getPost('responsaveis_adicionar'), true) ?? [];
-                $responsaveisRemover = json_decode($this->request->getPost('responsaveis_remover'), true) ?? [];
-
-                foreach ($responsaveisAdicionar as $usuarioId) {
-                    $this->projetosModel->adicionarResponsavel($id, $usuarioId);
-                    log_message('debug', 'Responsável adicionado: ' . $usuarioId);
-                }
-
-                foreach ($responsaveisRemover as $usuarioId) {
-                    $this->projetosModel->removerResponsavel($id, $usuarioId);
-                    log_message('debug', 'Responsável removido: ' . $usuarioId);
-                }
-
-                // 4. Se o status foi alterado, atualiza as ações
-                if ($statusAlterado) {
-                    log_message('debug', 'Status alterado de ' . $projetoAntigo['status'] . ' para ' . $novoStatus . '. Atualizando ações...');
-                    $acoesModel = new \App\Models\AcoesModel();
-                    $result = $acoesModel->atualizarStatusAcoesProjeto($id, $novoStatus, $db);
-                    log_message('debug', 'Resultado da atualização de ações: ' . print_r($result, true));
-                }
-
-                $projetoAtualizado = $this->projetosModel->find($id);
-
-                // Registrar log de edição do projeto
-                $this->logController->registrarEdicao('projeto', $projetoAntigo, $projetoAtualizado, 'Edição realizada via interface');
-
-                // 5. Obter evidências e responsáveis atualizados para resposta
-                $evidenciasAtualizadas = $evidenciasModel
-                    ->select('id, descricao, tipo, evidencia, link, created_at')
-                    ->where('nivel', 'projeto')
-                    ->where('id_nivel', $id)
-                    ->orderBy('created_at', 'DESC')
-                    ->findAll();
-
-                $responsaveisAtuais = $this->projetosModel->getResponsaveis($id);
-
-                $db->transComplete();
-
-                if ($db->transStatus() === false) {
-                    throw new \Exception('Falha na transação do banco de dados');
-                }
-
-                $response['success'] = true;
-                $response['message'] = 'Projeto atualizado com sucesso!';
-                $response['evidencias'] = array_map(function ($ev) {
-                    return [
-                        'id' => $ev['id'],
-                        'descricao' => $ev['descricao'],
-                        'tipo' => $ev['tipo'],
-                        'conteudo' => $ev['tipo'] === 'texto' ? $ev['evidencia'] : $ev['link'],
-                        'created_at' => $ev['created_at']
-                    ];
-                }, $evidenciasAtualizadas);
-                $response['responsaveis'] = $responsaveisAtuais;
-
-                log_message('debug', 'Projeto atualizado com sucesso');
-            } catch (\Exception $e) {
-                $db->transRollback();
-                log_message('error', 'Erro ao atualizar projeto: ' . $e->getMessage());
-                $response['message'] = 'Erro ao atualizar projeto: ' . $e->getMessage();
-            }
-        } else {
+        if (!$this->validate($rules)) {
             $errors = $this->validator->getErrors();
             log_message('debug', 'Erros de validação: ' . print_r($errors, true));
             $response['message'] = implode('<br>', $errors);
+            return $this->response->setJSON($response);
+        }
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        try {
+            $id = $this->request->getPost('id');
+            $projetoAntigo = $this->projetosModel->find($id);
+
+            // Verificar existência do projeto
+            if (!$projetoAntigo || $projetoAntigo['id_plano'] != $idPlano) {
+                log_message('debug', 'Projeto não encontrado ou não pertence ao plano');
+                throw new \Exception('Projeto não encontrado ou não pertence a este plano');
+            }
+
+            // Preparar dados para atualização
+            $novoStatus = $this->request->getPost('status');
+            $statusAlterado = ($projetoAntigo['status'] !== $novoStatus);
+
+            $data = [
+                'id' => $id,
+                'identificador' => $this->request->getPost('identificador'),
+                'nome' => $this->request->getPost('nome'),
+                'descricao' => $this->request->getPost('descricao'),
+                'projeto_vinculado' => $this->request->getPost('projeto_vinculado'),
+                'priorizacao_gab' => $this->request->getPost('priorizacao_gab') ?? 0,
+                'id_eixo' => $this->request->getPost('id_eixo') ?: null,
+                'status' => $novoStatus
+            ];
+
+            log_message('debug', 'Dados preparados para atualização: ' . print_r($data, true));
+
+            // 1. Atualizar dados básicos do projeto
+            if (!$this->projetosModel->save($data)) {
+                throw new \Exception('Falha ao atualizar dados do projeto');
+            }
+
+            // 2. Processar evidências
+            $evidenciasModel = new \App\Models\EvidenciasModel();
+
+            // Evidências para adicionar
+            $evidenciasAdicionar = json_decode($this->request->getPost('evidencias_adicionar'), true) ?? [];
+            foreach ($evidenciasAdicionar as $evidencia) {
+                $evidenciaData = [
+                    'tipo' => $evidencia['tipo'],
+                    'descricao' => $evidencia['descricao'] ?? '',
+                    'nivel' => 'projeto',
+                    'id_nivel' => $id,
+                    'created_by' => auth()->id(),
+                    'created_at' => date('Y-m-d H:i:s')
+                ];
+
+                if ($evidencia['tipo'] === 'texto') {
+                    $evidenciaData['evidencia'] = $evidencia['conteudo'];
+                    $evidenciaData['link'] = null;
+                } else {
+                    if (!filter_var($evidencia['conteudo'], FILTER_VALIDATE_URL)) {
+                        throw new \Exception('URL inválida: ' . $evidencia['conteudo']);
+                    }
+                    $evidenciaData['link'] = $evidencia['conteudo'];
+                    $evidenciaData['evidencia'] = null;
+                }
+
+                if (!$evidenciasModel->insert($evidenciaData)) {
+                    throw new \Exception('Falha ao adicionar evidência');
+                }
+                $this->logController->registrarCriacao('evidencia', $evidenciaData, 'Evidência adicionada ao projeto');
+            }
+
+            // Evidências para remover
+            $evidenciasRemover = json_decode($this->request->getPost('evidencias_remover'), true) ?? [];
+            foreach ($evidenciasRemover as $idEvidencia) {
+                $evidencia = $evidenciasModel->find($idEvidencia);
+                if ($evidencia && $evidencia['nivel'] === 'projeto' && $evidencia['id_nivel'] == $id) {
+                    if (!$evidenciasModel->delete($idEvidencia)) {
+                        throw new \Exception('Falha ao remover evidência');
+                    }
+                    $this->logController->registrarExclusao('evidencia', $evidencia, 'Evidência removida do projeto');
+                }
+            }
+
+            // 3. Processar responsáveis - CORREÇÃO PARA REMOÇÃO INDIVIDUAL
+            $responsaveisAdicionar = json_decode($this->request->getPost('responsaveis_adicionar'), true) ?? [];
+            $responsaveisRemover = json_decode($this->request->getPost('responsaveis_remover'), true) ?? [];
+
+            log_message('debug', 'Responsáveis a adicionar: ' . print_r($responsaveisAdicionar, true));
+            log_message('debug', 'Responsáveis a remover: ' . print_r($responsaveisRemover, true));
+
+            // Obter responsáveis atuais do banco de dados
+            $responsaveisAtuais = $this->projetosModel->getResponsaveis($id);
+            $responsaveisAtuaisIds = array_column($responsaveisAtuais, 'usuario_id');
+
+            // Processar remoções PRIMEIRO - apenas os que não estão sendo readicionados
+            $remocoesEfetivas = array_diff($responsaveisRemover, $responsaveisAdicionar);
+            foreach ($remocoesEfetivas as $usuarioId) {
+                if (in_array($usuarioId, $responsaveisAtuaisIds)) {
+                    if (!$this->projetosModel->removerResponsavel($id, $usuarioId)) {
+                        throw new \Exception('Falha ao remover responsável: ' . $usuarioId);
+                    }
+                    $this->logController->registrarExclusao('responsavel', [
+                        'projeto_id' => $id,
+                        'usuario_id' => $usuarioId
+                    ], 'Responsável removido do projeto');
+                }
+            }
+
+            // Processar adições DEPOIS - apenas os que não estão na lista atual
+            $adicoesEfetivas = array_diff($responsaveisAdicionar, $responsaveisAtuaisIds);
+            foreach ($adicoesEfetivas as $usuarioId) {
+                if (!in_array($usuarioId, $responsaveisAtuaisIds)) {
+                    if (!$this->projetosModel->adicionarResponsavel($id, $usuarioId)) {
+                        throw new \Exception('Falha ao adicionar responsável: ' . $usuarioId);
+                    }
+                    $this->logController->registrarCriacao('responsavel', [
+                        'projeto_id' => $id,
+                        'usuario_id' => $usuarioId
+                    ], 'Responsável adicionado ao projeto');
+                }
+            }
+
+            // 4. Atualizar status das ações se necessário
+            if ($statusAlterado) {
+                log_message('debug', 'Atualizando status das ações para: ' . $novoStatus);
+                $acoesModel = new \App\Models\AcoesModel();
+                if (!$acoesModel->atualizarStatusAcoesProjeto($id, $novoStatus, $db)) {
+                    throw new \Exception('Falha ao atualizar status das ações');
+                }
+            }
+
+            // Obter dados atualizados para resposta
+            $projetoAtualizado = $this->projetosModel->find($id);
+            $this->logController->registrarEdicao('projeto', $projetoAntigo, $projetoAtualizado, 'Edição realizada via interface');
+
+            $evidenciasAtualizadas = $evidenciasModel
+                ->select('id, descricao, tipo, evidencia, link, created_at')
+                ->where('nivel', 'projeto')
+                ->where('id_nivel', $id)
+                ->orderBy('created_at', 'DESC')
+                ->findAll();
+
+            $responsaveisAtuais = $this->projetosModel->getResponsaveis($id);
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                throw new \Exception('Falha na transação do banco de dados');
+            }
+
+            $response = [
+                'success' => true,
+                'message' => 'Projeto atualizado com sucesso!',
+                'data' => [
+                    'projeto' => $projetoAtualizado,
+                    'evidencias' => array_map(function ($ev) {
+                        return [
+                            'id' => $ev['id'],
+                            'descricao' => $ev['descricao'],
+                            'tipo' => $ev['tipo'],
+                            'conteudo' => $ev['tipo'] === 'texto' ? $ev['evidencia'] : $ev['link'],
+                            'created_at' => $ev['created_at']
+                        ];
+                    }, $evidenciasAtualizadas),
+                    'responsaveis' => $responsaveisAtuais
+                ]
+            ];
+
+            log_message('debug', 'Projeto atualizado com sucesso');
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', 'Erro ao atualizar projeto: ' . $e->getMessage());
+            $response['message'] = 'Erro ao atualizar projeto: ' . $e->getMessage();
         }
 
         return $this->response->setJSON($response);
@@ -1424,6 +1459,114 @@ class Projetos extends BaseController
             $response['success'] = (bool)$result;
             $response['message'] = $result ? 'Responsável removido com sucesso!' : 'Falha ao remover responsável';
         } catch (\Exception $e) {
+            $response['message'] = $e->getMessage();
+        }
+
+        return $this->response->setJSON($response);
+    }
+
+    public function listarIndicadores($idProjeto)
+    {
+        $response = ['success' => false, 'message' => '', 'data' => []];
+
+        try {
+            $indicadoresModel = new \App\Models\IndicadoresModel();
+
+            $indicadores = $indicadoresModel
+                ->select('id, descricao, conteudo, created_at')
+                ->where('nivel', 'projeto')
+                ->where('id_nivel', $idProjeto)
+                ->orderBy('created_at', 'DESC')
+                ->findAll();
+
+            $response['success'] = true;
+            $response['data'] = $indicadores;
+        } catch (\Exception $e) {
+            log_message('error', 'Erro em listarIndicadores: ' . $e->getMessage());
+            $response['message'] = 'Erro ao carregar indicadores: ' . $e->getMessage();
+        }
+
+        return $this->response->setJSON($response);
+    }
+
+    public function adicionarIndicador($idProjeto)
+    {
+        $response = ['success' => false, 'message' => ''];
+
+        try {
+            $rules = [
+                'conteudo' => 'required|min_length[3]',
+                'descricao' => 'permit_empty'
+            ];
+
+            if (!$this->validate($rules)) {
+                throw new \Exception(implode("\n", $this->validator->getErrors()));
+            }
+
+            $indicadoresModel = new \App\Models\IndicadoresModel();
+
+            $data = [
+                'conteudo' => $this->request->getPost('conteudo'),
+                'descricao' => $this->request->getPost('descricao'),
+                'nivel' => 'projeto',
+                'id_nivel' => $idProjeto,
+                'created_by' => auth()->id()
+            ];
+
+            $insertId = $indicadoresModel->insert($data);
+            if (!$insertId) {
+                throw new \Exception('Falha ao adicionar indicador');
+            }
+
+            // Registrar log
+            $this->logController->registrarCriacao(
+                'indicador',
+                $data,
+                'Indicador adicionado ao projeto'
+            );
+
+            $response['success'] = true;
+            $response['message'] = 'Indicador adicionado com sucesso!';
+            $response['data'] = array_merge(['id' => $insertId], $data);
+        } catch (\Exception $e) {
+            log_message('error', 'Erro em adicionarIndicador: ' . $e->getMessage());
+            $response['message'] = $e->getMessage();
+        }
+
+        return $this->response->setJSON($response);
+    }
+
+    public function removerIndicador($idProjeto, $idIndicador)
+    {
+        $response = ['success' => false, 'message' => ''];
+
+        try {
+            $indicadoresModel = new \App\Models\IndicadoresModel();
+
+            $indicador = $indicadoresModel->where('id', $idIndicador)
+                ->where('nivel', 'projeto')
+                ->where('id_nivel', $idProjeto)
+                ->first();
+
+            if (!$indicador) {
+                throw new \Exception('Indicador não encontrado ou não pertence a este projeto');
+            }
+
+            if (!$indicadoresModel->delete($idIndicador)) {
+                throw new \Exception('Falha ao remover indicador');
+            }
+
+            // Registrar log
+            $this->logController->registrarExclusao(
+                'indicador',
+                $indicador,
+                'Indicador removido do projeto'
+            );
+
+            $response['success'] = true;
+            $response['message'] = 'Indicador removido com sucesso!';
+        } catch (\Exception $e) {
+            log_message('error', 'Erro em removerIndicador: ' . $e->getMessage());
             $response['message'] = $e->getMessage();
         }
 

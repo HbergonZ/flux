@@ -411,12 +411,13 @@
             var responsaveisRemover = responsaveisOriginaisIds.filter(id =>
                 !responsaveisAtuaisIds.includes(id));
 
-            // Adicionar dados ao formulário como campos hidden
+            // Limpar campos hidden existentes
             form.find('input[name="evidencias_adicionar"]').remove();
             form.find('input[name="evidencias_remover"]').remove();
             form.find('input[name="responsaveis_adicionar"]').remove();
             form.find('input[name="responsaveis_remover"]').remove();
 
+            // Adicionar novos campos hidden com os dados atualizados
             form.append(
                 $('<input>').attr({
                     type: 'hidden',
@@ -963,30 +964,16 @@
         }
 
         // Evento quando o modal de edição é aberto
+        // Variáveis globais para controle
+        let responsaveisOriginais = [];
+
         $('#editProjetoModal').on('shown.bs.modal', function() {
-            const projetoId = $('#editProjetoId').val();
-            if (projetoId) {
-                // Carrega dados básicos do projeto
-                $.ajax({
-                    url: `<?= site_url('projetos/editar/') ?>${projetoId}`,
-                    type: 'GET',
-                    dataType: 'json',
-                    success: function(response) {
-                        if (response.success && response.data) {
-                            $('#editProjetoIdentificador').val(response.data.identificador);
-                            $('#editProjetoNome').val(response.data.nome);
-                            $('#editProjetoDescricao').val(response.data.descricao);
-                            $('#editProjetoVinculado').val(response.data.projeto_vinculado);
-                            $('#editProjetoEixo').val(response.data.id_eixo);
-                            $('#editProjetoPriorizacao').val(response.data.priorizacao_gab);
-                            $('#projetoStatus').val(response.data.status);
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('Erro ao carregar dados do projeto:', error);
-                    }
-                });
-            }
+            // Limpar arrays de controle
+            $('#formEditProjeto input[name="responsaveis_adicionar"]').val('[]');
+            $('#formEditProjeto input[name="responsaveis_remover"]').val('[]');
+
+            // Carregar responsáveis atuais
+            carregarResponsaveis(projetoId);
         });
 
         // Alternar entre tipos de evidência (texto/link)
@@ -1166,7 +1153,6 @@
         $(document).on('click', '.btn-adicionar-responsavel', function() {
             const $item = $(this).closest('.list-group-item');
             const userId = $item.data('user-id');
-            const projetoId = $('#editProjetoId').val();
 
             // Adiciona à lista de responsáveis
             const userData = {
@@ -1176,17 +1162,34 @@
             };
 
             $('#responsaveisAtuaisList').append(renderizarResponsavel(userData));
+
+            // Atualiza contadores
             $('#contadorResponsaveisAtuais').text(parseInt($('#contadorResponsaveisAtuais').text()) + 1);
+            $('#contadorUsuariosDisponiveis').text(parseInt($('#contadorUsuariosDisponiveis').text()) - 1);
 
             // Remove da lista de disponíveis
             $item.remove();
-            $('#contadorUsuariosDisponiveis').text(parseInt($('#contadorUsuariosDisponiveis').text()) - 1);
+
+            // Atualiza lista de adições
+            const adicionados = JSON.parse($('#formEditProjeto input[name="responsaveis_adicionar"]').val() || '[]');
+            if (!adicionados.includes(userId)) {
+                adicionados.push(userId);
+                $('#formEditProjeto input[name="responsaveis_adicionar"]').val(JSON.stringify(adicionados));
+            }
+
+            // Remove da lista de remoções se estava lá
+            const removidos = JSON.parse($('#formEditProjeto input[name="responsaveis_remover"]').val() || '[]');
+            const index = removidos.indexOf(userId);
+            if (index !== -1) {
+                removidos.splice(index, 1);
+                $('#formEditProjeto input[name="responsaveis_remover"]').val(JSON.stringify(removidos));
+            }
         });
+
 
         $(document).on('click', '.btn-remover-responsavel', function() {
             const $item = $(this).closest('.list-group-item');
             const userId = $item.data('user-id');
-            const projetoId = $('#editProjetoId').val();
 
             // Adiciona à lista de disponíveis
             const userData = {
@@ -1196,12 +1199,30 @@
             };
 
             $('#usuariosDisponiveisList').append(renderizarUsuarioDisponivel(userData));
+
+            // Atualiza contadores
             $('#contadorUsuariosDisponiveis').text(parseInt($('#contadorUsuariosDisponiveis').text()) + 1);
+            $('#contadorResponsaveisAtuais').text(parseInt($('#contadorResponsaveisAtuais').text()) - 1);
 
             // Remove da lista de responsáveis
             $item.remove();
-            $('#contadorResponsaveisAtuais').text(parseInt($('#contadorResponsaveisAtuais').text()) - 1);
+
+            // Atualiza lista de remoções
+            const removidos = JSON.parse($('#formEditProjeto input[name="responsaveis_remover"]').val() || '[]');
+            if (!removidos.includes(userId)) {
+                removidos.push(userId);
+                $('#formEditProjeto input[name="responsaveis_remover"]').val(JSON.stringify(removidos));
+            }
+
+            // Remove da lista de adições se estava lá
+            const adicionados = JSON.parse($('#formEditProjeto input[name="responsaveis_adicionar"]').val() || '[]');
+            const index = adicionados.indexOf(userId);
+            if (index !== -1) {
+                adicionados.splice(index, 1);
+                $('#formEditProjeto input[name="responsaveis_adicionar"]').val(JSON.stringify(adicionados));
+            }
         });
+
 
         // Busca de usuários
         $('#buscaUsuarioResponsavel').on('input', function() {
@@ -1246,5 +1267,199 @@
     </button>
 </div>`;
         }
+
+        // Função para renderizar indicador
+        function renderizarIndicador(indicador) {
+            return `
+<div class="list-group-item ${!indicador.id ? 'indicador-nova' : ''}"
+     data-id="${indicador.id || ''}"
+     data-conteudo="${indicador.conteudo}"
+     data-descricao="${indicador.descricao || ''}">
+    <div class="position-relative">
+        <button class="btn btn-sm btn-outline-danger btn-remover-indicador position-absolute"
+                style="top: 0; right: 0;"
+                title="Remover indicador">
+            <i class="fas fa-trash-alt"></i>
+        </button>
+
+        <div style="padding-right: 30px;">
+            <div class="mb-2">
+                <strong>Indicador:</strong>
+                <p class="mb-1">${indicador.conteudo}</p>
+            </div>
+
+            <div>
+                <strong>Descrição:</strong>
+                <p class="mb-1">${indicador.descricao || 'Sem descrição'}</p>
+            </div>
+        </div>
+    </div>
+</div>`;
+        }
+
+        // Carregar indicadores do projeto
+        function carregarIndicadoresProjeto(projetoId) {
+            $.ajax({
+                url: `<?= site_url('projetos/listar-indicadores/') ?>${projetoId}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    const $container = $('#indicadoresAtuaisList .list-group');
+                    $container.empty();
+
+                    if (response.success && response.data) {
+                        response.data.forEach(function(ind) {
+                            $container.append(renderizarIndicador({
+                                id: ind.id,
+                                conteudo: ind.conteudo,
+                                descricao: ind.descricao
+                            }));
+                        });
+                        $('#contadorIndicadoresAtuais').text(response.data.length);
+                    } else {
+                        $container.html('<div class="text-center py-3 text-muted">Nenhum indicador encontrado</div>');
+                    }
+                },
+                error: function() {
+                    $('#indicadoresAtuaisList .list-group').html(
+                        '<div class="text-center py-3 text-danger">Erro ao carregar indicadores</div>'
+                    );
+                }
+            });
+        }
+
+        // Adicionar indicador à lista (apenas localmente)
+        $('#btnAdicionarIndicadorProjeto').click(function() {
+            const conteudo = $('#editProjetoIndicadorConteudo').val().trim();
+            const descricao = $('#editProjetoIndicadorDescricao').val().trim();
+
+            if (!conteudo) {
+                showErrorAlert('Preencha o conteúdo do indicador');
+                return;
+            }
+
+            const novoIndicador = {
+                conteudo: conteudo,
+                descricao: descricao
+            };
+
+            $('#indicadoresAtuaisList .list-group').append(renderizarIndicador(novoIndicador));
+
+            // Limpar campos
+            $('#editProjetoIndicadorConteudo, #editProjetoIndicadorDescricao').val('');
+
+            // Atualizar contador
+            const count = $('#indicadoresAtuaisList .list-group-item').length;
+            $('#contadorIndicadoresAtuais').text(count);
+        });
+
+        // Remover indicador da lista (apenas localmente)
+        $(document).on('click', '.btn-remover-indicador', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const $item = $(this).closest('.list-group-item');
+            const id = $item.data('id');
+
+            if (id) {
+                // Apenas move para a lista de remoção (não remove do banco ainda)
+                $item.removeClass('list-group-item-danger')
+                    .addClass('list-group-item-warning')
+                    .find('.btn-remover-indicador')
+                    .removeClass('btn-outline-danger')
+                    .addClass('btn-outline-secondary')
+                    .html('<i class="fas fa-undo"></i>')
+                    .attr('title', 'Desfazer remoção');
+
+                // Move o item para a lista de remoção
+                $('#indicadoresRemoverList .list-group').append($item);
+
+                // Atualiza contadores
+                $('#contadorIndicadoresAtuais').text($('#indicadoresAtuaisList .list-group-item').length);
+                $('#contadorIndicadoresRemover').text($('#indicadoresRemoverList .list-group-item').length);
+            } else {
+                // Se não tem ID, é novo - pode remover imediatamente
+                $item.remove();
+                $('#contadorIndicadoresAtuais').text($('#indicadoresAtuaisList .list-group-item').length);
+            }
+        });
+
+        // Desfazer remoção de indicador
+        $(document).on('click', '.btn-remover-indicador.btn-outline-secondary', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const $item = $(this).closest('.list-group-item');
+            $item.removeClass('list-group-item-warning')
+                .find('.btn-remover-indicador')
+                .removeClass('btn-outline-secondary')
+                .addClass('btn-outline-danger')
+                .html('<i class="fas fa-trash-alt"></i>')
+                .attr('title', 'Remover indicador');
+
+            // Move de volta para a lista atual
+            $('#indicadoresAtuaisList .list-group').append($item);
+
+            // Atualiza contadores
+            $('#contadorIndicadoresAtuais').text($('#indicadoresAtuaisList .list-group-item').length);
+            $('#contadorIndicadoresRemover').text($('#indicadoresRemoverList .list-group-item').length);
+        });
+
+        // No evento de submit do formulário de edição
+        $('#formEditProjeto').submit(function(e) {
+            e.preventDefault();
+            var form = $(this);
+
+            // Coletar indicadores para adicionar (novos)
+            var indicadoresAdicionar = [];
+            $('#indicadoresAtuaisList .list-group-item').each(function() {
+                if (!$(this).data('id')) { // Se não tem ID, é novo
+                    indicadoresAdicionar.push({
+                        conteudo: $(this).data('conteudo'),
+                        descricao: $(this).data('descricao')
+                    });
+                }
+            });
+
+            // Coletar indicadores para remover (IDs)
+            var indicadoresRemover = [];
+            $('#indicadoresRemoverList .list-group-item').each(function() {
+                var id = $(this).data('id');
+                if (id) { // Só adiciona se tiver ID (indicadores existentes)
+                    indicadoresRemover.push(id);
+                }
+            });
+
+            // Limpar campos hidden existentes
+            form.find('input[name="indicadores_adicionar"]').remove();
+            form.find('input[name="indicadores_remover"]').remove();
+
+            // Adicionar novos campos hidden com os dados atualizados
+            form.append(
+                $('<input>').attr({
+                    type: 'hidden',
+                    name: 'indicadores_adicionar',
+                    value: JSON.stringify(indicadoresAdicionar)
+                }),
+                $('<input>').attr({
+                    type: 'hidden',
+                    name: 'indicadores_remover',
+                    value: JSON.stringify(indicadoresRemover)
+                })
+            );
+
+            // Enviar o formulário
+            submitForm(form, '#editProjetoModal', 'Projeto atualizado com sucesso!', true);
+        });
+
+        // No evento quando o modal de edição é aberto
+        $('#editProjetoModal').on('shown.bs.modal', function() {
+            const projetoId = $('#editProjetoId').val();
+            if (!projetoId) return;
+
+            carregarIndicadoresProjeto(projetoId);
+            $('#indicadoresRemoverList .list-group').empty();
+            $('#contadorIndicadoresRemover').text('0');
+        });
     });
 </script>

@@ -230,6 +230,74 @@
                             </div>
                         </div>
                     </div>
+                    <!-- Seção de Indicadores -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-chart-line mr-2"></i>Gerenciar Indicadores
+                            </h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="row no-gutters">
+                                <!-- Coluna de Indicadores (Atuais e para Remover) -->
+                                <div class="col-md-6 border-right">
+                                    <div class="p-3 d-flex flex-column" style="height: 100%; min-height: 400px;">
+                                        <!-- Seção de Indicadores Atuais -->
+                                        <div class="mb-3 border-bottom flex-grow-1" style="height: 50%;">
+                                            <h6 class="font-weight-bold mb-2">
+                                                <i class="fas fa-list-ul mr-1"></i>Indicadores Atuais
+                                                <span class="badge badge-primary badge-pill ml-1" id="contadorIndicadoresAtuais">0</span>
+                                            </h6>
+                                            <div id="loadingIndicadores" class="text-center py-3 d-none">
+                                                <i class="fas fa-spinner fa-spin"></i> Carregando indicadores...
+                                            </div>
+                                            <div id="indicadoresAtuaisList" class="overflow-auto" style="max-height: calc(100% - 30px);">
+                                                <div class="list-group">
+                                                    <!-- Os indicadores serão inseridos aqui via JavaScript -->
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Seção de Indicadores para Remover -->
+                                        <div class="flex-grow-1" style="height: 50%;">
+                                            <h6 class="font-weight-bold mb-2">
+                                                <i class="fas fa-trash-alt mr-1"></i>Indicadores a serem removidos
+                                                <span class="badge badge-secondary badge-pill ml-1" id="contadorIndicadoresRemover">0</span>
+                                            </h6>
+                                            <div id="indicadoresRemoverList" class="overflow-auto" style="max-height: calc(100% - 30px);">
+                                                <div class="list-group">
+                                                    <!-- Indicadores marcados para remoção serão exibidos aqui -->
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Coluna de Adicionar Indicador -->
+                                <div class="col-md-6">
+                                    <div class="p-3">
+                                        <h6 class="font-weight-bold mb-3">
+                                            <i class="fas fa-plus-circle mr-1"></i>Adicionar Indicador
+                                        </h6>
+
+                                        <div class="form-group mb-3">
+                                            <label for="editProjetoIndicadorConteudo"><i class="fas fa-chart-bar mr-1"></i>Conteúdo*</label>
+                                            <textarea class="form-control" id="editProjetoIndicadorConteudo" rows="3" required></textarea>
+                                        </div>
+
+                                        <div class="form-group mb-3">
+                                            <label for="editProjetoIndicadorDescricao"><i class="fas fa-align-left mr-1"></i>Descrição</label>
+                                            <textarea class="form-control" id="editProjetoIndicadorDescricao" rows="2" placeholder="Explique o indicador"></textarea>
+                                        </div>
+
+                                        <button type="button" class="btn btn-primary btn-block" id="btnAdicionarIndicadorProjeto">
+                                            <i class="fas fa-plus mr-2"></i> Adicionar à Lista
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">

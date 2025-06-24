@@ -62,6 +62,7 @@ $routes->group('', function ($routes) {
     $routes->get('projetos/progresso/(:num)', 'Projetos::progresso/$1');
     $routes->get('projetos/responsaveis/(:num)', 'Projetos::getResponsaveis/$1');
     $routes->get('projetos/usuarios-disponiveis/(:num)', 'Projetos::getUsuariosDisponiveis/$1');
+    $routes->get('projetos/listar-indicadores/(:num)', 'Projetos::listarIndicadores/$1');
 
 
     $routes->post('planos/solicitar-edicao', 'Planos::solicitarEdicao');
@@ -98,6 +99,8 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
     $routes->post('projetos/editar/(:num)', 'Projetos::editar/$1');
     $routes->post('projetos/adicionar-responsavel/(:num)', 'Projetos::adicionarResponsavel/$1');
     $routes->post('projetos/remover-responsavel/(:num)', 'Projetos::removerResponsavel/$1');
+    $routes->post('projetos/adicionar-indicador/(:num)', 'Projetos::adicionarIndicador/$1');
+    $routes->post('projetos/remover-indicador/(:num)/(:num)', 'Projetos::removerIndicador/$1/$2');
 
 
     // Etapas
