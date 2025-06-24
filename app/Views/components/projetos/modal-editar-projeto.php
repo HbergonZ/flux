@@ -281,8 +281,8 @@
                                         </h6>
 
                                         <div class="form-group mb-3">
-                                            <label for="editProjetoIndicadorConteudo"><i class="fas fa-chart-bar mr-1"></i>Conteúdo*</label>
-                                            <textarea class="form-control" id="editProjetoIndicadorConteudo" rows="3" required></textarea>
+                                            <label for="editProjetoIndicadorConteudo"><i class="fas fa-chart-bar mr-1"></i>Conteúdo</label>
+                                            <textarea class="form-control" id="editProjetoIndicadorConteudo" rows="3"></textarea>
                                         </div>
 
                                         <div class="form-group mb-3">

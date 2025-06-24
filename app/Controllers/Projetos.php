@@ -308,7 +308,40 @@ class Projetos extends BaseController
                 }
             }
 
-            // 3. Processar responsáveis - CORREÇÃO PARA REMOÇÃO INDIVIDUAL
+            // 3. Processar indicadores
+            $indicadoresModel = new \App\Models\IndicadoresModel();
+
+            // Indicadores para adicionar
+            $indicadoresAdicionar = json_decode($this->request->getPost('indicadores_adicionar'), true) ?? [];
+            foreach ($indicadoresAdicionar as $indicador) {
+                $indicadorData = [
+                    'conteudo' => $indicador['conteudo'],
+                    'descricao' => $indicador['descricao'] ?? '',
+                    'nivel' => 'projeto',
+                    'id_nivel' => $id,
+                    'created_by' => auth()->id(),
+                    'created_at' => date('Y-m-d H:i:s')
+                ];
+
+                if (!$indicadoresModel->insert($indicadorData)) {
+                    throw new \Exception('Falha ao adicionar indicador');
+                }
+                $this->logController->registrarCriacao('indicador', $indicadorData, 'Indicador adicionado ao projeto');
+            }
+
+            // Indicadores para remover
+            $indicadoresRemover = json_decode($this->request->getPost('indicadores_remover'), true) ?? [];
+            foreach ($indicadoresRemover as $idIndicador) {
+                $indicador = $indicadoresModel->find($idIndicador);
+                if ($indicador && $indicador['nivel'] === 'projeto' && $indicador['id_nivel'] == $id) {
+                    if (!$indicadoresModel->delete($idIndicador)) {
+                        throw new \Exception('Falha ao remover indicador');
+                    }
+                    $this->logController->registrarExclusao('indicador', $indicador, 'Indicador removido do projeto');
+                }
+            }
+
+            // 4. Processar responsáveis - CORREÇÃO PARA REMOÇÃO INDIVIDUAL
             $responsaveisAdicionar = json_decode($this->request->getPost('responsaveis_adicionar'), true) ?? [];
             $responsaveisRemover = json_decode($this->request->getPost('responsaveis_remover'), true) ?? [];
 
@@ -347,7 +380,7 @@ class Projetos extends BaseController
                 }
             }
 
-            // 4. Atualizar status das ações se necessário
+            // 5. Atualizar status das ações se necessário
             if ($statusAlterado) {
                 log_message('debug', 'Atualizando status das ações para: ' . $novoStatus);
                 $acoesModel = new \App\Models\AcoesModel();
@@ -362,6 +395,13 @@ class Projetos extends BaseController
 
             $evidenciasAtualizadas = $evidenciasModel
                 ->select('id, descricao, tipo, evidencia, link, created_at')
+                ->where('nivel', 'projeto')
+                ->where('id_nivel', $id)
+                ->orderBy('created_at', 'DESC')
+                ->findAll();
+
+            $indicadoresAtualizados = $indicadoresModel
+                ->select('id, descricao, conteudo, created_at')
                 ->where('nivel', 'projeto')
                 ->where('id_nivel', $id)
                 ->orderBy('created_at', 'DESC')
@@ -389,6 +429,7 @@ class Projetos extends BaseController
                             'created_at' => $ev['created_at']
                         ];
                     }, $evidenciasAtualizadas),
+                    'indicadores' => $indicadoresAtualizados,
                     'responsaveis' => $responsaveisAtuais
                 ]
             ];

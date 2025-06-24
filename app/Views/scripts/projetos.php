@@ -374,10 +374,28 @@
             e.preventDefault();
             var form = $(this);
 
-            // Coletar evidências para adicionar (novas)
+            // 🔹 Coletar indicadores para adicionar (novos)
+            var indicadoresAdicionar = [];
+            $('#indicadoresAtuaisList .list-group-item').each(function() {
+                if (!$(this).data('id')) {
+                    indicadoresAdicionar.push({
+                        conteudo: $(this).data('conteudo'),
+                        descricao: $(this).data('descricao')
+                    });
+                }
+            });
+
+            // 🔹 Coletar indicadores para remover (IDs)
+            var indicadoresRemover = [];
+            $('#indicadoresRemoverList .list-group-item').each(function() {
+                var id = $(this).data('id');
+                if (id) indicadoresRemover.push(id);
+            });
+
+            // 🔹 Coletar evidências para adicionar (novas)
             var evidenciasAdicionar = [];
             $('#evidenciasProjetoAtuaisList .list-group-item').each(function() {
-                if (!$(this).data('id')) { // Se não tem ID, é nova
+                if (!$(this).data('id')) {
                     evidenciasAdicionar.push({
                         tipo: $(this).data('tipo'),
                         conteudo: $(this).data('conteudo'),
@@ -386,64 +404,68 @@
                 }
             });
 
-            // Coletar evidências para remover (IDs)
+            // 🔹 Coletar evidências para remover (IDs)
             var evidenciasRemover = [];
             $('#evidenciasProjetoRemoverList .list-group-item').each(function() {
                 var id = $(this).data('id');
-                if (id) { // Só adiciona se tiver ID (evidências existentes)
-                    evidenciasRemover.push(id);
-                }
+                if (id) evidenciasRemover.push(id);
             });
 
-            // Coletar responsáveis atuais
+            // 🔹 Coletar responsáveis
             var responsaveisAtuaisIds = [];
             $('#responsaveisAtuaisList .list-group-item').each(function() {
                 responsaveisAtuaisIds.push($(this).data('user-id'));
             });
 
-            // Obter responsáveis originais (carregados quando o modal foi aberto)
             var responsaveisOriginais = window.responsaveisOriginais || [];
             var responsaveisOriginaisIds = responsaveisOriginais.map(u => u.usuario_id);
 
-            // Determinar quais usuários foram adicionados e removidos
             var responsaveisAdicionar = responsaveisAtuaisIds.filter(id =>
                 !responsaveisOriginaisIds.includes(id));
             var responsaveisRemover = responsaveisOriginaisIds.filter(id =>
                 !responsaveisAtuaisIds.includes(id));
 
-            // Limpar campos hidden existentes
-            form.find('input[name="evidencias_adicionar"]').remove();
-            form.find('input[name="evidencias_remover"]').remove();
-            form.find('input[name="responsaveis_adicionar"]').remove();
-            form.find('input[name="responsaveis_remover"]').remove();
+            // 🔹 Limpar campos hidden existentes
+            form.find('input[name="indicadores_adicionar"], input[name="indicadores_remover"], input[name="evidencias_adicionar"], input[name="evidencias_remover"], input[name="responsaveis_adicionar"], input[name="responsaveis_remover"]').remove();
 
-            // Adicionar novos campos hidden com os dados atualizados
+            // 🔹 Adicionar campos hidden com dados atualizados
             form.append(
-                $('<input>').attr({
+                $('<input>', {
+                    type: 'hidden',
+                    name: 'indicadores_adicionar',
+                    value: JSON.stringify(indicadoresAdicionar)
+                }),
+                $('<input>', {
+                    type: 'hidden',
+                    name: 'indicadores_remover',
+                    value: JSON.stringify(indicadoresRemover)
+                }),
+                $('<input>', {
                     type: 'hidden',
                     name: 'evidencias_adicionar',
                     value: JSON.stringify(evidenciasAdicionar)
                 }),
-                $('<input>').attr({
+                $('<input>', {
                     type: 'hidden',
                     name: 'evidencias_remover',
                     value: JSON.stringify(evidenciasRemover)
                 }),
-                $('<input>').attr({
+                $('<input>', {
                     type: 'hidden',
                     name: 'responsaveis_adicionar',
                     value: JSON.stringify(responsaveisAdicionar)
                 }),
-                $('<input>').attr({
+                $('<input>', {
                     type: 'hidden',
                     name: 'responsaveis_remover',
                     value: JSON.stringify(responsaveisRemover)
                 })
             );
 
-            // Enviar o formulário
+            // 🔹 Enviar o formulário
             submitForm(form, '#editProjetoModal', 'Projeto atualizado com sucesso!', true);
         });
+
 
         $('#formDeleteProjeto').submit(function(e) {
             e.preventDefault();
@@ -968,13 +990,24 @@
         let responsaveisOriginais = [];
 
         $('#editProjetoModal').on('shown.bs.modal', function() {
-            // Limpar arrays de controle
+            const projetoId = $('#editProjetoId').val();
+            if (!projetoId) return;
+
+            // 🔹 Limpar arrays de controle de responsáveis
             $('#formEditProjeto input[name="responsaveis_adicionar"]').val('[]');
             $('#formEditProjeto input[name="responsaveis_remover"]').val('[]');
 
-            // Carregar responsáveis atuais
+            // 🔹 Carregar responsáveis atuais
             carregarResponsaveis(projetoId);
+
+            // 🔹 Carregar indicadores
+            carregarIndicadoresProjeto(projetoId);
+
+            // 🔹 Limpar lista de indicadores para remoção
+            $('#indicadoresRemoverList .list-group').empty();
+            $('#contadorIndicadoresRemover').text('0');
         });
+
 
         // Alternar entre tipos de evidência (texto/link)
         $('input[name="evidencia_projeto_tipo"]').change(function() {
@@ -1405,61 +1438,6 @@
             $('#contadorIndicadoresRemover').text($('#indicadoresRemoverList .list-group-item').length);
         });
 
-        // No evento de submit do formulário de edição
-        $('#formEditProjeto').submit(function(e) {
-            e.preventDefault();
-            var form = $(this);
 
-            // Coletar indicadores para adicionar (novos)
-            var indicadoresAdicionar = [];
-            $('#indicadoresAtuaisList .list-group-item').each(function() {
-                if (!$(this).data('id')) { // Se não tem ID, é novo
-                    indicadoresAdicionar.push({
-                        conteudo: $(this).data('conteudo'),
-                        descricao: $(this).data('descricao')
-                    });
-                }
-            });
-
-            // Coletar indicadores para remover (IDs)
-            var indicadoresRemover = [];
-            $('#indicadoresRemoverList .list-group-item').each(function() {
-                var id = $(this).data('id');
-                if (id) { // Só adiciona se tiver ID (indicadores existentes)
-                    indicadoresRemover.push(id);
-                }
-            });
-
-            // Limpar campos hidden existentes
-            form.find('input[name="indicadores_adicionar"]').remove();
-            form.find('input[name="indicadores_remover"]').remove();
-
-            // Adicionar novos campos hidden com os dados atualizados
-            form.append(
-                $('<input>').attr({
-                    type: 'hidden',
-                    name: 'indicadores_adicionar',
-                    value: JSON.stringify(indicadoresAdicionar)
-                }),
-                $('<input>').attr({
-                    type: 'hidden',
-                    name: 'indicadores_remover',
-                    value: JSON.stringify(indicadoresRemover)
-                })
-            );
-
-            // Enviar o formulário
-            submitForm(form, '#editProjetoModal', 'Projeto atualizado com sucesso!', true);
-        });
-
-        // No evento quando o modal de edição é aberto
-        $('#editProjetoModal').on('shown.bs.modal', function() {
-            const projetoId = $('#editProjetoId').val();
-            if (!projetoId) return;
-
-            carregarIndicadoresProjeto(projetoId);
-            $('#indicadoresRemoverList .list-group').empty();
-            $('#contadorIndicadoresRemover').text('0');
-        });
     });
 </script>
