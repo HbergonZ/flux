@@ -106,6 +106,7 @@
             },
             "responsive": true,
             "autoWidth": false,
+            "searching": false,
             "lengthMenu": [5, 10, 25, 50, 100],
             "pageLength": 10,
             "processing": true,
@@ -159,7 +160,8 @@
                 {
                     "data": "progresso",
                     "className": "text-center align-middle",
-                    "type": "num", // Define o tipo como numérico para ordenação
+                    "orderable": false,
+                    "type": "num",
                     "render": function(data, type, row) {
                         if (type === 'display') {
                             const percentual = data?.percentual || 0;
