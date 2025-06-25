@@ -19,7 +19,6 @@
         let acessoDireto = <?= isset($acessoDireto) && $acessoDireto ? 'true' : 'false' ?>;
         let etapaNome = '<?= isset($etapa) ? $etapa["nome"] : "" ?>';
         let formOriginalData = {};
-        let acaoIdEquipe = null;
 
         // Configuração do DataTables
         function initializeDataTable() {
@@ -67,13 +66,10 @@
                         "defaultContent": etapaNome
                     }] : []),
                     {
-                        "data": "responsavel",
-                        "defaultContent": ""
-                    },
-                    {
-                        "data": "id",
-                        "render": function(data) {
-                            return `<span class="equipe-placeholder" data-id="${data}"></span>`;
+                        "data": "responsaveis",
+                        "className": "text-wrap",
+                        "render": function(data, type, row) {
+                            return data ? data : '';
                         }
                     },
                     {
@@ -106,7 +102,7 @@
                                 'Finalizado': 'badge-success',
                                 'Em andamento': 'badge-primary',
                                 'Paralisado': 'badge-dark',
-                                'Atrasado': 'badge-danger', // Classe para o novo status
+                                'Atrasado': 'badge-danger',
                                 'Não iniciado': 'badge-secondary'
                             } [data] || 'badge-secondary';
 
@@ -125,20 +121,20 @@
 
                             if (isAdmin) {
                                 buttons += `
-                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>`;
+                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
+                    <i class="fas fa-trash-alt"></i>
+                </button>`;
                             } else {
                                 buttons += `
-                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>`;
+                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
+                    <i class="fas fa-trash-alt"></i>
+                </button>`;
                             }
 
                             buttons += '</div>';
@@ -162,28 +158,6 @@
         // Inicializa a tabela
         dataTable = initializeDataTable();
 
-        // Carregar equipe após a tabela ser renderizada
-        dataTable.on('draw', function() {
-            $('.equipe-placeholder').each(function() {
-                const acaoId = $(this).data('id');
-                const placeholder = $(this);
-
-                $.ajax({
-                    url: `<?= site_url('acoes/get-equipe-formatada/') ?>${acaoId}`,
-                    type: 'GET',
-                    success: function(response) {
-                        if (response.success) {
-                            placeholder.text(response.equipe);
-                        } else {
-                            placeholder.text('Erro ao carregar');
-                        }
-                    },
-                    error: function() {
-                        placeholder.text('Erro ao carregar');
-                    }
-                });
-            });
-        });
 
         // Configuração do AJAX
         $.ajaxSetup({
@@ -314,7 +288,6 @@
                             formOriginalData = {
                                 nome: acao.nome,
                                 responsavel: acao.responsavel,
-                                equipe: acao.equipe,
                                 status: acao.status || 'Não iniciado',
                                 tempo_estimado_dias: acao.tempo_estimado_dias,
                                 entrega_estimada: acao.entrega_estimada ? acao.entrega_estimada.split(' ')[0] : '',
@@ -339,7 +312,7 @@
             let hasChanges = false;
             const form = $('#formSolicitarEdicao');
 
-            ['nome', 'responsavel', 'equipe', 'status', 'tempo_estimado_dias',
+            ['nome', 'responsavel', 'status', 'tempo_estimado_dias',
                 'entrega_estimada', 'data_inicio', 'data_fim', 'ordem'
             ].forEach(field => {
                 const currentValue = form.find(`[name="${field}"]`).val();
@@ -527,7 +500,6 @@
                     nome: acao.nome,
                     etapa: !acessoDireto ? (etapaNome || '') : '',
                     responsavel: acao.responsavel || '',
-                    equipe: acao.equipe || '', // Isso será atualizado via AJAX depois
                     entrega_estimada: acao.entrega_estimada || null,
                     data_inicio: acao.data_inicio || null,
                     data_fim: acao.data_fim || null,
@@ -644,220 +616,7 @@
             });
         });
 
-        // Configuração do modal de equipe com Select2
-        $('#equipeAcaoModal').on('shown.bs.modal', function() {
 
-            // Destrua qualquer instância existente
-            if ($('#selectUsuarioEquipe').hasClass('select2-hidden-accessible')) {
-                $('#selectUsuarioEquipe').select2('destroy');
-            }
-
-            // Inicialize o Select2
-            $('#selectUsuarioEquipe').select2({
-                placeholder: "Digite para buscar usuários...",
-                minimumInputLength: 2,
-                width: '100%',
-                ajax: {
-                    url: '<?= site_url("acoes/buscar-usuarios") ?>',
-                    dataType: 'json',
-                    delay: 250,
-                    data: function(params) {
-                        console.log('Buscando usuários com termo:', params.term);
-                        return {
-                            term: params.term,
-                            acao_id: acaoIdEquipe,
-                            '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
-                        };
-                    },
-                    processResults: function(data, params) {
-                        console.log('Resultados recebidos:', data);
-                        return {
-                            results: data.results || []
-                        };
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        console.error('Erro na busca:', textStatus, errorThrown);
-                    }
-                }
-            }).on('select2:open', function() {
-                console.log('Select2 aberto');
-            });
-        });
-
-        // Botão "Ver Equipe"
-        $(document).on('click', '#btnVerEquipe', function(e) {
-            e.preventDefault();
-            acaoIdEquipe = $('#editAcaoId').val();
-
-            if (!acaoIdEquipe) {
-                showErrorAlert('ID da ação não encontrado');
-                return;
-            }
-
-            $('#editAcaoModal').modal('hide').on('hidden.bs.modal', function() {
-                $(this).off('hidden.bs.modal');
-                $('#equipeAcaoModal').modal('show');
-                carregarEquipeAcao(acaoIdEquipe);
-                carregarUsuariosDisponiveis(acaoIdEquipe);
-            });
-        });
-
-        // Carregar usuários disponíveis para o select
-        function carregarUsuariosDisponiveis(acaoId) {
-            $.ajax({
-                url: '<?= site_url("acoes/buscar-usuarios") ?>',
-                type: 'GET',
-                data: {
-                    acao_id: acaoId
-                },
-                dataType: 'json',
-                beforeSend: function() {
-                    $('#selectUsuarioEquipe').html('<option value="">Carregando usuários...</option>');
-                },
-                success: function(response) {
-                    console.log('Resposta completa:', response); // Adicione este log
-                    if (response.success && response.data && response.data.length > 0) {
-                        let options = '<option value="">Selecione um usuário</option>';
-                        response.data.forEach(usuario => {
-                            options += `<option value="${usuario.id}">${usuario.username} (${usuario.email})</option>`;
-                        });
-                        $('#selectUsuarioEquipe').html(options);
-                    } else {
-                        console.log('Resposta sem dados:', response.message); // Adicione este log
-                        $('#selectUsuarioEquipe').html('<option value="">Nenhum usuário disponível</option>');
-                        if (response.message) {
-                            showErrorAlert(response.message);
-                        }
-                    }
-                },
-                error: function(xhr) {
-                    console.error('Erro completo:', xhr.responseText); // Adicione este log
-                    $('#selectUsuarioEquipe').html('<option value="">Erro ao carregar usuários</option>');
-                    showErrorAlert('Erro ao carregar lista de usuários: ' + xhr.statusText);
-                }
-            });
-        }
-
-        // Função para carregar a equipe
-        function carregarEquipeAcao(acaoId) {
-            $.ajax({
-                url: `<?= site_url("acoes/get-equipe/") ?>${acaoId}`,
-                type: 'GET',
-                dataType: 'json',
-                beforeSend: function() {
-                    $('#tabelaEquipeAcao tbody').html('<tr><td colspan="3" class="text-center"><i class="fas fa-spinner fa-spin"></i> Carregando...</td></tr>');
-                },
-                success: function(response) {
-                    const tbody = $('#tabelaEquipeAcao tbody');
-                    tbody.empty();
-
-                    if (response.data && response.data.length > 0) {
-                        response.data.forEach(membro => {
-                            tbody.append(`
-                                    <tr data-usuario-id="${membro.id}">
-                                        <td>${membro.username}</td>
-                                        <td>${membro.email}</td>
-                                        <td class="text-center">
-                                            <button class="btn btn-danger btn-sm btn-remover-equipe" data-usuario-id="${membro.id}">
-                                                <i class="fas fa-trash-alt"></i> Remover
-                                            </button>
-                                        </td>
-                                    </tr>
-                                `);
-                        });
-                    } else {
-                        tbody.append('<tr><td colspan="3" class="text-center">Nenhum membro na equipe</td></tr>');
-                    }
-                },
-                error: function(xhr) {
-                    console.error('Erro ao carregar equipe:', xhr.responseText);
-                    $('#tabelaEquipeAcao tbody').html('<tr><td colspan="3" class="text-center text-danger">Erro ao carregar equipe</td></tr>');
-                }
-            });
-        }
-
-        // Adicionar usuário à equipe
-        $('#btnAdicionarUsuarioEquipe').click(function() {
-            const usuarioId = $('#selectUsuarioEquipe').val();
-            if (!usuarioId || !acaoIdEquipe) {
-                showErrorAlert('Selecione um usuário válido');
-                return;
-            }
-
-            $.ajax({
-                url: '<?= site_url("acoes/adicionar-membro-equipe") ?>',
-                type: 'POST',
-                data: {
-                    acao_id: acaoIdEquipe,
-                    usuario_id: usuarioId,
-                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
-                },
-                dataType: 'json',
-                beforeSend: function() {
-                    $('#btnAdicionarUsuarioEquipe').prop('disabled', true);
-                },
-                success: function(response) {
-                    if (response.success) {
-                        $('#selectUsuarioEquipe').val(null).trigger('change');
-                        carregarEquipeAcao(acaoIdEquipe);
-                        carregarUsuariosDisponiveis(acaoIdEquipe); // Esta linha atualiza a lista
-                        showSuccessAlert(response.message);
-                    } else {
-                        showErrorAlert(response.message);
-                    }
-                },
-                error: function() {
-                    showErrorAlert('Erro na comunicação com o servidor');
-                },
-                complete: function() {
-                    $('#btnAdicionarUsuarioEquipe').prop('disabled', false);
-                }
-
-
-            });
-        });
-
-        // Remover usuário da equipe
-        $(document).on('click', '.btn-remover-equipe', function() {
-            const usuarioId = $(this).data('usuario-id');
-            if (!usuarioId || !acaoIdEquipe) return;
-
-            Swal.fire({
-                title: 'Remover usuário da equipe?',
-                text: "Esta ação não pode ser desfeita!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Sim, remover!',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: '<?= site_url("acoes/remover-membro-equipe") ?>',
-                        type: 'POST',
-                        data: {
-                            acao_id: acaoIdEquipe,
-                            usuario_id: usuarioId,
-                            '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
-                        },
-                        dataType: 'json',
-                        success: function(response) {
-                            if (response.success) {
-                                carregarEquipeAcao(acaoIdEquipe);
-                                carregarUsuariosDisponiveis(acaoIdEquipe); // Adicione esta linha
-                                showSuccessAlert(response.message);
-                            } else {
-                                showErrorAlert(response.message);
-                            }
-                        },
-                        error: function() {
-                            showErrorAlert('Erro na comunicação com o servidor');
-                        }
-                    });
-                }
-            });
-        });
 
         // Função genérica para enviar formulários
         function submitForm(form, modalId, successMessage = null) {
@@ -1401,310 +1160,6 @@
             } else {
                 $('#evidenciaTexto').focus();
             }
-        });
-        // Adicione esta função no seu arquivo JavaScript (scripts/acoes.php)
-        function carregarEquipeParaSolicitacao(acaoId) {
-            $.ajax({
-                url: `<?= site_url('acoes/get-equipe/') ?>${acaoId}`,
-                type: 'GET',
-                dataType: 'json',
-                beforeSend: function() {
-                    $('#equipeAtualList').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>');
-                },
-                success: function(response) {
-                    const equipeAtualList = $('#equipeAtualList');
-                    equipeAtualList.empty();
-
-                    // Armazena os IDs originais da equipe
-                    const idsOriginais = response.data.map(membro => membro.id.toString());
-                    $('#equipeOriginal').val(idsOriginais.join(','));
-
-                    // Limpa as listas de controle ao carregar nova equipe
-                    usuariosAdicionados = [];
-                    usuariosRemovidos = [];
-
-                    if (response.data && response.data.length > 0) {
-                        response.data.forEach(membro => {
-                            equipeAtualList.append(`
-                        <div class="list-group-item py-2 d-flex justify-content-between align-items-center" data-usuario-id="${membro.id}">
-                            <div>
-                                <span class="font-weight-bold">${membro.username}</span>
-                                <small class="d-block text-muted">${membro.email}</small>
-                            </div>
-                            <button class="btn btn-sm btn-outline-danger btn-remover-equipe-solicitacao" data-usuario-id="${membro.id}" title="Solicitar remoção">
-                                <i class="fas fa-user-minus"></i>
-                            </button>
-                        </div>
-                    `);
-                        });
-                        $('#contadorMembrosAtuais').text(response.data.length);
-                    } else {
-                        equipeAtualList.html('<div class="text-center py-3 text-muted">Nenhum membro na equipe</div>');
-                        $('#contadorMembrosAtuais').text('0');
-                    }
-                },
-                error: function() {
-                    $('#equipeAtualList').html('<div class="text-center py-3 text-danger">Erro ao carregar equipe</div>');
-                }
-            });
-        }
-
-        // Variáveis globais para controle
-        let todosUsuariosDisponiveis = [];
-        let equipeOriginal = []; // IDs dos membros originais
-        let usuariosAdicionados = []; // Usuários adicionados durante a sessão
-        let usuariosRemovidos = []; // Usuários removidos durante a sessão
-
-        // Função para carregar equipe para solicitação
-        function carregarEquipeParaSolicitacao(acaoId) {
-            $.ajax({
-                url: `<?= site_url('acoes/get-equipe/') ?>${acaoId}`,
-                type: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        const equipeAtualList = $('#equipeAtualList');
-                        equipeAtualList.empty();
-                        // Armazena os IDs originais
-                        equipeOriginal = response.data.map(membro => membro.id.toString());
-                        $('#equipeOriginal').val(equipeOriginal.join(','));
-                        // Limpa as listas de controle
-                        usuariosAdicionados = [];
-                        usuariosRemovidos = [];
-
-                        // Garante que todos os membros atuais estão em todosUsuariosDisponiveis, evitando duplicidade
-                        response.data.forEach(membro => {
-                            if (!todosUsuariosDisponiveis.some(u => u.id == membro.id)) {
-                                todosUsuariosDisponiveis.push({
-                                    id: membro.id,
-                                    username: membro.username,
-                                    email: membro.email
-                                });
-                            }
-                        });
-
-                        if (response.data.length > 0) {
-                            response.data.forEach(membro => {
-                                equipeAtualList.append(`
-                            <div class="list-group-item py-2 d-flex justify-content-between align-items-center" data-usuario-id="${membro.id}">
-                                <div>
-                                    <span class="font-weight-bold">${membro.username}</span>
-                                    <small class="d-block text-muted">${membro.email}</small>
-                                </div>
-                                <button class="btn btn-sm btn-outline-danger btn-remover-equipe-solicitacao" data-usuario-id="${membro.id}" title="Solicitar remoção">
-                                    <i class="fas fa-user-minus"></i>
-                                </button>
-                            </div>
-                        `);
-                            });
-                        } else {
-                            equipeAtualList.html('<div class="text-center py-3 text-muted">Nenhum membro na equipe</div>');
-                        }
-                        $('#contadorMembrosAtuais').text(response.data.length);
-                        carregarUsuariosDisponiveisParaSolicitacao(acaoId);
-                    }
-                },
-                error: function() {
-                    $('#equipeAtualList').html('<div class="text-center py-3 text-danger">Erro ao carregar equipe</div>');
-                }
-            });
-        }
-
-        // Função para carregar usuários disponíveis com filtros
-        function carregarUsuariosDisponiveisParaSolicitacao(acaoId, termo = '') {
-            const membrosAtuais = $('#equipeAtualList .list-group-item').map(function() {
-                return $(this).data('usuario-id').toString();
-            }).get();
-
-            // Filtra os usuários considerando:
-            // 1. Não está atualmente na equipe OU
-            // 2. Foi removido da equipe original (está em usuariosRemovidos)
-            const usuariosFiltrados = todosUsuariosDisponiveis.filter(usuario => {
-                // NÃO está na equipe atual (seja porque nunca esteve OU porque foi removido)
-                const naoEstaNaEquipeAtual = !membrosAtuais.includes(usuario.id.toString());
-                const correspondeTermo = termo === '' ||
-                    usuario.username.toLowerCase().includes(termo.toLowerCase()) ||
-                    usuario.email.toLowerCase().includes(termo.toLowerCase());
-                return naoEstaNaEquipeAtual && correspondeTermo;
-            });
-            const usuariosList = $('#usuariosDisponiveisList');
-            usuariosList.empty();
-            if (usuariosFiltrados.length > 0) {
-                usuariosFiltrados.forEach(usuario => {
-                    usuariosList.append(`
-                <div class="list-group-item py-2 d-flex justify-content-between align-items-center" data-usuario-id="${usuario.id}">
-                    <div>
-                        <span class="font-weight-bold">${usuario.username}</span>
-                        <small class="d-block text-muted">${usuario.email}</small>
-                    </div>
-                    <button class="btn btn-sm btn-outline-success btn-adicionar-equipe-solicitacao" data-usuario-id="${usuario.id}" title="Solicitar adição">
-                        <i class="fas fa-user-plus"></i>
-                    </button>
-                </div>
-            `);
-                });
-            } else {
-                usuariosList.html('<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>');
-            }
-            $('#contadorUsuariosDisponiveis').text(usuariosFiltrados.length);
-        }
-
-        // Evento para filtrar usuários em tempo real (agora filtra os dados já carregados)
-        $('#buscaUsuarioEquipe').on('input', function() {
-            const termo = $(this).val().trim();
-            const acaoId = $('#solicitarEdicaoId').val();
-            clearTimeout(window.buscaUsuarioTimeout);
-            window.buscaUsuarioTimeout = setTimeout(() => {
-                carregarUsuariosDisponiveisParaSolicitacao(acaoId, termo);
-            }, 300);
-        });
-
-        // Previne o submit do formulário ao pressionar Enter na busca
-        $('#buscaUsuarioEquipe').on('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            }
-        });
-
-        // Evento para adicionar usuário à equipe
-        $(document).on('click', '.btn-adicionar-equipe-solicitacao', function(e) {
-            e.preventDefault();
-            const usuarioId = $(this).data('usuario-id');
-            const usuarioItem = $(this).closest('.list-group-item');
-            const acaoId = $('#solicitarEdicaoId').val();
-            const termoBusca = $('#buscaUsuarioEquipe').val();
-            // Encontra o usuário nos dados carregados
-            const usuario = todosUsuariosDisponiveis.find(u => u.id == usuarioId);
-            if (!usuario) return;
-            // Remove o item da lista de disponíveis
-            usuarioItem.remove();
-            // Adiciona à lista de membros
-            $('#equipeAtualList').append(`
-        <div class="list-group-item py-2 d-flex justify-content-between align-items-center" data-usuario-id="${usuario.id}">
-            <div>
-                <span class="font-weight-bold">${usuario.username}</span>
-                <small class="d-block text-muted">${usuario.email}</small>
-            </div>
-            <button class="btn btn-sm btn-outline-danger btn-remover-equipe-solicitacao" data-usuario-id="${usuario.id}" title="Solicitar remoção">
-                <i class="fas fa-user-minus"></i>
-            </button>
-        </div>
-    `);
-            // Atualiza lista de usuários adicionados
-            if (!usuariosAdicionados.includes(usuarioId.toString())) {
-                usuariosAdicionados.push(usuarioId.toString());
-            }
-            // Remove da lista de removidos se estiver lá
-            const indexRemovido = usuariosRemovidos.indexOf(usuarioId.toString());
-            if (indexRemovido > -1) {
-                usuariosRemovidos.splice(indexRemovido, 1);
-            }
-            // Atualiza campos hidden
-            const adicionarAtual = $('#adicionarMembroInput').val();
-            const adicionarArray = adicionarAtual ? adicionarAtual.split(',') : [];
-            if (!adicionarArray.includes(usuarioId.toString())) {
-                adicionarArray.push(usuarioId);
-                $('#adicionarMembroInput').val(adicionarArray.join(','));
-            }
-            const removerAtual = $('#removerMembroInput').val();
-            if (removerAtual) {
-                const removerArray = removerAtual.split(',');
-                const index = removerArray.indexOf(usuarioId.toString());
-                if (index > -1) {
-                    removerArray.splice(index, 1);
-                    $('#removerMembroInput').val(removerArray.join(','));
-                }
-            }
-            // Atualiza contadores e recarrega a lista
-            $('#contadorMembrosAtuais').text($('#equipeAtualList .list-group-item').length);
-            carregarUsuariosDisponiveisParaSolicitacao(acaoId, termoBusca);
-            checkForChanges();
-        });
-
-        // Evento para remover usuário da equipe
-        $(document).on('click', '.btn-remover-equipe-solicitacao', function(e) {
-            e.preventDefault();
-            const usuarioId = $(this).data('usuario-id');
-            const usuarioItem = $(this).closest('.list-group-item');
-            const acaoId = $('#solicitarEdicaoId').val();
-            const termoBusca = $('#buscaUsuarioEquipe').val();
-            const estavaOriginalmenteNaEquipe = equipeOriginal.includes(usuarioId.toString());
-            usuarioItem.remove();
-            if (estavaOriginalmenteNaEquipe) {
-                if (!usuariosRemovidos.includes(usuarioId.toString())) {
-                    usuariosRemovidos.push(usuarioId.toString());
-                }
-            } else {
-                const indexAdicionado = usuariosAdicionados.indexOf(usuarioId.toString());
-                if (indexAdicionado > -1) {
-                    usuariosAdicionados.splice(indexAdicionado, 1);
-                }
-            }
-            // Atualiza campos hidden
-            const removerAtual = $('#removerMembroInput').val();
-            const removerArray = removerAtual ? removerAtual.split(',') : [];
-            if (estavaOriginalmenteNaEquipe && !removerArray.includes(usuarioId.toString())) {
-                removerArray.push(usuarioId);
-                $('#removerMembroInput').val(removerArray.join(','));
-            }
-            const adicionarAtual = $('#adicionarMembroInput').val();
-            if (adicionarAtual) {
-                const adicionarArray = adicionarAtual.split(',');
-                const index = adicionarArray.indexOf(usuarioId.toString());
-                if (index > -1) {
-                    adicionarArray.splice(index, 1);
-                    $('#adicionarMembroInput').val(adicionarArray.join(','));
-                }
-            }
-            // Força a atualização da lista de disponíveis
-            carregarUsuariosDisponiveisParaSolicitacao(acaoId, termoBusca);
-            $('#contadorMembrosAtuais').text($('#equipeAtualList .list-group-item').length);
-            checkForChanges();
-        });
-
-        // Inicialização quando o modal é aberto
-        $('#solicitarEdicaoModal').on('shown.bs.modal', function() {
-            const acaoId = $('#solicitarEdicaoId').val();
-            if (acaoId) {
-                // Primeiro, carrega todos os usuários possíveis do sistema
-                $.ajax({
-                    url: '<?= site_url('acoes/buscar-usuarios') ?>',
-                    type: 'GET',
-                    data: {
-                        acao_id: acaoId
-                    },
-                    dataType: 'json',
-                    success: function(response) {
-                        if (response.success && response.data) {
-                            todosUsuariosDisponiveis = response.data;
-                        } else if (response.results) {
-                            todosUsuariosDisponiveis = response.results.map(user => ({
-                                id: user.id,
-                                username: user.username || user.text.split('(')[0].trim(),
-                                email: user.email || (user.text.match(/\((.*?)\)/) ? user.text.match(/\((.*?)\)/)[1] : '')
-                            }));
-                        }
-                        // Agora, carrega a equipe (que garante todos da equipe em todosUsuariosDisponiveis)
-                        carregarEquipeParaSolicitacao(acaoId);
-                    },
-                    complete: function() {
-                        $('#buscaUsuarioEquipe').val('');
-                    }
-                });
-            }
-
-            // Configuração do campo de evidências
-            $('input[name="evidencia_tipo"]').change(function() {
-                if ($(this).val() === 'link') {
-                    $('#solicitarEdicaoGrupoTexto').addClass('d-none');
-                    $('#solicitarEdicaoGrupoLink').removeClass('d-none');
-                } else {
-                    $('#solicitarEdicaoGrupoTexto').removeClass('d-none');
-                    $('#solicitarEdicaoGrupoLink').addClass('d-none');
-                }
-            });
         });
 
         // PARTE DE EVIDÊNCIAS --------------------------

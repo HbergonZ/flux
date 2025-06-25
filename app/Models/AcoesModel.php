@@ -135,43 +135,6 @@ class AcoesModel extends Model
 
         return ['total_acoes' => count($acoes), 'atualizadas' => $atualizadas];
     }
-    public function getEquipeAcao($acaoId)
-    {
-        return $this->db->table('acoes_equipe')
-            ->join('users', 'users.id = acoes_equipe.usuario_id')
-            ->select('users.username')
-            ->where('acao_id', $acaoId)
-            ->get()
-            ->getResultArray();
-    }
-
-    public function adicionarMembroEquipe($acaoId, $usuarioId)
-    {
-        $builder = $this->db->table('acoes_equipe');
-        return $builder->insert([
-            'acao_id' => $acaoId,
-            'usuario_id' => $usuarioId
-        ]);
-    }
-
-    public function removerMembroEquipe($acaoId, $usuarioId)
-    {
-        $builder = $this->db->table('acoes_equipe');
-        return $builder->where([
-            'acao_id' => $acaoId,
-            'usuario_id' => $usuarioId
-        ])->delete();
-    }
-
-    public function getUsernamesEquipe($acaoId)
-    {
-        $builder = $this->db->table('acoes_equipe');
-        return $builder->select('users.username')
-            ->join('users', 'users.id = acoes_equipe.usuario_id')
-            ->where('acao_id', $acaoId)
-            ->get()
-            ->getResultArray();
-    }
     public function podeFinalizar($acaoId)
     {
         $evidencias = $this->db->table('evidencias')
@@ -182,55 +145,6 @@ class AcoesModel extends Model
         return $evidencias > 0;
     }
 
-    public function processarAlteracoesEquipe($acaoId, $alteracoesEquipe)
-    {
-        $db = \Config\Database::connect();
-
-        try {
-            $db->transStart();
-
-            // Remover membros
-            if (!empty($alteracoesEquipe['remover'])) {
-                $db->table('acoes_equipe')
-                    ->where('acao_id', $acaoId)
-                    ->whereIn('usuario_id', $alteracoesEquipe['remover'])
-                    ->delete();
-            }
-
-            // Adicionar membros
-            if (!empty($alteracoesEquipe['adicionar'])) {
-                $dadosInserir = array_map(function ($usuarioId) use ($acaoId) {
-                    return [
-                        'acao_id' => $acaoId,
-                        'usuario_id' => $usuarioId,
-                        'created_at' => date('Y-m-d H:i:s')
-                    ];
-                }, $alteracoesEquipe['adicionar']);
-
-                $db->table('acoes_equipe')->insertBatch($dadosInserir);
-            }
-
-            $db->transComplete();
-
-            return $db->transStatus();
-        } catch (\Exception $e) {
-            $db->transRollback();
-            log_message('error', 'Erro ao processar alterações da equipe: ' . $e->getMessage());
-            return false;
-        }
-    }
-
-    public function getEquipeComUsernames($idAcao)
-    {
-        $result = $this->db->table('acoes_equipe')
-            ->select('users.username')
-            ->join('users', 'users.id = acoes_equipe.id_usuario')
-            ->where('acoes_equipe.id_acao', $idAcao)
-            ->get()
-            ->getResultArray();
-
-        return array_column($result, 'username');
-    }
 
     public function processarSolicitacaoEdicao($dadosAprovados)
     {

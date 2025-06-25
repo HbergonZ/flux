@@ -128,6 +128,11 @@ class Acoes extends BaseController
                 ->where('id_etapa IS NULL');
         }
 
+        $builder->select('acoes.*, GROUP_CONCAT(DISTINCT users.username SEPARATOR ", ") as responsaveis')
+            ->join('responsaveis', 'responsaveis.nivel_id = acoes.id AND responsaveis.nivel = "acao"', 'left')
+            ->join('users', 'users.id = responsaveis.usuario_id', 'left')
+            ->groupBy('acoes.id');
+
         $acoes = $builder->orderBy('ordem', 'ASC')->findAll();
 
         return $this->response->setJSON([
@@ -423,7 +428,10 @@ class Acoes extends BaseController
         $filters = $this->request->getPost();
 
         $builder = $this->acoesModel;
-        $builder->select('acoes.*'); // Especifica explicitamente quais colunas selecionar
+        $builder->select('acoes.*, GROUP_CONCAT(DISTINCT users.username SEPARATOR ", ") as responsaveis')
+            ->join('responsaveis', 'responsaveis.nivel_id = acoes.id AND responsaveis.nivel = "acao"', 'left')
+            ->join('users', 'users.id = responsaveis.usuario_id', 'left')
+            ->groupBy('acoes.id');
 
         if ($tipoOrigem === 'etapa') {
             $builder->where('id_etapa', $idOrigem);
@@ -438,16 +446,7 @@ class Acoes extends BaseController
         }
 
         if (!empty($filters['responsavel'])) {
-            $builder->like('acoes.responsavel', $filters['responsavel']);
-        }
-
-        if (!empty($filters['equipe'])) {
-            $builder->join('acoes_equipe', 'acoes_equipe.acao_id = acoes.id', 'left')
-                ->join('users', 'users.id = acoes_equipe.usuario_id', 'left')
-                ->groupStart()
-                ->like('users.username', $filters['equipe'])
-                ->groupEnd()
-                ->groupBy('acoes.id'); // Agrupa apenas pela PK da ação
+            $builder->like('users.username', $filters['responsavel']);
         }
 
         if (!empty($filters['status'])) {
@@ -1308,6 +1307,29 @@ class Acoes extends BaseController
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Erro ao buscar ações atrasadas'
+            ]);
+        }
+    }
+
+    public function getResponsaveis($acaoId)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $responsaveisModel = new \App\Models\ResponsaveisModel();
+            $responsaveis = $responsaveisModel->getResponsaveis('acao', $acaoId);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $responsaveis
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Erro ao buscar responsáveis: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Erro ao buscar responsáveis'
             ]);
         }
     }

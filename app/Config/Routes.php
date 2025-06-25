@@ -72,13 +72,11 @@ $routes->group('', function ($routes) {
     $routes->post('acoes/solicitar-edicao', 'Acoes::solicitarEdicao');
     $routes->post('acoes/solicitar-exclusao', 'Acoes::solicitarExclusao');
     $routes->post('acoes/solicitar-inclusao', 'Acoes::solicitarInclusao');
-    $routes->get('acoes/get-equipe/(:num)', 'Acoes::getEquipe/$1');
-    $routes->get('acoes/get-equipe-formatada/(:num)', 'Acoes::getEquipeFormatada/$1');
-    $routes->get('acoes/buscar-usuarios', 'Acoes::buscarUsuarios');
     $routes->get('acoes/listar-evidencias/(:num)', 'Acoes::listarEvidencias/$1');
     $routes->post('acoes/filtrar/(:num)/(:segment)', 'Acoes::filtrar/$1/$2');
     $routes->get('acoes/get-acoes/(:num)/(:segment)', 'Acoes::getAcoes/$1/$2');
     $routes->get('acoes/acoes-atrasadas-usuario', 'Acoes::getAcoesAtrasadasUsuario');
+    $routes->get('acoes/get-responsaveis/(:num)', 'Acoes::getResponsaveis/$1');
 });
 
 // Rotas administrativas
@@ -119,8 +117,6 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
     $routes->get('acoes/editar/(:num)', 'Acoes::editar/$1');
     $routes->post('acoes/atualizar/(:num)/(:segment)', 'Acoes::atualizar/$1/$2');
     $routes->post('acoes/excluir/(:num)/(:segment)', 'Acoes::excluir/$1/$2');
-    $routes->post('acoes/adicionar-membro-equipe', 'Acoes::adicionarMembroEquipe');
-    $routes->post('acoes/remover-membro-equipe', 'Acoes::removerMembroEquipe');
     $routes->post('acoes/adicionar-evidencia/(:num)', 'Acoes::adicionarEvidencia/$1');
     $routes->post('acoes/remover-evidencia/(:num)', 'Acoes::removerEvidencia/$1');
     $routes->get('acoes/gerenciar-evidencias/(:num)', 'Acoes::gerenciarEvidencias/$1');

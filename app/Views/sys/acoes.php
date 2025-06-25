@@ -1,5 +1,4 @@
 <!-- Importação de Modais -->
-<?php echo view('components/acoes/modal-equipe-acao.php'); ?>
 <?php echo view('components/acoes/modal-editar-acao.php'); ?>
 <?php echo view('components/acoes/modal-confirmar-exclusao.php'); ?>
 <?php echo view('components/acoes/modal-adicionar-acao.php'); ?>
@@ -65,12 +64,6 @@
                         <div class="form-group">
                             <label for="filterResponsavel">Responsável</label>
                             <input type="text" class="form-control" id="filterResponsavel" name="responsavel" placeholder="Filtrar por responsável">
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="filterEquipe">Equipe</label>
-                            <input type="text" class="form-control" id="filterEquipe" name="equipe" placeholder="Filtrar por equipe">
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -158,7 +151,6 @@
                                 <th>Etapa</th>
                             <?php endif; ?>
                             <th>Responsável</th>
-                            <th>Equipe</th>
                             <th>Entrega Estimada</th>
                             <th>Data Início</th>
                             <th>Data Fim</th>
