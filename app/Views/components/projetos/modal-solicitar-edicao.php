@@ -48,6 +48,11 @@
                                 <textarea class="form-control" id="solicitarEdicaoDescricao" name="descricao" rows="3"></textarea>
                             </div>
 
+                            <div class="form-group">
+                                <label for="solicitarEdicaoMetas"><i class="fas fa-bullseye mr-1"></i>Metas</label>
+                                <textarea class="form-control" id="solicitarEdicaoMetas" name="metas" rows="3"></textarea>
+                            </div>
+
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group">

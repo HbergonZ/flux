@@ -33,6 +33,11 @@
                         <textarea class="form-control" id="solicitarInclusaoDescricao" name="descricao" rows="3"></textarea>
                     </div>
 
+                    <div class="form-group">
+                        <label for="solicitarInclusaoMetas">Metas</label>
+                        <textarea class="form-control" id="solicitarInclusaoMetas" name="metas" rows="3"></textarea>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">

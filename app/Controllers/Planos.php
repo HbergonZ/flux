@@ -24,9 +24,14 @@ class Planos extends BaseController
 
     public function index(): string
     {
-        $planos = $this->planoModel->findAll();
-        $data['planos'] = $planos;
+        $planos = $this->planoModel->getPlanosComProgresso();
 
+        // Adiciona dados de progresso formatados
+        foreach ($planos as &$plano) {
+            $plano['progresso'] = $this->calcularProgressoPlano($plano);
+        }
+
+        $data['planos'] = $planos;
         $this->content_data['content'] = view('sys/planos', $data);
         return view('layout', $this->content_data);
     }
@@ -540,5 +545,28 @@ class Planos extends BaseController
         }
 
         return $this->response->setJSON($response);
+    }
+
+    private function calcularProgressoPlano($plano)
+    {
+        $totalAcoes = $plano['total_acoes'] ?? 0;
+        $acoesFinalizadas = $plano['acoes_finalizadas'] ?? 0;
+
+        $percentual = $totalAcoes > 0 ? round(($acoesFinalizadas / $totalAcoes) * 100) : 0;
+
+        return [
+            'percentual' => $percentual,
+            'texto' => $totalAcoes > 0
+                ? "{$acoesFinalizadas} de {$totalAcoes} ações finalizadas"
+                : "Nenhuma ação registrada",
+            'class' => $this->getProgressClass($percentual)
+        ];
+    }
+
+    private function getProgressClass($percentual)
+    {
+        if ($percentual >= 80) return 'bg-success';
+        if ($percentual >= 50) return 'bg-warning';
+        return 'bg-danger';
     }
 }

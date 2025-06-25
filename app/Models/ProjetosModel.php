@@ -14,6 +14,7 @@ class ProjetosModel extends Model
         'identificador',
         'nome',
         'descricao',
+        'metas',
         'projeto_vinculado',
         'priorizacao_gab',
         'id_eixo',

@@ -116,6 +116,7 @@
                             <th>Identificador</th>
                             <th>Nome</th>
                             <th>Descrição</th>
+                            <th>Metas</th>
                             <th>Projeto Vinculado</th>
                             <th>Responsáveis</th>
                             <th>Progresso</th>

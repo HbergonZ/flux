@@ -133,6 +133,10 @@
                     "className": "text-wrap align-middle"
                 },
                 {
+                    "data": "metas",
+                    "className": "text-wrap align-middle"
+                },
+                {
                     "data": "projeto_vinculado",
                     "className": "text-wrap align-middle"
                 },
@@ -155,7 +159,7 @@
                 {
                     "data": "progresso",
                     "className": "text-center align-middle",
-                    "type": "num", // Importante para ordenação numérica
+                    "type": "num", // Define o tipo como numérico para ordenação
                     "render": function(data, type, row) {
                         if (type === 'display') {
                             const percentual = data?.percentual || 0;

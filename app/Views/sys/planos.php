@@ -88,6 +88,7 @@
                             <th>Nome</th>
                             <th>Sigla</th>
                             <th>Descrição</th>
+                            <th>Progresso</th>
                             <th>Opções</th>
                         </tr>
                     </thead>
@@ -99,6 +100,18 @@
                                     <td class="text-wrap align-middle"><?= $plano['nome'] ?></td>
                                     <td class="text-center align-middle"><?= $plano['sigla'] ?></td>
                                     <td class="text-wrap align-middle"><?= $plano['descricao'] ?></td>
+                                    <td class="text-center align-middle">
+                                        <div class="progress-container" title="<?= $plano['progresso']['texto'] ?>">
+                                            <div class="progress progress-sm">
+                                                <div class="progress-bar progress-bar-striped <?= $plano['progresso']['class'] ?>"
+                                                    role="progressbar" style="width: <?= $plano['progresso']['percentual'] ?>%"
+                                                    aria-valuenow="<?= $plano['progresso']['percentual'] ?>"
+                                                    aria-valuemin="0" aria-valuemax="100">
+                                                </div>
+                                            </div>
+                                            <small class="progress-text"><?= $plano['progresso']['percentual'] ?>%</small>
+                                        </div>
+                                    </td>
                                     <td class="text-center align-middle">
                                         <div class="d-inline-flex">
                                             <!-- Botão Visualizar Projetos -->

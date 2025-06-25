@@ -95,6 +95,7 @@ class Projetos extends BaseController
                 'projeto_vinculado' => 'permit_empty|max_length[255]',
                 'priorizacao_gab' => 'permit_empty|in_list[0,1]',
                 'id_eixo' => 'permit_empty|integer',
+                'metas' => 'permit_empty',
                 'responsaveis' => 'permit_empty'
             ];
 
@@ -122,6 +123,7 @@ class Projetos extends BaseController
                 'priorizacao_gab' => $this->request->getPost('priorizacao_gab') ?? 0,
                 'id_plano' => $idPlano,
                 'responsaveis' => $this->request->getPost('responsaveis'),
+                'metas' => $this->request->getPost('metas'),
                 'id_eixo' => $this->request->getPost('id_eixo') ?: null
             ];
 
@@ -661,6 +663,7 @@ class Projetos extends BaseController
                 'identificador' => $projeto['identificador'],
                 'nome' => $projeto['nome'],
                 'descricao' => $projeto['descricao'],
+                'metas' => $projeto['metas'] ?? '',
                 'projeto_vinculado' => $projeto['projeto_vinculado'],
                 'responsaveis' => $responsaveis,
                 'progresso' => [
