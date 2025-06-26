@@ -230,4 +230,87 @@ class AcoesModel extends Model
 
         return $data;
     }
+
+    // Adicione este método para processar os responsáveis
+    public function processarResponsaveis($acaoId, $responsaveisIds)
+    {
+        $responsaveisModel = new \App\Models\ResponsaveisModel();
+
+        // Remove todos os responsáveis atuais
+        $responsaveisModel->where('nivel', 'acao')
+            ->where('nivel_id', $acaoId)
+            ->delete();
+
+        // Adiciona os novos responsáveis
+        if (!empty($responsaveisIds)) {
+            $data = [];
+            foreach ($responsaveisIds as $usuarioId) {
+                $data[] = [
+                    'nivel' => 'acao',
+                    'nivel_id' => $acaoId,
+                    'usuario_id' => $usuarioId
+                ];
+            }
+            $responsaveisModel->insertBatch($data);
+        }
+
+        return true;
+    }
+
+    public function getResponsaveis($acaoId)
+    {
+        return $this->getResponsaveisAcao($acaoId);
+    }
+
+    public function getUsuariosDisponiveis($acaoId)
+    {
+        return $this->db->table('users u')
+            ->select('u.id, u.username, ai.secret as email')
+            ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = "email_password"', 'left')
+            ->whereNotIn('u.id', function ($builder) use ($acaoId) {
+                $builder->select('usuario_id')
+                    ->from('responsaveis')
+                    ->where('nivel', 'acao')
+                    ->where('nivel_id', $acaoId);
+            })
+            ->orderBy('u.username', 'ASC')
+            ->get()
+            ->getResultArray();
+    }
+
+    public function atualizarStatusAcoes(int $idOrigem, string $tipoOrigem = 'etapa')
+    {
+        $builder = $this->builder();
+
+        if ($tipoOrigem === 'etapa') {
+            $builder->where('id_etapa', $idOrigem);
+        } else {
+            $builder->where('id_projeto', $idOrigem)
+                ->where('id_etapa IS NULL');
+        }
+
+        $acoes = $builder->get()->getResultArray();
+
+        foreach ($acoes as $acao) {
+            $novoStatus = $this->calcularStatus($acao);
+            if ($novoStatus !== $acao['status']) {
+                $this->update($acao['id'], ['status' => $novoStatus]);
+            }
+        }
+
+        return count($acoes);
+    }
+
+    public function getResponsaveisAcao($acaoId)
+    {
+        return $this->db->table('responsaveis r')
+            ->select('u.id, u.username, ai.secret as email')
+            ->join('users u', 'u.id = r.usuario_id')
+            ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = "email_password"', 'left')
+            ->where('r.nivel', 'acao')
+            ->where('r.nivel_id', $acaoId)
+            ->orderBy('u.username', 'ASC')
+            ->get()
+            ->getResultArray();
+    }
 }

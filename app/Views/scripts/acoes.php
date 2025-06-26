@@ -3,7 +3,7 @@
 
 <!-- Bootstrap -->
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap4.min.css" />
-<!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <!-- DataTables -->
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
@@ -149,7 +149,7 @@
                     [0, 'asc']
                 ],
                 ajax: {
-                    url: `<?= site_url("acoes/get-acoes/${idOrigem}/${tipoOrigem}") ?>`,
+                    url: `<?= site_url("acoes/get-acoes/{$idOrigem}/{$tipoOrigem}") ?>`,
                     dataSrc: 'data'
                 }
             });
@@ -442,7 +442,7 @@
             const hasFilters = formData.some(item => item.value !== '' && item.name !== 'csrf_test_name');
 
             if (!hasFilters) {
-                dataTable.ajax.url(`<?= site_url("acoes/get-acoes/${idOrigem}/${tipoOrigem}") ?>`).load();
+                dataTable.ajax.url(`<?= site_url("acoes/get-acoes/{$idOrigem}/{$tipoOrigem}") ?>`).load();
                 return;
             }
 
@@ -544,7 +544,7 @@
             modal.find('.modal-body').html('<div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x"></i><p>Carregando ações...</p></div>');
 
             $.ajax({
-                url: `<?= site_url("acoes/carregar-para-ordenacao/${idOrigem}/${tipoOrigem}") ?>`,
+                url: `<?= site_url("acoes/carregar-para-ordenacao/{$idOrigem}/{$tipoOrigem}") ?>`,
                 type: 'GET',
                 dataType: 'json',
                 success: function(response) {
@@ -749,34 +749,53 @@
         // Atualize a função carregarUsuariosDisponiveis para manter uma cópia dos usuários
         let todosUsuarios = [];
 
-        function carregarUsuariosDisponiveis(acaoId) {
+        function carregarUsuariosDisponiveis(acaoId, listaElement, contadorElement, termo = '') {
             $.ajax({
-                url: '<?= site_url("acoes/buscar-usuarios") ?>',
+                url: `<?= site_url('acoes/buscar-usuarios') ?>`,
                 type: 'GET',
                 data: {
-                    acao_id: acaoId
+                    acao_id: acaoId,
+                    term: termo
                 },
                 dataType: 'json',
                 beforeSend: function() {
-                    $('#selectUsuarioEquipe').html('<option value="">Carregando usuários...</option>');
+                    listaElement.html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i></div>');
                 },
                 success: function(response) {
-                    todosUsuarios = response.data || [];
+                    if (response.success && response.data.length > 0) {
+                        let html = '';
+                        const responsaveisAtuais = acaoId ? responsaveisSelecionadosEdit : responsaveisSelecionadosAdd;
 
-                    if (todosUsuarios.length > 0) {
-                        let options = '';
-                        todosUsuarios.forEach(usuario => {
-                            options += `<option value="${usuario.id}">${usuario.username} (${usuario.email})</option>`;
+                        response.data.forEach(usuario => {
+                            // Filtra usuários que já foram selecionados
+                            if (!responsaveisAtuais.some(r => r.id === usuario.id)) {
+                                html += `
+                            <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
+                                <div>
+                                    <span class="font-weight-bold">${usuario.username}</span>
+                                    <small class="d-block text-muted">${usuario.email}</small>
+                                </div>
+                                <button class="btn btn-sm btn-primary btn-adicionar-responsavel" data-id="${usuario.id}">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        `;
+                            }
                         });
-                        $('#selectUsuarioEquipe').html(options);
-                        $('#buscaUsuario').val('').trigger('input'); // Limpar filtro
+
+                        if (html === '') {
+                            html = '<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>';
+                        }
+
+                        listaElement.html(html);
+                        contadorElement.text(response.data.length);
                     } else {
-                        $('#selectUsuarioEquipe').html('<option value="">Nenhum usuário disponível</option>');
+                        listaElement.html('<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>');
+                        contadorElement.text('0');
                     }
                 },
                 error: function() {
-                    $('#selectUsuarioEquipe').html('<option value="">Erro ao carregar usuários</option>');
-                    showErrorAlert('Erro ao carregar lista de usuários');
+                    listaElement.html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
                 }
             });
         }
@@ -1560,35 +1579,858 @@
             });
         });
 
-        // Carregar evidências quando o modal é aberto
-        $('#solicitarEdicaoModal').on('shown.bs.modal', function() {
-            const acaoId = $('#solicitarEdicaoId').val();
+        // Variáveis globais para controle
+        let responsaveisSelecionadosAdd = [];
+        let usuariosDisponiveisAdd = [];
+
+        // Função para carregar usuários disponíveis
+        function carregarUsuariosDisponiveisAdd() {
+            $.ajax({
+                url: '<?= site_url("acoes/buscar-usuarios") ?>',
+                type: 'GET',
+                dataType: 'json',
+                beforeSend: function() {
+                    $('#usuariosDisponiveisAdd').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i></div>');
+                },
+                success: function(response) {
+                    if (response.success && response.data.length > 0) {
+                        usuariosDisponiveisAdd = response.data;
+                        atualizarListaUsuariosDisponiveisAdd();
+                    } else {
+                        $('#usuariosDisponiveisAdd').html('<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>');
+                    }
+                    $('#contadorUsuariosAdd').text(response.data.length || 0);
+                },
+                error: function() {
+                    $('#usuariosDisponiveisAdd').html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
+                }
+            });
+        }
+
+        // Função para atualizar a lista de usuários disponíveis
+        function atualizarListaUsuariosDisponiveisAdd() {
+            const lista = $('#usuariosDisponiveisAdd');
+            lista.empty();
+
+            if (usuariosDisponiveisAdd.length === 0) {
+                lista.html('<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>');
+                return;
+            }
+
+            let html = '';
+            usuariosDisponiveisAdd.forEach(usuario => {
+                // Verifica se o usuário já está na lista de selecionados
+                const jaSelecionado = responsaveisSelecionadosAdd.some(r => r.id === usuario.id);
+
+                if (!jaSelecionado) {
+                    html += `
+                <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
+                    <div>
+                        <span class="font-weight-bold">${usuario.username}</span>
+                        <small class="d-block text-muted">${usuario.email}</small>
+                    </div>
+                    <button class="btn btn-sm btn-primary btn-adicionar-responsavel" data-id="${usuario.id}">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            `;
+                }
+            });
+
+            if (html === '') {
+                html = '<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>';
+            }
+
+            lista.html(html);
+        }
+
+        // Função para atualizar a lista de responsáveis selecionados
+        function atualizarResponsaveisSelecionadosAdd() {
+            const lista = $('#responsaveisSelecionadosAdd');
+            lista.empty();
+
+            if (responsaveisSelecionadosAdd.length === 0) {
+                lista.html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
+                $('#contadorResponsaveisAdd').text('0');
+                return;
+            }
+
+            let html = '';
+            responsaveisSelecionadosAdd.forEach(usuario => {
+                html += `
+            <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
+                <div>
+                    <span class="font-weight-bold">${usuario.username}</span>
+                    <small class="d-block text-muted">${usuario.email}</small>
+                </div>
+                <button class="btn btn-sm btn-danger btn-remover-responsavel" data-id="${usuario.id}">
+                    <i class="fas fa-minus"></i>
+                </button>
+            </div>
+        `;
+            });
+
+            lista.html(html);
+            $('#contadorResponsaveisAdd').text(responsaveisSelecionadosAdd.length);
+
+            // Atualiza o campo hidden com os IDs dos responsáveis
+            const ids = responsaveisSelecionadosAdd.map(u => u.id).join(',');
+            $('#responsaveisIdsAdd').val(ids);
+        }
+
+        // Evento para adicionar responsável
+        $(document).on('click', '.btn-adicionar-responsavel', function() {
+            const usuarioId = $(this).data('id');
+            const usuario = usuariosDisponiveisAdd.find(u => u.id == usuarioId);
+
+            if (usuario && !responsaveisSelecionadosAdd.some(u => u.id == usuarioId)) {
+                responsaveisSelecionadosAdd.push(usuario);
+                atualizarResponsaveisSelecionadosAdd();
+                atualizarListaUsuariosDisponiveisAdd();
+            }
+        });
+
+        // Evento para remover responsável
+        $(document).on('click', '.btn-remover-responsavel', function() {
+            const usuarioId = $(this).data('id');
+            responsaveisSelecionadosAdd = responsaveisSelecionadosAdd.filter(u => u.id != usuarioId);
+            atualizarResponsaveisSelecionadosAdd();
+            atualizarListaUsuariosDisponiveisAdd();
+        });
+
+        // Buscar usuários ao digitar
+        $('#buscarUsuarioAdd').on('input', function() {
+            const termo = $(this).val().toLowerCase();
+            if (termo === '') {
+                atualizarListaUsuariosDisponiveisAdd();
+                return;
+            }
+
+            const resultados = usuariosDisponiveisAdd.filter(usuario =>
+                usuario.username.toLowerCase().includes(termo) ||
+                usuario.email.toLowerCase().includes(termo)
+            );
+
+            const lista = $('#usuariosDisponiveisAdd');
+            lista.empty();
+
+            if (resultados.length === 0) {
+                lista.html('<div class="text-center py-3 text-muted">Nenhum resultado encontrado</div>');
+                return;
+            }
+
+            let html = '';
+            resultados.forEach(usuario => {
+                const jaSelecionado = responsaveisSelecionadosAdd.some(r => r.id === usuario.id);
+
+                if (!jaSelecionado) {
+                    html += `
+                <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
+                    <div>
+                        <span class="font-weight-bold">${usuario.username}</span>
+                        <small class="d-block text-muted">${usuario.email}</small>
+                    </div>
+                    <button class="btn btn-sm btn-primary btn-adicionar-responsavel" data-id="${usuario.id}">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            `;
+                }
+            });
+
+            lista.html(html || '<div class="text-center py-3 text-muted">Nenhum resultado disponível</div>');
+        });
+
+        // Carregar usuários quando o modal é aberto
+        $('#addAcaoModal').on('show.bs.modal', function() {
+            responsaveisSelecionadosAdd = [];
+            carregarUsuariosDisponiveisAdd();
+            atualizarResponsaveisSelecionadosAdd();
+        });
+
+        // Adicione estas variáveis globais no início do script
+        let evidenciasAdicionadasAcao = [];
+        let evidenciasRemovidasAcao = [];
+
+        // Evento quando o modal de adição de ação é aberto
+        $('#addAcaoModal').on('shown.bs.modal', function() {
+            // Limpar arrays de evidências
+            evidenciasAdicionadasAcao = [];
+            evidenciasRemovidasAcao = [];
+
+            // Limpar listas
+            $('#evidenciasAtuaisListAdd .list-group').empty();
+            $('#evidenciasRemoverListAdd .list-group').empty();
+
+            // Atualizar contadores
+            $('#contadorEvidenciasAtuaisAdd').text('0');
+            $('#contadorEvidenciasRemoverAdd').text('0');
+        });
+
+        // Alternar entre tipos de evidência (texto/link) no modal de adição
+        $('input[name="evidencia_tipo_add"]').change(function() {
+            if ($(this).val() === 'texto') {
+                $('#grupoTextoAdd').removeClass('d-none');
+                $('#grupoLinkAdd').addClass('d-none');
+            } else {
+                $('#grupoTextoAdd').addClass('d-none');
+                $('#grupoLinkAdd').removeClass('d-none');
+            }
+        });
+
+        // Adicionar evidência à lista (apenas localmente) no modal de adição
+        $('#btnAdicionarEvidenciaAdd').click(function() {
+            var tipo = $('input[name="evidencia_tipo_add"]:checked').val();
+            var conteudo = tipo === 'texto' ?
+                $('#evidenciaTextoAdd').val().trim() :
+                $('#evidenciaLinkAdd').val().trim();
+            var descricao = $('#evidenciaDescricaoAdd').val().trim();
+
+            if ((tipo === 'texto' && conteudo.length < 3) ||
+                (tipo === 'link' && !isValidUrl(conteudo))) {
+                showErrorAlert(tipo === 'texto' ?
+                    'O texto da evidência deve ter pelo menos 3 caracteres' :
+                    'Por favor, insira uma URL válida');
+                return;
+            }
+
+            // Criar objeto de evidência
+            var novaEvidencia = {
+                id: Date.now(), // ID temporário
+                tipo: tipo,
+                conteudo: conteudo,
+                descricao: descricao,
+                data: new Date().toLocaleString('pt-BR'),
+                acao: 'incluir' // Marcamos como inclusão para a solicitação
+            };
+
+            // Adicionar ao array e à lista
+            evidenciasAdicionadasAcao.push(novaEvidencia);
+            atualizarListaEvidenciasAdicionadasAdd();
+
+            // Limpar campos
+            $('#evidenciaTextoAdd, #evidenciaLinkAdd, #evidenciaDescricaoAdd').val('');
+            $('#grupoTextoAdd').removeClass('d-none');
+            $('#grupoLinkAdd').addClass('d-none');
+            $('input[name="evidencia_tipo_add"][value="texto"]').prop('checked', true);
+        });
+
+        // Função para atualizar a lista de evidências adicionadas
+        function atualizarListaEvidenciasAdicionadasAdd() {
+            const lista = $('#evidenciasAtuaisListAdd');
+            lista.empty();
+
+            if (evidenciasAdicionadasAcao.length === 0) {
+                lista.html('<div class="text-center py-3 text-muted">Nenhuma evidência será adicionada</div>');
+                $('#contadorEvidenciasAtuaisAdd').text('0');
+                return;
+            }
+
+            let html = '<div class="list-group">';
+
+            evidenciasAdicionadasAcao.forEach((evidencia, index) => {
+                html += `
+        <div class="list-group-item" data-id="${evidencia.id}">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>Nova Evidência #${index + 1}</strong>
+                        <small class="text-muted">${evidencia.data}</small>
+                    </div>
+                    ${evidencia.tipo === 'texto' ?
+                        `<div class="bg-light p-2 rounded mb-2">${evidencia.conteudo.substring(0, 50)}${evidencia.conteudo.length > 50 ? '...' : ''}</div>` :
+                        `<div class="mb-2"><small class="text-truncate d-block">${evidencia.conteudo}</small></div>`
+                    }
+                    ${evidencia.descricao ?
+                        `<small class="text-muted">${evidencia.descricao.substring(0, 30)}${evidencia.descricao.length > 30 ? '...' : ''}</small>` :
+                        ''
+                    }
+                </div>
+                <button class="btn btn-sm btn-danger ml-2 btn-remover-evidencia-add" data-id="${evidencia.id}">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        </div>`;
+            });
+
+            html += '</div>';
+            lista.html(html);
+            $('#contadorEvidenciasAtuaisAdd').text(evidenciasAdicionadasAcao.length);
+        }
+
+        // Remover evidência da lista de adição
+        $(document).on('click', '.btn-remover-evidencia-add', function() {
+            const id = $(this).data('id');
+            evidenciasAdicionadasAcao = evidenciasAdicionadasAcao.filter(e => e.id != id);
+            atualizarListaEvidenciasAdicionadasAdd();
+        });
+
+        // Função para validar URL
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        // Modificar o submit do formulário de adição para incluir evidências
+        $('#formAddAcao').submit(function(e) {
+            e.preventDefault();
+
+            const submitBtn = $(this).find('button[type="submit"]');
+            const originalBtnText = submitBtn.html();
+
+            submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...');
+
+            // Criar FormData para enviar arquivos se necessário
+            const formData = new FormData(this);
+
+            // Adicionar evidências ao FormData
+            if (evidenciasAdicionadasAcao.length > 0) {
+                formData.append('evidencias_adicionadas', JSON.stringify(evidenciasAdicionadasAcao));
+            }
+
+            $.ajax({
+                type: "POST",
+                url: $(this).attr('action'),
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        $('#addAcaoModal').modal('hide');
+                        showSuccessAlert(response.message || 'Ação cadastrada com sucesso!');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showErrorAlert(response.message || 'Ocorreu um erro ao cadastrar a ação.');
+                    }
+                },
+                error: function(xhr) {
+                    console.error(xhr.responseText);
+                    showErrorAlert('Erro na comunicação com o servidor.');
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).html(originalBtnText);
+                }
+            });
+        });
+
+        // Gerenciamento de Responsáveis no Modal de Edição
+        function carregarResponsaveisAcao(acaoId) {
+            $.ajax({
+                url: `<?= site_url('acoes/responsaveis/') ?>${acaoId}`,
+                type: 'GET',
+                dataType: 'json',
+                beforeSend: function() {
+                    $('#responsaveisAtuaisListAcao').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i></div>');
+                },
+                success: function(response) {
+                    if (response.success && response.data.length > 0) {
+                        let html = '';
+                        response.data.forEach(usuario => {
+                            html += `
+                    <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
+                        <div>
+                            <span class="font-weight-bold">${usuario.username}</span>
+                            <small class="d-block text-muted">${usuario.email}</small>
+                        </div>
+                        <button class="btn btn-sm btn-danger btn-remover-responsavel-edit" data-id="${usuario.id}">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                    `;
+                        });
+                        $('#responsaveisAtuaisListAcao').html(html);
+                        $('#contadorResponsaveisAtuaisAcao').text(response.data.length);
+                    } else {
+                        $('#responsaveisAtuaisListAcao').html('<div class="text-center py-3 text-muted">Nenhum responsável cadastrado</div>');
+                        $('#contadorResponsaveisAtuaisAcao').text('0');
+                    }
+                },
+                error: function() {
+                    $('#responsaveisAtuaisListAcao').html('<div class="text-center py-3 text-danger">Erro ao carregar responsáveis</div>');
+                }
+            });
+        }
+
+        // Atualize a função carregarUsuariosDisponiveisAcao
+        function carregarUsuariosDisponiveisAcao(acaoId, termo = '') {
+            $.ajax({
+                url: `<?= site_url('acoes/get-usuarios-disponiveis/') ?>${acaoId}`,
+                type: 'GET',
+                data: {
+                    term: termo
+                },
+                dataType: 'json',
+                beforeSend: function() {
+                    $('#usuariosDisponiveisListAcao').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i></div>');
+                },
+                success: function(response) {
+                    if (response.success && response.data.length > 0) {
+                        let html = '';
+                        response.data.forEach(usuario => {
+                            html += `
+                    <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
+                        <div>
+                            <span class="font-weight-bold">${usuario.username}</span>
+                            <small class="d-block text-muted">${usuario.email}</small>
+                        </div>
+                        <button class="btn btn-sm btn-primary btn-adicionar-responsavel-edit" data-id="${usuario.id}">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    `;
+                        });
+                        $('#usuariosDisponiveisListAcao').html(html);
+                        $('#contadorUsuariosDisponiveisAcao').text(response.data.length);
+                    } else {
+                        $('#usuariosDisponiveisListAcao').html('<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>');
+                        $('#contadorUsuariosDisponiveisAcao').text('0');
+                    }
+                },
+                error: function() {
+                    $('#usuariosDisponiveisListAcao').html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
+                }
+            });
+        }
+
+        // Eventos para o modal de edição
+        $(document).on('shown.bs.modal', '#editAcaoModal', function() {
+            const acaoId = $('#editAcaoId').val();
+            if (acaoId) {
+                carregarResponsaveisAcao(acaoId);
+                carregarUsuariosDisponiveisAcao(acaoId);
+            }
+        });
+
+        // Busca de usuários no modal de edição
+        $('#buscaUsuarioResponsavelAcao').on('input', function() {
+            const acaoId = $('#editAcaoId').val();
+            const termo = $(this).val();
+            if (acaoId) {
+                carregarUsuariosDisponiveisAcao(acaoId, termo);
+            }
+        });
+
+        // Limpar busca
+        $('#btnLimparBuscaResponsaveisAcao').click(function() {
+            $('#buscaUsuarioResponsavelAcao').val('');
+            const acaoId = $('#editAcaoId').val();
+            if (acaoId) {
+                carregarUsuariosDisponiveisAcao(acaoId);
+            }
+        });
+
+        // Adicionar responsável no modal de edição
+        $(document).on('click', '.btn-adicionar-responsavel-edit', function() {
+            const acaoId = $('#editAcaoId').val();
+            const usuarioId = $(this).data('id');
+
+            if (acaoId && usuarioId) {
+                $.ajax({
+                    url: '<?= site_url("acoes/adicionar-responsavel") ?>',
+                    type: 'POST',
+                    data: {
+                        acao_id: acaoId,
+                        usuario_id: usuarioId,
+                        '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                    },
+                    dataType: 'json',
+                    beforeSend: function() {
+                        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            carregarResponsaveisAcao(acaoId);
+                            carregarUsuariosDisponiveisAcao(acaoId);
+                        } else {
+                            showErrorAlert(response.message);
+                        }
+                    },
+                    error: function() {
+                        showErrorAlert('Erro na comunicação com o servidor');
+                    },
+                    complete: function() {
+                        $(this).prop('disabled', false).html('<i class="fas fa-plus"></i>');
+                    }
+                });
+            }
+        });
+
+        // Remover responsável no modal de edição
+        $(document).on('click', '.btn-remover-responsavel-edit', function() {
+            const acaoId = $('#editAcaoId').val();
+            const usuarioId = $(this).data('id');
+
+            if (acaoId && usuarioId) {
+                $.ajax({
+                    url: '<?= site_url("acoes/remover-responsavel") ?>',
+                    type: 'POST',
+                    data: {
+                        acao_id: acaoId,
+                        usuario_id: usuarioId,
+                        '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                    },
+                    dataType: 'json',
+                    beforeSend: function() {
+                        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            carregarResponsaveisAcao(acaoId);
+                            carregarUsuariosDisponiveisAcao(acaoId);
+                        } else {
+                            showErrorAlert(response.message);
+                        }
+                    },
+                    error: function() {
+                        showErrorAlert('Erro na comunicação com o servidor');
+                    },
+                    complete: function() {
+                        $(this).prop('disabled', false).html('<i class="fas fa-minus"></i>');
+                    }
+                });
+            }
+        });
+
+        // Gerenciamento de Evidências no Modal de Edição
+        function carregarEvidenciasAcao(acaoId) {
+            $.ajax({
+                url: `<?= site_url('acoes/listar-evidencias/') ?>${acaoId}`,
+                type: 'GET',
+                dataType: 'json',
+                beforeSend: function() {
+                    $('#evidenciasAtuaisList').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i></div>');
+                },
+                success: function(response) {
+                    if (response.success && response.evidencias.length > 0) {
+                        let html = '';
+                        response.evidencias.forEach((evidencia, index) => {
+                            const dataFormatada = new Date(evidencia.created_at).toLocaleString('pt-BR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            }).replace(',', '');
+
+                            html += `
+                    <div class="list-group-item mb-2" data-id="${evidencia.id}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <strong>Evidência #${index + 1}</strong>
+                                    <small class="text-muted">${dataFormatada}</small>
+                                </div>
+                                ${evidencia.tipo === 'texto' ?
+                                    `<div class="bg-light p-3 rounded mb-2">${evidencia.evidencia.replace(/\n/g, '<br>')}</div>` :
+                                    `<div class="mb-2">
+                                        <a href="${evidencia.evidencia}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-external-link-alt mr-2"></i>Abrir Link
+                                        </a>
+                                        <small class="d-block text-muted mt-1">${evidencia.evidencia}</small>
+                                    </div>`
+                                }
+                                ${evidencia.descricao ?
+                                    `<div class="mt-2">
+                                        <small class="text-muted d-block"><strong>Descrição:</strong></small>
+                                        <div class="bg-light p-2 rounded">${evidencia.descricao.replace(/\n/g, '<br>')}</div>
+                                    </div>` : ''
+                                }
+                            </div>
+                            <button class="btn btn-sm btn-danger ml-2 btn-remover-evidencia-edit" data-id="${evidencia.id}">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    `;
+                        });
+
+                        $('#evidenciasAtuaisList').html(html);
+                        $('#contadorEvidenciasAtuais').text(response.evidencias.length);
+                    } else {
+                        $('#evidenciasAtuaisList').html('<div class="text-center py-3 text-muted">Nenhuma evidência cadastrada</div>');
+                        $('#contadorEvidenciasAtuais').text('0');
+                    }
+                },
+                error: function() {
+                    $('#evidenciasAtuaisList').html('<div class="text-center py-3 text-danger">Erro ao carregar evidências</div>');
+                }
+            });
+        }
+
+        // Adicionar evidência no modal de edição
+        $('#btnAdicionarEvidencia').click(function() {
+            const acaoId = $('#editAcaoId').val();
+            const tipo = $('input[name="evidencia_tipo"]:checked').val();
+            const conteudo = tipo === 'texto' ?
+                $('#editAcaoEvidenciaTexto').val().trim() :
+                $('#editAcaoEvidenciaLink').val().trim();
+            const descricao = $('#editAcaoEvidenciaDescricao').val().trim();
+
+            if ((tipo === 'texto' && conteudo.length < 3) ||
+                (tipo === 'link' && !isValidUrl(conteudo))) {
+                showErrorAlert(tipo === 'texto' ?
+                    'O texto da evidência deve ter pelo menos 3 caracteres' :
+                    'Por favor, insira uma URL válida');
+                return;
+            }
+
+            $.ajax({
+                url: `<?= site_url('acoes/adicionar-evidencia/') ?>${acaoId}`,
+                type: 'POST',
+                data: {
+                    tipo: tipo,
+                    evidencia_texto: tipo === 'texto' ? conteudo : '',
+                    evidencia_link: tipo === 'link' ? conteudo : '',
+                    descricao: descricao,
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                },
+                dataType: 'json',
+                beforeSend: function() {
+                    $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Processando...');
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Limpar campos
+                        $('#editAcaoEvidenciaTexto, #editAcaoEvidenciaLink, #editAcaoEvidenciaDescricao').val('');
+
+                        // Recarregar lista de evidências
+                        carregarEvidenciasAcao(acaoId);
+
+                        showSuccessAlert('Evidência adicionada com sucesso!');
+                    } else {
+                        showErrorAlert(response.message);
+                    }
+                },
+                error: function() {
+                    showErrorAlert('Erro na comunicação com o servidor');
+                },
+                complete: function() {
+                    $(this).prop('disabled', false).html('<i class="fas fa-plus mr-2"></i> Adicionar à Lista');
+                }
+            });
+        });
+
+        // Remover evidência no modal de edição
+        $(document).on('click', '.btn-remover-evidencia-edit', function() {
+            const evidenciaId = $(this).data('id');
+            const acaoId = $('#editAcaoId').val();
+
+            Swal.fire({
+                title: 'Remover evidência?',
+                text: "Esta ação não pode ser desfeita!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sim, remover!',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `<?= site_url('acoes/remover-evidencia/') ?>${evidenciaId}`,
+                        type: 'POST',
+                        data: {
+                            '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                        },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                carregarEvidenciasAcao(acaoId);
+                                showSuccessAlert('Evidência removida com sucesso!');
+                            } else {
+                                showErrorAlert(response.message);
+                            }
+                        },
+                        error: function() {
+                            showErrorAlert('Erro na comunicação com o servidor');
+                        }
+                    });
+                }
+            });
+        });
+
+        // Alternar entre tipos de evidência no modal de edição
+        $('input[name="evidencia_tipo"]').change(function() {
+            if ($(this).val() === 'texto') {
+                $('#editAcaoGrupoTexto').removeClass('d-none');
+                $('#editAcaoGrupoLink').addClass('d-none');
+            } else {
+                $('#editAcaoGrupoTexto').addClass('d-none');
+                $('#editAcaoGrupoLink').removeClass('d-none');
+            }
+        });
+
+        // Carregar evidências quando o modal de edição é aberto
+        $(document).on('shown.bs.modal', '#editAcaoModal', function() {
+            const acaoId = $('#editAcaoId').val();
             if (acaoId) {
                 carregarEvidenciasAcao(acaoId);
             }
-
-            // Resetar as listas de adição/remoção
-            evidenciasAdicionadas = [];
-            evidenciasRemovidas = [];
-            atualizarListaEvidenciasAdicionadas();
-            atualizarContadoresEvidencias();
         });
 
-        // Controlar habilitação do campo data fim baseado na data início
-        $('#solicitarEdicaoDataInicio').on('change', function() {
-            if ($(this).val()) {
-                $('#solicitarEdicaoDataFim').prop('disabled', false);
-            } else {
-                $('#solicitarEdicaoDataFim').val('').prop('disabled', true);
+        // Variáveis globais para controle
+        let responsaveisSelecionadosEdit = [];
+        let usuariosDisponiveisEdit = [];
+
+        // Carregar responsáveis quando o modal de edição é aberto
+        $('#editAcaoModal').on('show.bs.modal', function() {
+            const acaoId = $('#editAcaoId').val();
+            if (acaoId) {
+                carregarResponsaveisAcao(acaoId);
+                carregarUsuariosDisponiveisEdit(acaoId);
             }
         });
 
-        $('#solicitarInclusaoDataInicio').on('change', function() {
-            if ($(this).val()) {
-                $('#solicitarInclusaoDataFim').prop('disabled', false);
-            } else {
-                $('#solicitarInclusaoDataFim').val('').prop('disabled', true);
+        // Função para carregar responsáveis atuais
+        function carregarResponsaveisAcao(acaoId) {
+            $.ajax({
+                url: `<?= site_url('acoes/responsaveis/') ?>${acaoId}`,
+                type: 'GET',
+                dataType: 'json',
+                beforeSend: function() {
+                    $('#responsaveisSelecionadosEdit').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i></div>');
+                },
+                success: function(response) {
+                    if (response.success && response.data) {
+                        responsaveisSelecionadosEdit = response.data;
+                        atualizarResponsaveisSelecionadosEdit();
+                    } else {
+                        $('#responsaveisSelecionadosEdit').html('<div class="text-center py-3 text-muted">Nenhum responsável cadastrado</div>');
+                    }
+                },
+                error: function() {
+                    $('#responsaveisSelecionadosEdit').html('<div class="text-center py-3 text-danger">Erro ao carregar responsáveis</div>');
+                }
+            });
+        }
+
+        // Função para carregar usuários disponíveis
+        function carregarUsuariosDisponiveisEdit(acaoId, termo = '') {
+            $.ajax({
+                url: `<?= site_url('acoes/usuarios-disponiveis/') ?>${acaoId}`,
+                type: 'GET',
+                data: {
+                    term: termo
+                },
+                beforeSend: function() {
+                    $('#usuariosDisponiveisEdit').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i></div>');
+                },
+                success: function(response) {
+                    if (response.success && response.data) {
+                        usuariosDisponiveisEdit = response.data;
+                        atualizarListaUsuariosDisponiveisEdit();
+                    } else {
+                        $('#usuariosDisponiveisEdit').html('<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>');
+                    }
+                },
+                error: function() {
+                    $('#usuariosDisponiveisEdit').html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
+                }
+            });
+        }
+
+        // Função para atualizar a lista de usuários disponíveis
+        function atualizarListaUsuariosDisponiveisEdit() {
+            const lista = $('#usuariosDisponiveisEdit');
+            lista.empty();
+
+            if (usuariosDisponiveisEdit.length === 0) {
+                lista.html('<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>');
+                return;
+            }
+
+            let html = '';
+            usuariosDisponiveisEdit.forEach(usuario => {
+                // Verifica se o usuário já está na lista de selecionados
+                const jaSelecionado = responsaveisSelecionadosEdit.some(r => r.id === usuario.id);
+
+                if (!jaSelecionado) {
+                    html += `
+            <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
+                <div>
+                    <span class="font-weight-bold">${usuario.username}</span>
+                    <small class="d-block text-muted">${usuario.email}</small>
+                </div>
+                <button class="btn btn-sm btn-primary btn-adicionar-responsavel-edit" data-id="${usuario.id}">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            `;
+                }
+            });
+
+            if (html === '') {
+                html = '<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>';
+            }
+
+            lista.html(html);
+        }
+
+        // Função para atualizar a lista de responsáveis selecionados
+        function atualizarResponsaveisSelecionadosEdit() {
+            const lista = $('#responsaveisSelecionadosEdit');
+            lista.empty();
+
+            if (responsaveisSelecionadosEdit.length === 0) {
+                lista.html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
+                return;
+            }
+
+            let html = '';
+            responsaveisSelecionadosEdit.forEach(usuario => {
+                html += `
+        <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
+            <div>
+                <span class="font-weight-bold">${usuario.username}</span>
+                <small class="d-block text-muted">${usuario.email}</small>
+            </div>
+            <button class="btn btn-sm btn-danger btn-remover-responsavel-edit" data-id="${usuario.id}">
+                <i class="fas fa-minus"></i>
+            </button>
+        </div>
+        `;
+            });
+
+            lista.html(html);
+
+            // Atualiza o campo hidden com os IDs dos responsáveis
+            const ids = responsaveisSelecionadosEdit.map(u => u.id).join(',');
+            $('#responsaveisIdsEdit').val(ids);
+        }
+
+        // Evento para adicionar responsável
+        $(document).on('click', '.btn-adicionar-responsavel-edit', function() {
+            const usuarioId = $(this).data('id');
+            const usuario = usuariosDisponiveisEdit.find(u => u.id == usuarioId);
+
+            if (usuario && !responsaveisSelecionadosEdit.some(u => u.id == usuarioId)) {
+                responsaveisSelecionadosEdit.push(usuario);
+                atualizarResponsaveisSelecionadosEdit();
+                atualizarListaUsuariosDisponiveisEdit();
             }
         });
+
+        // Evento para remover responsável
+        $(document).on('click', '.btn-remover-responsavel-edit', function() {
+            const usuarioId = $(this).data('id');
+            responsaveisSelecionadosEdit = responsaveisSelecionadosEdit.filter(u => u.id != usuarioId);
+            atualizarResponsaveisSelecionadosEdit();
+            atualizarListaUsuariosDisponiveisEdit();
+        });
+
+        // Buscar usuários ao digitar
+        $('#buscarUsuarioEdit').on('input', function() {
+            const acaoId = $('#editAcaoId').val();
+            const termo = $(this).val();
+            if (acaoId) {
+                carregarUsuariosDisponiveisEdit(acaoId, termo);
+            }
+        });
+
     });
 </script>

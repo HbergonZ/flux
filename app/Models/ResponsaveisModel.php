@@ -74,4 +74,16 @@ class ResponsaveisModel extends Model
             ->get()
             ->getResultArray();
     }
+    public function getResponsaveisAcao($acaoId)
+    {
+        return $this->db->table('responsaveis r')
+            ->select('u.id, u.username, ai.secret as email')
+            ->join('users u', 'u.id = r.usuario_id')
+            ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = "email_password"', 'left')
+            ->where('r.nivel', 'acao')
+            ->where('r.nivel_id', $acaoId)
+            ->orderBy('u.username', 'ASC')
+            ->get()
+            ->getResultArray();
+    }
 }

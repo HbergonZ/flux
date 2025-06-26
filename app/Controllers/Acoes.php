@@ -151,28 +151,30 @@ class Acoes extends BaseController
 
         $rules = [
             'nome' => 'required|min_length[3]|max_length[255]',
-            'responsavel' => 'permit_empty|max_length[255]',
-            'equipe' => 'permit_empty|max_length[255]',
-            'tempo_estimado_dias' => 'permit_empty|integer',
+            'responsaveis_ids' => 'permit_empty',
             'entrega_estimada' => 'permit_empty|valid_date',
             'data_inicio' => 'permit_empty|valid_date',
             'data_fim' => 'permit_empty|valid_date',
+            'evidencias_adicionadas' => 'permit_empty'
         ];
 
         if ($this->validate($rules)) {
             try {
                 $proximaOrdem = $this->getProximaOrdem($idOrigem, $tipoOrigem);
+                $responsaveisModel = new \App\Models\ResponsaveisModel();
 
+                // Dados básicos da ação
                 $data = [
                     'nome' => $this->request->getPost('nome'),
                     'ordem' => $proximaOrdem,
-                    'responsavel' => $this->request->getPost('responsavel'),
+                    'responsavel' => '', // Agora usamos o sistema de responsáveis
                     'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias') ?: null,
                     'entrega_estimada' => $this->request->getPost('entrega_estimada') ?: null,
                     'data_inicio' => $this->request->getPost('data_inicio') ?: null,
                     'data_fim' => $this->request->getPost('data_fim') ?: null
                 ];
 
+                // Define a origem (etapa ou projeto direto)
                 if ($tipoOrigem === 'projeto') {
                     $projeto = $this->projetosModel->find($idOrigem);
                     if (!$projeto) {
@@ -194,9 +196,22 @@ class Acoes extends BaseController
                     $idPlano = $projeto['id_plano'];
                 }
 
-                // Calculate status automatically
+                // Calcula o status automaticamente
                 $statusProjeto = $projeto['status'] ?? null;
                 $data['status'] = $this->acoesModel->calcularStatus($data, $statusProjeto);
+
+                if ($this->acoesModel->transStatus()) {
+                    // Atualiza status de todas as ações após inserção
+                    $this->acoesModel->atualizarStatusAcoes($idOrigem, $tipoOrigem);
+                }
+
+                // Validação adicional para data fim
+                if (!empty($data['data_fim'])) {
+                    if (empty($data['data_inicio'])) {
+                        $response['message'] = 'Não é possível definir data de fim sem data de início';
+                        return $this->response->setJSON($response);
+                    }
+                }
 
                 $this->acoesModel->transStart();
                 $insertId = $this->acoesModel->insert($data);
@@ -205,6 +220,43 @@ class Acoes extends BaseController
                     throw new \Exception('Falha ao inserir ação no banco de dados');
                 }
 
+                // Processar responsáveis
+                $responsaveisIds = $this->request->getPost('responsaveis_ids');
+                if (!empty($responsaveisIds)) {
+                    $idsArray = explode(',', $responsaveisIds);
+
+                    foreach ($idsArray as $usuarioId) {
+                        if (!empty($usuarioId)) {
+                            $responsaveisModel->insert([
+                                'nivel' => 'acao',
+                                'nivel_id' => $insertId,
+                                'usuario_id' => $usuarioId
+                            ]);
+                        }
+                    }
+                }
+
+                // Processar evidências (se houver)
+                $evidenciasAdicionadas = $this->request->getPost('evidencias_adicionadas');
+                if (!empty($evidenciasAdicionadas)) {
+                    $evidencias = json_decode($evidenciasAdicionadas, true);
+                    $evidenciasModel = new \App\Models\EvidenciasModel();
+
+                    foreach ($evidencias as $evidencia) {
+                        $evidenciaData = [
+                            'tipo' => $evidencia['tipo'],
+                            'evidencia' => $evidencia['conteudo'],
+                            'descricao' => $evidencia['descricao'] ?? null,
+                            'nivel' => 'acao',
+                            'id_nivel' => $insertId,
+                            'created_by' => auth()->id(),
+                            'created_at' => date('Y-m-d H:i:s')
+                        ];
+                        $evidenciasModel->insert($evidenciaData);
+                    }
+                }
+
+                // Registrar log
                 $acaoCompleta = array_merge(['id' => $insertId], $data);
                 if (!$this->logController->registrarCriacao('acao', $acaoCompleta, 'Cadastro inicial da ação')) {
                     throw new \Exception('Falha ao registrar log de criação');
@@ -225,6 +277,56 @@ class Acoes extends BaseController
         }
 
         return $this->response->setJSON($response);
+    }
+
+    // Novo método para buscar usuários
+    public function buscarUsuariosParaResponsaveis()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $term = $this->request->getGet('term'); // Para busca com Select2
+            $acaoId = $this->request->getGet('acao_id'); // Para filtrar usuários já associados
+
+            $db = db_connect();
+            $builder = $db->table('users u')
+                ->select('u.id, u.username, ai.secret as email')
+                ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = "email_password"', 'left')
+                ->orderBy('u.username', 'ASC');
+
+            // Filtro por termo de busca
+            if (!empty($term)) {
+                $builder->groupStart()
+                    ->like('u.username', $term)
+                    ->orLike('ai.secret', $term)
+                    ->groupEnd();
+            }
+
+            // Filtro para não incluir usuários já responsáveis
+            if (!empty($acaoId)) {
+                $builder->whereNotIn('u.id', function ($query) use ($acaoId) {
+                    $query->select('usuario_id')
+                        ->from('responsaveis')
+                        ->where('nivel', 'acao')
+                        ->where('nivel_id', $acaoId);
+                });
+            }
+
+            $usuarios = $builder->get()->getResultArray();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $usuarios
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Erro ao buscar usuários: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Erro ao buscar usuários'
+            ]);
+        }
     }
 
     public function editar($id = null)
@@ -258,7 +360,7 @@ class Acoes extends BaseController
             'id' => 'required',
             'nome' => 'required|min_length[3]|max_length[255]',
             'ordem' => 'required|integer',
-            'responsavel' => 'permit_empty|max_length[255]',
+            'responsaveis_ids' => 'permit_empty',
             'entrega_estimada' => 'permit_empty|valid_date',
             'data_inicio' => 'permit_empty|valid_date',
             'data_fim' => [
@@ -272,6 +374,8 @@ class Acoes extends BaseController
                     return true;
                 }
             ],
+            'evidencias_adicionadas' => 'permit_empty',
+            'evidencias_removidas' => 'permit_empty'
         ];
 
         if ($this->validate($rules)) {
@@ -284,7 +388,7 @@ class Acoes extends BaseController
                     return $this->response->setJSON($response);
                 }
 
-                // Validação de evidências para data fim
+                // Validação adicional para data fim
                 if (!empty($this->request->getPost('data_fim'))) {
                     $temEvidencias = $this->evidenciasModel->where('nivel', 'acao')
                         ->where('id_nivel', $id)
@@ -296,36 +400,75 @@ class Acoes extends BaseController
                     }
                 }
 
+                $this->acoesModel->transStart();
+
+                // Dados básicos da ação
                 $data = [
                     'id' => $id,
                     'nome' => $this->request->getPost('nome'),
                     'ordem' => $this->request->getPost('ordem'),
-                    'responsavel' => $this->request->getPost('responsavel'),
-                    'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias'),
-                    'entrega_estimada' => $this->ajustarData($this->request->getPost('entrega_estimada')),
-                    'data_inicio' => $this->ajustarData($this->request->getPost('data_inicio')),
-                    'data_fim' => $this->ajustarData($this->request->getPost('data_fim')),
+                    'responsavel' => '', // Agora usamos o sistema de responsáveis
+                    'tempo_estimado_dias' => $this->request->getPost('tempo_estimado_dias') ?: null,
+                    'entrega_estimada' => $this->request->getPost('entrega_estimada') ?: null,
+                    'data_inicio' => $this->request->getPost('data_inicio') ?: null,
+                    'data_fim' => $this->request->getPost('data_fim') ?: null,
                     'status' => $this->calcularStatusNovo($this->request->getPost())
                 ];
 
-                $this->acoesModel->transStart();
                 $updated = $this->acoesModel->save($data);
 
                 if (!$updated) {
                     throw new \Exception('Falha ao atualizar ação no banco de dados');
                 }
 
-                $acaoAtualizada = $this->acoesModel->find($id);
+                // Processar responsáveis
+                $responsaveisIds = $this->request->getPost('responsaveis_ids');
+                $this->processarResponsaveis($id, $responsaveisIds);
 
+                // Processar evidências adicionadas
+                $evidenciasAdicionadas = $this->request->getPost('evidencias_adicionadas');
+                if (!empty($evidenciasAdicionadas)) {
+                    $evidencias = json_decode($evidenciasAdicionadas, true);
+                    foreach ($evidencias as $evidencia) {
+                        $evidenciaData = [
+                            'tipo' => $evidencia['tipo'],
+                            'evidencia' => $evidencia['conteudo'],
+                            'descricao' => $evidencia['descricao'] ?? null,
+                            'nivel' => 'acao',
+                            'id_nivel' => $id,
+                            'created_by' => auth()->id(),
+                            'created_at' => date('Y-m-d H:i:s')
+                        ];
+                        $this->evidenciasModel->insert($evidenciaData);
+                    }
+                }
+
+                // Processar evidências removidas
+                $evidenciasRemovidas = $this->request->getPost('evidencias_removidas');
+                if (!empty($evidenciasRemovidas)) {
+                    $idsRemover = json_decode($evidenciasRemovidas, true);
+                    $this->evidenciasModel->whereIn('id', $idsRemover)
+                        ->where('nivel', 'acao')
+                        ->where('id_nivel', $id)
+                        ->delete();
+                }
+
+                // Registrar log
+                $acaoAtualizada = $this->acoesModel->find($id);
                 if (!$this->logController->registrarEdicao('acao', $acaoAntiga, $acaoAtualizada, 'Edição realizada via interface')) {
                     throw new \Exception('Falha ao registrar log de edição');
+                }
+
+                if ($this->acoesModel->transStatus()) {
+                    // Atualiza status de todas as ações após inserção
+                    $this->acoesModel->atualizarStatusAcoes($idOrigem, $tipoOrigem);
                 }
 
                 $this->acoesModel->transComplete();
 
                 $response['success'] = true;
                 $response['message'] = 'Ação atualizada com sucesso!';
-                $response['data'] = $acaoAtualizada; // Incluir dados atualizados na resposta
+                $response['data'] = $acaoAtualizada;
             } catch (\Exception $e) {
                 $this->acoesModel->transRollback();
                 $response['message'] = 'Erro ao atualizar ação: ' . $e->getMessage();
@@ -336,6 +479,36 @@ class Acoes extends BaseController
         }
 
         return $this->response->setJSON($response);
+    }
+
+    private function processarResponsaveis($acaoId, $responsaveisIds)
+    {
+        $responsaveisModel = new \App\Models\ResponsaveisModel();
+
+        // Remove todos os responsáveis atuais
+        $responsaveisModel->where('nivel', 'acao')
+            ->where('nivel_id', $acaoId)
+            ->delete();
+
+        // Adiciona os novos responsáveis
+        if (!empty($responsaveisIds)) {
+            $idsArray = explode(',', $responsaveisIds);
+            $data = [];
+
+            foreach ($idsArray as $usuarioId) {
+                if (!empty($usuarioId)) {
+                    $data[] = [
+                        'nivel' => 'acao',
+                        'nivel_id' => $acaoId,
+                        'usuario_id' => $usuarioId
+                    ];
+                }
+            }
+
+            if (!empty($data)) {
+                $responsaveisModel->insertBatch($data);
+            }
+        }
     }
 
     private function calcularStatusNovo($postData)
@@ -407,6 +580,11 @@ class Acoes extends BaseController
             }
 
             $this->acoesModel->transComplete();
+
+            if ($this->acoesModel->transStatus()) {
+                // Atualiza status de todas as ações após inserção
+                $this->acoesModel->atualizarStatusAcoes($idOrigem, $tipoOrigem);
+            }
 
             $response['success'] = true;
             $response['message'] = 'Ação excluída com sucesso!';
@@ -580,12 +758,6 @@ class Acoes extends BaseController
                 if (!empty($evidenciasSolicitadas)) {
                     $alteracoes['evidencias'] = $evidenciasSolicitadas;
                 }
-
-                // Verificar se há alterações válidas
-                /* if (empty($alteracoes)) {
-                    $response['message'] = 'Nenhuma alteração detectada';
-                    return $this->response->setJSON($response);
-                } */
 
                 $data = [
                     'nivel' => 'acao',
@@ -839,244 +1011,6 @@ class Acoes extends BaseController
         return $this->response->setJSON($response);
     }
 
-    public function getEquipe($acaoId)
-    {
-        if (!$this->request->isAJAX()) {
-            return redirect()->back();
-        }
-
-        try {
-            $db = db_connect();
-            $equipe = $db->table('acoes_equipe')
-                ->select('users.id, users.username, auth_identities.secret as email')
-                ->join('users', 'users.id = acoes_equipe.usuario_id')
-                ->join('auth_identities', 'auth_identities.user_id = users.id AND auth_identities.type = "email_password"')
-                ->where('acao_id', $acaoId)
-                ->get()
-                ->getResultArray();
-
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $equipe
-            ]);
-        } catch (\Exception $e) {
-            log_message('error', 'Erro ao buscar equipe: ' . $e->getMessage());
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Erro ao buscar equipe: ' . $e->getMessage(),
-                'data' => []
-            ]);
-        }
-    }
-
-    public function adicionarMembroEquipe()
-    {
-        if (!$this->request->isAJAX()) {
-            return redirect()->back();
-        }
-
-        $response = ['success' => false, 'message' => ''];
-        $postData = $this->request->getPost();
-
-        $rules = [
-            'acao_id' => 'required|numeric',
-            'usuario_id' => 'required|numeric'
-        ];
-
-        if ($this->validate($rules)) {
-            try {
-                // Verifica se a ação existe
-                $acao = $this->acoesModel->find($postData['acao_id']);
-                if (!$acao) {
-                    $response['message'] = 'Ação não encontrada';
-                    return $this->response->setJSON($response);
-                }
-
-                // Verifica se o usuário existe
-                $userModel = new \CodeIgniter\Shield\Models\UserModel();
-                $usuario = $userModel->find($postData['usuario_id']);
-                if (!$usuario) {
-                    $response['message'] = 'Usuário não encontrado';
-                    return $this->response->setJSON($response);
-                }
-
-                // Verifica se o relacionamento já existe
-                $builder = db_connect()->table('acoes_equipe');
-                $existe = $builder->where([
-                    'acao_id' => $postData['acao_id'],
-                    'usuario_id' => $postData['usuario_id']
-                ])->countAllResults();
-
-                if ($existe > 0) {
-                    $response['message'] = 'Este usuário já está na equipe desta ação';
-                    return $this->response->setJSON($response);
-                }
-
-                // Adiciona o membro à equipe
-                $builder->insert([
-                    'acao_id' => $postData['acao_id'],
-                    'usuario_id' => $postData['usuario_id'],
-                    'created_at' => date('Y-m-d H:i:s')
-                ]);
-
-                $response['success'] = true;
-                $response['message'] = 'Usuário adicionado à equipe com sucesso!';
-            } catch (\Exception $e) {
-                log_message('error', 'Erro ao adicionar membro à equipe: ' . $e->getMessage());
-                $response['message'] = 'Erro ao adicionar usuário à equipe: ' . $e->getMessage();
-            }
-        } else {
-            $response['message'] = implode('<br>', $this->validator->getErrors());
-        }
-
-        return $this->response->setJSON($response);
-    }
-    public function removerMembroEquipe()
-    {
-        if (!$this->request->isAJAX()) {
-            return redirect()->back();
-        }
-
-        $response = ['success' => false, 'message' => ''];
-        $postData = $this->request->getPost();
-
-        $rules = [
-            'acao_id' => 'required|numeric',
-            'usuario_id' => 'required|numeric'
-        ];
-
-        if ($this->validate($rules)) {
-            try {
-                $this->acoesModel->removerMembroEquipe($postData['acao_id'], $postData['usuario_id']);
-
-                $response['success'] = true;
-                $response['message'] = 'Usuário removido da equipe com sucesso!';
-            } catch (\Exception $e) {
-                log_message('error', 'Erro ao remover membro da equipe: ' . $e->getMessage());
-                $response['message'] = 'Erro ao remover usuário da equipe';
-            }
-        } else {
-            $response['message'] = implode('<br>', $this->validator->getErrors());
-        }
-
-        return $this->response->setJSON($response);
-    }
-
-    public function buscarUsuarios()
-    {
-        if (!$this->request->isAJAX()) {
-            return redirect()->back();
-        }
-
-        $acaoId = $this->request->getGet('acao_id');
-        $term = $this->request->getGet('term');
-
-        try {
-            $db = db_connect();
-
-            // Obter IDs dos usuários já na equipe (se houver ação_id)
-            $idsEquipe = [];
-            if ($acaoId) {
-                $equipe = $db->table('acoes_equipe')
-                    ->select('usuario_id')
-                    ->where('acao_id', $acaoId)
-                    ->get()
-                    ->getResultArray();
-                $idsEquipe = array_column($equipe, 'usuario_id');
-            }
-
-            // Buscar usuários ativos
-            $builder = $db->table('users')
-                ->select('users.id, users.username, auth_identities.secret as email')
-                ->join('auth_identities', 'auth_identities.user_id = users.id AND auth_identities.type = "email_password"')
-                ->where('users.active', 1);
-
-            // Aplicar filtro por termo de busca
-            if (!empty($term)) {
-                $builder->groupStart()
-                    ->like('users.username', $term)
-                    ->orLike('auth_identities.secret', $term)
-                    ->groupEnd();
-            }
-
-            // Excluir usuários já na equipe
-            if (!empty($idsEquipe)) {
-                $builder->whereNotIn('users.id', $idsEquipe);
-            }
-
-            $usuarios = $builder->orderBy('users.username', 'ASC')
-                ->get()
-                ->getResultArray();
-
-            // Retorna no formato esperado pelo Select2 e pela nossa lista
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $usuarios,
-                'results' => array_map(function ($user) {
-                    return [
-                        'id' => $user['id'],
-                        'text' => "{$user['username']} ({$user['email']})",
-                        'username' => $user['username'],
-                        'email' => $user['email']
-                    ];
-                }, $usuarios)
-            ]);
-        } catch (\Exception $e) {
-            log_message('error', 'Erro ao buscar usuários: ' . $e->getMessage());
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Erro ao buscar usuários',
-                'data' => [],
-                'results' => []
-            ]);
-        }
-    }
-
-    public function getEquipeFormatada($acaoId)
-    {
-        try {
-            $equipe = $this->acoesModel->getUsernamesEquipe($acaoId);
-            $equipeFormatada = implode(', ', array_column($equipe, 'username'));
-
-            return $this->response->setJSON([
-                'success' => true,
-                'equipe' => $equipeFormatada
-            ]);
-        } catch (\Exception $e) {
-            log_message('error', 'Erro ao buscar equipe formatada: ' . $e->getMessage());
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Erro ao buscar equipe',
-                'equipe' => ''
-            ]);
-        }
-    }
-
-    public function gerenciarEvidencias($acaoId)
-    {
-        if (!$this->request->isAJAX()) {
-            return redirect()->back();
-        }
-
-        $acao = $this->acoesModel->find($acaoId);
-        if (!$acao) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Ação não encontrada']);
-        }
-
-        $evidencias = $this->evidenciasModel->where('nivel', 'acao')
-            ->where('id_nivel', $acaoId)
-            ->orderBy('created_at', 'DESC')  // Mantemos DESC para exibir as mais recentes primeiro
-            ->findAll();
-
-        return $this->response->setJSON([
-            'success' => true,
-            'html' => view('components/acoes/modal-evidencias', [
-                'acao' => $acao,
-                'evidencias' => $evidencias,
-                'totalEvidencias' => count($evidencias)
-            ])
-        ]);
-    }
 
     public function adicionarEvidencia($acaoId)
     {
@@ -1311,6 +1245,54 @@ class Acoes extends BaseController
         }
     }
 
+    // No Controller Acoes.php
+    // No Controller Acoes.php
+    public function getUsuariosDisponiveis($acaoId)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $term = $this->request->getGet('term'); // Termo de busca opcional
+
+            $db = db_connect();
+            $builder = $db->table('users u')
+                ->select('u.id, u.username, ai.secret as email')
+                ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = "email_password"', 'left')
+                ->orderBy('u.username', 'ASC');
+
+            // Filtro para não incluir usuários já responsáveis
+            $builder->whereNotIn('u.id', function ($query) use ($acaoId) {
+                $query->select('usuario_id')
+                    ->from('responsaveis')
+                    ->where('nivel', 'acao')
+                    ->where('nivel_id', $acaoId);
+            });
+
+            // Filtro por termo de busca se existir
+            if (!empty($term)) {
+                $builder->groupStart()
+                    ->like('u.username', $term)
+                    ->orLike('ai.secret', $term)
+                    ->groupEnd();
+            }
+
+            $usuarios = $builder->get()->getResultArray();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $usuarios
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Erro ao buscar usuários disponíveis: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Erro ao buscar usuários disponíveis'
+            ]);
+        }
+    }
+
     public function getResponsaveis($acaoId)
     {
         if (!$this->request->isAJAX()) {
@@ -1319,7 +1301,7 @@ class Acoes extends BaseController
 
         try {
             $responsaveisModel = new \App\Models\ResponsaveisModel();
-            $responsaveis = $responsaveisModel->getResponsaveis('acao', $acaoId);
+            $responsaveis = $responsaveisModel->getResponsaveisAcao($acaoId);
 
             return $this->response->setJSON([
                 'success' => true,
@@ -1332,5 +1314,78 @@ class Acoes extends BaseController
                 'message' => 'Erro ao buscar responsáveis'
             ]);
         }
+    }
+
+    public function adicionarResponsavel()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $response = ['success' => false, 'message' => ''];
+        $postData = $this->request->getPost();
+
+        $rules = [
+            'acao_id' => 'required|numeric',
+            'usuario_id' => 'required|numeric'
+        ];
+
+        if ($this->validate($rules)) {
+            try {
+                $responsaveisModel = new \App\Models\ResponsaveisModel();
+
+                $data = [
+                    'nivel' => 'acao',
+                    'nivel_id' => $postData['acao_id'],
+                    'usuario_id' => $postData['usuario_id']
+                ];
+
+                $responsaveisModel->insert($data);
+
+                $response['success'] = true;
+                $response['message'] = 'Responsável adicionado com sucesso!';
+            } catch (\Exception $e) {
+                $response['message'] = 'Erro ao adicionar responsável: ' . $e->getMessage();
+            }
+        } else {
+            $response['message'] = implode('<br>', $this->validator->getErrors());
+        }
+
+        return $this->response->setJSON($response);
+    }
+
+    public function removerResponsavel()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        $response = ['success' => false, 'message' => ''];
+        $postData = $this->request->getPost();
+
+        $rules = [
+            'acao_id' => 'required|numeric',
+            'usuario_id' => 'required|numeric'
+        ];
+
+        if ($this->validate($rules)) {
+            try {
+                $responsaveisModel = new \App\Models\ResponsaveisModel();
+
+                $responsaveisModel->where('nivel', 'acao')
+                    ->where('nivel_id', $postData['acao_id'])
+                    ->where('usuario_id', $postData['usuario_id'])
+                    ->delete();
+
+                $response['success'] = true;
+                $response['message'] = 'Responsável removido com sucesso!';
+            } catch (\Exception $e) {
+                $response['message'] = 'Erro ao remover responsável: ' . $e->getMessage();
+            }
+        } else {
+            $response['message'] = implode('<br>', $this->validator->getErrors());
+        }
+
+        return $this->response->setJSON($response);
     }
 }

@@ -9,7 +9,7 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="formEditAcao" method="post" action="<?= site_url("acoes/atualizar/${idOrigem}/${tipoOrigem}") ?>">
+            <form id="formEditAcao" method="post" action="<?= site_url("acoes/atualizar/{$idOrigem}/{$tipoOrigem}") ?>">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                 <input type="hidden" name="id" id="editAcaoId">
                 <input type="hidden" name="id_etapa" value="<?= $tipoOrigem === 'etapa' ? $idOrigem : '' ?>">
@@ -42,8 +42,8 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <label for="acaoOrdem" class=""><i class="fas fa-sort-numeric-down mr-1"></i>Ordem</label>
-                                        <input type="number" class="form-control" id="acaoOrdem" name="ordem" min="1" readonly>
+                                        <label for="editAcaoOrdem" class="font-weight-bold"><i class="fas fa-sort-numeric-down mr-1"></i>Ordem</label>
+                                        <input type="number" class="form-control" id="editAcaoOrdem" name="ordem" min="1" readonly>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -71,17 +71,15 @@
                         </div>
                         <div class="card-body p-0">
                             <div class="row no-gutters">
-                                <!-- Responsáveis Atuais -->
+                                <!-- Responsáveis Selecionados -->
                                 <div class="col-md-6 border-right">
                                     <div class="p-3">
-                                        <h6 class="font-weight-bold">
-                                            <i class="fas fa-user-friends mr-1"></i>Responsáveis Atuais
-                                            <span class="badge badge-primary badge-pill ml-1" id="contadorResponsaveisAtuaisAcao">0</span>
+                                        <h6 class="text-center font-weight-bold">
+                                            <i class="fas fa-user-friends mr-1"></i>Responsáveis
+                                            <span class="badge badge-primary badge-pill ml-1" id="contadorResponsaveisEdit">0</span>
                                         </h6>
-                                        <div id="responsaveisAtuaisListAcao" class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
-                                            <div class="text-center py-3">
-                                                <i class="fas fa-spinner fa-spin"></i> Carregando...
-                                            </div>
+                                        <div id="responsaveisSelecionadosEdit" class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+                                            <div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>
                                         </div>
                                     </div>
                                 </div>
@@ -89,22 +87,17 @@
                                 <!-- Usuários Disponíveis -->
                                 <div class="col-md-6">
                                     <div class="p-3">
-                                        <h6 class="font-weight-bold">
+                                        <h6 class="text-center font-weight-bold">
                                             <i class="fas fa-user-plus mr-1"></i>Usuários Disponíveis
-                                            <span class="badge badge-secondary badge-pill ml-1" id="contadorUsuariosDisponiveisAcao">0</span>
+                                            <span class="badge badge-secondary badge-pill ml-1" id="contadorUsuariosEdit">0</span>
                                         </h6>
                                         <div class="input-group mb-3">
                                             <div class="input-group-prepend">
                                                 <span class="input-group-text"><i class="fas fa-search"></i></span>
                                             </div>
-                                            <input type="text" id="buscaUsuarioResponsavelAcao" class="form-control" placeholder="Buscar usuário...">
-                                            <div class="input-group-append">
-                                                <button class="btn btn-outline-secondary" type="button" id="btnLimparBuscaResponsaveisAcao" title="Limpar busca">
-                                                    <i class="fas fa-times"></i>
-                                                </button>
-                                            </div>
+                                            <input type="text" id="buscarUsuarioEdit" class="form-control" placeholder="Buscar usuário...">
                                         </div>
-                                        <div id="usuariosDisponiveisListAcao" class="list-group list-group-flush" style="max-height: 150px; overflow-y: auto;">
+                                        <div id="usuariosDisponiveisEdit" class="list-group list-group-flush" style="max-height: 150px; overflow-y: auto;">
                                             <div class="text-center py-3">
                                                 <i class="fas fa-spinner fa-spin"></i> Carregando...
                                             </div>
@@ -114,6 +107,8 @@
                             </div>
                         </div>
                     </div>
+
+                    <input type="hidden" name="responsaveis_ids" id="responsaveisIdsEdit" value="">
 
                     <!-- Seção de Evidências -->
                     <div class="card mb-3">
