@@ -1245,8 +1245,6 @@ class Acoes extends BaseController
         }
     }
 
-    // No Controller Acoes.php
-    // No Controller Acoes.php
     public function getUsuariosDisponiveis($acaoId)
     {
         if (!$this->request->isAJAX()) {
