@@ -1152,7 +1152,7 @@
 
                         // Preencher responsáveis selecionados
                         if (response.data && response.data.length > 0) {
-                            let html = '<div class="list-group">'; // Adiciona a classe list-group
+                            let html = '<div class="list-group">';
                             response.data.forEach(usuario => {
                                 html += `
                             <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
@@ -1184,52 +1184,8 @@
             });
         }
 
+
         // Carregar usuários disponíveis para edição
-        function carregarUsuariosDisponiveisParaEdicao(acaoId, termo = '') {
-            $.ajax({
-                url: `<?= site_url('acoes/get-usuarios-disponiveis/') ?>${acaoId}`,
-                type: 'GET',
-                data: {
-                    term: termo
-                }, // Envia o termo de busca para o servidor
-                beforeSend: function() {
-                    $('#usuariosDisponiveisEdit').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i></div>');
-                },
-                success: function(response) {
-                    if (response.success) {
-                        let html = '';
-
-                        if (response.data.length > 0) {
-                            html = '<div class="list-group">';
-                            response.data.forEach(usuario => {
-                                html += `
-                            <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
-                                <div>
-                                    <span class="font-weight-bold">${usuario.name}</span>
-                                    <small class="d-block text-muted">${usuario.email}</small>
-                                </div>
-                                <button class="btn btn-sm btn-primary btn-adicionar-responsavel" data-id="${usuario.id}">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                            </div>
-                        `;
-                            });
-                            html += '</div>';
-                        } else {
-                            html = '<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>';
-                        }
-
-                        $('#usuariosDisponiveisEdit').html(html);
-                        $('#contadorUsuariosEdit').text(response.data.length);
-                    } else {
-                        $('#usuariosDisponiveisEdit').html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
-                    }
-                },
-                error: function() {
-                    $('#usuariosDisponiveisEdit').html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
-                }
-            });
-        } // Atualizar a função carregarUsuariosDisponiveisParaEdicao
         function carregarUsuariosDisponiveisParaEdicao(acaoId, termo = '') {
             $.ajax({
                 url: `<?= site_url('acoes/get-usuarios-disponiveis/') ?>${acaoId}`,

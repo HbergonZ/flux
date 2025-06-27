@@ -94,10 +94,58 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
 
-                            <div class="form-group">
-                                <label for="solicitarEdicaoResponsaveis"><i class="fas fa-users mr-1"></i>Responsáveis</label>
-                                <textarea class="form-control" id="solicitarEdicaoResponsaveis" name="responsaveis" rows="2"></textarea>
+                    <!-- Gerenciamento de Responsáveis -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-users mr-2"></i>Gerenciar Responsáveis
+                            </h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="row no-gutters">
+                                <!-- Responsáveis Atuais -->
+                                <div class="col-md-6 border-right">
+                                    <div class="p-3">
+                                        <h6 class="text-center font-weight-bold">
+                                            <i class="fas fa-user-friends mr-1"></i>Responsáveis Atuais
+                                            <span class="badge badge-primary badge-pill ml-1" id="contadorResponsaveisAtuaisSolicitacao">0</span>
+                                        </h6>
+                                        <div id="responsaveisAtuaisListSolicitacao" class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+                                            <div class="text-center py-3">
+                                                <i class="fas fa-spinner fa-spin"></i> Carregando...
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Usuários Disponíveis -->
+                                <div class="col-md-6">
+                                    <div class="p-3">
+                                        <h6 class="text-center font-weight-bold">
+                                            <i class="fas fa-user-plus mr-1"></i>Usuários Disponíveis
+                                            <span class="badge badge-secondary badge-pill ml-1" id="contadorUsuariosDisponiveisSolicitacao">0</span>
+                                        </h6>
+                                        <div class="input-group mb-3">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                            </div>
+                                            <input type="text" id="buscaUsuarioResponsavelSolicitacao" class="form-control" placeholder="Buscar usuário...">
+                                            <div class="input-group-append">
+                                                <button class="btn btn-outline-secondary" type="button" id="btnLimparBuscaResponsaveisSolicitacao" title="Limpar busca">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div id="usuariosDisponiveisListSolicitacao" class="list-group list-group-flush" style="max-height: 150px; overflow-y: auto;">
+                                            <div class="text-center py-3">
+                                                <i class="fas fa-spinner fa-spin"></i> Carregando...
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -182,6 +230,75 @@
                                         </div>
 
                                         <button type="button" class="btn btn-primary btn-block" id="btnAdicionarEvidenciaProjetoSolicitacao">
+                                            <i class="fas fa-plus mr-2"></i> Adicionar à Lista
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seção de Indicadores -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-chart-line mr-2"></i>Gerenciar Indicadores
+                            </h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="row no-gutters">
+                                <!-- Coluna de Indicadores (Atuais e para Remover) -->
+                                <div class="col-md-6 border-right">
+                                    <div class="p-3 d-flex flex-column" style="height: 100%; min-height: 400px;">
+                                        <!-- Seção de Indicadores Atuais -->
+                                        <div class="mb-3 border-bottom flex-grow-1" style="height: 50%;">
+                                            <h6 class="font-weight-bold mb-2">
+                                                <i class="fas fa-list-ul mr-1"></i>Indicadores Atuais
+                                                <span class="badge badge-primary badge-pill ml-1" id="contadorIndicadoresAtuaisSolicitacao">0</span>
+                                            </h6>
+                                            <div id="loadingIndicadoresSolicitacao" class="text-center py-3 d-none">
+                                                <i class="fas fa-spinner fa-spin"></i> Carregando indicadores...
+                                            </div>
+                                            <div id="indicadoresAtuaisListSolicitacao" class="overflow-auto" style="max-height: calc(100% - 30px);">
+                                                <div class="list-group">
+                                                    <!-- Os indicadores serão inseridos aqui via JavaScript -->
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Seção de Indicadores para Remover -->
+                                        <div class="flex-grow-1" style="height: 50%;">
+                                            <h6 class="font-weight-bold mb-2">
+                                                <i class="fas fa-trash-alt mr-1"></i>Indicadores a serem removidos
+                                                <span class="badge badge-secondary badge-pill ml-1" id="contadorIndicadoresRemoverSolicitacao">0</span>
+                                            </h6>
+                                            <div id="indicadoresRemoverListSolicitacao" class="overflow-auto" style="max-height: calc(100% - 30px);">
+                                                <div class="list-group">
+                                                    <!-- Indicadores marcados para remoção serão exibidos aqui -->
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Coluna de Adicionar Indicador -->
+                                <div class="col-md-6">
+                                    <div class="p-3">
+                                        <h6 class="font-weight-bold mb-3">
+                                            <i class="fas fa-plus-circle mr-1"></i>Adicionar Indicador
+                                        </h6>
+
+                                        <div class="form-group mb-3">
+                                            <label for="solicitarEdicaoIndicadorConteudo"><i class="fas fa-chart-bar mr-1"></i>Conteúdo</label>
+                                            <textarea class="form-control" id="solicitarEdicaoIndicadorConteudo" rows="3"></textarea>
+                                        </div>
+
+                                        <div class="form-group mb-3">
+                                            <label for="solicitarEdicaoIndicadorDescricao"><i class="fas fa-align-left mr-1"></i>Descrição</label>
+                                            <textarea class="form-control" id="solicitarEdicaoIndicadorDescricao" rows="2" placeholder="Explique o indicador"></textarea>
+                                        </div>
+
+                                        <button type="button" class="btn btn-primary btn-block" id="btnAdicionarIndicadorProjetoSolicitacao">
                                             <i class="fas fa-plus mr-2"></i> Adicionar à Lista
                                         </button>
                                     </div>

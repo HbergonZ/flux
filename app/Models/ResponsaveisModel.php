@@ -13,7 +13,7 @@ class ResponsaveisModel extends Model
 
     public function getResponsaveis($nivel, $nivelId)
     {
-        return $this->select('responsaveis.*, users.username, auth_identities.secret as email')
+        return $this->select('responsaveis.*, users.username, users.name, auth_identities.secret as email')
             ->join('users', 'users.id = responsaveis.usuario_id')
             ->join('auth_identities', 'auth_identities.user_id = users.id AND auth_identities.type = "email_password"', 'left')
             ->where('nivel', $nivel)
@@ -59,30 +59,29 @@ class ResponsaveisModel extends Model
 
         $idsResponsaveis = array_column($responsaveis, 'usuario_id');
 
-        // Agora buscamos todos os usuários ativos que não estão na lista de responsáveis
+        // Busca todos os usuários ativos que não estão na lista de responsáveis
         $builder = $this->db->table('users')
-            ->select('users.id, users.username, auth_identities.secret as email')
+            ->select('users.id, users.username, users.name, auth_identities.secret as email')
             ->join('auth_identities', 'auth_identities.user_id = users.id AND auth_identities.type = "email_password"', 'left')
             ->where('users.active', 1);
 
-        // Se houver responsáveis, adicionamos a condição NOT IN
         if (!empty($idsResponsaveis)) {
             $builder->whereNotIn('users.id', $idsResponsaveis);
         }
 
-        return $builder->orderBy('username', 'ASC')
+        return $builder->orderBy('name', 'ASC')  // Ordena por name ao invés de username
             ->get()
             ->getResultArray();
     }
     public function getResponsaveisAcao($acaoId)
     {
         return $this->db->table('responsaveis r')
-            ->select('u.id, u.username, ai.secret as email')
+            ->select('u.id, u.name, ai.secret as email')
             ->join('users u', 'u.id = r.usuario_id')
             ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = "email_password"', 'left')
             ->where('r.nivel', 'acao')
             ->where('r.nivel_id', $acaoId)
-            ->orderBy('u.username', 'ASC')
+            ->orderBy('u.name', 'ASC')
             ->get()
             ->getResultArray();
     }

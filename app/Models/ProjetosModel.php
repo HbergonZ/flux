@@ -152,6 +152,7 @@ class ProjetosModel extends Model
                 JSON_OBJECT(
                     "usuario_id", usuario_id,
                     "username", users.username,
+                    "name", users.name,
                     "email", auth_identities.secret
                 )
              ) as responsaveis_json')

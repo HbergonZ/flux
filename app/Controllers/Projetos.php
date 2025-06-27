@@ -253,6 +253,7 @@ class Projetos extends BaseController
                 'identificador' => $this->request->getPost('identificador'),
                 'nome' => $this->request->getPost('nome'),
                 'descricao' => $this->request->getPost('descricao'),
+                'metas' => $this->request->getPost('metas'),
                 'projeto_vinculado' => $this->request->getPost('projeto_vinculado'),
                 'priorizacao_gab' => $this->request->getPost('priorizacao_gab') ?? 0,
                 'id_eixo' => $this->request->getPost('id_eixo') ?: null,
@@ -767,14 +768,41 @@ class Projetos extends BaseController
                 throw new \Exception('Projeto não encontrado ou não pertence ao plano especificado');
             }
 
-            // Processar evidências
-            $evidenciasAdicionar = is_array($postData['evidencias_adicionar'] ?? null)
-                ? $postData['evidencias_adicionar']
-                : [];
+            // Obter responsáveis atuais do banco de dados
+            $responsaveisOriginais = $this->projetosModel->getResponsaveis($projeto['id']);
+            $responsaveisOriginaisIds = array_column($responsaveisOriginais, 'usuario_id');
 
-            $evidenciasRemover = is_array($postData['evidencias_remover'] ?? null)
-                ? $postData['evidencias_remover']
-                : [];
+            // Processar responsáveis do formulário
+            $responsaveisAtuaisIds = [];
+            if (isset($postData['responsaveis']['atuais']) && is_array($postData['responsaveis']['atuais'])) {
+                $responsaveisAtuaisIds = array_map('intval', $postData['responsaveis']['atuais']);
+            }
+
+            // Processar evidências
+            $evidenciasAdicionar = isset($postData['evidencias']['adicionar']) ?
+                (is_array($postData['evidencias']['adicionar']) ?
+                    $postData['evidencias']['adicionar'] :
+                    json_decode($postData['evidencias']['adicionar'], true)) :
+                [];
+
+            $evidenciasRemover = isset($postData['evidencias']['remover']) ?
+                (is_array($postData['evidencias']['remover']) ?
+                    $postData['evidencias']['remover'] :
+                    json_decode($postData['evidencias']['remover'], true)) :
+                [];
+
+            // Processar indicadores
+            $indicadoresAdicionar = isset($postData['indicadores']['adicionar']) ?
+                (is_array($postData['indicadores']['adicionar']) ?
+                    $postData['indicadores']['adicionar'] :
+                    json_decode($postData['indicadores']['adicionar'], true)) :
+                [];
+
+            $indicadoresRemover = isset($postData['indicadores']['remover']) ?
+                (is_array($postData['indicadores']['remover']) ?
+                    $postData['indicadores']['remover'] :
+                    json_decode($postData['indicadores']['remover'], true)) :
+                [];
 
             // Preparar dados das alterações
             $alteracoes = [];
@@ -782,49 +810,51 @@ class Projetos extends BaseController
                 'identificador',
                 'nome',
                 'descricao',
+                'metas',
                 'projeto_vinculado',
                 'priorizacao_gab',
                 'id_eixo',
-                'responsaveis',
                 'status'
             ];
 
             foreach ($camposEditaveis as $campo) {
-                if (isset($postData[$campo])) {
-                    $valorAtual = $projeto[$campo] ?? null;
-                    $valorNovo = $postData[$campo];
-
-                    if ($valorAtual != $valorNovo) {
-                        $alteracoes[$campo] = [
-                            'de' => $valorAtual,
-                            'para' => $valorNovo
-                        ];
-                    }
+                if (isset($postData[$campo]) && $postData[$campo] != ($projeto[$campo] ?? null)) {
+                    $alteracoes[$campo] = [
+                        'de' => $projeto[$campo] ?? null,
+                        'para' => $postData[$campo]
+                    ];
                 }
             }
 
-            // Adicionar alterações de evidências se houver
-            $alteracoesEvidencias = [];
+            // Processar alterações de responsáveis
+            $responsaveisAdicionar = array_diff($responsaveisAtuaisIds, $responsaveisOriginaisIds);
+            $responsaveisRemover = array_diff($responsaveisOriginaisIds, $responsaveisAtuaisIds);
 
-            // Verificar se há evidências para adicionar ou remover
-            $hasEvidenciasChanges = false;
-
-            if (!empty($evidenciasAdicionar)) {
-                $alteracoesEvidencias['adicionar'] = $evidenciasAdicionar;
-                $hasEvidenciasChanges = true;
+            if (!empty($responsaveisAdicionar) || !empty($responsaveisRemover)) {
+                $alteracoes['responsaveis'] = [
+                    'adicionar' => array_values($responsaveisAdicionar),
+                    'remover' => array_values($responsaveisRemover)
+                ];
             }
 
-            if (!empty($evidenciasRemover)) {
-                $alteracoesEvidencias['remover'] = $evidenciasRemover;
-                $hasEvidenciasChanges = true;
+            // Processar alterações de evidências
+            if (!empty($evidenciasAdicionar) || !empty($evidenciasRemover)) {
+                $alteracoes['evidencias'] = [
+                    'adicionar' => $evidenciasAdicionar,
+                    'remover' => $evidenciasRemover
+                ];
             }
 
-            if ($hasEvidenciasChanges) {
-                $alteracoes['evidencias'] = $alteracoesEvidencias;
+            // Processar alterações de indicadores
+            if (!empty($indicadoresAdicionar) || !empty($indicadoresRemover)) {
+                $alteracoes['indicadores'] = [
+                    'adicionar' => $indicadoresAdicionar,
+                    'remover' => $indicadoresRemover
+                ];
             }
 
-            // Verificar se há alterações válidas (campos ou evidências)
-            if (empty($alteracoes) && !$hasEvidenciasChanges) {
+            // Verificar se há alterações válidas
+            if (empty($alteracoes)) {
                 throw new \Exception('Nenhuma alteração detectada. Modifique pelo menos um campo para enviar a solicitação.');
             }
 
@@ -839,9 +869,7 @@ class Projetos extends BaseController
                 'dados_alterados' => json_encode($alteracoes, JSON_UNESCAPED_UNICODE),
                 'justificativa_solicitante' => $postData['justificativa'],
                 'status' => 'pendente',
-                'data_solicitacao' => date('Y-m-d H:i:s'),
-                'evidencias_adicionar' => !empty($evidenciasAdicionar) ? json_encode($evidenciasAdicionar) : null,
-                'evidencias_remover' => !empty($evidenciasRemover) ? json_encode($evidenciasRemover) : null
+                'data_solicitacao' => date('Y-m-d H:i:s')
             ];
 
             // Insere a solicitação
@@ -1414,9 +1442,9 @@ class Projetos extends BaseController
             $formatted = array_map(function ($user) {
                 return [
                     'usuario_id' => $user['usuario_id'],
-                    'username' => $user['username'],
+                    'name' => $user['name'] ?? $user['username'], // Fallback para username se name não existir
                     'email' => $user['email'] ?? null,
-                    'display_name' => $user['username']
+                    'display_name' => $user['name'] ?? $user['username']
                 ];
             }, $responsaveis);
 
@@ -1440,25 +1468,17 @@ class Projetos extends BaseController
         try {
             $usuarios = $this->projetosModel->getUsuariosDisponiveis($idProjeto);
 
-            // Filtra usuários que já são responsáveis
-            $responsaveis = $this->projetosModel->getResponsaveis($idProjeto);
-            $responsaveisIds = array_column($responsaveis, 'usuario_id');
-
-            $usuariosDisponiveis = array_filter($usuarios, function ($user) use ($responsaveisIds) {
-                return !in_array($user['id'], $responsaveisIds);
-            });
-
             $formatted = array_map(function ($user) {
                 return [
                     'id' => $user['id'],
-                    'username' => $user['username'],
+                    'name' => $user['name'] ?? $user['username'], // Fallback para username se name não existir
                     'email' => $user['email'] ?? null,
-                    'display_name' => $user['username']
+                    'display_name' => $user['name'] ?? $user['username']
                 ];
-            }, $usuariosDisponiveis);
+            }, $usuarios);
 
             $response['success'] = true;
-            $response['data'] = array_values($formatted); // Reindexa o array
+            $response['data'] = array_values($formatted);
         } catch (\Exception $e) {
             $response['message'] = 'Erro ao buscar usuários disponíveis';
         }
