@@ -1,9 +1,11 @@
 <div class="modal fade" id="solicitarInclusaoModal" tabindex="-1" role="dialog" aria-labelledby="solicitarInclusaoModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="solicitarInclusaoModalLabel">Solicitar Inclusão de Projeto</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle mr-2"></i>Solicitar Inclusão de Projeto
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Fechar">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -13,76 +15,126 @@
                 <input type="hidden" name="id_plano" value="<?= $idPlano ?>">
 
                 <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="solicitarInclusaoIdentificador">Identificador*</label>
-                                <input type="text" class="form-control" id="solicitarInclusaoIdentificador" name="identificador" required maxlength="10">
-                            </div>
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-info-circle mr-2"></i>Informações Básicas
+                            </h6>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="solicitarInclusaoNome">Nome*</label>
-                                <input type="text" class="form-control" id="solicitarInclusaoNome" name="nome" required maxlength="255">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="solicitarInclusaoIdentificador"><i class="fas fa-hashtag mr-1"></i>Identificador*</label>
+                                        <input type="text" class="form-control" id="solicitarInclusaoIdentificador" name="identificador" required maxlength="10">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="solicitarInclusaoNome"><i class="fas fa-tag mr-1"></i>Nome*</label>
+                                        <input type="text" class="form-control" id="solicitarInclusaoNome" name="nome" required maxlength="255">
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <div class="form-group">
-                        <label for="solicitarInclusaoDescricao">Descrição</label>
-                        <textarea class="form-control" id="solicitarInclusaoDescricao" name="descricao" rows="3"></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="solicitarInclusaoMetas">Metas</label>
-                        <textarea class="form-control" id="solicitarInclusaoMetas" name="metas" rows="3"></textarea>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
                             <div class="form-group">
-                                <label for="solicitarInclusaoVinculado">Projeto Vinculado</label>
-                                <input type="text" class="form-control" id="solicitarInclusaoVinculado" name="projeto_vinculado" maxlength="255">
+                                <label for="solicitarInclusaoDescricao"><i class="fas fa-align-left mr-1"></i>Descrição</label>
+                                <textarea class="form-control" id="solicitarInclusaoDescricao" name="descricao" rows="3"></textarea>
                             </div>
-                        </div>
-                        <div class="col-md-6">
+
                             <div class="form-group">
-                                <label for="solicitarInclusaoEixo">Eixo</label>
-                                <select class="form-control" id="solicitarInclusaoEixo" name="id_eixo">
-                                    <option value="">Selecione um eixo</option>
-                                    <?php foreach ($eixos as $eixo): ?>
-                                        <option value="<?= $eixo['id'] ?>"><?= $eixo['nome'] ?></option>
-                                    <?php endforeach; ?>
-                                </select>
+                                <label for="solicitarInclusaoMetas"><i class="fas fa-bullseye mr-1"></i>Metas</label>
+                                <textarea class="form-control" id="solicitarInclusaoMetas" name="metas" rows="3"></textarea>
                             </div>
                         </div>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="solicitarInclusaoPriorizacao">Priorização GAB</label>
-                                <select class="form-control" id="solicitarInclusaoPriorizacao" name="priorizacao_gab">
-                                    <option value="0">Não</option>
-                                    <option value="1">Sim</option>
-                                </select>
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-link mr-2"></i>Vinculações e Classificação
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="solicitarInclusaoVinculado"><i class="fas fa-project-diagram mr-1"></i>Projeto Vinculado</label>
+                                        <input type="text" class="form-control" id="solicitarInclusaoVinculado" name="projeto_vinculado" maxlength="255">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="solicitarInclusaoEixo"><i class="fas fa-sitemap mr-1"></i>Eixo</label>
+                                        <select class="form-control" id="solicitarInclusaoEixo" name="id_eixo">
+                                            <option value="">Selecione um eixo</option>
+                                            <?php foreach ($eixos as $eixo): ?>
+                                                <option value="<?= $eixo['id'] ?>"><?= $eixo['nome'] ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="solicitarInclusaoPriorizacao"><i class="fas fa-star mr-1"></i>Priorização GAB</label>
+                                        <select class="form-control" id="solicitarInclusaoPriorizacao" name="priorizacao_gab">
+                                            <option value="0">Não</option>
+                                            <option value="1">Sim</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="solicitarInclusaoStatus"><i class="fas fa-info-circle mr-1"></i>Status*</label>
+                                        <select class="form-control" id="solicitarInclusaoStatus" name="status" required>
+                                            <option value="Ativo">Ativo</option>
+                                            <option value="Paralisado">Paralisado</option>
+                                            <option value="Concluído">Concluído</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="solicitarInclusaoResponsaveis">Responsáveis</label>
-                        <textarea class="form-control" id="solicitarInclusaoResponsaveis" name="responsaveis" rows="2"></textarea>
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-users mr-2"></i>Responsáveis
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="solicitarInclusaoResponsaveis"><i class="fas fa-user-friends mr-1"></i>Responsáveis</label>
+                                <textarea class="form-control" id="solicitarInclusaoResponsaveis" name="responsaveis" rows="2" placeholder="Liste os responsáveis separados por vírgula"></textarea>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="solicitarInclusaoJustificativa">Justificativa*</label>
-                        <textarea class="form-control" id="solicitarInclusaoJustificativa" name="justificativa" rows="3" required></textarea>
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-comment-dots mr-2"></i>Justificativa
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="solicitarInclusaoJustificativa"><i class="fas fa-question-circle mr-1"></i>Justificativa*</label>
+                                <textarea class="form-control" id="solicitarInclusaoJustificativa" name="justificativa" rows="3" required placeholder="Explique por que este projeto deve ser incluído"></textarea>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Enviar Solicitação</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times mr-2"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane mr-2"></i>Enviar Solicitação
+                    </button>
                 </div>
             </form>
         </div>
