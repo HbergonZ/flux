@@ -158,6 +158,20 @@
                     }
                 },
                 {
+                    "data": "data_fim",
+                    "className": "text-center align-middle",
+                    "render": function(data, type, row) {
+                        if (type === 'display') {
+                            if (!data) {
+                                return '<span class="text-muted"></span>';
+                            }
+                            // Formata a data para exibição (DD/MM/YYYY)
+                            return new Date(data).toLocaleDateString('pt-BR');
+                        }
+                        return data; // Para ordenação/filtro, retorna o valor original
+                    }
+                },
+                {
                     "data": "progresso",
                     "className": "text-center align-middle",
                     "orderable": false,

@@ -128,7 +128,7 @@ class ProjetosModel extends Model
 
     public function getProjetosFiltrados($idPlano, $filtros = [])
     {
-        // Subquery para cálculo do progresso
+        // Subquery para cálculo do progresso e data fim
         $subqueryAcoes = $this->db->table('acoes')
             ->select('id_projeto,
              COUNT(*) as total_acoes,
@@ -136,7 +136,11 @@ class ProjetosModel extends Model
              CASE
                 WHEN COUNT(*) = 0 THEN 0
                 ELSE (SUM(CASE WHEN status = "Finalizado" THEN 1 ELSE 0 END) / COUNT(*)) * 100
-             END as percentual_progresso')
+             END as percentual_progresso,
+             CASE
+                WHEN SUM(CASE WHEN data_fim IS NULL THEN 1 ELSE 0 END) > 0 THEN NULL
+                ELSE MAX(data_fim)
+             END as data_fim_projeto')
             ->where('id_projeto IS NOT NULL')
             ->groupBy('id_projeto')
             ->getCompiledSelect();
@@ -163,6 +167,7 @@ class ProjetosModel extends Model
              COALESCE(progresso.total_acoes, 0) as total_acoes,
              COALESCE(progresso.acoes_finalizadas, 0) as acoes_finalizadas,
              COALESCE(progresso.percentual_progresso, 0) as percentual_progresso,
+             progresso.data_fim_projeto,
              COALESCE(responsaveis.responsaveis_json, "[]") as responsaveis')
             ->join('eixos', 'eixos.id = projetos.id_eixo', 'left')
             ->join("($subqueryAcoes) as progresso", 'progresso.id_projeto = projetos.id', 'left')
@@ -204,7 +209,8 @@ class ProjetosModel extends Model
                 2 => 'projetos.descricao',
                 3 => 'projetos.projeto_vinculado',
                 4 => 'responsaveis.responsaveis_json',
-                5 => 'progresso.percentual_progresso'
+                5 => 'progresso.data_fim_projeto', // Nova coluna para ordenação
+                6 => 'progresso.percentual_progresso'
             ];
 
             if (isset($columns[$columnIndex])) {

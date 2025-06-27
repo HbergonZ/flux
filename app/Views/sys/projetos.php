@@ -119,6 +119,7 @@
                             <th>Metas</th>
                             <th>Projeto Vinculado</th>
                             <th>Responsáveis</th>
+                            <th>Data Fim</th>
                             <th>Progresso</th>
                             <th>Opções</th>
                         </tr>

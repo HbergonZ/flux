@@ -666,6 +666,7 @@ class Projetos extends BaseController
                 'metas' => $projeto['metas'] ?? '',
                 'projeto_vinculado' => $projeto['projeto_vinculado'],
                 'responsaveis' => $responsaveis,
+                'data_fim' => $projeto['data_fim_projeto'],
                 'progresso' => [
                     'percentual' => $percentual,
                     'total_acoes' => $totalAcoes,
