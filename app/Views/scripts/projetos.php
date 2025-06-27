@@ -664,7 +664,7 @@
                             <div class="list-group-item d-flex justify-content-between align-items-center"
                                  data-user-id="${user.usuario_id}">
                                 <div>
-                                    <strong>${user.name}</strong>
+                                    <strong>${user.name || user.username}</strong>
                                     ${user.email ? `<div class="text-muted small">${user.email}</div>` : ''}
                                 </div>
                                 <button class="btn btn-sm btn-outline-danger btn-remover-responsavel"
@@ -686,6 +686,50 @@
                 error: function(xhr, status, error) {
                     console.error('Erro ao carregar responsáveis:', error);
                     $('#responsaveisAtuaisList').html('<div class="text-center py-3 text-danger">Erro ao carregar responsáveis</div>');
+                }
+            });
+        }
+
+        function carregarUsuariosDisponiveis(projetoId) {
+            console.log('Carregando usuários disponíveis para o projeto:', projetoId);
+
+            $.ajax({
+                url: `<?= site_url('projetos/usuarios-disponiveis/') ?>${projetoId}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    console.log('Resposta de usuários disponíveis:', response);
+                    const $container = $('#usuariosDisponiveisList');
+                    $container.empty();
+
+                    if (response.success && response.data) {
+                        if (response.data.length > 0) {
+                            response.data.forEach(user => {
+                                $container.append(`
+                            <div class="list-group-item d-flex justify-content-between align-items-center"
+                                 data-user-id="${user.id}">
+                                <div>
+                                    <strong>${user.name || user.username}</strong>
+                                    ${user.email ? `<div class="text-muted small">${user.email}</div>` : ''}
+                                </div>
+                                <button class="btn btn-sm btn-outline-primary btn-adicionar-responsavel"
+                                        title="Adicionar como responsável">
+                                    <i class="fas fa-user-plus"></i>
+                                </button>
+                            </div>
+                        `);
+                            });
+                        } else {
+                            $container.html('<div class="text-center py-3 text-muted">Todos os usuários já são responsáveis</div>');
+                        }
+                        $('#contadorUsuariosDisponiveis').text(response.data.length);
+                    } else {
+                        $container.html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Erro ao carregar usuários disponíveis:', error);
+                    $('#usuariosDisponiveisList').html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
                 }
             });
         }
@@ -1240,22 +1284,30 @@
         $(document).on('click', '.btn-adicionar-responsavel', function() {
             const $item = $(this).closest('.list-group-item');
             const userId = $item.data('user-id');
+            const userName = $item.find('strong').text();
+            const userEmail = $item.find('.text-muted').text() || '';
 
             // Adiciona à lista de responsáveis
-            const userData = {
-                usuario_id: userId,
-                username: $item.find('strong').text(),
-                email: $item.find('.text-muted').text() || ''
-            };
+            $('#responsaveisAtuaisList').append(`
+        <div class="list-group-item d-flex justify-content-between align-items-center"
+             data-user-id="${userId}">
+            <div>
+                <strong>${userName}</strong>
+                ${userEmail ? `<div class="text-muted small">${userEmail}</div>` : ''}
+            </div>
+            <button class="btn btn-sm btn-outline-danger btn-remover-responsavel"
+                    title="Remover responsável">
+                <i class="fas fa-user-minus"></i>
+            </button>
+        </div>
+    `);
 
-            $('#responsaveisAtuaisList').append(renderizarResponsavel(userData));
+            // Remove da lista de disponíveis
+            $item.remove();
 
             // Atualiza contadores
             $('#contadorResponsaveisAtuais').text(parseInt($('#contadorResponsaveisAtuais').text()) + 1);
             $('#contadorUsuariosDisponiveis').text(parseInt($('#contadorUsuariosDisponiveis').text()) - 1);
-
-            // Remove da lista de disponíveis
-            $item.remove();
 
             // Atualiza lista de adições
             const adicionados = JSON.parse($('#formEditProjeto input[name="responsaveis_adicionar"]').val() || '[]');
@@ -1277,22 +1329,30 @@
         $(document).on('click', '.btn-remover-responsavel', function() {
             const $item = $(this).closest('.list-group-item');
             const userId = $item.data('user-id');
+            const userName = $item.find('strong').text();
+            const userEmail = $item.find('.text-muted').text() || '';
 
             // Adiciona à lista de disponíveis
-            const userData = {
-                id: userId,
-                username: $item.find('strong').text(),
-                email: $item.find('.text-muted').text() || ''
-            };
+            $('#usuariosDisponiveisList').append(`
+        <div class="list-group-item d-flex justify-content-between align-items-center"
+             data-user-id="${userId}">
+            <div>
+                <strong>${userName}</strong>
+                ${userEmail ? `<div class="text-muted small">${userEmail}</div>` : ''}
+            </div>
+            <button class="btn btn-sm btn-outline-primary btn-adicionar-responsavel"
+                    title="Adicionar como responsável">
+                <i class="fas fa-user-plus"></i>
+            </button>
+        </div>
+    `);
 
-            $('#usuariosDisponiveisList').append(renderizarUsuarioDisponivel(userData));
+            // Remove da lista de responsáveis
+            $item.remove();
 
             // Atualiza contadores
             $('#contadorUsuariosDisponiveis').text(parseInt($('#contadorUsuariosDisponiveis').text()) + 1);
             $('#contadorResponsaveisAtuais').text(parseInt($('#contadorResponsaveisAtuais').text()) - 1);
-
-            // Remove da lista de responsáveis
-            $item.remove();
 
             // Atualiza lista de remoções
             const removidos = JSON.parse($('#formEditProjeto input[name="responsaveis_remover"]').val() || '[]');
@@ -1333,7 +1393,7 @@
             return `
 <div class="list-group-item d-flex justify-content-between align-items-center" data-user-id="${user.usuario_id}">
     <div>
-        <strong>${user.name}</strong>
+        <strong>${user.name || user.username}</strong>
         ${user.email ? `<div class="text-muted small">${user.email}</div>` : ''}
     </div>
     <button class="btn btn-sm btn-outline-danger btn-remover-responsavel" title="Remover responsável">
@@ -1346,7 +1406,7 @@
             return `
 <div class="list-group-item d-flex justify-content-between align-items-center" data-user-id="${user.id}">
     <div>
-        <strong>${user.name}</strong>
+        <strong>${user.name || user.username}</strong>
         ${user.email ? `<div class="text-muted small">${user.email}</div>` : ''}
     </div>
     <button class="btn btn-sm btn-outline-primary btn-adicionar-responsavel" title="Adicionar como responsável">
