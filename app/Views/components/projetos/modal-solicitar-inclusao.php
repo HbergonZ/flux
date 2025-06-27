@@ -100,20 +100,6 @@
                         </div>
                     </div>
 
-                    <div class="card mb-3">
-                        <div class="card-header bg-light">
-                            <h6 class="mb-0">
-                                <i class="fas fa-users mr-2"></i>Responsáveis
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="form-group">
-                                <label for="solicitarInclusaoResponsaveis"><i class="fas fa-user-friends mr-1"></i>Responsáveis</label>
-                                <textarea class="form-control" id="solicitarInclusaoResponsaveis" name="responsaveis" rows="2" placeholder="Liste os responsáveis separados por vírgula"></textarea>
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="card">
                         <div class="card-header bg-light">
                             <h6 class="mb-0">

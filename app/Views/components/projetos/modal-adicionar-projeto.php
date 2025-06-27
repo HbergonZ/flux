@@ -98,20 +98,6 @@
                         </div>
                     </div>
 
-                    <div class="card">
-                        <div class="card-header bg-light">
-                            <h6 class="mb-0">
-                                <i class="fas fa-users mr-2"></i>Responsáveis
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="form-group">
-                                <label for="projetoResponsaveis"><i class="fas fa-user-friends mr-1"></i>Responsáveis</label>
-                                <textarea class="form-control" id="projetoResponsaveis" name="responsaveis" rows="2" placeholder="Liste os responsáveis separados por vírgula"></textarea>
-                                <small class="text-muted">Para adicionar/remover responsáveis individualmente, edite o projeto após a criação</small>
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">

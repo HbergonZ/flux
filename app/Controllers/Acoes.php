@@ -1220,11 +1220,11 @@ class Acoes extends BaseController
 
             $builder = $db->table('acoes as a')
                 ->select('a.id, a.nome, a.entrega_estimada,
-                     DATEDIFF(CURDATE(), a.entrega_estimada) as dias_atraso,
-                     p.nome as projeto_nome')
-                ->join('acoes_equipe as ae', 'ae.acao_id = a.id')
+         DATEDIFF(CURDATE(), a.entrega_estimada) as dias_atraso,
+         p.nome as projeto_nome')
+                ->join('responsaveis as r', 'r.nivel_id = a.id AND r.nivel = "acao"')
                 ->join('projetos as p', 'p.id = a.id_projeto')
-                ->where('ae.usuario_id', $userId)
+                ->where('r.usuario_id', $userId)
                 ->where('a.status', 'Atrasado')
                 ->where('a.data_fim IS NULL') // Ainda não foi finalizada
                 ->orderBy('a.entrega_estimada', 'ASC')
