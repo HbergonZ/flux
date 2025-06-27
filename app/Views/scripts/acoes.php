@@ -706,7 +706,7 @@
                                 html += `
                             <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
                                 <div>
-                                    <span class="font-weight-bold">${usuario.username}</span>
+                                    <span class="font-weight-bold">${usuario.name}</span>
                                     <small class="d-block text-muted">${usuario.email}</small>
                                 </div>
                                 <button class="btn btn-sm btn-primary btn-adicionar-responsavel" data-id="${usuario.id}">
@@ -786,7 +786,7 @@
                     html += `
                 <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
                     <div>
-                        <span class="font-weight-bold">${usuario.username}</span>
+                        <span class="font-weight-bold">${usuario.name}</span>
                         <small class="d-block text-muted">${usuario.email}</small>
                     </div>
                     <button class="btn btn-sm btn-primary btn-adicionar-responsavel" data-id="${usuario.id}">
@@ -820,7 +820,7 @@
                 html += `
             <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
                 <div>
-                    <span class="font-weight-bold">${usuario.username}</span>
+                    <span class="font-weight-bold">${usuario.name}</span>
                     <small class="d-block text-muted">${usuario.email}</small>
                 </div>
                 <button class="btn btn-sm btn-danger btn-remover-responsavel" data-id="${usuario.id}">
@@ -867,7 +867,7 @@
             }
 
             const resultados = usuariosDisponiveisAdd.filter(usuario =>
-                usuario.username.toLowerCase().includes(termo) ||
+                usuario.name.toLowerCase().includes(termo) ||
                 usuario.email.toLowerCase().includes(termo)
             );
 
@@ -887,7 +887,7 @@
                     html += `
                 <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
                     <div>
-                        <span class="font-weight-bold">${usuario.username}</span>
+                        <span class="font-weight-bold">${usuario.name}</span>
                         <small class="d-block text-muted">${usuario.email}</small>
                     </div>
                     <button class="btn btn-sm btn-primary btn-adicionar-responsavel" data-id="${usuario.id}">
@@ -1157,7 +1157,7 @@
                                 html += `
                             <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
                                 <div>
-                                    <span class="font-weight-bold">${usuario.username}</span>
+                                    <span class="font-weight-bold">${usuario.name}</span>
                                     <small class="d-block text-muted">${usuario.email}</small>
                                 </div>
                                 <button class="btn btn-sm btn-danger btn-remover-responsavel" data-id="${usuario.id}">
@@ -1205,7 +1205,7 @@
                                 html += `
                             <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
                                 <div>
-                                    <span class="font-weight-bold">${usuario.username}</span>
+                                    <span class="font-weight-bold">${usuario.name}</span>
                                     <small class="d-block text-muted">${usuario.email}</small>
                                 </div>
                                 <button class="btn btn-sm btn-primary btn-adicionar-responsavel" data-id="${usuario.id}">
@@ -1258,7 +1258,7 @@
                                     html += `
                                 <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
                                     <div>
-                                        <span class="font-weight-bold">${usuario.username}</span>
+                                        <span class="font-weight-bold">${usuario.name}</span>
                                         <small class="d-block text-muted">${usuario.email}</small>
                                     </div>
                                     <button class="btn btn-sm btn-primary btn-adicionar-responsavel" data-id="${usuario.id}">

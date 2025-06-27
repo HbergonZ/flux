@@ -265,7 +265,7 @@ class AcoesModel extends Model
     public function getUsuariosDisponiveis($acaoId)
     {
         return $this->db->table('users u')
-            ->select('u.id, u.username, ai.secret as email')
+            ->select('u.id, u.name, ai.secret as email')
             ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = "email_password"', 'left')
             ->whereNotIn('u.id', function ($builder) use ($acaoId) {
                 $builder->select('usuario_id')
@@ -273,7 +273,7 @@ class AcoesModel extends Model
                     ->where('nivel', 'acao')
                     ->where('nivel_id', $acaoId);
             })
-            ->orderBy('u.username', 'ASC')
+            ->orderBy('u.name', 'ASC')
             ->get()
             ->getResultArray();
     }
@@ -304,12 +304,12 @@ class AcoesModel extends Model
     public function getResponsaveisAcao($acaoId)
     {
         return $this->db->table('responsaveis r')
-            ->select('u.id, u.username, ai.secret as email')
+            ->select('u.id, u.name, ai.secret as email')
             ->join('users u', 'u.id = r.usuario_id')
             ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = "email_password"', 'left')
             ->where('r.nivel', 'acao')
             ->where('r.nivel_id', $acaoId)
-            ->orderBy('u.username', 'ASC')
+            ->orderBy('u.name', 'ASC')
             ->get()
             ->getResultArray();
     }

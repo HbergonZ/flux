@@ -128,7 +128,7 @@ class Acoes extends BaseController
                 ->where('id_etapa IS NULL');
         }
 
-        $builder->select('acoes.*, GROUP_CONCAT(DISTINCT users.username SEPARATOR ", ") as responsaveis')
+        $builder->select('acoes.*, GROUP_CONCAT(DISTINCT users.name SEPARATOR ", ") as responsaveis')
             ->join('responsaveis', 'responsaveis.nivel_id = acoes.id AND responsaveis.nivel = "acao"', 'left')
             ->join('users', 'users.id = responsaveis.usuario_id', 'left')
             ->groupBy('acoes.id');
@@ -292,14 +292,14 @@ class Acoes extends BaseController
 
             $db = db_connect();
             $builder = $db->table('users u')
-                ->select('u.id, u.username, ai.secret as email')
+                ->select('u.id, u.name, ai.secret as email')
                 ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = "email_password"', 'left')
-                ->orderBy('u.username', 'ASC');
+                ->orderBy('u.name', 'ASC');
 
             // Filtro por termo de busca
             if (!empty($term)) {
                 $builder->groupStart()
-                    ->like('u.username', $term)
+                    ->like('u.name', $term)
                     ->orLike('ai.secret', $term)
                     ->groupEnd();
             }
@@ -606,7 +606,7 @@ class Acoes extends BaseController
         $filters = $this->request->getPost();
 
         $builder = $this->acoesModel;
-        $builder->select('acoes.*, GROUP_CONCAT(DISTINCT users.username SEPARATOR ", ") as responsaveis')
+        $builder->select('acoes.*, GROUP_CONCAT(DISTINCT users.name SEPARATOR ", ") as responsaveis')
             ->join('responsaveis', 'responsaveis.nivel_id = acoes.id AND responsaveis.nivel = "acao"', 'left')
             ->join('users', 'users.id = responsaveis.usuario_id', 'left')
             ->groupBy('acoes.id');
@@ -624,7 +624,7 @@ class Acoes extends BaseController
         }
 
         if (!empty($filters['responsavel'])) {
-            $builder->like('users.username', $filters['responsavel']);
+            $builder->like('users.name', $filters['responsavel']);
         }
 
         if (!empty($filters['status'])) {
@@ -1256,9 +1256,9 @@ class Acoes extends BaseController
 
             $db = db_connect();
             $builder = $db->table('users u')
-                ->select('u.id, u.username, ai.secret as email')
+                ->select('u.id, u.name, ai.secret as email')
                 ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = "email_password"', 'left')
-                ->orderBy('u.username', 'ASC');
+                ->orderBy('u.name', 'ASC');
 
             // Filtro para não incluir usuários já responsáveis
             $builder->whereNotIn('u.id', function ($query) use ($acaoId) {
@@ -1271,7 +1271,7 @@ class Acoes extends BaseController
             // Filtro por termo de busca se existir
             if (!empty($term)) {
                 $builder->groupStart()
-                    ->like('u.username', $term)
+                    ->like('u.name', $term)
                     ->orLike('ai.secret', $term)
                     ->groupEnd();
             }
