@@ -1722,5 +1722,499 @@
             carregarUsuariosDisponiveisSolicitacao();
             atualizarResponsaveisSelecionadosSolicitacao();
         });
+
+        //------------------------------------------------------------
+        // SOLICITAR EDIÇÃO
+        //------------------------------------------------------------
+
+        // Solicitar edição de ação - Abrir modal (para não-admins)
+        $(document).on('click', '.btn-primary[title="Solicitar Edição"]', function() {
+            var acaoId = $(this).data('id').split('-')[0];
+
+            $.ajax({
+                url: `<?= site_url('acoes/dados-acao/') ?>${acaoId}`,
+                type: 'GET',
+                dataType: 'json',
+                beforeSend: function() {
+                    // Mostrar loading se necessário
+                },
+                success: function(response) {
+                    if (response.success && response.data) {
+                        carregarDadosParaSolicitacaoEdicao(response.data);
+                        $('#solicitarEdicaoModal').modal('show');
+                    } else {
+                        showErrorAlert(response.message || "Erro ao carregar ação");
+                    }
+                },
+                error: function() {
+                    showErrorAlert("Falha na comunicação com o servidor.");
+                }
+            });
+        });
+
+        // Função para carregar dados no modal de solicitação de edição
+        function carregarDadosParaSolicitacaoEdicao(acao) {
+            // Preencher campos básicos
+            $('#solicitarEdicaoId').val(acao.id);
+            $('#solicitarEdicaoNome').val(acao.nome);
+            $('#solicitarEdicaoOrdem').val(acao.ordem);
+            $('#solicitarEdicaoEntregaEstimada').val(acao.entrega_estimada ? formatDateForInput(acao.entrega_estimada) : '');
+            $('#solicitarEdicaoDataInicio').val(acao.data_inicio ? formatDateForInput(acao.data_inicio) : '');
+            $('#solicitarEdicaoDataFim').val(acao.data_fim ? formatDateForInput(acao.data_fim) : '');
+
+            // Carregar responsáveis
+            carregarResponsaveisParaSolicitacaoEdicao(acao.id);
+
+            // Carregar evidências
+            carregarEvidenciasParaSolicitacaoEdicao(acao.id);
+
+            // Habilitar/desabilitar data fim conforme data início
+            if (acao.data_inicio) {
+                $('#solicitarEdicaoDataFim').prop('disabled', false);
+            } else {
+                $('#solicitarEdicaoDataFim').prop('disabled', true);
+            }
+        }
+
+        // Carregar responsáveis para solicitação de edição
+        function carregarResponsaveisParaSolicitacaoEdicao(acaoId) {
+            $.ajax({
+                url: `<?= site_url('acoes/get-responsaveis/') ?>${acaoId}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        // Limpar listas
+                        $('#responsaveisAtuaisEdicao').empty();
+
+                        // Preencher responsáveis atuais
+                        if (response.data && response.data.length > 0) {
+                            let html = '<div class="list-group">';
+                            response.data.forEach(usuario => {
+                                html += `
+                            <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
+                                <div>
+                                    <span class="font-weight-bold">${usuario.name}</span>
+                                    <small class="d-block text-muted">${usuario.email}</small>
+                                </div>
+                            </div>
+                        `;
+                            });
+                            html += '</div>';
+                            $('#responsaveisAtuaisEdicao').html(html);
+                            $('#contadorResponsaveisAtuaisEdicao').text(response.data.length);
+                        } else {
+                            $('#responsaveisAtuaisEdicao').html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
+                            $('#contadorResponsaveisAtuaisEdicao').text('0');
+                        }
+
+                        // Carregar usuários disponíveis
+                        carregarUsuariosDisponiveisParaSolicitacaoEdicao(acaoId);
+                    }
+                },
+                error: function() {
+                    showErrorAlert("Erro ao carregar responsáveis");
+                }
+            });
+        }
+
+        // Carregar usuários disponíveis para solicitação de edição
+        function carregarUsuariosDisponiveisParaSolicitacaoEdicao(acaoId, termo = '') {
+            $.ajax({
+                url: `<?= site_url('acoes/get-usuarios-disponiveis/') ?>${acaoId}`,
+                type: 'GET',
+                data: {
+                    term: termo
+                },
+                beforeSend: function() {
+                    $('#usuariosDisponiveisEdicao').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i></div>');
+                },
+                success: function(response) {
+                    if (response.success) {
+                        let html = '';
+
+                        if (response.data.length > 0) {
+                            html = '<div class="list-group">';
+                            response.data.forEach(usuario => {
+                                html += `
+                            <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
+                                <div>
+                                    <span class="font-weight-bold">${usuario.name}</span>
+                                    <small class="d-block text-muted">${usuario.email}</small>
+                                </div>
+                                <button class="btn btn-sm btn-primary btn-adicionar-responsavel-solicitacao" data-id="${usuario.id}">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        `;
+                            });
+                            html += '</div>';
+                        }
+
+                        if (html === '') {
+                            html = '<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>';
+                        }
+
+                        $('#usuariosDisponiveisEdicao').html(html);
+                        $('#contadorUsuariosDisponiveisEdicao').text(response.data.length);
+                    } else {
+                        $('#usuariosDisponiveisEdicao').html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
+                    }
+                },
+                error: function() {
+                    $('#usuariosDisponiveisEdicao').html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
+                }
+            });
+        }
+
+        // Carregar evidências para solicitação de edição
+        function carregarEvidenciasParaSolicitacaoEdicao(acaoId) {
+            $.ajax({
+                url: `<?= site_url('acoes/listar-evidencias/') ?>${acaoId}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        // Limpar listas
+                        $('#evidenciasAtuaisListEdicao').empty();
+                        $('#evidenciasRemoverListEdicao').empty();
+
+                        // Preencher evidências atuais
+                        if (response.evidencias && response.evidencias.length > 0) {
+                            let html = '';
+                            response.evidencias.forEach((evidencia, index) => {
+                                html += `
+                            <div class="list-group-item mb-2" data-id="${evidencia.id}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <strong>Evidência #${index + 1}</strong>
+                                            <small class="text-muted">${formatDateTime(evidencia.created_at)}</small>
+                                        </div>
+                                        ${evidencia.tipo === 'texto' ?
+                                            `<div class="bg-light p-2 rounded mb-2">${evidencia.evidencia.substring(0, 50)}${evidencia.evidencia.length > 50 ? '...' : ''}</div>` :
+                                            `<div class="mb-2"><small class="text-truncate d-block">${evidencia.evidencia}</small></div>`
+                                        }
+                                        ${evidencia.descricao ?
+                                            `<small class="text-muted">${evidencia.descricao.substring(0, 30)}${evidencia.descricao.length > 30 ? '...' : ''}</small>` :
+                                            ''
+                                        }
+                                    </div>
+                                    <button class="btn btn-sm btn-danger ml-2 btn-marcar-remocao-evidencia-solicitacao" data-id="${evidencia.id}">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                            });
+                            $('#evidenciasAtuaisListEdicao').html(html);
+                            $('#contadorEvidenciasAtuaisEdicao').text(response.evidencias.length);
+                        } else {
+                            $('#evidenciasAtuaisListEdicao').html('<div class="list-group"><div class="text-center py-3 text-muted">Nenhuma evidência cadastrada</div></div>');
+                            $('#contadorEvidenciasAtuaisEdicao').text('0');
+                        }
+
+                        $('#contadorEvidenciasRemoverEdicao').text('0');
+                    }
+                },
+                error: function() {
+                    showErrorAlert("Erro ao carregar evidências");
+                }
+            });
+        }
+
+        // Alternar entre tipos de evidência no modal de solicitação de edição
+        $('input[name="evidencia_tipo_edicao"]').change(function() {
+            if ($(this).val() === 'texto') {
+                $('#solicitarEdicaoGrupoTexto').removeClass('d-none');
+                $('#solicitarEdicaoGrupoLink').addClass('d-none');
+            } else {
+                $('#solicitarEdicaoGrupoTexto').addClass('d-none');
+                $('#solicitarEdicaoGrupoLink').removeClass('d-none');
+            }
+        });
+
+        // Adicionar evidência à lista no modal de solicitação de edição
+        $('#btnAdicionarEvidenciaEdicao').click(function() {
+            var tipo = $('input[name="evidencia_tipo_edicao"]:checked').val();
+            var conteudo = tipo === 'texto' ?
+                $('#solicitarEdicaoEvidenciaTexto').val().trim() :
+                $('#solicitarEdicaoEvidenciaLink').val().trim();
+            var descricao = $('#solicitarEdicaoEvidenciaDescricao').val().trim();
+
+            if ((tipo === 'texto' && conteudo.length < 3) ||
+                (tipo === 'link' && !isValidUrl(conteudo))) {
+                showErrorAlert(tipo === 'texto' ?
+                    'O texto da evidência deve ter pelo menos 3 caracteres' :
+                    'Por favor, insira uma URL válida');
+                return;
+            }
+
+            // Criar objeto de evidência
+            var novaEvidencia = {
+                id: Date.now(), // ID temporário
+                tipo: tipo,
+                conteudo: conteudo,
+                descricao: descricao,
+                data: new Date().toLocaleString('pt-BR'),
+                acao: 'incluir' // Marcamos como inclusão para a solicitação
+            };
+
+            // Adicionar ao array e à lista
+            evidenciasAdicionadasAcao.push(novaEvidencia);
+            atualizarListaEvidenciasAdicionadasSolicitacao();
+
+            // Limpar campos
+            $('#solicitarEdicaoEvidenciaTexto, #solicitarEdicaoEvidenciaLink, #solicitarEdicaoEvidenciaDescricao').val('');
+            $('#solicitarEdicaoGrupoTexto').removeClass('d-none');
+            $('#solicitarEdicaoGrupoLink').addClass('d-none');
+            $('input[name="evidencia_tipo_edicao"][value="texto"]').prop('checked', true);
+        });
+
+        // Marcar evidência para remoção na solicitação
+        $(document).on('click', '.btn-marcar-remocao-evidencia-solicitacao', function() {
+            const id = $(this).data('id');
+            const item = $(this).closest('.list-group-item');
+
+            // Mover para a lista de remoção
+            item.find('button').removeClass('btn-danger btn-marcar-remocao-evidencia-solicitacao')
+                .addClass('btn-success btn-desmarcar-remocao-evidencia-solicitacao')
+                .html('<i class="fas fa-undo"></i>');
+
+            $('#evidenciasRemoverListEdicao .list-group').append(item);
+
+            // Atualizar contadores
+            const countAtuais = parseInt($('#contadorEvidenciasAtuaisEdicao').text()) - 1;
+            const countRemover = parseInt($('#contadorEvidenciasRemoverEdicao').text()) + 1;
+
+            $('#contadorEvidenciasAtuaisEdicao').text(countAtuais);
+            $('#contadorEvidenciasRemoverEdicao').text(countRemover);
+
+            // Adicionar ao array de evidências removidas
+            evidenciasRemovidasAcao.push(id);
+        });
+
+        // Desmarcar evidência para remoção na solicitação
+        $(document).on('click', '.btn-desmarcar-remocao-evidencia-solicitacao', function() {
+            const id = $(this).data('id');
+            const item = $(this).closest('.list-group-item');
+
+            // Mover de volta para a lista atual
+            item.find('button').removeClass('btn-success btn-desmarcar-remocao-evidencia-solicitacao')
+                .addClass('btn-danger btn-marcar-remocao-evidencia-solicitacao')
+                .html('<i class="fas fa-trash-alt"></i>');
+
+            $('#evidenciasAtuaisListEdicao .list-group').append(item);
+
+            // Atualizar contadores
+            const countAtuais = parseInt($('#contadorEvidenciasAtuaisEdicao').text()) + 1;
+            const countRemover = parseInt($('#contadorEvidenciasRemoverEdicao').text()) - 1;
+
+            $('#contadorEvidenciasAtuaisEdicao').text(countAtuais);
+            $('#contadorEvidenciasRemoverEdicao').text(countRemover);
+
+            // Remover do array de evidências removidas
+            evidenciasRemovidasAcao = evidenciasRemovidasAcao.filter(e => e != id);
+        });
+
+        // Adicionar responsável na solicitação de edição
+        $(document).on('click', '#usuariosDisponiveisEdicao .btn-adicionar-responsavel-solicitacao', function() {
+            const usuarioId = $(this).data('id');
+            const item = $(this).closest('.list-group-item').clone();
+
+            // Transformar em item de responsável
+            item.find('button')
+                .removeClass('btn-primary btn-adicionar-responsavel-solicitacao')
+                .addClass('btn-danger btn-remover-responsavel-solicitacao')
+                .html('<i class="fas fa-minus"></i>');
+
+            // Se a mensagem "Nenhum responsável selecionado" estiver visível, remova
+            if ($('#responsaveisAtuaisEdicao').text().includes('Nenhum responsável selecionado')) {
+                $('#responsaveisAtuaisEdicao').html('<div class="list-group"></div>');
+            }
+
+            // Adicionar à lista de responsáveis
+            $('#responsaveisAtuaisEdicao .list-group').append(item);
+
+            // Remover da lista de disponíveis
+            $(this).closest('.list-group-item').remove();
+
+            // Atualizar contadores
+            const countResponsaveis = parseInt($('#contadorResponsaveisAtuaisEdicao').text()) + 1;
+            const countDisponiveis = parseInt($('#contadorUsuariosDisponiveisEdicao').text()) - 1;
+
+            $('#contadorResponsaveisAtuaisEdicao').text(countResponsaveis);
+            $('#contadorUsuariosDisponiveisEdicao').text(countDisponiveis);
+
+            // Atualizar campo hidden com os IDs
+            atualizarIdsResponsaveisSolicitacao();
+        });
+
+        // Remover responsável na solicitação de edição
+        $(document).on('click', '#responsaveisAtuaisEdicao .btn-remover-responsavel-solicitacao', function() {
+            const usuarioId = $(this).data('id');
+            const item = $(this).closest('.list-group-item').clone();
+
+            // Transformar em item disponível
+            item.find('button')
+                .removeClass('btn-danger btn-remover-responsavel-solicitacao')
+                .addClass('btn-primary btn-adicionar-responsavel-solicitacao')
+                .html('<i class="fas fa-plus"></i>');
+
+            // Adicionar à lista de disponíveis
+            $('#usuariosDisponiveisEdicao').append(item);
+
+            // Remover da lista de responsáveis
+            $(this).closest('.list-group-item').remove();
+
+            // Atualizar contadores
+            const countResponsaveis = parseInt($('#contadorResponsaveisAtuaisEdicao').text()) - 1;
+            const countDisponiveis = parseInt($('#contadorUsuariosDisponiveisEdicao').text()) + 1;
+
+            $('#contadorResponsaveisAtuaisEdicao').text(countResponsaveis);
+            $('#contadorUsuariosDisponiveisEdicao').text(countDisponiveis);
+
+            // Se não houver mais responsáveis, mostrar mensagem
+            if (countResponsaveis === 0) {
+                $('#responsaveisAtuaisEdicao').html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
+            }
+        });
+
+        // Buscar usuários no modal de solicitação de edição
+        $('#buscarUsuarioEdicao').on('input', function() {
+            const termo = $(this).val().toLowerCase().trim();
+            const acaoId = $('#solicitarEdicaoId').val();
+            carregarUsuariosDisponiveisParaSolicitacaoEdicao(acaoId, termo);
+        });
+
+        // Enviar formulário de solicitação de edição
+        $('#formSolicitarEdicao').submit(function(e) {
+            e.preventDefault();
+
+            // Verificar se há alterações
+            if (evidenciasAdicionadasAcao.length === 0 &&
+                evidenciasRemovidasAcao.length === 0 &&
+                !verificarAlteracoesCampos()) {
+                $('#alertNenhumaAlteracao').removeClass('d-none');
+                return;
+            } else {
+                $('#alertNenhumaAlteracao').addClass('d-none');
+            }
+
+            // Coletar IDs dos responsáveis atuais
+            const responsaveisIds = [];
+            $('#responsaveisAtuaisEdicao .list-group-item').each(function() {
+                responsaveisIds.push($(this).data('id'));
+            });
+
+            // Coletar evidências para adicionar e remover
+            const evidenciasSolicitadas = {};
+            if (evidenciasAdicionadasAcao.length > 0) {
+                evidenciasSolicitadas.adicionar = evidenciasAdicionadasAcao;
+            }
+            if (evidenciasRemovidasAcao.length > 0) {
+                evidenciasSolicitadas.remover = evidenciasRemovidasAcao;
+            }
+
+            // Coletar alterações nos campos
+            const alteracoes = {};
+            const camposEditaveis = ['nome', 'entrega_estimada', 'data_inicio', 'data_fim', 'ordem'];
+
+            camposEditaveis.forEach(campo => {
+                const valorOriginal = $('#solicitarEdicaoModal').data('original_' + campo);
+                const valorAtual = $('#solicitarEdicao' + campo.charAt(0).toUpperCase() + campo.slice(1)).val();
+
+                if (valorOriginal !== valorAtual) {
+                    alteracoes[campo] = {
+                        de: valorOriginal,
+                        para: valorAtual
+                    };
+                }
+            });
+
+            // Adicionar responsáveis às alterações se houver mudança
+            if (responsaveisIds.length > 0) {
+                alteracoes.responsaveis = {
+                    adicionar: responsaveisIds
+                };
+            }
+
+            // Adicionar evidências às alterações se houver
+            if (Object.keys(evidenciasSolicitadas).length > 0) {
+                alteracoes.evidencias = evidenciasSolicitadas;
+            }
+
+            // Atualizar campo hidden com os dados alterados
+            $('#dadosAlteradosSolicitacao').val(JSON.stringify(alteracoes));
+
+            submitForm($(this), '#solicitarEdicaoModal', 'Solicitação de edição enviada com sucesso!');
+        });
+
+        // Função para verificar se houve alterações nos campos
+        function verificarAlteracoesCampos() {
+            const camposEditaveis = ['nome', 'entrega_estimada', 'data_inicio', 'data_fim', 'ordem'];
+
+            for (const campo of camposEditaveis) {
+                const valorOriginal = $('#solicitarEdicaoModal').data('original_' + campo);
+                const valorAtual = $('#solicitarEdicao' + campo.charAt(0).toUpperCase() + campo.slice(1)).val();
+
+                if (valorOriginal !== valorAtual) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // Função para atualizar a lista de evidências adicionadas na solicitação
+        function atualizarListaEvidenciasAdicionadasSolicitacao() {
+            const lista = $('#evidenciasAtuaisListEdicao');
+            lista.empty();
+
+            if (evidenciasAdicionadasAcao.length === 0) {
+                lista.html('<div class="text-center py-3 text-muted">Nenhuma evidência será adicionada</div>');
+                $('#contadorEvidenciasAtuaisEdicao').text('0');
+                return;
+            }
+
+            let html = '<div class="list-group">';
+
+            evidenciasAdicionadasAcao.forEach((evidencia, index) => {
+                html += `
+            <div class="list-group-item" data-id="${evidencia.id}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>Nova Evidência #${index + 1}</strong>
+                            <small class="text-muted">${evidencia.data}</small>
+                        </div>
+                        ${evidencia.tipo === 'texto' ?
+                            `<div class="bg-light p-2 rounded mb-2">${evidencia.conteudo.substring(0, 50)}${evidencia.conteudo.length > 50 ? '...' : ''}</div>` :
+                            `<div class="mb-2"><small class="text-truncate d-block">${evidencia.conteudo}</small></div>`
+                        }
+                        ${evidencia.descricao ?
+                            `<small class="text-muted">${evidencia.descricao.substring(0, 30)}${evidencia.descricao.length > 30 ? '...' : ''}</small>` :
+                            ''
+                        }
+                    </div>
+                    <button class="btn btn-sm btn-danger ml-2 btn-remover-evidencia-add-solicitacao" data-id="${evidencia.id}">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+            });
+
+            html += '</div>';
+            lista.html(html);
+            $('#contadorEvidenciasAtuaisEdicao').text(evidenciasAdicionadasAcao.length);
+        }
+
+        // Remover evidência da lista de adição na solicitação
+        $(document).on('click', '.btn-remover-evidencia-add-solicitacao', function() {
+            const id = $(this).data('id');
+            evidenciasAdicionadasAcao = evidenciasAdicionadasAcao.filter(e => e.id != id);
+            atualizarListaEvidenciasAdicionadasSolicitacao();
+        });
     });
 </script>
