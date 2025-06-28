@@ -1,3 +1,4 @@
+<!-- Modal: modal-solicitar-inclusao -->
 <div class="modal fade" id="solicitarInclusaoModal" tabindex="-1" role="dialog" aria-labelledby="solicitarInclusaoModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -13,7 +14,7 @@
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                 <input type="hidden" name="id_etapa" value="<?= $tipoOrigem === 'etapa' ? $idOrigem : '' ?>">
                 <input type="hidden" name="id_projeto" value="<?= $tipoOrigem === 'projeto' ? $idOrigem : ($tipoOrigem === 'etapa' ? $etapa['id_projeto'] : '') ?>">
-                <input type="hidden" name="responsaveis_adicionar" id="responsaveisAdicionarInput" value="">
+                <input type="hidden" name="responsaveis" id="responsaveisSolicitacao" value='{"responsaveis":{"adicionar":[]}}'>
 
                 <div class="modal-body">
                     <!-- Informações Básicas -->
@@ -61,6 +62,51 @@
                         </div>
                     </div>
 
+                    <!-- Gerenciamento de Responsáveis -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-users mr-2"></i>Gerenciar Responsáveis
+                            </h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="row no-gutters">
+                                <!-- Responsáveis Selecionados -->
+                                <div class="col-md-6 border-right">
+                                    <div class="p-3">
+                                        <h6 class="text-center font-weight-bold">
+                                            <i class="fas fa-user-friends mr-1"></i>Responsáveis
+                                            <span class="badge badge-primary badge-pill ml-1" id="contadorResponsaveisSolicitacao">0</span>
+                                        </h6>
+                                        <div id="responsaveisSelecionadosSolicitacao" class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+                                            <div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Usuários Disponíveis -->
+                                <div class="col-md-6">
+                                    <div class="p-3">
+                                        <h6 class="text-center font-weight-bold">
+                                            <i class="fas fa-user-plus mr-1"></i>Usuários Disponíveis
+                                            <span class="badge badge-secondary badge-pill ml-1" id="contadorUsuariosSolicitacao">0</span>
+                                        </h6>
+                                        <div class="input-group mb-3">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                            </div>
+                                            <input type="text" id="buscarUsuarioSolicitacao" class="form-control" placeholder="Buscar usuário...">
+                                        </div>
+                                        <div id="usuariosDisponiveisSolicitacao" class="list-group list-group-flush" style="max-height: 150px; overflow-y: auto;">
+                                            <div class="text-center py-3">
+                                                <i class="fas fa-spinner fa-spin"></i> Carregando...
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- Justificativa -->
                     <div class="card">

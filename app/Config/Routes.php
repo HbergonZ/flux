@@ -78,6 +78,7 @@ $routes->group('', function ($routes) {
     $routes->get('acoes/acoes-atrasadas-usuario', 'Acoes::getAcoesAtrasadasUsuario');
     $routes->get('acoes/get-responsaveis/(:num)', 'Acoes::getResponsaveis/$1');
     $routes->get('acoes/usuarios-disponiveis/(:num)', 'Acoes::buscarUsuariosDisponiveis/$1');
+    $routes->get('acoes/buscar-usuarios', 'Acoes::buscarUsuariosParaResponsaveis');
 });
 
 // Rotas administrativas
@@ -122,7 +123,6 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
     $routes->post('acoes/remover-evidencia/(:num)', 'Acoes::removerEvidencia/$1');
     $routes->get('acoes/gerenciar-evidencias/(:num)', 'Acoes::gerenciarEvidencias/$1');
     $routes->get('acoes/carregar-para-ordenacao/(:num)/(:segment)', 'Acoes::carregarAcoesParaOrdenacao/$1/$2');
-    $routes->get('acoes/buscar-usuarios', 'Acoes::buscarUsuariosParaResponsaveis');
     $routes->get('acoes/responsaveis/(:num)', 'Acoes::getResponsaveis/$1');
     $routes->post('acoes/adicionar-responsavel', 'Acoes::adicionarResponsavel');
     $routes->post('acoes/remover-responsavel', 'Acoes::removerResponsavel');

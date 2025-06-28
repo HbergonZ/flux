@@ -867,41 +867,43 @@ class Acoes extends BaseController
 
         $rules = [
             'nome' => 'required|min_length[3]|max_length[255]',
-            'justificativa' => 'required'
+            'justificativa' => 'required',
+            'entrega_estimada' => 'required|valid_date'
         ];
 
         if ($this->validate($rules)) {
             try {
+                // Calcula a próxima ordem disponível
                 $proximaOrdem = $this->getProximaOrdem(
                     $postData['id_etapa'] ?? $postData['id_projeto'],
                     isset($postData['id_etapa']) ? 'etapa' : 'projeto'
                 );
 
-                $dadosAlterados = [
-                    'nome' => $postData['nome'],
-                    'responsavel' => $postData['responsavel'] ?? null,
-                    'tempo_estimado_dias' => $postData['tempo_estimado_dias'] ?? null,
-                    'entrega_estimada' => $postData['entrega_estimada'] ?? null,
-                    'data_inicio' => $postData['data_inicio'] ?? null,
-                    'data_fim' => $postData['data_fim'] ?? null,
-                    'ordem' => $proximaOrdem
-                ];
-
-                // Calculate status automatically
-                $statusProjeto = null;
-                if (isset($postData['id_etapa']) && !empty($postData['id_etapa'])) {
-                    $etapa = $this->etapasModel->find($postData['id_etapa']);
-                    if ($etapa) {
-                        $projeto = $this->projetosModel->find($etapa['id_projeto']);
-                        $statusProjeto = $projeto['status'] ?? null;
+                // Processa os responsáveis selecionados
+                $responsaveisAdicionar = [];
+                if (!empty($postData['responsaveis'])) {
+                    $responsaveisData = json_decode($postData['responsaveis'], true);
+                    if (json_last_error() === JSON_ERROR_NONE && isset($responsaveisData['responsaveis']['adicionar'])) {
+                        $responsaveisAdicionar = $responsaveisData['responsaveis']['adicionar'];
                     }
-                } elseif (isset($postData['id_projeto']) && !empty($postData['id_projeto'])) {
-                    $projeto = $this->projetosModel->find($postData['id_projeto']);
-                    $statusProjeto = $projeto['status'] ?? null;
                 }
 
-                $dadosAlterados['status'] = $this->acoesModel->calcularStatus($dadosAlterados, $statusProjeto);
+                // Prepara os dados da ação
+                $dadosAlterados = [
+                    'nome' => $postData['nome'],
+                    'responsavel' => '', // Campo vazio pois usaremos o sistema de responsáveis
+                    'tempo_estimado_dias' => $postData['tempo_estimado_dias'] ?? null,
+                    'entrega_estimada' => $postData['entrega_estimada'],
+                    'data_inicio' => $postData['data_inicio'] ?? null,
+                    'data_fim' => $postData['data_fim'] ?? null,
+                    'ordem' => $proximaOrdem,
+                    'responsaveis' => [
+                        'adicionar' => $responsaveisAdicionar
+                    ]
+                ];
 
+                // Determina o status automático
+                $statusProjeto = null;
                 $idPlano = null;
                 $idProjeto = null;
                 $idEtapa = null;
@@ -909,39 +911,41 @@ class Acoes extends BaseController
                 if (isset($postData['id_etapa']) && !empty($postData['id_etapa'])) {
                     $etapa = $this->etapasModel->find($postData['id_etapa']);
                     if (!$etapa) {
-                        $response['message'] = 'Etapa não encontrada';
-                        return $this->response->setJSON($response);
+                        throw new \RuntimeException('Etapa não encontrada');
                     }
 
                     $projeto = $this->projetosModel->find($etapa['id_projeto']);
                     if (!$projeto) {
-                        $response['message'] = 'Projeto relacionado não encontrado';
-                        return $this->response->setJSON($response);
+                        throw new \RuntimeException('Projeto relacionado não encontrado');
                     }
 
                     $idPlano = $projeto['id_plano'];
                     $idProjeto = $etapa['id_projeto'];
                     $idEtapa = $postData['id_etapa'];
+                    $statusProjeto = $projeto['status'] ?? null;
 
                     $dadosAlterados['id_projeto'] = $idProjeto;
                     $dadosAlterados['id_etapa'] = $idEtapa;
                 } elseif (isset($postData['id_projeto']) && !empty($postData['id_projeto'])) {
                     $projeto = $this->projetosModel->find($postData['id_projeto']);
                     if (!$projeto) {
-                        $response['message'] = 'Projeto não encontrado';
-                        return $this->response->setJSON($response);
+                        throw new \RuntimeException('Projeto não encontrado');
                     }
 
                     $idPlano = $projeto['id_plano'];
                     $idProjeto = $postData['id_projeto'];
+                    $statusProjeto = $projeto['status'] ?? null;
 
                     $dadosAlterados['id_projeto'] = $idProjeto;
                     $dadosAlterados['id_etapa'] = null;
                 } else {
-                    $response['message'] = 'Nenhum projeto ou etapa especificado';
-                    return $this->response->setJSON($response);
+                    throw new \RuntimeException('Nenhum projeto ou etapa especificado');
                 }
 
+                // Calcula o status automático
+                $dadosAlterados['status'] = $this->acoesModel->calcularStatus($dadosAlterados, $statusProjeto);
+
+                // Prepara os dados da solicitação
                 $data = [
                     'nivel' => 'acao',
                     'id_solicitante' => auth()->id(),
@@ -955,12 +959,17 @@ class Acoes extends BaseController
                     'data_solicitacao' => date('Y-m-d H:i:s')
                 ];
 
+                // Insere a solicitação
                 $this->solicitacoesModel->insert($data);
+
                 $response['success'] = true;
                 $response['message'] = 'Solicitação de inclusão enviada com sucesso!';
+            } catch (\RuntimeException $e) {
+                $response['message'] = $e->getMessage();
+                log_message('error', 'Erro de validação em solicitarInclusao: ' . $e->getMessage());
             } catch (\Exception $e) {
+                $response['message'] = 'Erro ao processar solicitação';
                 log_message('error', 'Erro em solicitarInclusao: ' . $e->getMessage());
-                $response['message'] = 'Erro ao processar solicitação: ' . $e->getMessage();
             }
         } else {
             $response['message'] = implode('<br>', $this->validator->getErrors());

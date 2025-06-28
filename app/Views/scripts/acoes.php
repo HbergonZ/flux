@@ -338,6 +338,17 @@
         // Enviar solicitação de inclusão
         $('#formSolicitarInclusao').submit(function(e) {
             e.preventDefault();
+
+            // Coletar IDs dos responsáveis selecionados
+            const responsaveisIds = responsaveisSelecionadosSolicitacao.map(u => u.id);
+
+            // Atualizar o campo hidden com os dados no formato correto
+            $('#responsaveisSolicitacao').val(JSON.stringify({
+                responsaveis: {
+                    adicionar: responsaveisIds
+                }
+            }));
+
             submitForm($(this), '#solicitarInclusaoModal', 'Solicitação de inclusão enviada com sucesso!');
         });
 
@@ -1522,5 +1533,194 @@
             submitForm($(this), '#editAcaoModal', 'Ação atualizada com sucesso!');
         });
 
+
+        //--------------------------------------------------------------
+        // JavaScript para abrir o modal de solicitar inclusão
+        // -------------------------------------------------------------
+
+        // variáveis globais no início do script
+        let responsaveisSelecionadosSolicitacao = [];
+        let usuariosDisponiveisSolicitacao = [];
+
+        // Função para carregar usuários disponíveis para solicitação
+        function carregarUsuariosDisponiveisSolicitacao() {
+            $.ajax({
+                url: '<?= site_url("acoes/buscar-usuarios") ?>',
+                type: 'GET',
+                dataType: 'json',
+                beforeSend: function() {
+                    $('#usuariosDisponiveisSolicitacao').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>');
+                },
+                success: function(response) {
+                    if (response.success && response.data && response.data.length > 0) {
+                        usuariosDisponiveisSolicitacao = response.data;
+                        atualizarListaUsuariosDisponiveisSolicitacao();
+                        $('#contadorUsuariosSolicitacao').text(response.data.length);
+                    } else {
+                        $('#usuariosDisponiveisSolicitacao').html('<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>');
+                        $('#contadorUsuariosSolicitacao').text('0');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Erro ao carregar usuários:', error);
+                    $('#usuariosDisponiveisSolicitacao').html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
+                    $('#contadorUsuariosSolicitacao').text('0');
+                }
+            });
+        }
+
+        // Função para atualizar a lista de usuários disponíveis
+        function atualizarListaUsuariosDisponiveisSolicitacao() {
+            const lista = $('#usuariosDisponiveisSolicitacao');
+            lista.empty();
+
+            if (usuariosDisponiveisSolicitacao.length === 0) {
+                lista.html('<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>');
+                return;
+            }
+
+            let html = '';
+            usuariosDisponiveisSolicitacao.forEach(usuario => {
+                // Verifica se o usuário já está na lista de selecionados
+                const jaSelecionado = responsaveisSelecionadosSolicitacao.some(r => r.id === usuario.id);
+
+                if (!jaSelecionado) {
+                    html += `
+                <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
+                    <div>
+                        <span class="font-weight-bold">${usuario.name}</span>
+                        <small class="d-block text-muted">${usuario.email}</small>
+                    </div>
+                    <button class="btn btn-sm btn-primary btn-adicionar-responsavel-solicitacao" data-id="${usuario.id}">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            `;
+                }
+            });
+
+            if (html === '') {
+                html = '<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>';
+            }
+
+            lista.html(html);
+        }
+
+        // Atualize a função que atualiza os responsáveis selecionados
+        function atualizarResponsaveisSelecionadosSolicitacao() {
+            const lista = $('#responsaveisSelecionadosSolicitacao');
+            lista.empty();
+
+            if (responsaveisSelecionadosSolicitacao.length === 0) {
+                lista.html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
+                $('#contadorResponsaveisSolicitacao').text('0');
+                $('#responsaveisSolicitacao').val(JSON.stringify({
+                    responsaveis: {
+                        adicionar: []
+                    }
+                }));
+                return;
+            }
+
+            let html = '';
+            const ids = [];
+
+            responsaveisSelecionadosSolicitacao.forEach(usuario => {
+                html += `
+            <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
+                <div>
+                    <span class="font-weight-bold">${usuario.name}</span>
+                    <small class="d-block text-muted">${usuario.email}</small>
+                </div>
+                <button class="btn btn-sm btn-danger btn-remover-responsavel-solicitacao" data-id="${usuario.id}">
+                    <i class="fas fa-minus"></i>
+                </button>
+            </div>
+        `;
+                ids.push(usuario.id);
+            });
+
+            lista.html(html);
+            $('#contadorResponsaveisSolicitacao').text(responsaveisSelecionadosSolicitacao.length);
+
+            // Formata os dados no formato esperado
+            const dadosResponsaveis = {
+                responsaveis: {
+                    adicionar: ids
+                }
+            };
+
+            $('#responsaveisSolicitacao').val(JSON.stringify(dadosResponsaveis));
+        }
+
+        // Evento para adicionar responsável na solicitação
+        $(document).on('click', '.btn-adicionar-responsavel-solicitacao', function() {
+            const usuarioId = $(this).data('id');
+            const usuario = usuariosDisponiveisSolicitacao.find(u => u.id == usuarioId);
+
+            if (usuario && !responsaveisSelecionadosSolicitacao.some(u => u.id == usuarioId)) {
+                responsaveisSelecionadosSolicitacao.push(usuario);
+                atualizarResponsaveisSelecionadosSolicitacao();
+                atualizarListaUsuariosDisponiveisSolicitacao();
+            }
+        });
+
+        // Evento para remover responsável na solicitação
+        $(document).on('click', '.btn-remover-responsavel-solicitacao', function() {
+            const usuarioId = $(this).data('id');
+            responsaveisSelecionadosSolicitacao = responsaveisSelecionadosSolicitacao.filter(u => u.id != usuarioId);
+            atualizarResponsaveisSelecionadosSolicitacao();
+            atualizarListaUsuariosDisponiveisSolicitacao();
+        });
+
+        // Buscar usuários ao digitar na solicitação
+        $('#buscarUsuarioSolicitacao').on('input', function() {
+            const termo = $(this).val().toLowerCase();
+            if (termo === '') {
+                atualizarListaUsuariosDisponiveisSolicitacao();
+                return;
+            }
+
+            const resultados = usuariosDisponiveisSolicitacao.filter(usuario =>
+                usuario.name.toLowerCase().includes(termo) ||
+                usuario.email.toLowerCase().includes(termo)
+            );
+
+            const lista = $('#usuariosDisponiveisSolicitacao');
+            lista.empty();
+
+            if (resultados.length === 0) {
+                lista.html('<div class="text-center py-3 text-muted">Nenhum resultado encontrado</div>');
+                return;
+            }
+
+            let html = '';
+            resultados.forEach(usuario => {
+                const jaSelecionado = responsaveisSelecionadosSolicitacao.some(r => r.id === usuario.id);
+
+                if (!jaSelecionado) {
+                    html += `
+                <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
+                    <div>
+                        <span class="font-weight-bold">${usuario.name}</span>
+                        <small class="d-block text-muted">${usuario.email}</small>
+                    </div>
+                    <button class="btn btn-sm btn-primary btn-adicionar-responsavel-solicitacao" data-id="${usuario.id}">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            `;
+                }
+            });
+
+            lista.html(html || '<div class="text-center py-3 text-muted">Nenhum resultado disponível</div>');
+        });
+
+        // Carregar usuários quando o modal de solicitação é aberto
+        $('#solicitarInclusaoModal').on('show.bs.modal', function() {
+            responsaveisSelecionadosSolicitacao = [];
+            carregarUsuariosDisponiveisSolicitacao();
+            atualizarResponsaveisSelecionadosSolicitacao();
+        });
     });
 </script>
