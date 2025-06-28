@@ -51,6 +51,9 @@
                     <a class="nav-link" href="<?= base_url('/solicitacoes'); ?>">
                         <i class="fas fa-edit"></i>
                         <span>Solicitações</span>
+                        <?php if (isset($total_solicitacoes_pendentes) && $total_solicitacoes_pendentes > 0): ?>
+                            <i class="fas fa-exclamation-circle text-warning ml-1"></i>
+                        <?php endif; ?>
                     </a>
                 </li>
 
