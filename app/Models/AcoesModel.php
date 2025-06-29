@@ -158,14 +158,38 @@ class AcoesModel extends Model
                 $this->update($dadosAprovados['id_acao'], $dadosAprovados['dados_acao']);
             }
 
-            // Processar alterações na equipe
-            if (isset($dadosAprovados['alteracoes_equipe'])) {
-                $this->processarAlteracoesEquipe($dadosAprovados['id_acao'], $dadosAprovados['alteracoes_equipe']);
+            // Processar evidências adicionadas
+            if (!empty($dadosAprovados['evidencias_adicionadas'])) {
+                $evidenciasAdicionadas = json_decode($dadosAprovados['evidencias_adicionadas'], true);
+                if (is_array($evidenciasAdicionadas)) {
+                    $dadosInserir = array_map(function ($evidencia) use ($dadosAprovados) {
+                        return [
+                            'tipo' => $evidencia['tipo'],
+                            'evidencia' => $evidencia['conteudo'],
+                            'descricao' => $evidencia['descricao'] ?? null,
+                            'nivel' => 'acao',
+                            'id_nivel' => $dadosAprovados['id_acao'],
+                            'created_by' => auth()->id(),
+                            'created_at' => date('Y-m-d H:i:s')
+                        ];
+                    }, $evidenciasAdicionadas);
+
+                    if (!empty($dadosInserir)) {
+                        $db->table('evidencias')->insertBatch($dadosInserir);
+                    }
+                }
             }
 
-            // Processar evidências solicitadas
-            if (isset($dadosAprovados['evidencias_solicitadas'])) {
-                $this->processarEvidenciasSolicitadas($dadosAprovados['id_acao'], $dadosAprovados['evidencias_solicitadas']);
+            // Processar evidências removidas
+            if (!empty($dadosAprovados['evidencias_removidas'])) {
+                $evidenciasRemovidas = json_decode($dadosAprovados['evidencias_removidas'], true);
+                if (is_array($evidenciasRemovidas)) {
+                    $db->table('evidencias')
+                        ->whereIn('id', $evidenciasRemovidas)
+                        ->where('nivel', 'acao')
+                        ->where('id_nivel', $dadosAprovados['id_acao'])
+                        ->delete();
+                }
             }
 
             $db->transComplete();

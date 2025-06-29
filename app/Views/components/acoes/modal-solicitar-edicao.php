@@ -197,6 +197,9 @@
                         </div>
                     </div>
 
+                    <input type="hidden" name="evidencias_adicionadas" id="evidenciasAdicionadasSolicitacao" value="">
+                    <input type="hidden" name="evidencias_removidas" id="evidenciasRemovidasSolicitacao" value="">
+
                     <!-- Justificativa -->
                     <div class="card">
                         <div class="card-header bg-light">

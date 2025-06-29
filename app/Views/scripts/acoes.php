@@ -17,6 +17,24 @@
     let evidenciasAdicionadasAcao = [];
     let evidenciasRemovidasAcao = [];
 
+    // Limpar formulários quando os modais são fechados
+    $('#solicitarEdicaoModal, #solicitarInclusaoModal, #solicitarExclusaoModal').on('hidden.bs.modal', function() {
+        const $form = $(this).find('form');
+        $form.trigger('reset'); // Limpa os campos do formulário
+
+        // Limpar outros elementos específicos
+        $(this).find('.list-group').empty();
+        $(this).find('.badge-pill').text('0');
+
+        // Limpar variáveis globais
+        evidenciasAdicionadasAcao = [];
+        evidenciasRemovidasAcao = [];
+        responsaveisSelecionadosSolicitacao = [];
+
+        // Resetar selects e outros elementos específicos
+        $(this).find('select').val('').trigger('change');
+    });
+
     // Limpar arrays quando o modal é fechado
     $('#editAcaoModal').on('hidden.bs.modal', function() {
         evidenciasAdicionadasAcao = [];
@@ -585,6 +603,19 @@
                         }
 
                         if (modalId) {
+                            // Limpar o formulário antes de fechar
+                            form.trigger('reset');
+
+                            // Limpar elementos específicos
+                            $(modalId).find('.list-group').empty();
+                            $(modalId).find('.badge-pill').text('0');
+
+                            // Limpar variáveis globais
+                            evidenciasAdicionadasAcao = [];
+                            evidenciasRemovidasAcao = [];
+                            responsaveisSelecionadosSolicitacao = [];
+
+                            // Fechar o modal
                             $(modalId).modal('hide');
                         }
 
@@ -1960,41 +1991,49 @@
 
         // Função para atualizar a lista de evidências adicionadas na solicitação
         function atualizarListaEvidenciasAdicionadasSolicitacao() {
-            const lista = $('#evidenciasAtuaisListEdicao .list-group');
-            lista.empty();
+            // Remove items adicionados anteriormente para não acumular duplicados
+            $('#evidenciasAtuaisListEdicao .nova-evidencia').remove();
+
             if (evidenciasAdicionadasAcao.length === 0) {
-                lista.html('<div class="text-center py-3 text-muted">Nenhuma evidência será adicionada</div>');
-                $('#contadorEvidenciasAtuaisEdicao').text('0');
+                $('#contadorEvidenciasAtuaisEdicao').text($('#evidenciasAtuaisListEdicao .list-group-item').length);
                 return;
             }
+
             evidenciasAdicionadasAcao.forEach((evidencia, index) => {
                 let html = `
-        <div class="list-group-item d-flex justify-content-between align-items-start" data-id="${evidencia.id}">
-            <div class="flex-grow-1 w-100">
-                <div><strong>Evidência:</strong></div>
-                <div class="mt-1 mb-2">
-                    ${
-                        evidencia.tipo === 'texto'
-                        ? `<span>${evidencia.conteudo}</span>`
-                        : `<a href="${evidencia.conteudo}" target="_blank" class="btn btn-sm btn-outline-primary">Acessar</a>`
-                    }
+            <div class="list-group-item nova-evidencia d-flex justify-content-between align-items-start" data-id="${evidencia.id}">
+                <div class="flex-grow-1 w-100">
+                    <div>
+                        <strong>Evidência: <span class="badge badge-success ml-1">Nova</span></strong>
+                    </div>
+                    <div class="mt-1 mb-2">
+                        ${
+                            evidencia.tipo === 'texto'
+                                ? `<span>${evidencia.conteudo}</span>`
+                                : `<a href="${evidencia.conteudo}" target="_blank" class="btn btn-sm btn-outline-primary">Acessar</a>`
+                        }
+                    </div>
+                    <div>
+                        <span class="small text-secondary">Descrição:</span><br>
+                        <span>${evidencia.descricao && evidencia.descricao.trim() ? evidencia.descricao : 'Sem descrição'}</span>
+                    </div>
                 </div>
                 <div>
-                    <span class="small text-secondary">Descrição:</span><br>
-                    <span>${evidencia.descricao && evidencia.descricao.trim() ? evidencia.descricao : 'Sem descrição'}</span>
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-remover-evidencia-add-solicitacao" data-id="${evidencia.id}" title="Remover evidência">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
                 </div>
             </div>
-            <div>
-                <button type="button" class="btn btn-sm btn-outline-danger btn-remover-evidencia-add-solicitacao" data-id="${evidencia.id}" title="Remover evidência">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
-            </div>
-        </div>
         `;
-                lista.append(html);
+                $('#evidenciasAtuaisListEdicao .list-group').append(html);
             });
-            $('#contadorEvidenciasAtuaisEdicao').text(evidenciasAdicionadasAcao.length);
+
+            // Atualiza o contador: atuais + novas
+            let total = $('#evidenciasAtuaisListEdicao .list-group-item').length;
+            $('#contadorEvidenciasAtuaisEdicao').text(total);
         }
+
+
 
 
         // Remover evidência da lista de adição na solicitação
@@ -2083,16 +2122,34 @@
         // Enviar formulário de solicitação de edição
         $('#formSolicitarEdicao').submit(function(e) {
             e.preventDefault();
+
+            // Ajustar o formato das evidências antes de enviar
+            const evidenciasParaEnviar = {
+                adicionar: evidenciasAdicionadasAcao.map(ev => ({
+                    tipo: ev.tipo,
+                    evidencia: ev.conteudo, // Mapeia conteudo para evidencia
+                    descricao: ev.descricao
+                    // Remove id temporário e campo acao
+                })),
+                remover: evidenciasRemovidasAcao
+            };
+
+            // Preencher os campos hidden com as evidências no novo formato
+            $('#evidenciasAdicionadasSolicitacao').val(JSON.stringify(evidenciasParaEnviar.adicionar));
+            $('#evidenciasRemovidasSolicitacao').val(JSON.stringify(evidenciasParaEnviar.remover));
+
             // Coletar IDs dos responsáveis atuais (originalmente na ação)
             const responsaveisOriginais = [];
             $('#responsaveisAtuaisEdicao .list-group-item').each(function() {
                 responsaveisOriginais.push($(this).data('id'));
             });
+
             // Coletar IDs dos responsáveis selecionados (após edição)
             const responsaveisSelecionados = [];
             $('#responsaveisSelecionadosEdit .list-group-item').each(function() {
                 responsaveisSelecionados.push($(this).data('id'));
             });
+
             // Calcular diferenças
             const adicionar = responsaveisOriginais.filter(id => !responsaveisSelecionados.includes(id));
             const remover = responsaveisSelecionados.filter(id => !responsaveisOriginais.includes(id));
@@ -2103,16 +2160,19 @@
                 }
             };
             $('#responsaveisSolicitacaoEdicao').val(JSON.stringify(dadosResponsaveis));
+
             const alteracoesCampos = verificarAlteracoesCampos();
             const temAlteracoesEvidencias = evidenciasAdicionadasAcao.length > 0 || evidenciasRemovidasAcao.length > 0;
             const temAlteracoesResponsaveis = adicionar.length > 0 || remover.length > 0;
             const temAlteracoes = Object.keys(alteracoesCampos).length > 0 ||
                 temAlteracoesResponsaveis ||
                 temAlteracoesEvidencias;
+
             if (!temAlteracoes) {
                 $('#alertNenhumaAlteracao').removeClass('d-none');
                 return;
             }
+
             const alteracoes = {};
             if (Object.keys(alteracoesCampos).length > 0) {
                 Object.assign(alteracoes, alteracoesCampos);
@@ -2121,18 +2181,14 @@
                 alteracoes.responsaveis = dadosResponsaveis.responsaveis;
             }
             if (temAlteracoesEvidencias) {
-                alteracoes.evidencias = {};
-                if (evidenciasAdicionadasAcao.length > 0) {
-                    alteracoes.evidencias.adicionar = evidenciasAdicionadasAcao;
-                }
-                if (evidenciasRemovidasAcao.length > 0) {
-                    alteracoes.evidencias.remover = evidenciasRemovidasAcao;
-                }
+                alteracoes.evidencias = evidenciasParaEnviar; // Usa o novo formato de evidências
             }
+
             if ($('#dadosAlteradosSolicitacao').length === 0) {
                 $('#formSolicitarEdicao').append('<input type="hidden" name="dados_alterados" id="dadosAlteradosSolicitacao">');
             }
             $('#dadosAlteradosSolicitacao').val(JSON.stringify(alteracoes));
+
             submitForm($(this), '#solicitarEdicaoModal', 'Solicitação de edição enviada com sucesso!');
         });
 
@@ -2140,22 +2196,22 @@
         function verificarAlteracoesCampos() {
             const camposEditaveis = ['nome', 'entrega_estimada', 'data_inicio', 'data_fim', 'ordem'];
             const alteracoes = {};
-            const normalizeDate = (dateStr) => {
-                if (!dateStr) return null;
-                if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-                    return dateStr;
+            const normalizeDate = function(date) {
+                if (!date) return null;
+                if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+                    return date;
                 }
-                return dateStr.split('T')[0];
+                return date.split('T')[0];
             };
+
             camposEditaveis.forEach(campo => {
                 const valorOriginal = $('#solicitarEdicaoModal').data('original_' + campo);
                 const valorAtual = $('#solicitarEdicao' + campo.charAt(0).toUpperCase() + campo.slice(1)).val();
                 const valorOriginalNormalizado = campo.includes('data') || campo.includes('entrega') ?
-                    normalizeDate(valorOriginal) :
-                    valorOriginal;
+                    normalizeDate(valorOriginal) : valorOriginal;
                 const valorAtualNormalizado = campo.includes('data') || campo.includes('entrega') ?
-                    normalizeDate(valorAtual) :
-                    valorAtual;
+                    normalizeDate(valorAtual) : valorAtual;
+
                 if (String(valorOriginalNormalizado) !== String(valorAtualNormalizado)) {
                     alteracoes[campo] = {
                         de: valorOriginal,
@@ -2163,6 +2219,21 @@
                     };
                 }
             });
+
+            // Adicionar evidências às alterações se houver
+            if (evidenciasAdicionadasAcao.length > 0) {
+                alteracoes.evidencias = {
+                    adicionar: evidenciasAdicionadasAcao
+                };
+            }
+
+            if (evidenciasRemovidasAcao.length > 0) {
+                if (!alteracoes.evidencias) {
+                    alteracoes.evidencias = {};
+                }
+                alteracoes.evidencias.remover = evidenciasRemovidasAcao;
+            }
+
             return alteracoes;
         }
 

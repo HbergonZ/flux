@@ -710,6 +710,30 @@ class Acoes extends BaseController
                     throw new \Exception('Erro ao processar os dados alterados');
                 }
 
+                // Log 2: Dados alterados decodificados
+                log_message('info', 'Dados alterados decodificados: ' . print_r($dadosAlterados, true));
+
+                // Processar evidências
+                $evidenciasAdicionadas = [];
+                $evidenciasRemovidas = [];
+
+                if (isset($dadosAlterados['evidencias'])) {
+                    // Processar evidências para manter consistência com a tabela
+                    if (isset($dadosAlterados['evidencias']['adicionar'])) {
+                        $evidenciasAdicionadas = array_map(function ($ev) {
+                            return [
+                                'tipo' => $ev['tipo'],
+                                'evidencia' => $ev['evidencia'] ?? $ev['conteudo'] ?? '', // Compatibilidade com ambos formatos
+                                'descricao' => $ev['descricao'] ?? null
+                            ];
+                        }, $dadosAlterados['evidencias']['adicionar']);
+                    }
+
+                    if (isset($dadosAlterados['evidencias']['remover'])) {
+                        $evidenciasRemovidas = $dadosAlterados['evidencias']['remover'];
+                    }
+                }
+
                 // Função para normalizar datas
                 $normalizeDate = function ($date) {
                     if (empty($date)) return null;
@@ -746,9 +770,6 @@ class Acoes extends BaseController
                     return $this->response->setJSON($response);
                 }
 
-                // Log 2: Dados alterados decodificados
-                log_message('info', 'Dados alterados decodificados: ' . print_r($dadosAlterados, true));
-
                 // Verificar se há alterações nos responsáveis
                 $alteracoesEquipe = [];
                 if (isset($dadosAlterados['responsaveis'])) {
@@ -771,7 +792,9 @@ class Acoes extends BaseController
                     'dados_alterados' => json_encode($dadosAlterados, JSON_UNESCAPED_UNICODE),
                     'justificativa_solicitante' => $postData['justificativa'],
                     'status' => 'pendente',
-                    'data_solicitacao' => date('Y-m-d H:i:s')
+                    'data_solicitacao' => date('Y-m-d H:i:s'),
+                    'evidencias_adicionadas' => !empty($evidenciasAdicionadas) ? json_encode($evidenciasAdicionadas, JSON_UNESCAPED_UNICODE) : null,
+                    'evidencias_removidas' => !empty($evidenciasRemovidas) ? json_encode($evidenciasRemovidas, JSON_UNESCAPED_UNICODE) : null
                 ];
 
                 // Log 4: Dados completos que serão inseridos no banco
