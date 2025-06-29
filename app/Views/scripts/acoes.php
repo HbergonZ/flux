@@ -52,7 +52,7 @@
                             ''
                         }
                     </div>
-                    <button class="btn btn-sm btn-danger ml-2 btn-remover-evidencia-add" data-id="${evidencia.id}">
+                    <button type="button" class="btn btn-sm btn-danger ml-2 btn-remover-evidencia-add" data-id="${evidencia.id}">
                         <i class="fas fa-trash-alt"></i>
                     </button>
                 </div>
@@ -721,7 +721,7 @@
                                     <small class="d-block text-muted">${usuario.email}</small>
                                 </div>
                                 <button class="btn btn-sm btn-primary btn-adicionar-responsavel" data-id="${usuario.id}">
-                                    <i class="fas fa-plus"></i>
+                                    <i class="fas fa-user-plus"></i>
                                 </button>
                             </div>
                         `;
@@ -800,8 +800,8 @@
                         <span class="font-weight-bold">${usuario.name}</span>
                         <small class="d-block text-muted">${usuario.email}</small>
                     </div>
-                    <button class="btn btn-sm btn-primary btn-adicionar-responsavel" data-id="${usuario.id}">
-                        <i class="fas fa-plus"></i>
+                    <button class="btn btn-sm btn-outline-primary btn-adicionar-responsavel" data-id="${usuario.id}">
+                        <i class="fas fa-user-plus"></i>
                     </button>
                 </div>
             `;
@@ -834,8 +834,8 @@
                     <span class="font-weight-bold">${usuario.name}</span>
                     <small class="d-block text-muted">${usuario.email}</small>
                 </div>
-                <button class="btn btn-sm btn-danger btn-remover-responsavel" data-id="${usuario.id}">
-                    <i class="fas fa-minus"></i>
+                <button class="btn btn-sm btn-outline-danger btn-remover-responsavel" data-id="${usuario.id}">
+                    <i class="fas fa-user-minus"></i>
                 </button>
             </div>
         `;
@@ -901,8 +901,8 @@
                         <span class="font-weight-bold">${usuario.name}</span>
                         <small class="d-block text-muted">${usuario.email}</small>
                     </div>
-                    <button class="btn btn-sm btn-primary btn-adicionar-responsavel" data-id="${usuario.id}">
-                        <i class="fas fa-plus"></i>
+                    <button class="btn btn-sm btn-outline-primary btn-adicionar-responsavel" data-id="${usuario.id}">
+                        <i class="fas fa-user-plus"></i>
                     </button>
                 </div>
             `;
@@ -1017,7 +1017,7 @@
                         ''
                     }
                 </div>
-                <button class="btn btn-sm btn-danger ml-2 btn-remover-evidencia-add" data-id="${evidencia.id}">
+                <button type="button" class="btn btn-sm btn-danger ml-2 btn-remover-evidencia-add" data-id="${evidencia.id}">
                     <i class="fas fa-trash-alt"></i>
                 </button>
             </div>
@@ -1171,8 +1171,8 @@
                                     <span class="font-weight-bold">${usuario.name}</span>
                                     <small class="d-block text-muted">${usuario.email}</small>
                                 </div>
-                                <button class="btn btn-sm btn-danger btn-remover-responsavel" data-id="${usuario.id}">
-                                    <i class="fas fa-minus"></i>
+                                <button class="btn btn-sm btn-outline-danger btn-remover-responsavel" data-id="${usuario.id}">
+                                    <i class="fas fa-user-minus"></i>
                                 </button>
                             </div>
                         `;
@@ -1228,8 +1228,8 @@
                                         <span class="font-weight-bold">${usuario.name}</span>
                                         <small class="d-block text-muted">${usuario.email}</small>
                                     </div>
-                                    <button class="btn btn-sm btn-primary btn-adicionar-responsavel" data-id="${usuario.id}">
-                                        <i class="fas fa-plus"></i>
+                                    <button class="btn btn-sm btn-outline-primary btn-adicionar-responsavel" data-id="${usuario.id}">
+                                        <i class="fas fa-user-plus"></i>
                                     </button>
                                 </div>
                             `;
@@ -1432,7 +1432,7 @@
             item.find('button')
                 .removeClass('btn-primary btn-adicionar-responsavel')
                 .addClass('btn-danger btn-remover-responsavel')
-                .html('<i class="fas fa-minus"></i>');
+                .html('<i class="fas fa-user-minus"></i>');
 
             // Se a mensagem "Nenhum responsável selecionado" estiver visível, remova
             if ($('#responsaveisSelecionadosEdit').text().includes('Nenhum responsável selecionado')) {
@@ -1464,8 +1464,8 @@
             // Transformar em item disponível
             item.find('button')
                 .removeClass('btn-danger btn-remover-responsavel')
-                .addClass('btn-primary btn-adicionar-responsavel')
-                .html('<i class="fas fa-plus"></i>');
+                .addClass('btn-outline-primary btn-adicionar-responsavel')
+                .html('<i class="fas fa-user-plus"></i>');
 
             // Adicionar à lista de disponíveis
             $('#usuariosDisponiveisEdit').append(item);
@@ -1591,8 +1591,8 @@
                         <span class="font-weight-bold">${usuario.name}</span>
                         <small class="d-block text-muted">${usuario.email}</small>
                     </div>
-                    <button class="btn btn-sm btn-primary btn-adicionar-responsavel-solicitacao" data-id="${usuario.id}">
-                        <i class="fas fa-plus"></i>
+                    <button class="btn btn-sm btn-outline-primary btn-adicionar-responsavel-solicitacao" data-id="${usuario.id}">
+                        <i class="fas fa-user-plus"></i>
                     </button>
                 </div>
             `;
@@ -1632,8 +1632,8 @@
                 <span class="font-weight-bold">${usuario.name}</span>
                 <small class="d-block text-muted">${usuario.email}</small>
             </div>
-            <button class="btn btn-sm btn-danger btn-remover-responsavel-solicitacao" data-id="${usuario.id}">
-                <i class="fas fa-minus"></i>
+            <button class="btn btn-sm btn-outline-danger btn-remover-responsavel-solicitacao" data-id="${usuario.id}">
+                <i class="fas fa-user-minus"></i>
             </button>
         </div>
     `;
@@ -1705,8 +1705,8 @@
                         <span class="font-weight-bold">${usuario.name}</span>
                         <small class="d-block text-muted">${usuario.email}</small>
                     </div>
-                    <button class="btn btn-sm btn-primary btn-adicionar-responsavel-solicitacao" data-id="${usuario.id}">
-                        <i class="fas fa-plus"></i>
+                    <button class="btn btn-sm btn-outline-primary btn-adicionar-responsavel-solicitacao" data-id="${usuario.id}">
+                        <i class="fas fa-user-plus"></i>
                     </button>
                 </div>
             `;
@@ -1730,14 +1730,10 @@
         // Solicitar edição de ação - Abrir modal (para não-admins)
         $(document).on('click', '.btn-primary[title="Solicitar Edição"]', function() {
             var acaoId = $(this).data('id').split('-')[0];
-
             $.ajax({
                 url: `<?= site_url('acoes/dados-acao/') ?>${acaoId}`,
                 type: 'GET',
                 dataType: 'json',
-                beforeSend: function() {
-                    // Mostrar loading se necessário
-                },
                 success: function(response) {
                     if (response.success && response.data) {
                         carregarDadosParaSolicitacaoEdicao(response.data);
@@ -1753,7 +1749,6 @@
         });
 
         // Função para carregar dados no modal de solicitação de edição
-        // Função para carregar dados no modal de solicitação de edição
         function carregarDadosParaSolicitacaoEdicao(acao) {
             // Preencher campos básicos
             $('#solicitarEdicaoId').val(acao.id);
@@ -1762,20 +1757,16 @@
             $('#solicitarEdicaoEntregaEstimada').val(acao.entrega_estimada ? formatDateForInput(acao.entrega_estimada) : '');
             $('#solicitarEdicaoDataInicio').val(acao.data_inicio ? formatDateForInput(acao.data_inicio) : '');
             $('#solicitarEdicaoDataFim').val(acao.data_fim ? formatDateForInput(acao.data_fim) : '');
-
             // Armazenar valores originais para comparação
             $('#solicitarEdicaoModal').data('original_nome', acao.nome);
             $('#solicitarEdicaoModal').data('original_ordem', acao.ordem);
             $('#solicitarEdicaoModal').data('original_entrega_estimada', acao.entrega_estimada);
             $('#solicitarEdicaoModal').data('original_data_inicio', acao.data_inicio);
             $('#solicitarEdicaoModal').data('original_data_fim', acao.data_fim);
-
             // Carregar responsáveis
             carregarResponsaveisParaSolicitacaoEdicao(acao.id);
-
             // Carregar evidências
             carregarEvidenciasParaSolicitacaoEdicao(acao.id);
-
             // Habilitar/desabilitar data fim conforme data início
             if (acao.data_inicio) {
                 $('#solicitarEdicaoDataFim').prop('disabled', false);
@@ -1784,7 +1775,6 @@
             }
         }
 
-        // Carregar responsáveis para solicitação de edição
         // Carregar responsáveis para solicitação de edição
         function carregarResponsaveisParaSolicitacaoEdicao(acaoId) {
             $.ajax({
@@ -1796,7 +1786,6 @@
                         // Limpar listas
                         $('#responsaveisAtuaisEdicao').empty();
                         $('#responsaveisSelecionadosEdit').empty();
-
                         // Preencher responsáveis atuais
                         if (response.data && response.data.length > 0) {
                             let html = '<div class="list-group">';
@@ -1807,8 +1796,8 @@
                                     <span class="font-weight-bold">${usuario.name}</span>
                                     <small class="d-block text-muted">${usuario.email}</small>
                                 </div>
-                                <button class="btn btn-sm btn-danger btn-remover-responsavel-solicitacao" data-id="${usuario.id}">
-                                    <i class="fas fa-minus"></i>
+                                <button class="btn btn-sm btn-outline-danger btn-remover-responsavel-solicitacao" data-id="${usuario.id}">
+                                    <i class="fas fa-user-minus"></i>
                                 </button>
                             </div>
                         `;
@@ -1816,16 +1805,12 @@
                             html += '</div>';
                             $('#responsaveisAtuaisEdicao').html(html);
                             $('#contadorResponsaveisAtuaisEdicao').text(response.data.length);
-
-                            // Também preenche os selecionados (que são os mesmos iniciais)
                             $('#responsaveisSelecionadosEdit').html(html);
                         } else {
                             $('#responsaveisAtuaisEdicao').html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
                             $('#responsaveisSelecionadosEdit').html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
                             $('#contadorResponsaveisAtuaisEdicao').text('0');
                         }
-
-                        // Carregar usuários disponíveis
                         carregarUsuariosDisponiveisParaSolicitacaoEdicao(acaoId);
                     }
                 },
@@ -1849,7 +1834,6 @@
                 success: function(response) {
                     if (response.success) {
                         let html = '';
-
                         if (response.data.length > 0) {
                             html = '<div class="list-group">';
                             response.data.forEach(usuario => {
@@ -1859,19 +1843,17 @@
                                     <span class="font-weight-bold">${usuario.name}</span>
                                     <small class="d-block text-muted">${usuario.email}</small>
                                 </div>
-                                <button class="btn btn-sm btn-primary btn-adicionar-responsavel-solicitacao" data-id="${usuario.id}">
-                                    <i class="fas fa-plus"></i>
+                                <button class="btn btn-sm btn-outline-primary btn-adicionar-responsavel-solicitacao" data-id="${usuario.id}">
+                                    <i class="fas fa-user-plus"></i>
                                 </button>
                             </div>
                         `;
                             });
                             html += '</div>';
                         }
-
                         if (html === '') {
                             html = '<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>';
                         }
-
                         $('#usuariosDisponiveisEdicao').html(html);
                         $('#contadorUsuariosDisponiveisEdicao').text(response.data.length);
                     } else {
@@ -1892,45 +1874,39 @@
                 dataType: 'json',
                 success: function(response) {
                     if (response.success) {
-                        // Limpar listas
-                        $('#evidenciasAtuaisListEdicao').empty();
-                        $('#evidenciasRemoverListEdicao').empty();
-
-                        // Preencher evidências atuais
+                        $('#evidenciasAtuaisListEdicao .list-group').empty();
+                        $('#evidenciasRemoverListEdicao .list-group').empty();
                         if (response.evidencias && response.evidencias.length > 0) {
-                            let html = '';
                             response.evidencias.forEach((evidencia, index) => {
-                                html += `
-                            <div class="list-group-item mb-2" data-id="${evidencia.id}">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div class="flex-grow-1">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <strong>Evidência #${index + 1}</strong>
-                                            <small class="text-muted">${formatDateTime(evidencia.created_at)}</small>
-                                        </div>
-                                        ${evidencia.tipo === 'texto' ?
-                                            `<div class="bg-light p-2 rounded mb-2">${evidencia.evidencia.substring(0, 50)}${evidencia.evidencia.length > 50 ? '...' : ''}</div>` :
-                                            `<div class="mb-2"><small class="text-truncate d-block">${evidencia.evidencia}</small></div>`
-                                        }
-                                        ${evidencia.descricao ?
-                                            `<small class="text-muted">${evidencia.descricao.substring(0, 30)}${evidencia.descricao.length > 30 ? '...' : ''}</small>` :
-                                            ''
-                                        }
-                                    </div>
-                                    <button class="btn btn-sm btn-danger ml-2 btn-marcar-remocao-evidencia-solicitacao" data-id="${evidencia.id}">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
+                                let html = `
+                        <div class="list-group-item d-flex justify-content-between align-items-start" data-id="${evidencia.id}">
+                            <div class="flex-grow-1 w-100">
+                                <div><strong>Evidência:</strong></div>
+                                <div class="mt-1 mb-2">
+                                    ${
+                                        evidencia.tipo === 'texto'
+                                        ? `<span>${evidencia.evidencia}</span>`
+                                        : `<a href="${evidencia.evidencia}" target="_blank" class="btn btn-sm btn-outline-primary">Acessar</a>`
+                                    }
+                                </div>
+                                <div><span class=" font-weight-bold small text-secondary">Descrição:</span><br>
+                                    <span>${evidencia.descricao && evidencia.descricao.trim() ? evidencia.descricao : 'Sem descrição'}</span>
                                 </div>
                             </div>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-marcar-remocao-evidencia-solicitacao" title="Remover evidência" data-id="${evidencia.id}">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </div>
                         `;
+                                $('#evidenciasAtuaisListEdicao .list-group').append(html);
                             });
-                            $('#evidenciasAtuaisListEdicao').html(html);
                             $('#contadorEvidenciasAtuaisEdicao').text(response.evidencias.length);
                         } else {
-                            $('#evidenciasAtuaisListEdicao').html('<div class="list-group"><div class="text-center py-3 text-muted">Nenhuma evidência cadastrada</div></div>');
+                            $('#evidenciasAtuaisListEdicao .list-group').html('<div class="text-center py-3 text-muted">Nenhuma evidência cadastrada</div>');
                             $('#contadorEvidenciasAtuaisEdicao').text('0');
                         }
-
                         $('#contadorEvidenciasRemoverEdicao').text('0');
                     }
                 },
@@ -1939,6 +1915,7 @@
                 }
             });
         }
+
 
         // Alternar entre tipos de evidência no modal de solicitação de edição
         $('input[name="evidencia_tipo_edicao"]').change(function() {
@@ -1958,7 +1935,6 @@
                 $('#solicitarEdicaoEvidenciaTexto').val().trim() :
                 $('#solicitarEdicaoEvidenciaLink').val().trim();
             var descricao = $('#solicitarEdicaoEvidenciaDescricao').val().trim();
-
             if ((tipo === 'texto' && conteudo.length < 3) ||
                 (tipo === 'link' && !isValidUrl(conteudo))) {
                 showErrorAlert(tipo === 'texto' ?
@@ -1966,104 +1942,115 @@
                     'Por favor, insira uma URL válida');
                 return;
             }
-
-            // Criar objeto de evidência
             var novaEvidencia = {
                 id: Date.now(), // ID temporário
                 tipo: tipo,
                 conteudo: conteudo,
                 descricao: descricao,
                 data: new Date().toLocaleString('pt-BR'),
-                acao: 'incluir' // Marcamos como inclusão para a solicitação
+                acao: 'incluir'
             };
-
-            // Adicionar ao array e à lista
             evidenciasAdicionadasAcao.push(novaEvidencia);
             atualizarListaEvidenciasAdicionadasSolicitacao();
-
-            // Limpar campos
             $('#solicitarEdicaoEvidenciaTexto, #solicitarEdicaoEvidenciaLink, #solicitarEdicaoEvidenciaDescricao').val('');
             $('#solicitarEdicaoGrupoTexto').removeClass('d-none');
             $('#solicitarEdicaoGrupoLink').addClass('d-none');
             $('input[name="evidencia_tipo_edicao"][value="texto"]').prop('checked', true);
         });
 
-        // Marcar evidência para remoção na solicitação
-        $(document).on('click', '.btn-marcar-remocao-evidencia-solicitacao', function() {
+        // Função para atualizar a lista de evidências adicionadas na solicitação
+        function atualizarListaEvidenciasAdicionadasSolicitacao() {
+            const lista = $('#evidenciasAtuaisListEdicao .list-group');
+            lista.empty();
+            if (evidenciasAdicionadasAcao.length === 0) {
+                lista.html('<div class="text-center py-3 text-muted">Nenhuma evidência será adicionada</div>');
+                $('#contadorEvidenciasAtuaisEdicao').text('0');
+                return;
+            }
+            evidenciasAdicionadasAcao.forEach((evidencia, index) => {
+                let html = `
+        <div class="list-group-item d-flex justify-content-between align-items-start" data-id="${evidencia.id}">
+            <div class="flex-grow-1 w-100">
+                <div><strong>Evidência:</strong></div>
+                <div class="mt-1 mb-2">
+                    ${
+                        evidencia.tipo === 'texto'
+                        ? `<span>${evidencia.conteudo}</span>`
+                        : `<a href="${evidencia.conteudo}" target="_blank" class="btn btn-sm btn-outline-primary">Acessar</a>`
+                    }
+                </div>
+                <div>
+                    <span class="small text-secondary">Descrição:</span><br>
+                    <span>${evidencia.descricao && evidencia.descricao.trim() ? evidencia.descricao : 'Sem descrição'}</span>
+                </div>
+            </div>
+            <div>
+                <button type="button" class="btn btn-sm btn-outline-danger btn-remover-evidencia-add-solicitacao" data-id="${evidencia.id}" title="Remover evidência">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        </div>
+        `;
+                lista.append(html);
+            });
+            $('#contadorEvidenciasAtuaisEdicao').text(evidenciasAdicionadasAcao.length);
+        }
+
+
+        // Remover evidência da lista de adição na solicitação
+        $(document).on('click', '.btn-remover-evidencia-add-solicitacao', function() {
             const id = $(this).data('id');
-            const item = $(this).closest('.list-group-item');
-
-            // Mover para a lista de remoção
-            item.find('button').removeClass('btn-danger btn-marcar-remocao-evidencia-solicitacao')
-                .addClass('btn-success btn-desmarcar-remocao-evidencia-solicitacao')
-                .html('<i class="fas fa-undo"></i>');
-
-            $('#evidenciasRemoverListEdicao .list-group').append(item);
-
-            // Atualizar contadores
-            const countAtuais = parseInt($('#contadorEvidenciasAtuaisEdicao').text()) - 1;
-            const countRemover = parseInt($('#contadorEvidenciasRemoverEdicao').text()) + 1;
-
-            $('#contadorEvidenciasAtuaisEdicao').text(countAtuais);
-            $('#contadorEvidenciasRemoverEdicao').text(countRemover);
-
-            // Adicionar ao array de evidências removidas
-            evidenciasRemovidasAcao.push(id);
+            evidenciasAdicionadasAcao = evidenciasAdicionadasAcao.filter(e => e.id != id);
+            atualizarListaEvidenciasAdicionadasSolicitacao();
         });
 
-        // Desmarcar evidência para remoção na solicitação
+        // Marcar evidência para remoção (move para lista removidas, deixa amarela e troca botão)
+        $(document).on('click', '.btn-marcar-remocao-evidencia-solicitacao', function() {
+            const $item = $(this).closest('.list-group-item');
+            $item.addClass('list-group-item-warning');
+            $(this)
+                .removeClass('btn-outline-danger btn-marcar-remocao-evidencia-solicitacao')
+                .addClass('btn-outline-secondary btn-desmarcar-remocao-evidencia-solicitacao')
+                .attr('title', 'Desfazer remoção')
+                .html('<i class="fas fa-undo"></i>');
+            $('#evidenciasRemoverListEdicao .list-group').append($item);
+            $('#contadorEvidenciasAtuaisEdicao').text($('#evidenciasAtuaisListEdicao .list-group-item').length);
+            $('#contadorEvidenciasRemoverEdicao').text($('#evidenciasRemoverListEdicao .list-group-item').length);
+            evidenciasRemovidasAcao.push($item.data('id'));
+        });
+
+        // Desfazer remoção (move para lista atuais, remove amarelo e volta botão)
         $(document).on('click', '.btn-desmarcar-remocao-evidencia-solicitacao', function() {
-            const id = $(this).data('id');
-            const item = $(this).closest('.list-group-item');
-
-            // Mover de volta para a lista atual
-            item.find('button').removeClass('btn-success btn-desmarcar-remocao-evidencia-solicitacao')
-                .addClass('btn-danger btn-marcar-remocao-evidencia-solicitacao')
+            const $item = $(this).closest('.list-group-item');
+            $item.removeClass('list-group-item-warning');
+            $(this)
+                .removeClass('btn-outline-secondary btn-desmarcar-remocao-evidencia-solicitacao')
+                .addClass('btn-outline-danger btn-marcar-remocao-evidencia-solicitacao')
+                .attr('title', 'Remover evidência')
                 .html('<i class="fas fa-trash-alt"></i>');
-
-            $('#evidenciasAtuaisListEdicao .list-group').append(item);
-
-            // Atualizar contadores
-            const countAtuais = parseInt($('#contadorEvidenciasAtuaisEdicao').text()) + 1;
-            const countRemover = parseInt($('#contadorEvidenciasRemoverEdicao').text()) - 1;
-
-            $('#contadorEvidenciasAtuaisEdicao').text(countAtuais);
-            $('#contadorEvidenciasRemoverEdicao').text(countRemover);
-
-            // Remover do array de evidências removidas
-            evidenciasRemovidasAcao = evidenciasRemovidasAcao.filter(e => e != id);
+            $('#evidenciasAtuaisListEdicao .list-group').append($item);
+            $('#contadorEvidenciasAtuaisEdicao').text($('#evidenciasAtuaisListEdicao .list-group-item').length);
+            $('#contadorEvidenciasRemoverEdicao').text($('#evidenciasRemoverListEdicao .list-group-item').length);
+            evidenciasRemovidasAcao = evidenciasRemovidasAcao.filter(e => e != $item.data('id'));
         });
 
         // Adicionar responsável na solicitação de edição
         $(document).on('click', '#usuariosDisponiveisEdicao .btn-adicionar-responsavel-solicitacao', function() {
             const usuarioId = $(this).data('id');
             const item = $(this).closest('.list-group-item').clone();
-
-            // Transformar em item de responsável
             item.find('button')
                 .removeClass('btn-primary btn-adicionar-responsavel-solicitacao')
-                .addClass('btn-danger btn-remover-responsavel-solicitacao')
-                .html('<i class="fas fa-minus"></i>');
-
-            // Se a mensagem "Nenhum responsável selecionado" estiver visível, remova
+                .addClass('btn-outline-danger btn-remover-responsavel-solicitacao')
+                .html('<i class="fas fa-user-minus"></i>');
             if ($('#responsaveisAtuaisEdicao').text().includes('Nenhum responsável selecionado')) {
                 $('#responsaveisAtuaisEdicao').html('<div class="list-group"></div>');
             }
-
-            // Adicionar à lista de responsáveis
             $('#responsaveisAtuaisEdicao .list-group').append(item);
-
-            // Remover da lista de disponíveis
             $(this).closest('.list-group-item').remove();
-
-            // Atualizar contadores
             const countResponsaveis = parseInt($('#contadorResponsaveisAtuaisEdicao').text()) + 1;
             const countDisponiveis = parseInt($('#contadorUsuariosDisponiveisEdicao').text()) - 1;
-
             $('#contadorResponsaveisAtuaisEdicao').text(countResponsaveis);
             $('#contadorUsuariosDisponiveisEdicao').text(countDisponiveis);
-
-            // Atualizar campo hidden com os IDs
             atualizarIdsResponsaveisSolicitacao();
         });
 
@@ -2071,27 +2058,16 @@
         $(document).on('click', '#responsaveisAtuaisEdicao .btn-remover-responsavel-solicitacao', function() {
             const usuarioId = $(this).data('id');
             const item = $(this).closest('.list-group-item').clone();
-
-            // Transformar em item disponível
             item.find('button')
                 .removeClass('btn-danger btn-remover-responsavel-solicitacao')
-                .addClass('btn-primary btn-adicionar-responsavel-solicitacao')
-                .html('<i class="fas fa-plus"></i>');
-
-            // Adicionar à lista de disponíveis
+                .addClass('btn-outline-primary btn-adicionar-responsavel-solicitacao')
+                .html('<i class="fas fa-user-plus"></i>');
             $('#usuariosDisponiveisEdicao').append(item);
-
-            // Remover da lista de responsáveis
             $(this).closest('.list-group-item').remove();
-
-            // Atualizar contadores
             const countResponsaveis = parseInt($('#contadorResponsaveisAtuaisEdicao').text()) - 1;
             const countDisponiveis = parseInt($('#contadorUsuariosDisponiveisEdicao').text()) + 1;
-
             $('#contadorResponsaveisAtuaisEdicao').text(countResponsaveis);
             $('#contadorUsuariosDisponiveisEdicao').text(countDisponiveis);
-
-            // Se não houver mais responsáveis, mostrar mensagem
             if (countResponsaveis === 0) {
                 $('#responsaveisAtuaisEdicao').html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
             }
@@ -2107,87 +2083,56 @@
         // Enviar formulário de solicitação de edição
         $('#formSolicitarEdicao').submit(function(e) {
             e.preventDefault();
-
             // Coletar IDs dos responsáveis atuais (originalmente na ação)
             const responsaveisOriginais = [];
             $('#responsaveisAtuaisEdicao .list-group-item').each(function() {
                 responsaveisOriginais.push($(this).data('id'));
             });
-
             // Coletar IDs dos responsáveis selecionados (após edição)
             const responsaveisSelecionados = [];
             $('#responsaveisSelecionadosEdit .list-group-item').each(function() {
                 responsaveisSelecionados.push($(this).data('id'));
             });
-
-            // Calcular diferenças CORRETAMENTE
+            // Calcular diferenças
             const adicionar = responsaveisOriginais.filter(id => !responsaveisSelecionados.includes(id));
             const remover = responsaveisSelecionados.filter(id => !responsaveisOriginais.includes(id));
-
-            // Preparar dados dos responsáveis
             const dadosResponsaveis = {
                 responsaveis: {
                     adicionar: adicionar,
                     remover: remover
                 }
             };
-
-            // Atualizar campo hidden
             $('#responsaveisSolicitacaoEdicao').val(JSON.stringify(dadosResponsaveis));
-
-            // Verificar se há alterações nos campos (agora só retorna campos realmente alterados)
             const alteracoesCampos = verificarAlteracoesCampos();
-
-            // Verificar se há alterações nas evidências
             const temAlteracoesEvidencias = evidenciasAdicionadasAcao.length > 0 || evidenciasRemovidasAcao.length > 0;
-
-            // Verificar se há alterações nos responsáveis
             const temAlteracoesResponsaveis = adicionar.length > 0 || remover.length > 0;
-
-            // Verificar se há qualquer alteração
             const temAlteracoes = Object.keys(alteracoesCampos).length > 0 ||
                 temAlteracoesResponsaveis ||
                 temAlteracoesEvidencias;
-
             if (!temAlteracoes) {
                 $('#alertNenhumaAlteracao').removeClass('d-none');
                 return;
             }
-
-            // Preparar os dados alterados
             const alteracoes = {};
-
-            // Adicionar alterações de campos se houver
             if (Object.keys(alteracoesCampos).length > 0) {
                 Object.assign(alteracoes, alteracoesCampos);
             }
-
-            // Adicionar responsáveis às alterações se houver mudança
             if (temAlteracoesResponsaveis) {
                 alteracoes.responsaveis = dadosResponsaveis.responsaveis;
             }
-
-            // Adicionar evidências às alterações se houver
             if (temAlteracoesEvidencias) {
                 alteracoes.evidencias = {};
-
                 if (evidenciasAdicionadasAcao.length > 0) {
                     alteracoes.evidencias.adicionar = evidenciasAdicionadasAcao;
                 }
-
                 if (evidenciasRemovidasAcao.length > 0) {
                     alteracoes.evidencias.remover = evidenciasRemovidasAcao;
                 }
             }
-
-            // Adicionar campo hidden com os dados alterados se não existir
             if ($('#dadosAlteradosSolicitacao').length === 0) {
                 $('#formSolicitarEdicao').append('<input type="hidden" name="dados_alterados" id="dadosAlteradosSolicitacao">');
             }
-
-            // Atualiza o campo hidden com os dados alterados
             $('#dadosAlteradosSolicitacao').val(JSON.stringify(alteracoes));
-
             submitForm($(this), '#solicitarEdicaoModal', 'Solicitação de edição enviada com sucesso!');
         });
 
@@ -2195,32 +2140,22 @@
         function verificarAlteracoesCampos() {
             const camposEditaveis = ['nome', 'entrega_estimada', 'data_inicio', 'data_fim', 'ordem'];
             const alteracoes = {};
-
-            // Função para normalizar datas (remove time part if exists)
             const normalizeDate = (dateStr) => {
                 if (!dateStr) return null;
-                // Se a data já está no formato YYYY-MM-DD, retorna sem alteração
                 if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
                     return dateStr;
                 }
-                // Se tem parte de tempo, remove
                 return dateStr.split('T')[0];
             };
-
             camposEditaveis.forEach(campo => {
                 const valorOriginal = $('#solicitarEdicaoModal').data('original_' + campo);
                 const valorAtual = $('#solicitarEdicao' + campo.charAt(0).toUpperCase() + campo.slice(1)).val();
-
-                // Normaliza datas para comparação
                 const valorOriginalNormalizado = campo.includes('data') || campo.includes('entrega') ?
                     normalizeDate(valorOriginal) :
                     valorOriginal;
-
                 const valorAtualNormalizado = campo.includes('data') || campo.includes('entrega') ?
                     normalizeDate(valorAtual) :
                     valorAtual;
-
-                // Verifica se o valor foi realmente alterado
                 if (String(valorOriginalNormalizado) !== String(valorAtualNormalizado)) {
                     alteracoes[campo] = {
                         de: valorOriginal,
@@ -2228,59 +2163,8 @@
                     };
                 }
             });
-
             return alteracoes;
         }
 
-        // Função para atualizar a lista de evidências adicionadas na solicitação
-        function atualizarListaEvidenciasAdicionadasSolicitacao() {
-            const lista = $('#evidenciasAtuaisListEdicao');
-            lista.empty();
-
-            if (evidenciasAdicionadasAcao.length === 0) {
-                lista.html('<div class="text-center py-3 text-muted">Nenhuma evidência será adicionada</div>');
-                $('#contadorEvidenciasAtuaisEdicao').text('0');
-                return;
-            }
-
-            let html = '<div class="list-group">';
-
-            evidenciasAdicionadasAcao.forEach((evidencia, index) => {
-                html += `
-            <div class="list-group-item" data-id="${evidencia.id}">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div class="flex-grow-1">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <strong>Nova Evidência #${index + 1}</strong>
-                            <small class="text-muted">${evidencia.data}</small>
-                        </div>
-                        ${evidencia.tipo === 'texto' ?
-                            `<div class="bg-light p-2 rounded mb-2">${evidencia.conteudo.substring(0, 50)}${evidencia.conteudo.length > 50 ? '...' : ''}</div>` :
-                            `<div class="mb-2"><small class="text-truncate d-block">${evidencia.conteudo}</small></div>`
-                        }
-                        ${evidencia.descricao ?
-                            `<small class="text-muted">${evidencia.descricao.substring(0, 30)}${evidencia.descricao.length > 30 ? '...' : ''}</small>` :
-                            ''
-                        }
-                    </div>
-                    <button class="btn btn-sm btn-danger ml-2 btn-remover-evidencia-add-solicitacao" data-id="${evidencia.id}">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-            });
-
-            html += '</div>';
-            lista.html(html);
-            $('#contadorEvidenciasAtuaisEdicao').text(evidenciasAdicionadasAcao.length);
-        }
-
-        // Remover evidência da lista de adição na solicitação
-        $(document).on('click', '.btn-remover-evidencia-add-solicitacao', function() {
-            const id = $(this).data('id');
-            evidenciasAdicionadasAcao = evidenciasAdicionadasAcao.filter(e => e.id != id);
-            atualizarListaEvidenciasAdicionadasSolicitacao();
-        });
     });
 </script>
