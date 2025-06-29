@@ -1627,16 +1627,16 @@
 
             responsaveisSelecionadosSolicitacao.forEach(usuario => {
                 html += `
-            <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
-                <div>
-                    <span class="font-weight-bold">${usuario.name}</span>
-                    <small class="d-block text-muted">${usuario.email}</small>
-                </div>
-                <button class="btn btn-sm btn-danger btn-remover-responsavel-solicitacao" data-id="${usuario.id}">
-                    <i class="fas fa-minus"></i>
-                </button>
+        <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
+            <div>
+                <span class="font-weight-bold">${usuario.name}</span>
+                <small class="d-block text-muted">${usuario.email}</small>
             </div>
-        `;
+            <button class="btn btn-sm btn-danger btn-remover-responsavel-solicitacao" data-id="${usuario.id}">
+                <i class="fas fa-minus"></i>
+            </button>
+        </div>
+    `;
                 ids.push(usuario.id);
             });
 
@@ -1753,6 +1753,7 @@
         });
 
         // Função para carregar dados no modal de solicitação de edição
+        // Função para carregar dados no modal de solicitação de edição
         function carregarDadosParaSolicitacaoEdicao(acao) {
             // Preencher campos básicos
             $('#solicitarEdicaoId').val(acao.id);
@@ -1761,6 +1762,13 @@
             $('#solicitarEdicaoEntregaEstimada').val(acao.entrega_estimada ? formatDateForInput(acao.entrega_estimada) : '');
             $('#solicitarEdicaoDataInicio').val(acao.data_inicio ? formatDateForInput(acao.data_inicio) : '');
             $('#solicitarEdicaoDataFim').val(acao.data_fim ? formatDateForInput(acao.data_fim) : '');
+
+            // Armazenar valores originais para comparação
+            $('#solicitarEdicaoModal').data('original_nome', acao.nome);
+            $('#solicitarEdicaoModal').data('original_ordem', acao.ordem);
+            $('#solicitarEdicaoModal').data('original_entrega_estimada', acao.entrega_estimada);
+            $('#solicitarEdicaoModal').data('original_data_inicio', acao.data_inicio);
+            $('#solicitarEdicaoModal').data('original_data_fim', acao.data_fim);
 
             // Carregar responsáveis
             carregarResponsaveisParaSolicitacaoEdicao(acao.id);
@@ -1777,6 +1785,7 @@
         }
 
         // Carregar responsáveis para solicitação de edição
+        // Carregar responsáveis para solicitação de edição
         function carregarResponsaveisParaSolicitacaoEdicao(acaoId) {
             $.ajax({
                 url: `<?= site_url('acoes/get-responsaveis/') ?>${acaoId}`,
@@ -1786,6 +1795,7 @@
                     if (response.success) {
                         // Limpar listas
                         $('#responsaveisAtuaisEdicao').empty();
+                        $('#responsaveisSelecionadosEdit').empty();
 
                         // Preencher responsáveis atuais
                         if (response.data && response.data.length > 0) {
@@ -1797,14 +1807,21 @@
                                     <span class="font-weight-bold">${usuario.name}</span>
                                     <small class="d-block text-muted">${usuario.email}</small>
                                 </div>
+                                <button class="btn btn-sm btn-danger btn-remover-responsavel-solicitacao" data-id="${usuario.id}">
+                                    <i class="fas fa-minus"></i>
+                                </button>
                             </div>
                         `;
                             });
                             html += '</div>';
                             $('#responsaveisAtuaisEdicao').html(html);
                             $('#contadorResponsaveisAtuaisEdicao').text(response.data.length);
+
+                            // Também preenche os selecionados (que são os mesmos iniciais)
+                            $('#responsaveisSelecionadosEdit').html(html);
                         } else {
                             $('#responsaveisAtuaisEdicao').html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
+                            $('#responsaveisSelecionadosEdit').html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
                             $('#contadorResponsaveisAtuaisEdicao').text('0');
                         }
 
@@ -2091,60 +2108,84 @@
         $('#formSolicitarEdicao').submit(function(e) {
             e.preventDefault();
 
-            // Verificar se há alterações
-            if (evidenciasAdicionadasAcao.length === 0 &&
-                evidenciasRemovidasAcao.length === 0 &&
-                !verificarAlteracoesCampos()) {
+            // Coletar IDs dos responsáveis atuais (originalmente na ação)
+            const responsaveisOriginais = [];
+            $('#responsaveisAtuaisEdicao .list-group-item').each(function() {
+                responsaveisOriginais.push($(this).data('id'));
+            });
+
+            // Coletar IDs dos responsáveis selecionados (após edição)
+            const responsaveisSelecionados = [];
+            $('#responsaveisSelecionadosEdit .list-group-item').each(function() {
+                responsaveisSelecionados.push($(this).data('id'));
+            });
+
+            // Calcular diferenças CORRETAMENTE
+            const adicionar = responsaveisOriginais.filter(id => !responsaveisSelecionados.includes(id));
+            const remover = responsaveisSelecionados.filter(id => !responsaveisOriginais.includes(id));
+
+            // Preparar dados dos responsáveis
+            const dadosResponsaveis = {
+                responsaveis: {
+                    adicionar: adicionar,
+                    remover: remover
+                }
+            };
+
+            // Atualizar campo hidden
+            $('#responsaveisSolicitacaoEdicao').val(JSON.stringify(dadosResponsaveis));
+
+            // Verificar se há alterações nos campos (agora só retorna campos realmente alterados)
+            const alteracoesCampos = verificarAlteracoesCampos();
+
+            // Verificar se há alterações nas evidências
+            const temAlteracoesEvidencias = evidenciasAdicionadasAcao.length > 0 || evidenciasRemovidasAcao.length > 0;
+
+            // Verificar se há alterações nos responsáveis
+            const temAlteracoesResponsaveis = adicionar.length > 0 || remover.length > 0;
+
+            // Verificar se há qualquer alteração
+            const temAlteracoes = Object.keys(alteracoesCampos).length > 0 ||
+                temAlteracoesResponsaveis ||
+                temAlteracoesEvidencias;
+
+            if (!temAlteracoes) {
                 $('#alertNenhumaAlteracao').removeClass('d-none');
                 return;
-            } else {
-                $('#alertNenhumaAlteracao').addClass('d-none');
             }
 
-            // Coletar IDs dos responsáveis atuais
-            const responsaveisIds = [];
-            $('#responsaveisAtuaisEdicao .list-group-item').each(function() {
-                responsaveisIds.push($(this).data('id'));
-            });
-
-            // Coletar evidências para adicionar e remover
-            const evidenciasSolicitadas = {};
-            if (evidenciasAdicionadasAcao.length > 0) {
-                evidenciasSolicitadas.adicionar = evidenciasAdicionadasAcao;
-            }
-            if (evidenciasRemovidasAcao.length > 0) {
-                evidenciasSolicitadas.remover = evidenciasRemovidasAcao;
-            }
-
-            // Coletar alterações nos campos
+            // Preparar os dados alterados
             const alteracoes = {};
-            const camposEditaveis = ['nome', 'entrega_estimada', 'data_inicio', 'data_fim', 'ordem'];
 
-            camposEditaveis.forEach(campo => {
-                const valorOriginal = $('#solicitarEdicaoModal').data('original_' + campo);
-                const valorAtual = $('#solicitarEdicao' + campo.charAt(0).toUpperCase() + campo.slice(1)).val();
-
-                if (valorOriginal !== valorAtual) {
-                    alteracoes[campo] = {
-                        de: valorOriginal,
-                        para: valorAtual
-                    };
-                }
-            });
+            // Adicionar alterações de campos se houver
+            if (Object.keys(alteracoesCampos).length > 0) {
+                Object.assign(alteracoes, alteracoesCampos);
+            }
 
             // Adicionar responsáveis às alterações se houver mudança
-            if (responsaveisIds.length > 0) {
-                alteracoes.responsaveis = {
-                    adicionar: responsaveisIds
-                };
+            if (temAlteracoesResponsaveis) {
+                alteracoes.responsaveis = dadosResponsaveis.responsaveis;
             }
 
             // Adicionar evidências às alterações se houver
-            if (Object.keys(evidenciasSolicitadas).length > 0) {
-                alteracoes.evidencias = evidenciasSolicitadas;
+            if (temAlteracoesEvidencias) {
+                alteracoes.evidencias = {};
+
+                if (evidenciasAdicionadasAcao.length > 0) {
+                    alteracoes.evidencias.adicionar = evidenciasAdicionadasAcao;
+                }
+
+                if (evidenciasRemovidasAcao.length > 0) {
+                    alteracoes.evidencias.remover = evidenciasRemovidasAcao;
+                }
             }
 
-            // Atualizar campo hidden com os dados alterados
+            // Adicionar campo hidden com os dados alterados se não existir
+            if ($('#dadosAlteradosSolicitacao').length === 0) {
+                $('#formSolicitarEdicao').append('<input type="hidden" name="dados_alterados" id="dadosAlteradosSolicitacao">');
+            }
+
+            // Atualiza o campo hidden com os dados alterados
             $('#dadosAlteradosSolicitacao').val(JSON.stringify(alteracoes));
 
             submitForm($(this), '#solicitarEdicaoModal', 'Solicitação de edição enviada com sucesso!');
@@ -2153,17 +2194,42 @@
         // Função para verificar se houve alterações nos campos
         function verificarAlteracoesCampos() {
             const camposEditaveis = ['nome', 'entrega_estimada', 'data_inicio', 'data_fim', 'ordem'];
+            const alteracoes = {};
 
-            for (const campo of camposEditaveis) {
+            // Função para normalizar datas (remove time part if exists)
+            const normalizeDate = (dateStr) => {
+                if (!dateStr) return null;
+                // Se a data já está no formato YYYY-MM-DD, retorna sem alteração
+                if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                    return dateStr;
+                }
+                // Se tem parte de tempo, remove
+                return dateStr.split('T')[0];
+            };
+
+            camposEditaveis.forEach(campo => {
                 const valorOriginal = $('#solicitarEdicaoModal').data('original_' + campo);
                 const valorAtual = $('#solicitarEdicao' + campo.charAt(0).toUpperCase() + campo.slice(1)).val();
 
-                if (valorOriginal !== valorAtual) {
-                    return true;
-                }
-            }
+                // Normaliza datas para comparação
+                const valorOriginalNormalizado = campo.includes('data') || campo.includes('entrega') ?
+                    normalizeDate(valorOriginal) :
+                    valorOriginal;
 
-            return false;
+                const valorAtualNormalizado = campo.includes('data') || campo.includes('entrega') ?
+                    normalizeDate(valorAtual) :
+                    valorAtual;
+
+                // Verifica se o valor foi realmente alterado
+                if (String(valorOriginalNormalizado) !== String(valorAtualNormalizado)) {
+                    alteracoes[campo] = {
+                        de: valorOriginal,
+                        para: valorAtual
+                    };
+                }
+            });
+
+            return alteracoes;
         }
 
         // Função para atualizar a lista de evidências adicionadas na solicitação

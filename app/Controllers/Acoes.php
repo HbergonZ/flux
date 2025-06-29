@@ -675,6 +675,15 @@ class Acoes extends BaseController
         $response = ['success' => false, 'message' => ''];
         $postData = $this->request->getPost();
 
+        // Log 1: Dados recebidos do formulário
+        log_message('info', 'Dados recebidos na solicitação de edição: ' . print_r([
+            'post_data' => $postData,
+            'responsaveis_raw' => isset($postData['responsaveis']) ? $postData['responsaveis'] : null,
+            'evidencias_adicionadas_raw' => isset($postData['evidencias_adicionadas']) ? $postData['evidencias_adicionadas'] : null,
+            'evidencias_removidas_raw' => isset($postData['evidencias_removidas']) ? $postData['evidencias_removidas'] : null,
+            'dados_alterados_raw' => isset($postData['dados_alterados']) ? $postData['dados_alterados'] : null
+        ], true));
+
         $rules = [
             'id' => 'required',
             'justificativa' => 'required'
@@ -694,71 +703,62 @@ class Acoes extends BaseController
                     return $this->response->setJSON($response);
                 }
 
-                // Remove campos que não devem ser incluídos nos dados atuais
-                unset($acaoAtual['id'], $acaoAtual['created_at'], $acaoAtual['updated_at']);
+                // Obter dados alterados
+                $dadosAlterados = json_decode($postData['dados_alterados'], true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    log_message('error', 'Erro ao decodificar dados_alterados: ' . json_last_error_msg());
+                    throw new \Exception('Erro ao processar os dados alterados');
+                }
 
-                $alteracoes = [];
-                $camposEditaveis = [
-                    'nome',
-                    'responsavel',
-                    'tempo_estimado_dias',
-                    'entrega_estimada',
-                    'data_inicio',
-                    'data_fim',
-                    'status',
-                    'ordem'
-                ];
+                // Função para normalizar datas
+                $normalizeDate = function ($date) {
+                    if (empty($date)) return null;
+                    try {
+                        $dt = new \DateTime($date);
+                        return $dt->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        return $date; // se não for data válida, retorna original
+                    }
+                };
 
-                foreach ($camposEditaveis as $campo) {
-                    if (isset($postData[$campo])) {
-                        $valorAtual = $acaoAtual[$campo] ?? null;
-                        $valorNovo = $postData[$campo] ?? null;
+                // Filtrar campos de data que não foram realmente alterados
+                $dateFields = ['entrega_estimada', 'data_inicio', 'data_fim'];
+                foreach ($dateFields as $field) {
+                    if (isset($dadosAlterados[$field])) {
+                        $original = $normalizeDate($dadosAlterados[$field]['de'] ?? null);
+                        $new = $normalizeDate($acaoAtual[$field] ?? null);
 
-                        // Comparação mais robusta considerando tipos diferentes
-                        if ((string)$valorAtual !== (string)$valorNovo) {
-                            $alteracoes[$campo] = [
-                                'de' => $valorAtual,
-                                'para' => $valorNovo
-                            ];
+                        if ($original === $new) {
+                            unset($dadosAlterados[$field]);
                         }
                     }
                 }
 
-                // Processar equipe
-                if (!empty($postData['adicionar_membro'])) {
-                    $alteracoes['equipe']['adicionar'] = explode(',', $postData['adicionar_membro']);
-                }
-                if (!empty($postData['remover_membro'])) {
-                    $alteracoes['equipe']['remover'] = explode(',', $postData['remover_membro']);
-                }
+                // Verificar se ainda há alterações após a filtragem
+                $temAlteracoes = !empty($dadosAlterados);
 
-                // Processar evidências
-                $evidenciasSolicitadas = [];
-
-                if (!empty($postData['evidencias_adicionadas'])) {
-                    $evidenciasAdicionadas = json_decode($postData['evidencias_adicionadas'], true);
-                    if (!empty($evidenciasAdicionadas)) {
-                        $evidenciasSolicitadas['adicionar'] = array_map(function ($ev) {
-                            return [
-                                'tipo' => $ev['tipo'],
-                                'conteudo' => $ev['conteudo'],
-                                'descricao' => $ev['descricao'] ?? null
-                            ];
-                        }, $evidenciasAdicionadas);
-                    }
+                if (
+                    !$temAlteracoes &&
+                    empty($dadosAlterados['responsaveis']) &&
+                    empty($dadosAlterados['evidencias'])
+                ) {
+                    $response['message'] = 'Nenhuma alteração foi feita nos campos editáveis';
+                    return $this->response->setJSON($response);
                 }
 
-                if (!empty($postData['evidencias_removidas'])) {
-                    $evidenciasRemovidas = json_decode($postData['evidencias_removidas'], true);
-                    if (!empty($evidenciasRemovidas)) {
-                        $evidenciasSolicitadas['remover'] = $evidenciasRemovidas;
-                    }
+                // Log 2: Dados alterados decodificados
+                log_message('info', 'Dados alterados decodificados: ' . print_r($dadosAlterados, true));
+
+                // Verificar se há alterações nos responsáveis
+                $alteracoesEquipe = [];
+                if (isset($dadosAlterados['responsaveis'])) {
+                    $alteracoesEquipe = $dadosAlterados['responsaveis'];
+
+                    // Log 3: Alterações na equipe
+                    log_message('info', 'Alterações na equipe: ' . print_r($alteracoesEquipe, true));
                 }
 
-                if (!empty($evidenciasSolicitadas)) {
-                    $alteracoes['evidencias'] = $evidenciasSolicitadas;
-                }
-
+                // Montar dados completos para a solicitação
                 $data = [
                     'nivel' => 'acao',
                     'id_solicitante' => auth()->id(),
@@ -768,21 +768,34 @@ class Acoes extends BaseController
                     'id_acao' => $postData['id'],
                     'tipo' => 'Edição',
                     'dados_atuais' => json_encode($acaoAtual, JSON_UNESCAPED_UNICODE),
-                    'dados_alterados' => json_encode($alteracoes, JSON_UNESCAPED_UNICODE),
+                    'dados_alterados' => json_encode($dadosAlterados, JSON_UNESCAPED_UNICODE),
                     'justificativa_solicitante' => $postData['justificativa'],
                     'status' => 'pendente',
                     'data_solicitacao' => date('Y-m-d H:i:s')
                 ];
 
-                $this->solicitacoesModel->insert($data);
+                // Log 4: Dados completos que serão inseridos no banco
+                log_message('info', 'Dados completos para inserção no banco: ' . print_r([
+                    'data' => $data,
+                    'dados_atuais_decoded' => $acaoAtual,
+                    'dados_alterados_decoded' => $dadosAlterados
+                ], true));
+
+                $insertId = $this->solicitacoesModel->insert($data);
+
+                // Log 5: Confirmação de inserção
+                log_message('info', 'Solicitação inserida com ID: ' . $insertId);
+
                 $response['success'] = true;
                 $response['message'] = 'Solicitação de edição enviada com sucesso!';
             } catch (\Exception $e) {
-                log_message('error', 'Erro em solicitarEdicao: ' . $e->getMessage());
+                log_message('error', 'Erro em solicitarEdicao: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
                 $response['message'] = 'Erro ao processar solicitação: ' . $e->getMessage();
             }
         } else {
-            $response['message'] = implode('<br>', $this->validator->getErrors());
+            $errorMessages = $this->validator->getErrors();
+            log_message('error', 'Erros de validação: ' . print_r($errorMessages, true));
+            $response['message'] = implode('<br>', $errorMessages);
         }
 
         return $this->response->setJSON($response);
