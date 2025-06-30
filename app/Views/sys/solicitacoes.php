@@ -133,12 +133,9 @@
         </div>
     </div>
 </div>
-
-<!-- Aqui deixamos os eixos disponíveis para JavaScript -->
 <script>
     var eixos = <?= json_encode($eixos, JSON_UNESCAPED_UNICODE) ?>;
 </script>
-
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap4.min.css" />
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
@@ -169,122 +166,202 @@
                 url: '<?= site_url('solicitacoes/avaliar') ?>/' + id,
                 type: 'GET',
                 dataType: 'json',
-                beforeSend: function() {},
                 success: function(response) {
                     if (response.success) {
                         var data = response.data;
                         $('#solicitacaoId').val(id);
-                        // Preenche tabela de dados atuais
+                        // DADOS ATUAIS
                         let htmlAtuais = '';
                         if (data.tipo && data.tipo.toLowerCase() === 'inclusão') {
                             htmlAtuais = `
-                            <tr><th width="30%">Tipo</th><td>Novo(a) ${data.nivel.charAt(0).toUpperCase() + data.nivel.slice(1)}</td></tr>
-                            <tr><th width="30%">Status</th><td><span class="badge badge-info">Novo Registro</span></td></tr>`;
+<tr><th width="30%">Tipo</th><td>Novo(a) ${capitalize(data.nivel)}</td></tr>
+<tr><th width="30%">Status</th><td><span class="badge badge-info">Novo Registro</span></td></tr>`;
                         } else {
-                            let responsaveisJaExibido = false;
+                            let respJaExibido = false;
                             for (let key in data.dados_atuais) {
                                 if (key === 'equipe' || key === 'ordem' || key === 'id') continue;
                                 if (key === 'id_eixo') {
                                     htmlAtuais += `
-                                        <tr>
-                                            <th width="30%">Eixo</th>
-                                            <td>` + (eixos[data.dados_atuais[key]] ?? '<span class="text-muted">Não informado</span>') + `</td>
-                                        </tr>`;
-                                } else if (key === 'responsaveis_nomes' && !responsaveisJaExibido) {
+<tr>
+    <th width="30%">Eixo</th>
+    <td>` + (eixos[data.dados_atuais[key]] ?? '<span class="text-muted">Não informado</span>') + `</td>
+</tr>`;
+                                } else if (key === 'evidencias') {
+                                    let qtdEv = data.dados_atuais.total_evidencias !== undefined ?
+                                        data.dados_atuais.total_evidencias :
+                                        (Array.isArray(data.dados_atuais.evidencias) ? data.dados_atuais.evidencias.length : 0);
                                     htmlAtuais += `
-                                    <tr>
-                                        <th width="30%">Responsáveis</th>
-                                        <td>` + formatFieldValue(data.dados_atuais[key], key) + `</td>
-                                    </tr>`;
-                                    responsaveisJaExibido = true;
-                                } else if (key !== 'responsaveis' && key !== 'responsaveis_nomes' && key !== 'id_eixo') {
+<tr>
+    <th width="30%">Evidências</th>
+    <td><span class="badge badge-secondary">Qtd. evidências: <b>${qtdEv}</b></span></td>
+</tr>`;
+                                } else if (key === 'indicadores') {
+                                    let qtdInd = data.dados_atuais.total_indicadores !== undefined ?
+                                        data.dados_atuais.total_indicadores :
+                                        (Array.isArray(data.dados_atuais.indicadores) ? data.dados_atuais.indicadores.length : 0);
                                     htmlAtuais += `
-                                    <tr>
-                                        <th width="30%">` + formatFieldName(key) + `</th>
-                                        <td>` + formatFieldValue(data.dados_atuais[key], key) + `</td>
-                                    </tr>`;
+<tr>
+    <th width="30%">Indicadores</th>
+    <td><span class="badge badge-secondary">Qtd. indicadores: <b>${qtdInd}</b></span></td>
+</tr>`;
+                                } else if (key === 'responsaveis_nomes' && !respJaExibido) {
+                                    htmlAtuais += `
+<tr>
+    <th width="30%">Responsáveis</th>
+    <td>` + formatFieldValue(data.dados_atuais[key], key) + `</td>
+</tr>`;
+                                    respJaExibido = true;
+                                } else if (key === 'priorizacao_gab') {
+                                    htmlAtuais += `
+<tr>
+    <th width="30%">Priorização GAB</th>
+    <td>` + formatFieldValue(data.dados_atuais[key], key) + `</td>
+</tr>`;
+                                } else if (
+                                    key !== 'total_evidencias' &&
+                                    key !== 'total_indicadores' &&
+                                    key !== 'responsaveis' &&
+                                    key !== 'responsaveis_nomes' &&
+                                    key !== 'id_eixo'
+                                ) {
+                                    htmlAtuais += `
+<tr>
+    <th width="30%">` + formatFieldName(key) + `</th>
+    <td>` + formatFieldValue(data.dados_atuais[key], key) + `</td>
+</tr>`;
                                 }
                             }
                         }
                         $('#tabelaDadosAtuais').html(htmlAtuais);
-                        // Preenche tabela de alterações
+                        // ----- ALTERAÇÕES SOLICITADAS -----
                         let htmlAlterados = '';
                         if (data.tipo && data.tipo.toLowerCase() === 'inclusão') {
                             for (let key in data.dados_alterados) {
-                                if (key === 'ordem' || key === 'id') continue;
+                                if (
+                                    key === 'ordem' ||
+                                    key === 'id' ||
+                                    key === 'total_evidencias' ||
+                                    key === 'total_indicadores'
+                                ) continue;
                                 if (key === 'id_eixo') {
                                     htmlAlterados += `
-                                        <tr>
-                                            <th width="30%">Eixo</th>
-                                            <td class="text-success"><strong>` + (eixos[data.dados_alterados[key]] ?? '<span class="text-muted">Não informado</span>') + `</strong></td>
-                                        </tr>`;
+<tr>
+    <th width="30%">Eixo</th>
+    <td class="text-success"><strong>` + (eixos[data.dados_alterados[key]] ?? '<span class="text-muted">Não informado</span>') + `</strong></td>
+</tr>`;
                                 } else {
                                     htmlAlterados += `
-                                    <tr>
-                                        <th width="30%">` + formatFieldName(key) + `</th>
-                                        <td class="text-success"><strong>` + formatFieldValue(data.dados_alterados[key], key) + `</strong></td>
-                                    </tr>`;
+<tr>
+    <th width="30%">` + formatFieldName(key) + `</th>
+    <td class="text-success"><strong>` + formatFieldValue(data.dados_alterados[key], key) + `</strong></td>
+</tr>`;
                                 }
                             }
                         } else if (data.tipo && data.tipo.toLowerCase() === 'exclusão') {
                             htmlAlterados = `
-                            <tr><th width="30%">Tipo</th><td class="text-danger"><strong>Exclusão de ${data.nivel.charAt(0).toUpperCase() + data.nivel.slice(1)}</strong></td></tr>
-                            <tr><th width="30%">Status</th><td><span class="badge badge-danger">Registro será removido</span></td></tr>`;
+<tr><th width="30%">Tipo</th><td class="text-danger"><strong>Exclusão de ${capitalize(data.nivel)}</strong></td></tr>
+<tr><th width="30%">Status</th><td><span class="badge badge-danger">Registro será removido</span></td></tr>`;
                         } else {
                             for (let key in data.dados_alterados) {
-                                if (key === 'equipe' || key === 'ordem' || key === 'id') continue;
+                                if (
+                                    key === 'equipe' ||
+                                    key === 'ordem' ||
+                                    key === 'id' ||
+                                    key === 'total_evidencias' ||
+                                    key === 'total_indicadores'
+                                ) continue;
                                 if (key === 'id_eixo') {
                                     htmlAlterados += `
-                                        <tr>
-                                            <th width="30%">Eixo</th>
-                                            <td>` + (eixos[data.dados_alterados[key]] ?? '<span class="text-muted">Não informado</span>') + `</td>
-                                        </tr>`;
+<tr>
+    <th width="30%">Eixo</th>
+    <td>` + (eixos[data.dados_alterados[key]] ?? '<span class="text-muted">Não informado</span>') + `</td>
+</tr>`;
                                 } else if (key === 'evidencias') {
                                     if (data.dados_alterados.evidencias.adicionar && data.dados_alterados.evidencias.adicionar.length > 0) {
                                         htmlAlterados += `
-                                    <tr>
-                                        <th width="30%">Evidências a Adicionar</th>
-                                        <td>
-                                            <div class="text-success">`;
+<tr>
+    <th width="30%">Evidências a Adicionar</th>
+    <td>
+        <div class="text-success">`;
                                         data.dados_alterados.evidencias.adicionar.forEach(ev => {
                                             htmlAlterados += `
-                                                <div class="mb-3 p-2 border border-success rounded">
-                                                    ${formatEvidence(ev)}
-                                                </div>`;
+            <div class="mb-3 p-2 border border-success rounded">
+                ${formatEvidence(ev)}
+            </div>`;
                                         });
                                         htmlAlterados += `</div></td></tr>`;
                                     }
                                     if (data.dados_alterados.evidencias.remover && data.dados_alterados.evidencias.remover.length > 0) {
                                         htmlAlterados += `
-                                    <tr>
-                                        <th width="30%">Evidências a Remover</th>
-                                        <td>
-                                            <div class="text-danger">`;
+<tr>
+    <th width="30%">Evidências a Remover</th>
+    <td>
+        <div class="text-danger">`;
                                         data.dados_alterados.evidencias.remover.forEach(ev => {
                                             htmlAlterados += `
-                                                <div class="mb-3 p-2 border border-danger rounded">
-                                                    ${formatEvidence(ev)}
-                                                </div>`;
+            <div class="mb-3 p-2 border border-danger rounded">
+                ${formatEvidence(ev)}
+            </div>`;
+                                        });
+                                        htmlAlterados += `</div></td></tr>`;
+                                    }
+                                } else if (key === 'indicadores') {
+                                    if (data.dados_alterados.indicadores.adicionar && data.dados_alterados.indicadores.adicionar.length > 0) {
+                                        htmlAlterados += `
+<tr>
+    <th width="30%">Indicadores a Adicionar</th>
+    <td>
+        <div class="text-success">`;
+                                        data.dados_alterados.indicadores.adicionar.forEach(ev => {
+                                            htmlAlterados += `
+            <div class="mb-3 p-2 border border-success rounded">
+                ${formatIndicator(ev)}
+            </div>`;
+                                        });
+                                        htmlAlterados += `</div></td></tr>`;
+                                    }
+                                    if (data.dados_alterados.indicadores.remover && data.dados_alterados.indicadores.remover.length > 0) {
+                                        htmlAlterados += `
+<tr>
+    <th width="30%">Indicadores a Remover</th>
+    <td>
+        <div class="text-danger">`;
+                                        data.dados_alterados.indicadores.remover.forEach(ev => {
+                                            htmlAlterados += `
+            <div class="mb-3 p-2 border border-danger rounded">
+                ${formatIndicator(ev)}
+            </div>`;
                                         });
                                         htmlAlterados += `</div></td></tr>`;
                                     }
                                 } else if (key === 'responsaveis') {
                                     htmlAlterados += `
-                                    <tr>
-                                        <th width="30%">Responsáveis</th>
-                                        <td>` + formatFieldValue(data.dados_alterados[key], key) + `</td>
-                                    </tr>`;
+<tr>
+    <th width="30%">Responsáveis</th>
+    <td>` + formatFieldValue(data.dados_alterados[key], key) + `</td>
+</tr>`;
+                                } else if (
+                                    typeof data.dados_alterados[key] === 'object' &&
+                                    data.dados_alterados[key] !== null &&
+                                    data.dados_alterados[key].hasOwnProperty('de') &&
+                                    data.dados_alterados[key].hasOwnProperty('para')
+                                ) {
+                                    htmlAlterados += `
+<tr>
+    <th width="30%">` + formatFieldName(key) + `</th>
+    <td>` + formatFieldValue(data.dados_alterados[key].para, key) + `</td>
+</tr>`;
                                 } else if (key !== 'responsaveis_nomes' && key !== 'id_eixo') {
                                     htmlAlterados += `
-                                    <tr>
-                                        <th width="30%">` + formatFieldName(key) + `</th>
-                                        <td>` + formatFieldValue(data.dados_alterados[key], key) + `</td>
-                                    </tr>`;
+<tr>
+    <th width="30%">` + formatFieldName(key) + `</th>
+    <td>` + formatFieldValue(data.dados_alterados[key], key) + `</td>
+</tr>`;
                                 }
                             }
                         }
                         $('#tabelaDadosAlterados').html(htmlAlterados);
-                        // Preenche informações do solicitante
+                        // Info solicitante
                         $('#nomeSolicitante').text(data.solicitante || 'Não informado');
                         $('#dataSolicitacao').text(data.data_solicitacao ?
                             new Date(data.data_solicitacao).toLocaleString('pt-BR') : 'Não informado');
@@ -310,7 +387,7 @@
                 }
             });
         });
-        // Ações aceitar/recusar
+        // Processamento aceitar/recusar
         $('.aceitar-btn, .recusar-btn').click(function() {
             var acao = $(this).hasClass('aceitar-btn') ? 'aceitar' : 'recusar';
             var formData = $('#formAvaliar').serialize() + '&acao=' + acao;
@@ -400,6 +477,17 @@
                 if (!html) html = '<span class="text-muted">Sem alterações</span>';
                 return html;
             }
+            if (key === 'priorizacao_gab') {
+                if (value == 1) return '<span class="badge badge-success">Priorizado</span>';
+                if (value == 0) return '<span class="badge badge-danger">Não priorizado</span>';
+                if (typeof value === 'boolean')
+                    return value ? '<span class="badge badge-success">Priorizado</span>' : '<span class="badge badge-danger">Não priorizado</span>';
+                if (typeof value === 'string')
+                    return value.charAt(0).toUpperCase() + value.slice(1);
+                if (typeof value === 'object' && value !== null) {
+                    return Object.values(value).join(', ');
+                }
+            }
             if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
                 const [y, m, d] = value.split('-');
                 return `${d}/${m}/${y}`;
@@ -409,35 +497,65 @@
                 const [y, m, d] = date.split('-');
                 return `${d}/${m}/${y} ${time}`;
             }
+            if (Array.isArray(value)) {
+                return value.join(', ');
+            }
+            if (typeof value === 'object' && value !== null) {
+                return Object.values(value).join(', ');
+            }
             return value;
         }
-
+        // FORMATAÇÃO DE EVIDÊNCIA - CADA ITEM EM LINHA SEPARADA
         function formatEvidence(evidence) {
             let conteudo = evidence.link || evidence.evidencia || evidence.conteudo || '';
+            let descricao = evidence.descricao || evidence.descricao_evidencia || '';
             let isLink = (
                 evidence.tipo === 'link' ||
                 evidence.tipo === 'url' ||
                 (typeof conteudo === 'string' && (conteudo.startsWith('http://') || conteudo.startsWith('https://')))
             );
             let html = '<div class="mb-2">';
+            html += '<div class="mb-2"><strong>Evidência:</strong></div>';
             if (isLink && conteudo) {
-                html += `
-                <div class="mb-2">
-                    <strong>Evidência:</strong>
-                    <div class="mt-1">
-                        <a href="${conteudo}" class="btn btn-primary btn-sm text-truncate" style="max-width:160px;" target="_blank" rel="noopener">
-                            <i class="fas fa-external-link-alt"></i> Acessar
-                        </a>
-                    </div>
-                </div>
-            `;
+                html += `<div class="mb-2">
+                    <a href="${conteudo}" class="btn btn-primary btn-sm text-truncate" style="max-width:160px;" target="_blank" rel="noopener">
+                        <i class="fas fa-external-link-alt"></i> Acessar
+                    </a>
+                </div>`;
             } else if (conteudo) {
-                html += `<div class="mb-2 text-break"><strong>Evidência:</strong> <span class="text-break">${conteudo}</span></div>`;
+                html += `<div class="mb-2 text-break">${conteudo}</div>`;
             } else {
-                html += `<span class="text-muted">Sem evidência informada</span>`;
+                html += `<div class="mb-2 text-muted">Sem evidência informada</div>`;
+            }
+            if (descricao) {
+                html += `<div class="mb-1"><strong>Descrição:</strong></div>
+                         <div class="mb-2 text-break">${descricao}</div>`;
             }
             html += '</div>';
             return html;
+        }
+        // INDICADOR - CADA COMPONENTE EM UMA LINHA SEPARADA
+        function formatIndicator(ind) {
+            let nome = ind.nome || ind.indicador || ind.conteudo || '';
+            let valor = ind.valor || '';
+            let unidade = ind.unidade || '';
+            let descricao = ind.descricao || '';
+            let html = '<div class="mb-2">';
+            html += '<div class="mb-2"><strong>Indicador:</strong></div>';
+            html += `<div class="mb-2 text-break">${nome ? nome : '<span class="text-muted">N/A</span>'}</div>`;
+            if (descricao) {
+                html += '<div class="mb-1"><strong>Descrição:</strong></div>';
+                html += `<div class="mb-2 text-break">${descricao}</div>`;
+            }
+            if (valor || unidade) {
+                html += `<div class="mb-2"><span class="text-primary">${valor}${unidade ? ' ' + unidade : ''}</span></div>`;
+            }
+            html += '</div>';
+            return html;
+        }
+
+        function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
         }
     });
 </script>

@@ -282,7 +282,9 @@
                 id_eixo: $('#solicitarEdicaoEixo').val(),
                 status: $('#solicitarEdicaoStatus').val(),
                 justificativa: $('#solicitarEdicaoJustificativa').val(),
-                responsaveis: {}, // Inicializa vazio - só preenche se houver alterações
+                responsaveis: {
+                    atuais: getResponsaveisAtuaisSolicitacao()
+                },
                 evidencias: {
                     adicionar: getEvidenciasParaAdicionarSolicitacao(),
                     remover: getEvidenciasParaRemoverSolicitacao()
@@ -292,27 +294,6 @@
                     remover: getIndicadoresParaRemoverSolicitacao()
                 }
             };
-
-            // Verificar alterações nos responsáveis
-            const responsaveisAtuais = $('#responsaveisAtuaisListSolicitacao .list-group-item')
-                .map(function() {
-                    const id = $(this).data('user-id');
-                    return id ? parseInt(id) : null;
-                }).get().filter(Boolean);
-
-            const responsaveisOriginais = window.projetoOriginalData.responsaveis || [];
-            const responsaveisOriginaisIds = responsaveisOriginais.map(r => {
-                return r.usuario_id || r.id || r;
-            }).filter(Boolean).map(id => parseInt(id));
-
-            // Só inclui responsaveis no formData se houver alterações
-            if (JSON.stringify(responsaveisAtuais.sort()) !== JSON.stringify(responsaveisOriginaisIds.sort())) {
-                formData.responsaveis = {
-                    atuais: responsaveisAtuais,
-                    adicionar: responsaveisAtuais.filter(id => !responsaveisOriginaisIds.includes(id)),
-                    remover: responsaveisOriginaisIds.filter(id => !responsaveisAtuais.includes(id))
-                };
-            }
 
             // Verificar se há alterações em qualquer campo
             const projetoOriginal = window.projetoOriginalData || {};
@@ -337,7 +318,18 @@
             }
 
             // Verificar alterações em responsáveis
-            if (Object.keys(formData.responsaveis).length > 0) {
+            const responsaveisAtuais = $('#responsaveisAtuaisListSolicitacao .list-group-item')
+                .map(function() {
+                    const id = $(this).data('user-id');
+                    return id ? parseInt(id) : null;
+                }).get().filter(Boolean);
+
+            const responsaveisOriginais = window.projetoOriginalData.responsaveis || [];
+            const responsaveisOriginaisIds = responsaveisOriginais.map(r => {
+                return r.usuario_id || r.id || r;
+            }).filter(Boolean).map(id => parseInt(id));
+
+            if (JSON.stringify(responsaveisAtuais.sort()) !== JSON.stringify(responsaveisOriginaisIds.sort())) {
                 hasChanges = true;
             }
 
@@ -1974,11 +1966,8 @@
         function getResponsaveisAtuaisSolicitacao() {
             const responsaveis = [];
             $('#responsaveisAtuaisListSolicitacao .list-group-item').each(function() {
-                responsaveis.push({
-                    usuario_id: $(this).data('user-id'),
-                    name: $(this).find('strong').text(),
-                    email: $(this).find('.text-muted').text() || ''
-                });
+                const id = $(this).data('user-id');
+                if (id) responsaveis.push(parseInt(id));
             });
             return responsaveis;
         }

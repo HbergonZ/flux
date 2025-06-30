@@ -7,7 +7,7 @@ use App\Models\EtapasModel;
 use App\Models\AcoesModel;
 use App\Models\ProjetosModel;
 use App\Models\PlanosModel;
-use App\Models\EixosModel; // <--- ADICIONADO
+use App\Models\EixosModel;
 use CodeIgniter\Shield\Models\UserModel;
 use App\Controllers\LogController;
 
@@ -20,7 +20,7 @@ class Solicitacoes extends BaseController
     protected $planosModel;
     protected $userModel;
     protected $logController;
-    protected $eixosModel; // <--- ADICIONADO
+    protected $eixosModel;
 
     public function __construct()
     {
@@ -31,29 +31,34 @@ class Solicitacoes extends BaseController
         $this->planosModel = new PlanosModel();
         $this->userModel = new UserModel();
         $this->logController = new LogController();
-        $this->eixosModel = new EixosModel(); // <--- ADICIONADO
+        $this->eixosModel = new EixosModel();
     }
 
     public function index()
     {
         $solicitacoes = $this->solicitacoesModel->where('status', 'pendente')->findAll();
-
-        // BUSCA TODOS OS EIXOS E MAPA EM ARRAY [id => nome]
         $eixos = [];
         foreach ($this->eixosModel->select('id, nome')->findAll() as $eixo) {
             $eixos[$eixo['id']] = $eixo['nome'];
         }
-
         foreach ($solicitacoes as &$solicitacao) {
             $dados = json_decode($solicitacao['dados_atuais'] ?? '{}', true);
+            $dados_alterados = json_decode($solicitacao['dados_alterados'] ?? '{}', true);
+            // Totais de evidências e indicadores nos dados atuais
+            $solicitacao['total_evidencias'] = (!empty($dados['evidencias']) && is_array($dados['evidencias'])) ? count($dados['evidencias']) : 0;
+            $solicitacao['total_indicadores'] = (!empty($dados['indicadores']) && is_array($dados['indicadores'])) ? count($dados['indicadores']) : 0;
+            // Totais nos dados alterados
+            $solicitacao['total_evidencias_alteradas'] = (!empty($dados_alterados['evidencias']) && is_array($dados_alterados['evidencias'])) ? count($dados_alterados['evidencias']) : 0;
+            $solicitacao['total_indicadores_alteradas'] = (!empty($dados_alterados['indicadores']) && is_array($dados_alterados['indicadores'])) ? count($dados_alterados['indicadores']) : 0;
             $solicitacao['nome'] = $this->getNomeSolicitacao($solicitacao, $dados);
             $solicitacao['solicitante'] = $this->getSolicitanteName($solicitacao['id_solicitante']);
         }
+        unset($solicitacao);
 
         $data = [
             'title' => 'Solicitações Pendentes',
             'solicitacoes' => $solicitacoes,
-            'eixos' => $eixos // <-- ADICIONADO
+            'eixos' => $eixos
         ];
         return view('layout', ['content' => view('sys/solicitacoes', $data)]);
     }
@@ -96,6 +101,11 @@ class Solicitacoes extends BaseController
         }
         $dadosAtuais = json_decode($solicitacao['dados_atuais'], true) ?? [];
         $dadosAlterados = json_decode($solicitacao['dados_alterados'], true) ?? [];
+        // Contagem de evidências e indicadores nos atuais e alterados
+        $dadosAtuais['total_evidencias'] = (!empty($dadosAtuais['evidencias']) && is_array($dadosAtuais['evidencias'])) ? count($dadosAtuais['evidencias']) : 0;
+        $dadosAtuais['total_indicadores'] = (!empty($dadosAtuais['indicadores']) && is_array($dadosAtuais['indicadores'])) ? count($dadosAtuais['indicadores']) : 0;
+        $dadosAlterados['total_evidencias'] = (!empty($dadosAlterados['evidencias']) && is_array($dadosAlterados['evidencias'])) ? count($dadosAlterados['evidencias']) : 0;
+        $dadosAlterados['total_indicadores'] = (!empty($dadosAlterados['indicadores']) && is_array($dadosAlterados['indicadores'])) ? count($dadosAlterados['indicadores']) : 0;
         // Carregar nomes dos responsáveis em dados_atuais
         if (!empty($dadosAtuais['responsaveis'])) {
             $responsaveisIds = $dadosAtuais['responsaveis'];
@@ -106,7 +116,7 @@ class Solicitacoes extends BaseController
         } else {
             $dadosAtuais['responsaveis_nomes'] = [];
         }
-        // Carregar nomes dos responsáveis nas alterações, se houver
+        // Carregar nomes dos responsáveis nas alterações
         if (!empty($dadosAlterados['responsaveis'])) {
             $addIds = isset($dadosAlterados['responsaveis']['adicionar']) ? $dadosAlterados['responsaveis']['adicionar'] : [];
             $remIds = isset($dadosAlterados['responsaveis']['remover']) ? $dadosAlterados['responsaveis']['remover'] : [];
@@ -114,6 +124,14 @@ class Solicitacoes extends BaseController
             $remIds = is_array($remIds) ? $remIds : [];
             $dadosAlterados['responsaveis']['adicionar_nomes'] = array_column($this->getUserNamesByIds($addIds), 'name');
             $dadosAlterados['responsaveis']['remover_nomes'] = array_column($this->getUserNamesByIds($remIds), 'name');
+        }
+        // Padroniza evidências para trazer objeto adicionar/remover
+        if (!empty($dadosAlterados['evidencias'])) {
+            $dadosAlterados['evidencias'] = $this->processarEvidenciasParaVisualizacao($dadosAlterados['evidencias'], $solicitacao['id_acao'] ?? null);
+        }
+        // Indicadores mesma lógica
+        if (!empty($dadosAlterados['indicadores'])) {
+            $dadosAlterados['indicadores'] = $this->processarEvidenciasParaVisualizacao($dadosAlterados['indicadores'], $solicitacao['id_acao'] ?? null);
         }
         $usuario = null;
         if (!empty($solicitacao['id_solicitante'])) {
@@ -163,7 +181,6 @@ class Solicitacoes extends BaseController
         }
         return $result;
     }
-
     protected function replaceUserIdsWithNames($equipeData)
     {
         if (!is_array($equipeData)) return $equipeData;
@@ -175,7 +192,6 @@ class Solicitacoes extends BaseController
         }
         return !empty($result) ? $result : $equipeData;
     }
-
     protected function parseSolicitacaoData($data)
     {
         return !empty($data) ? json_decode($data, true) : [];

@@ -768,9 +768,41 @@ class Projetos extends BaseController
                 throw new \Exception('Projeto não encontrado ou não pertence ao plano especificado');
             }
 
+            // Obter dados atuais completos
+            $dadosAtuais = [
+                'id' => $projeto['id'],
+                'identificador' => $projeto['identificador'],
+                'nome' => $projeto['nome'],
+                'descricao' => $projeto['descricao'],
+                'metas' => $projeto['metas'],
+                'projeto_vinculado' => $projeto['projeto_vinculado'],
+                'priorizacao_gab' => $projeto['priorizacao_gab'],
+                'id_eixo' => $projeto['id_eixo'],
+                'status' => $projeto['status'],
+                'data_criacao' => $projeto['data_criacao'],
+                'data_atualizacao' => $projeto['data_atualizacao']
+            ];
+
             // Obter responsáveis atuais do banco de dados
-            $responsaveisOriginais = $this->projetosModel->getResponsaveis($projeto['id']);
-            $responsaveisOriginaisIds = array_column($responsaveisOriginais, 'usuario_id');
+            $responsaveisModel = new \App\Models\ResponsaveisModel();
+            $responsaveisAtuais = $responsaveisModel->getResponsaveis('projeto', $projeto['id']);
+            $dadosAtuais['responsaveis'] = array_column($responsaveisAtuais, 'usuario_id');
+
+            // Obter evidências atuais
+            $evidenciasModel = new \App\Models\EvidenciasModel();
+            $evidenciasAtuais = $evidenciasModel
+                ->where('nivel', 'projeto')
+                ->where('id_nivel', $projeto['id'])
+                ->findAll();
+            $dadosAtuais['evidencias'] = array_column($evidenciasAtuais, 'id');
+
+            // Obter indicadores atuais
+            $indicadoresModel = new \App\Models\IndicadoresModel();
+            $indicadoresAtuais = $indicadoresModel
+                ->where('nivel', 'projeto')
+                ->where('id_nivel', $projeto['id'])
+                ->findAll();
+            $dadosAtuais['indicadores'] = array_column($indicadoresAtuais, 'id');
 
             // Processar responsáveis do formulário
             $responsaveisAtuaisIds = [];
@@ -827,8 +859,8 @@ class Projetos extends BaseController
             }
 
             // Processar alterações de responsáveis
-            $responsaveisAdicionar = array_diff($responsaveisAtuaisIds, $responsaveisOriginaisIds);
-            $responsaveisRemover = array_diff($responsaveisOriginaisIds, $responsaveisAtuaisIds);
+            $responsaveisAdicionar = array_diff($responsaveisAtuaisIds, $dadosAtuais['responsaveis']);
+            $responsaveisRemover = array_diff($dadosAtuais['responsaveis'], $responsaveisAtuaisIds);
 
             if (!empty($responsaveisAdicionar) || !empty($responsaveisRemover)) {
                 $alteracoes['responsaveis'] = [
@@ -865,7 +897,7 @@ class Projetos extends BaseController
                 'id_projeto' => $postData['id_projeto'],
                 'id_plano' => $postData['id_plano'],
                 'tipo' => 'edicao',
-                'dados_atuais' => json_encode($projeto, JSON_UNESCAPED_UNICODE),
+                'dados_atuais' => json_encode($dadosAtuais, JSON_UNESCAPED_UNICODE),
                 'dados_alterados' => json_encode($alteracoes, JSON_UNESCAPED_UNICODE),
                 'justificativa_solicitante' => $postData['justificativa'],
                 'status' => 'pendente',
@@ -931,6 +963,7 @@ class Projetos extends BaseController
                     'identificador' => $projeto['identificador'],
                     'nome' => $projeto['nome'],
                     'descricao' => $projeto['descricao'],
+                    'metas' => $projeto['metas'],
                     'projeto_vinculado' => $projeto['projeto_vinculado'],
                     'priorizacao_gab' => $projeto['priorizacao_gab'],
                     'id_eixo' => $projeto['id_eixo'],
