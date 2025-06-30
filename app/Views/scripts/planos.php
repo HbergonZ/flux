@@ -183,23 +183,6 @@
             submitForm($(this), '#editPlanoModal');
         });
 
-        // Solicitar edição
-        $('#formSolicitarEdicao').submit(function(e) {
-            e.preventDefault();
-            submitForm($(this), '#solicitarEdicaoModal', 'Solicitação de edição enviada com sucesso!');
-        });
-
-        // Solicitar exclusão
-        $('#formSolicitarExclusao').submit(function(e) {
-            e.preventDefault();
-            submitForm($(this), '#solicitarExclusaoModal', 'Solicitação de exclusão enviada com sucesso!');
-        });
-
-        // Solicitar inclusão
-        $('#formSolicitarInclusao').submit(function(e) {
-            e.preventDefault();
-            submitForm($(this), '#solicitarInclusaoModal', 'Solicitação de inclusão enviada com sucesso!');
-        });
 
         // Aplicar filtros
         $('#formFiltros').submit(function(e) {
@@ -400,84 +383,9 @@
                     }
                 });
             } else {
-                // Carregar dados do plano para solicitação de edição
-                $.ajax({
-                    url: '<?= site_url('planos/dados-plano/') ?>' + planoId,
-                    type: 'GET',
-                    dataType: 'json',
-                    beforeSend: function() {
-                        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
-                    },
-                    complete: function() {
-                        btn.prop('disabled', false).html('<i class="fas fa-edit"></i>');
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            // Preencher o modal de solicitação de edição
-                            $('#solicitarEdicaoId').val(response.data.id);
-                            $('#solicitarEdicaoNome').val(response.data.nome);
-                            $('#solicitarEdicaoSigla').val(response.data.sigla);
-                            $('#solicitarEdicaoDescricao').val(response.data.descricao);
 
-                            // Limpar a justificativa
-                            $('#solicitarEdicaoJustificativa').val('');
-
-                            // Mostrar o modal
-                            $('#solicitarEdicaoModal').modal('show');
-                        } else {
-                            Swal.fire('Erro', response.message || 'Erro ao carregar dados do plano', 'error');
-                        }
-                    },
-                    error: function(xhr) {
-                        Swal.fire('Erro', 'Falha na comunicação com o servidor', 'error');
-                    }
-                });
             }
         });
 
-        // Abrir modal de solicitação de exclusão quando clicar no botão de solicitar exclusão
-        $(document).on('click', '.btn-danger[title="Solicitar Exclusão"]', function() {
-            var btn = $(this);
-            var planoId = btn.data('id').split('-')[0];
-            var planoName = btn.closest('tr').find('td:first').text();
-
-            // Carregar dados do plano para solicitação de exclusão
-            $.ajax({
-                url: '<?= site_url('planos/dados-plano/') ?>' + planoId,
-                type: 'GET',
-                dataType: 'json',
-                beforeSend: function() {
-                    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
-                },
-                complete: function() {
-                    btn.prop('disabled', false).html('<i class="fas fa-trash-alt"></i>');
-                },
-                success: function(response) {
-                    if (response.success) {
-                        // Preencher o modal de solicitação de exclusão
-                        $('#solicitarExclusaoId').val(response.data.id);
-                        $('#planoNameToRequestDelete').text(response.data.nome);
-
-                        // Formatando os dados atuais para exibição
-                        var dadosAtuais = `Nome: ${response.data.nome}\n`;
-                        dadosAtuais += `Sigla: ${response.data.sigla}\n`;
-                        dadosAtuais += `Descrição: ${response.data.descricao || 'Nenhuma descrição'}`;
-
-                        $('#solicitarExclusaoDadosAtuais').val(dadosAtuais);
-
-                        // Limpar a justificativa
-                        $('#solicitarExclusaoJustificativa').val('');
-
-                        // Mostrar o modal
-                        $('#solicitarExclusaoModal').modal('show');
-                    } else {
-                        Swal.fire('Erro', response.message || 'Erro ao carregar dados do plano', 'error');
-                    }
-                },
-                error: function(xhr) {
-                    Swal.fire('Erro', 'Falha na comunicação com o servidor', 'error');
-                }
-            });
-        });
     });
 </script>

@@ -2,9 +2,6 @@
 <?php echo view('components/planos/modal-editar-plano.php'); ?>
 <?php echo view('components/planos/modal-confirmar-exclusao.php'); ?>
 <?php echo view('components/planos/modal-adicionar-plano.php'); ?>
-<?php echo view('components/planos/modal-solicitar-edicao.php'); ?>
-<?php echo view('components/planos/modal-solicitar-exclusao.php'); ?>
-<?php echo view('components/planos/modal-solicitar-inclusao.php'); ?>
 
 <div class="container-fluid">
 
@@ -71,13 +68,6 @@
                     </span>
                     <span class="text">Incluir Plano</span>
                 </a>
-            <?php else: ?>
-                <a href="#" class="btn btn-primary btn-icon-split btn-sm" data-toggle="modal" data-target="#solicitarInclusaoModal">
-                    <span class="icon text-white-50">
-                        <i class="fas fa-plus"></i>
-                    </span>
-                    <span class="text">Solicitar Inclusão</span>
-                </a>
             <?php endif; ?>
         </div>
         <div class="card-body">
@@ -130,15 +120,7 @@
                                                     <i class="fas fa-trash-alt"></i>
                                                 </button>
                                             <?php else: ?>
-                                                <!-- Botão Solicitar Edição -->
-                                                <button type="button" class="btn btn-primary btn-sm mx-1 d-flex justify-content-center align-items-center" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Edição">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
 
-                                                <!-- Botão Solicitar Exclusão -->
-                                                <button type="button" class="btn btn-danger btn-sm mx-1 d-flex justify-content-center align-items-center" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Exclusão">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
                                             <?php endif; ?>
                                         </div>
                                     </td>
