@@ -75,6 +75,7 @@
                                 <option value="Em andamento">Em andamento</option>
                                 <option value="Paralisado">Paralisado</option>
                                 <option value="Finalizado">Finalizado</option>
+                                <option value="Finalizado com atraso">Finalizado com atraso</option>
                                 <option value="Atrasado">Atrasado</option>
                             </select>
                         </div>

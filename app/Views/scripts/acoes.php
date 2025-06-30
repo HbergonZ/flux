@@ -12,6 +12,24 @@
 <!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+<style>
+    /* Verde mais claro para "Finalizado com atraso" */
+    .badge-verde-claro {
+        background-color: #d4edda;
+        /* Tom pastel de verde */
+        color: #155724;
+        /* Texto verde escuro */
+        border: 1px solid #c3e6cb;
+        /* Borda verde mais clara */
+    }
+
+    /* Verde padrão do Bootstrap (pode ser redefinido se quiser) */
+    .badge-verde-normal {
+        background-color: #28a745;
+        color: white;
+    }
+</style>
+
 <script>
     // Variáveis globais para controle de evidências na edição
     let evidenciasAdicionadasAcao = [];
@@ -168,10 +186,11 @@
                             if (!data) data = 'Não iniciado';
                             const badgeClass = {
                                 'Finalizado': 'badge-success',
-                                'Em andamento': 'badge-primary',
+                                'Finalizado com atraso': 'badge-verde-claro',
+                                'Em andamento': 'badge-warning',
                                 'Paralisado': 'badge-dark',
                                 'Atrasado': 'badge-danger',
-                                'Não iniciado': 'badge-secondary'
+                                'Não iniciado': 'badge-primary'
                             } [data] || 'badge-secondary';
 
                             return `<span class="badge ${badgeClass}">${data}</span>`;

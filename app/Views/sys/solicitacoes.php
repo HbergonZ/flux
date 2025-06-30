@@ -170,7 +170,7 @@
                     if (response.success) {
                         var data = response.data;
                         $('#solicitacaoId').val(id);
-                        // DADOS ATUAIS
+                        // DADOS ATUAIS ---------------------------
                         let htmlAtuais = '';
                         if (data.tipo && data.tipo.toLowerCase() === 'inclusão') {
                             htmlAtuais = `
@@ -180,7 +180,22 @@
                             let respJaExibido = false;
                             for (let key in data.dados_atuais) {
                                 if (key === 'equipe' || key === 'ordem' || key === 'id') continue;
-                                if (key === 'id_eixo') {
+                                // Exibir Projeto por nome nos atuais
+                                if (key === 'id_projeto') {
+                                    htmlAtuais += `
+<tr>
+    <th width="30%">Projeto</th>
+    <td>` + (data.nome_projeto ?? data.dados_atuais[key]) + `</td>
+</tr>`;
+                                }
+                                // Exibir Plano por nome nos atuais
+                                else if (key === 'id_plano') {
+                                    htmlAtuais += `
+<tr>
+    <th width="30%">Plano</th>
+    <td>` + (data.nome_plano ?? data.dados_atuais[key]) + `</td>
+</tr>`;
+                                } else if (key === 'id_eixo') {
                                     htmlAtuais += `
 <tr>
     <th width="30%">Eixo</th>
@@ -222,7 +237,9 @@
                                     key !== 'total_indicadores' &&
                                     key !== 'responsaveis' &&
                                     key !== 'responsaveis_nomes' &&
-                                    key !== 'id_eixo'
+                                    key !== 'id_eixo' &&
+                                    key !== 'id_projeto' &&
+                                    key !== 'id_plano'
                                 ) {
                                     htmlAtuais += `
 <tr>
@@ -233,17 +250,33 @@
                             }
                         }
                         $('#tabelaDadosAtuais').html(htmlAtuais);
-                        // ----- ALTERAÇÕES SOLICITADAS -----
+                        // ----- ALTERAÇÕES SOLICITADAS --------
                         let htmlAlterados = '';
                         if (data.tipo && data.tipo.toLowerCase() === 'inclusão') {
                             for (let key in data.dados_alterados) {
                                 if (
                                     key === 'ordem' ||
                                     key === 'id' ||
+                                    key === 'id_solicitante' ||
                                     key === 'total_evidencias' ||
                                     key === 'total_indicadores'
                                 ) continue;
-                                if (key === 'id_eixo') {
+                                // Exibir Projeto por nome na inclusão
+                                if (key === 'id_projeto') {
+                                    htmlAlterados += `
+<tr>
+    <th width="30%">Projeto</th>
+    <td class="text-success"><strong>${data.nome_projeto ?? data.dados_alterados[key]}</strong></td>
+</tr>`;
+                                }
+                                // Exibir Plano por nome na inclusão
+                                else if (key === 'id_plano') {
+                                    htmlAlterados += `
+<tr>
+    <th width="30%">Plano</th>
+    <td class="text-success"><strong>${data.nome_plano ?? data.dados_alterados[key]}</strong></td>
+</tr>`;
+                                } else if (key === 'id_eixo') {
                                     htmlAlterados += `
 <tr>
     <th width="30%">Eixo</th>
@@ -270,7 +303,22 @@
                                     key === 'total_evidencias' ||
                                     key === 'total_indicadores'
                                 ) continue;
-                                if (key === 'id_eixo') {
+                                // Exibir Projeto por nome na edição
+                                if (key === 'id_projeto') {
+                                    htmlAlterados += `
+<tr>
+    <th width="30%">Projeto</th>
+    <td><strong>${data.nome_projeto ?? data.dados_alterados[key]}</strong></td>
+</tr>`;
+                                }
+                                // Exibir Plano por nome na edição
+                                else if (key === 'id_plano') {
+                                    htmlAlterados += `
+<tr>
+    <th width="30%">Plano</th>
+    <td><strong>${data.nome_plano ?? data.dados_alterados[key]}</strong></td>
+</tr>`;
+                                } else if (key === 'id_eixo') {
                                     htmlAlterados += `
 <tr>
     <th width="30%">Eixo</th>
@@ -351,7 +399,7 @@
     <th width="30%">` + formatFieldName(key) + `</th>
     <td>` + formatFieldValue(data.dados_alterados[key].para, key) + `</td>
 </tr>`;
-                                } else if (key !== 'responsaveis_nomes' && key !== 'id_eixo') {
+                                } else if (key !== 'responsaveis_nomes' && key !== 'id_eixo' && key !== 'id_projeto' && key !== 'id_plano') {
                                     htmlAlterados += `
 <tr>
     <th width="30%">` + formatFieldName(key) + `</th>
@@ -505,7 +553,7 @@
             }
             return value;
         }
-        // FORMATAÇÃO DE EVIDÊNCIA - CADA ITEM EM LINHA SEPARADA
+
         function formatEvidence(evidence) {
             let conteudo = evidence.link || evidence.evidencia || evidence.conteudo || '';
             let descricao = evidence.descricao || evidence.descricao_evidencia || '';
@@ -534,7 +582,7 @@
             html += '</div>';
             return html;
         }
-        // INDICADOR - CADA COMPONENTE EM UMA LINHA SEPARADA
+
         function formatIndicator(ind) {
             let nome = ind.nome || ind.indicador || ind.conteudo || '';
             let valor = ind.valor || '';

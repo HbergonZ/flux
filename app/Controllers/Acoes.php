@@ -513,11 +513,20 @@ class Acoes extends BaseController
 
     private function calcularStatusNovo($postData)
     {
-        // 1. Se tem data_fim, status é Finalizado
+        // 1. Se tem data_fim, verifica se foi finalizado com atraso
         if (!empty($postData['data_fim'])) {
             if (empty($postData['data_inicio'])) {
                 throw new \RuntimeException('Não é possível definir data de fim sem data de início');
             }
+
+            // Verifica se foi finalizado com atraso
+            if (
+                !empty($postData['entrega_estimada']) &&
+                strtotime($postData['data_fim']) > strtotime($postData['entrega_estimada'])
+            ) {
+                return 'Finalizado com atraso';
+            }
+
             return 'Finalizado';
         }
 
@@ -947,7 +956,6 @@ class Acoes extends BaseController
                 // Prepara os dados da ação
                 $dadosAlterados = [
                     'nome' => $postData['nome'],
-                    'responsavel' => '', // Campo vazio pois usaremos o sistema de responsáveis
                     'tempo_estimado_dias' => $postData['tempo_estimado_dias'] ?? null,
                     'entrega_estimada' => $postData['entrega_estimada'],
                     'data_inicio' => $postData['data_inicio'] ?? null,

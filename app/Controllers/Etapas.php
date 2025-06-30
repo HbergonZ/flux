@@ -426,15 +426,22 @@ class Etapas extends BaseController
 
         if ($this->validate($rules)) {
             try {
+                // Obter o ID do usuário logado
+                $userId = auth()->id();
+
                 $dadosAlterados = [
                     'nome' => $postData['nome'],
                     'ordem' => $postData['ordem'] ?? null,
-                    'id_projeto' => $postData['id_projeto']
+                    'id_projeto' => $postData['id_projeto'],
+                    'id_plano' => $postData['id_plano'], // Adiciona o ID do plano
+                    'id_solicitante' => $userId // Adiciona o ID do solicitante
                 ];
 
                 $data = [
                     'nivel' => 'etapa',
                     'id_projeto' => $postData['id_projeto'],
+                    'id_plano' => $postData['id_plano'], // Adiciona o ID do plano
+                    'id_solicitante' => $userId, // Adiciona o ID do solicitante
                     'tipo' => 'Inclusão',
                     'dados_alterados' => json_encode($dadosAlterados, JSON_UNESCAPED_UNICODE),
                     'justificativa_solicitante' => $postData['justificativa'],

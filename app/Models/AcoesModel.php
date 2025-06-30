@@ -62,15 +62,21 @@ class AcoesModel extends Model
             ->findAll();
     }
 
-    public function getProximaOrdem($idEtapa)
+    public function getProximaOrdem($idEtapa = null)
     {
-        $builder = $this->builder();
+        $builder = $this->db->table($this->table);
         $builder->selectMax('ordem');
-        $builder->where('id_etapa', $idEtapa);
-        $query = $builder->get();
 
-        $result = $query->getRow();
-        return ($result->ordem ?? 0) + 1;
+        if ($idEtapa) {
+            $builder->where('id_etapa', $idEtapa);
+        } else {
+            $builder->where('id_etapa IS NULL', null, false);
+        }
+
+        $query = $builder->get();
+        $result = $query->getRowArray();
+
+        return ($result['ordem'] ?? 0) + 1;
     }
 
     public function calcularStatus(array $acao, ?string $statusProjeto = null): string
@@ -80,11 +86,20 @@ class AcoesModel extends Model
             return 'Paralisado';
         }
 
-        // 2. Se tem data_fim, status é Finalizado (desde que tenha data_inicio)
+        // 2. Se tem data_fim, verifica se foi finalizado com atraso
         if (!empty($acao['data_fim'])) {
             if (empty($acao['data_inicio'])) {
                 throw new \RuntimeException('Não é possível definir data de fim sem data de início');
             }
+
+            // Verifica se foi finalizado com atraso
+            if (
+                !empty($acao['entrega_estimada']) &&
+                strtotime($acao['data_fim']) > strtotime($acao['entrega_estimada'])
+            ) {
+                return 'Finalizado com atraso';
+            }
+
             return 'Finalizado';
         }
 
@@ -245,7 +260,16 @@ class AcoesModel extends Model
             if (empty($data['data']['data_inicio'])) {
                 throw new \RuntimeException('Não é possível definir data de fim sem data de início');
             }
-            $data['data']['status'] = 'Finalizado';
+
+            // Verifica se foi finalizado com atraso
+            if (
+                !empty($data['data']['entrega_estimada']) &&
+                strtotime($data['data']['data_fim']) > strtotime($data['data']['entrega_estimada'])
+            ) {
+                $data['data']['status'] = 'Finalizado com atraso';
+            } else {
+                $data['data']['status'] = 'Finalizado';
+            }
         } elseif (isset($data['data']['data_inicio']) && !empty($data['data']['data_inicio'])) {
             $data['data']['status'] = 'Em andamento';
         } elseif (!isset($data['data']['status'])) {
@@ -336,5 +360,19 @@ class AcoesModel extends Model
             ->orderBy('u.name', 'ASC')
             ->get()
             ->getResultArray();
+    }
+
+    // No AcoesModel
+    public function getProximaOrdemProjeto($idProjeto)
+    {
+        $builder = $this->db->table($this->table);
+        $builder->selectMax('ordem');
+        $builder->where('id_projeto', $idProjeto);
+        $builder->where('id_etapa IS NULL', null, false); // Ações sem etapa vinculada
+
+        $query = $builder->get();
+        $result = $query->getRowArray();
+
+        return ($result['ordem'] ?? 0) + 1;
     }
 }

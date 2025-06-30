@@ -54,7 +54,6 @@ class Solicitacoes extends BaseController
             $solicitacao['solicitante'] = $this->getSolicitanteName($solicitacao['id_solicitante']);
         }
         unset($solicitacao);
-
         $data = [
             'title' => 'Solicitações Pendentes',
             'solicitacoes' => $solicitacoes,
@@ -137,6 +136,25 @@ class Solicitacoes extends BaseController
         if (!empty($solicitacao['id_solicitante'])) {
             $usuario = $this->userModel->find($solicitacao['id_solicitante']);
         }
+
+        // ======= ADIÇÃO: Buscar nome do projeto e do plano (se houver) ========
+        // Inicializa os nomes vazios
+        $nomeProjeto = null;
+        $nomePlano = null;
+        // Tenta descobrir os IDs via colunas diretas da solicitação, dos dadosAtuais ou dos dadosAlterados
+        $idProjeto = $solicitacao['id_projeto'] ?? $dadosAtuais['id_projeto'] ?? $dadosAlterados['id_projeto'] ?? null;
+        $idPlano = $solicitacao['id_plano'] ?? $dadosAtuais['id_plano'] ?? $dadosAlterados['id_plano'] ?? null;
+        // Consulta no banco
+        if ($idProjeto) {
+            $proj = $this->projetosModel->find($idProjeto);
+            $nomeProjeto = $proj ? ($proj['nome'] ?? ($proj->nome ?? null)) : null;
+        }
+        if ($idPlano) {
+            $plano = $this->planosModel->find($idPlano);
+            $nomePlano = $plano ? ($plano['nome'] ?? ($plano->nome ?? null)) : null;
+        }
+        // ======= FIM DA ADIÇÃO =======
+
         $data = [
             'id' => $solicitacao['id'],
             'nivel' => $solicitacao['nivel'],
@@ -147,6 +165,9 @@ class Solicitacoes extends BaseController
             'justificativa_solicitante' => $solicitacao['justificativa_solicitante'] ?? '',
             'dados_atuais' => $dadosAtuais,
             'dados_alterados' => $dadosAlterados,
+            // Adicione no array de resposta:
+            'nome_projeto' => $nomeProjeto,
+            'nome_plano'   => $nomePlano,
         ];
         return $this->response->setJSON([
             'success' => true,
@@ -181,6 +202,7 @@ class Solicitacoes extends BaseController
         }
         return $result;
     }
+
     protected function replaceUserIdsWithNames($equipeData)
     {
         if (!is_array($equipeData)) return $equipeData;
@@ -192,6 +214,7 @@ class Solicitacoes extends BaseController
         }
         return !empty($result) ? $result : $equipeData;
     }
+
     protected function parseSolicitacaoData($data)
     {
         return !empty($data) ? json_decode($data, true) : [];
@@ -301,6 +324,20 @@ class Solicitacoes extends BaseController
     {
         $dados = json_decode($solicitacao['dados_alterados'], true) ?? [];
         $dados = $this->prepararDadosInclusao($dados, $solicitacao);
+        // Se for uma etapa, calcular a próxima ordem disponível
+        if ($solicitacao['nivel'] === 'etapa') {
+            $dados['ordem'] = $this->etapasModel->getProximaOrdem($solicitacao['id_projeto']);
+        }
+        // Se for uma ação, calcular a próxima ordem disponível
+        if ($solicitacao['nivel'] === 'acao') {
+            $idEtapa = $solicitacao['id_etapa'] ?? null;
+            $idProjeto = $solicitacao['id_projeto'] ?? null;
+            if ($idEtapa) {
+                $dados['ordem'] = $this->acoesModel->getProximaOrdem($idEtapa);
+            } elseif ($idProjeto) {
+                $dados['ordem'] = $this->acoesModel->getProximaOrdemProjeto($idProjeto);
+            }
+        }
         if (!$model->insert($dados)) {
             throw new \Exception('Falha na inserção: ' . implode(', ', $model->errors()));
         }
@@ -333,40 +370,28 @@ class Solicitacoes extends BaseController
         $dadosAlterados = json_decode($solicitacao['dados_alterados'], true) ?? [];
         $dadosAtualizar = $this->prepararDadosEdicao($dadosAlterados);
         $this->solicitacoesModel->transStart();
-        // Processar alterações na equipe (se houver)
-        if ($solicitacao['nivel'] === 'acao' && isset($dadosAlterados['equipe'])) {
-            if (!$this->processarAlteracoesEquipe($idRegistro, $dadosAlterados['equipe'])) {
-                throw new \Exception('Falha ao processar alterações na equipe');
-            }
-            unset($dadosAtualizar['equipe']);
-        }
-        // Processar alterações nas evidências (se houver)
-        if ($solicitacao['nivel'] === 'acao' && isset($dadosAlterados['evidencias'])) {
-            $evidenciasModel = new \App\Models\EvidenciasModel();
-            if (!empty($dadosAlterados['evidencias']['adicionar'])) {
-                foreach ($dadosAlterados['evidencias']['adicionar'] as $evidencia) {
-                    $data = [
-                        'tipo' => $evidencia['tipo'],
-                        'evidencia' => $evidencia['conteudo'],
-                        'descricao' => $evidencia['descricao'] ?? null,
-                        'nivel' => 'acao',
-                        'id_nivel' => $idRegistro,
-                        'created_by' => auth()->id(),
-                        'created_at' => date('Y-m-d H:i:s')
-                    ];
-                    if (!$evidenciasModel->insert($data)) {
-                        throw new \Exception('Falha ao adicionar evidência: ' . implode(', ', $evidenciasModel->errors()));
+        // Processar alterações nos responsáveis (se houver)
+        if (isset($dadosAlterados['responsaveis'])) {
+            $responsaveisModel = new \App\Models\ResponsaveisModel();
+            // Processar remoções
+            if (!empty($dadosAlterados['responsaveis']['remover'])) {
+                foreach ($dadosAlterados['responsaveis']['remover'] as $usuarioId) {
+                    if (!$responsaveisModel->removerResponsavel($solicitacao['nivel'], $idRegistro, $usuarioId)) {
+                        throw new \Exception('Falha ao remover responsável: ' . $usuarioId);
                     }
                 }
             }
-            if (!empty($dadosAlterados['evidencias']['remover'])) {
-                foreach ($dadosAlterados['evidencias']['remover'] as $evidencia) {
-                    if (!$evidenciasModel->delete($evidencia['id'])) {
-                        throw new \Exception('Falha ao remover evidência ID: ' . $evidencia['id']);
+            // Processar adições
+            if (!empty($dadosAlterados['responsaveis']['adicionar'])) {
+                foreach ($dadosAlterados['responsaveis']['adicionar'] as $usuarioId) {
+                    if (!$responsaveisModel->adicionarResponsavel($solicitacao['nivel'], $idRegistro, $usuarioId)) {
+                        throw new \Exception('Falha ao adicionar responsável: ' . $usuarioId);
                     }
                 }
             }
+            unset($dadosAtualizar['responsaveis']);
         }
+        // Processar outras alterações
         if (!empty($dadosAtualizar) && !$model->update($idRegistro, $dadosAtualizar)) {
             throw new \Exception('Falha na atualização: ' . implode(', ', $model->errors()));
         }
@@ -411,21 +436,52 @@ class Solicitacoes extends BaseController
     {
         $base = [
             'id_projeto' => $solicitacao['id_projeto'] ?? null,
+            'id_plano' => $solicitacao['id_plano'] ?? null,
             'id_etapa' => $solicitacao['id_etapa'] ?? null
         ];
-        if ($solicitacao['nivel'] === 'acao') {
-            $base = array_merge($base, [
-                'nome' => $dados['nome'] ?? 'Nova Ação',
-                'responsavel' => $dados['responsavel'] ?? null,
-                'tempo_estimado_dias' => !empty($dados['tempo_estimado_dias']) ? (int)$dados['tempo_estimado_dias'] : null,
-                'entrega_estimada' => $this->formatarData($dados['entrega_estimada'] ?? null),
-                'data_inicio' => $this->formatarData($dados['data_inicio'] ?? null),
-                'data_fim' => $this->formatarData($dados['data_fim'] ?? null),
-                'status' => $dados['status'] ?? 'Não iniciado',
-                'ordem' => (int)($dados['ordem'] ?? $this->acoesModel->getProximaOrdem($solicitacao['id_etapa'] ?? null))
-            ]);
+        switch ($solicitacao['nivel']) {
+            case 'plano':
+                $base = array_merge($base, [
+                    'nome' => $dados['nome'] ?? 'Novo Plano',
+                    'sigla' => $dados['sigla'] ?? null,
+                    'descricao' => $dados['descricao'] ?? null,
+                    'data_inicio' => $this->formatarData($dados['data_inicio'] ?? null),
+                    'data_fim' => $this->formatarData($dados['data_fim'] ?? null)
+                ]);
+                break;
+            case 'projeto':
+                $base = array_merge($base, [
+                    'nome' => $dados['nome'] ?? 'Novo Projeto',
+                    'identificador' => $dados['identificador'] ?? null,
+                    'descricao' => $dados['descricao'] ?? null,
+                    'priorizacao_gab' => isset($dados['priorizacao_gab']) ? (int)$dados['priorizacao_gab'] : 0,
+                    'id_eixo' => $dados['id_eixo'] ?? null,
+                    'data_inicio' => $this->formatarData($dados['data_inicio'] ?? null),
+                    'data_fim' => $this->formatarData($dados['data_fim'] ?? null)
+                ]);
+                break;
+            case 'etapa':
+                $base = array_merge($base, [
+                    'nome' => $dados['nome'] ?? 'Nova Etapa',
+                    // Ordem será calculada posteriormente no processamento
+                ]);
+                break;
+            case 'acao':
+                $base = array_merge($base, [
+                    'nome' => $dados['nome'] ?? 'Nova Ação',
+                    'responsavel' => $dados['responsavel'] ?? null,
+                    'tempo_estimado_dias' => !empty($dados['tempo_estimado_dias']) ? (int)$dados['tempo_estimado_dias'] : null,
+                    'entrega_estimada' => $this->formatarData($dados['entrega_estimada'] ?? null),
+                    'data_inicio' => $this->formatarData($dados['data_inicio'] ?? null),
+                    'data_fim' => $this->formatarData($dados['data_fim'] ?? null),
+                    'status' => $dados['status'] ?? 'Não iniciado',
+                    // Ordem será calculada posteriormente no processamento
+                ]);
+                break;
+            default:
+                throw new \Exception('Nível de solicitação inválido');
         }
-        return $base;
+        return array_merge($base, $dados);
     }
 
     protected function prepararDadosEdicao($dadosAlterados)
@@ -475,5 +531,32 @@ class Solicitacoes extends BaseController
             $resultado['remover'] = $evidenciasSolicitadas['evidencias']['remover'];
         }
         return $resultado;
+    }
+
+    protected function processarAlteracoesResponsaveis($nivel, $idRegistro, $alteracoesResponsaveis)
+    {
+        $responsaveisModel = new \App\Models\ResponsaveisModel();
+        // Processar remoções
+        if (!empty($alteracoesResponsaveis['remover'])) {
+            foreach ($alteracoesResponsaveis['remover'] as $usuarioId) {
+                $responsaveisModel->where('nivel', $nivel)
+                    ->where('nivel_id', $idRegistro)
+                    ->where('usuario_id', $usuarioId)
+                    ->delete();
+            }
+        }
+        // Processar adições
+        if (!empty($alteracoesResponsaveis['adicionar'])) {
+            $dadosInserir = [];
+            foreach ($alteracoesResponsaveis['adicionar'] as $usuarioId) {
+                $dadosInserir[] = [
+                    'nivel' => $nivel,
+                    'nivel_id' => $idRegistro,
+                    'usuario_id' => $usuarioId
+                ];
+            }
+            $responsaveisModel->insertBatch($dadosInserir);
+        }
+        return true;
     }
 }
