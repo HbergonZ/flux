@@ -703,6 +703,26 @@ class Acoes extends BaseController
                     return $this->response->setJSON($response);
                 }
 
+                // Obter os responsáveis atuais
+                $responsaveisModel = new \App\Models\ResponsaveisModel();
+                $responsaveisIds = $responsaveisModel->where('nivel', 'acao')
+                    ->where('nivel_id', $postData['id'])
+                    ->findColumn('usuario_id') ?? [];
+
+                // Montar dados atuais sem o campo equipe e com os responsáveis
+                $dadosAtuais = [
+                    'id' => $acaoAtual['id'],
+                    'nome' => $acaoAtual['nome'],
+                    'responsaveis' => $responsaveisIds, // Lista de IDs dos responsáveis
+                    'entrega_estimada' => $acaoAtual['entrega_estimada'],
+                    'data_inicio' => $acaoAtual['data_inicio'],
+                    'data_fim' => $acaoAtual['data_fim'],
+                    'status' => $acaoAtual['status'],
+                    'ordem' => $acaoAtual['ordem'],
+                    'id_projeto' => $acaoAtual['id_projeto'],
+                    'id_etapa' => $acaoAtual['id_etapa']
+                ];
+
                 // Obter dados alterados
                 $dadosAlterados = json_decode($postData['dados_alterados'], true);
                 if (json_last_error() !== JSON_ERROR_NONE) {
@@ -788,7 +808,7 @@ class Acoes extends BaseController
                     'id_etapa' => $acaoAtual['id_etapa'],
                     'id_acao' => $postData['id'],
                     'tipo' => 'Edição',
-                    'dados_atuais' => json_encode($acaoAtual, JSON_UNESCAPED_UNICODE),
+                    'dados_atuais' => json_encode($dadosAtuais, JSON_UNESCAPED_UNICODE),
                     'dados_alterados' => json_encode($dadosAlterados, JSON_UNESCAPED_UNICODE),
                     'justificativa_solicitante' => $postData['justificativa'],
                     'status' => 'pendente',
@@ -800,7 +820,7 @@ class Acoes extends BaseController
                 // Log 4: Dados completos que serão inseridos no banco
                 log_message('info', 'Dados completos para inserção no banco: ' . print_r([
                     'data' => $data,
-                    'dados_atuais_decoded' => $acaoAtual,
+                    'dados_atuais_decoded' => $dadosAtuais,
                     'dados_alterados_decoded' => $dadosAlterados
                 ], true));
 
