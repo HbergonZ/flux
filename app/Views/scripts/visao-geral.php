@@ -12,8 +12,7 @@
             'projeto': true,
             'etapa': true,
             'acao': true,
-            'responsavel': true,
-            'equipe': true,
+            'responsaveis': true,
             'entrega_estimada': true,
             'data_inicio': true,
             'data_fim': true,
@@ -27,12 +26,11 @@
             'projeto': 2,
             'etapa': 3,
             'acao': 4,
-            'responsavel': 5,
-            'equipe': 6,
-            'entrega_estimada': 7,
-            'data_inicio': 8,
-            'data_fim': 9,
-            'status': 10
+            'responsaveis': 5,
+            'entrega_estimada': 6,
+            'data_inicio': 7,
+            'data_fim': 8,
+            'status': 9
         };
 
         // Adiciona a legenda antes da tabela (após os filtros)
@@ -67,11 +65,11 @@
             "lengthMenu": [5, 10, 25, 50, 100],
             "pageLength": 10,
             "order": [
-                [1, 'asc'],
-                [2, 'asc'],
-                [3, 'asc'],
-                [4, 'asc']
-            ], // Ordena por Plano, Projeto, Etapa, Ação
+                [1, 'asc'], // Plano
+                [2, 'asc'], // Projeto
+                [3, 'asc'], // Etapa
+                [4, 'asc'] // Ação
+            ],
             "columns": [{
                     "data": "priorizacao_gab",
                     "className": "text-center align-middle",
@@ -102,11 +100,7 @@
                     "className": "align-middle"
                 },
                 {
-                    "data": "responsavel",
-                    "className": "align-middle"
-                },
-                {
-                    "data": "equipe",
+                    "data": "responsaveis",
                     "className": "align-middle"
                 },
                 {
@@ -165,7 +159,8 @@
             }
 
             $.each(camposVisiveis, function(campo, visivel) {
-                $('#campo' + campo.charAt(0).toUpperCase() + campo.slice(1)).prop('checked', visivel);
+                var idCampo = 'campo' + campo.charAt(0).toUpperCase() + campo.slice(1);
+                $('#' + idCampo).prop('checked', visivel);
             });
 
             atualizarColunasVisiveis();
@@ -208,10 +203,10 @@
             var formData = {
                 'priorizacao_gab': $('#filterPriorizacao').val(),
                 'plano': $('#filterPlano').val(),
+                'projeto': $('#filterProjeto').val(),
                 'acao': $('#filterAcao').val(),
                 'etapa': $('#filterEtapa').val(),
-                'responsavel': $('#filterResponsavel').val(),
-                'equipe': $('#filterEquipe').val(),
+                'responsaveis': $('#filterResponsaveis').val(),
                 'status': $('#filterStatus').val(),
                 'data_inicio': $('#filterStartDate').val(),
                 'data_fim': $('#filterEndDate').val()

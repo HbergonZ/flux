@@ -46,6 +46,13 @@ class VisaoGeralModel extends Model
 
         $result = $builder->get()->getResultArray();
 
+        // Obtém os responsáveis para cada ação
+        $responsaveisModel = new \App\Models\ResponsaveisModel();
+        foreach ($result as &$item) {
+            $responsaveis = $responsaveisModel->getResponsaveisAcao($item['id']);
+            $item['responsaveis'] = array_column($responsaveis, 'name');
+        }
+
         // Formata os dados
         return array_map(function ($item) {
             return [
@@ -53,7 +60,6 @@ class VisaoGeralModel extends Model
                 'nome' => $item['nome'],
                 'projeto' => $item['projeto'] ?? '',
                 'responsavel' => $item['responsavel'],
-                'equipe' => $item['equipe'],
                 'tempo_estimado_dias' => $item['tempo_estimado_dias'],
                 'entrega_estimada' => $item['entrega_estimada'],
                 'data_inicio' => $item['data_inicio'],
@@ -71,6 +77,7 @@ class VisaoGeralModel extends Model
                 'identificador_projeto' => $item['identificador'] ?? '',
                 'etapa' => $item['nome_etapa'] ?? '',
                 'priorizacao_gab' => $item['priorizacao_gab'] ?? 0,
+                'responsaveis' => implode(', ', $item['responsaveis'] ?? []),
 
                 // Datas formatadas
                 'entrega_estimada_formatada' => !empty($item['entrega_estimada']) ? date('d/m/Y', strtotime($item['entrega_estimada'])) : '',
@@ -79,6 +86,7 @@ class VisaoGeralModel extends Model
             ];
         }, $result);
     }
+
     protected function aplicarFiltros(&$builder, array $filtros)
     {
         // Priorização
@@ -91,9 +99,14 @@ class VisaoGeralModel extends Model
             $builder->where('planos.nome', $filtros['plano']);
         }
 
+        // Projeto
+        if (!empty($filtros['projeto'])) {
+            $builder->like('projetos.nome', $filtros['projeto']);
+        }
+
         // Ação
         if (!empty($filtros['acao'])) {
-            $builder->where('acoes.nome', $filtros['acao']);
+            $builder->like('acoes.nome', $filtros['acao']);
         }
 
         // Etapa
@@ -101,19 +114,19 @@ class VisaoGeralModel extends Model
             $builder->where('etapas.nome', $filtros['etapa']);
         }
 
-        // Responsável
-        if (!empty($filtros['responsavel'])) {
-            $builder->where('acoes.responsavel', $filtros['responsavel']);
-        }
-
-        // Equipe
-        if (!empty($filtros['equipe'])) {
-            $builder->like('acoes.equipe', $filtros['equipe']);
-        }
-
         // Status
         if (!empty($filtros['status'])) {
             $builder->where('acoes.status', $filtros['status']);
+        }
+
+        // Responsáveis
+        if (!empty($filtros['responsaveis'])) {
+            $builder->join('responsaveis r', 'r.nivel = "acao" AND r.nivel_id = acoes.id', 'left')
+                ->join('users u', 'u.id = r.usuario_id', 'left')
+                ->groupStart()
+                ->like('u.name', $filtros['responsaveis'])
+                ->orLike('acoes.responsavel', $filtros['responsaveis'])
+                ->groupEnd();
         }
 
         // Data início
@@ -141,35 +154,11 @@ class VisaoGeralModel extends Model
             ->get()
             ->getResultArray();
 
-        // Consulta para ações
-        $acoes = $db->table('acoes')
-            ->select('acoes.nome as acao')
-            ->groupBy('acoes.nome')
-            ->orderBy('acoes.nome')
-            ->get()
-            ->getResultArray();
-
         // Consulta para etapas
         $etapas = $db->table('etapas')
             ->select('etapas.nome as etapa')
             ->groupBy('etapas.nome')
             ->orderBy('etapas.nome')
-            ->get()
-            ->getResultArray();
-
-        // Consulta para responsáveis
-        $responsaveis = $db->table('acoes')
-            ->select('acoes.responsavel')
-            ->groupBy('acoes.responsavel')
-            ->orderBy('acoes.responsavel')
-            ->get()
-            ->getResultArray();
-
-        // Consulta para equipes
-        $equipes = $db->table('acoes')
-            ->select('acoes.equipe')
-            ->groupBy('acoes.equipe')
-            ->orderBy('acoes.equipe')
             ->get()
             ->getResultArray();
 
@@ -181,23 +170,13 @@ class VisaoGeralModel extends Model
             ->get()
             ->getResultArray();
 
-        // Processa os resultados para obter valores distintos
         return [
             'planos' => array_map(function ($item) {
                 return ['plano' => $item['plano']];
             }, $planos),
-            'acoes' => array_map(function ($item) {
-                return ['acao' => $item['acao']];
-            }, $acoes),
             'etapas' => array_map(function ($item) {
                 return ['etapa' => $item['etapa']];
             }, $etapas),
-            'responsaveis' => array_map(function ($item) {
-                return ['responsavel' => $item['responsavel']];
-            }, $responsaveis),
-            'equipes' => array_map(function ($item) {
-                return ['equipe' => $item['equipe']];
-            }, $equipes),
             'status' => array_map(function ($item) {
                 return ['status' => $item['status']];
             }, $status)

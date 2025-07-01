@@ -13,16 +13,6 @@
                 <div class="row">
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="filterPriorizacao">Priorização</label>
-                            <select class="form-control" id="filterPriorizacao" name="priorizacao_gab">
-                                <option value="">Todos</option>
-                                <option value="1">Priorizadas</option>
-                                <option value="0">Não priorizadas</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
                             <label for="filterPlano">Plano</label>
                             <select class="form-control" id="filterPlano" name="plano">
                                 <option value="">Todos</option>
@@ -34,28 +24,10 @@
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="filterAcao">Ação</label>
-                            <select class="form-control" id="filterAcao" name="acao">
-                                <option value="">Todos</option>
-                                <?php foreach ($filtros['acoes'] as $acao) : ?>
-                                    <option value="<?= esc($acao['acao']) ?>"><?= esc($acao['acao']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <label for="filterProjeto">Projeto</label>
+                            <input type="text" class="form-control" id="filterProjeto" name="projeto" placeholder="Digite o projeto">
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="filterStatus">Status</label>
-                            <select class="form-control" id="filterStatus" name="status">
-                                <option value="">Todos</option>
-                                <?php foreach ($filtros['status'] as $status) : ?>
-                                    <option value="<?= esc($status['status']) ?>"><?= esc($status['status']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
                     <div class="col-md-3">
                         <div class="form-group">
                             <label for="filterEtapa">Etapa</label>
@@ -69,14 +41,37 @@
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="filterResponsavel">Responsável</label>
-                            <input type="text" class="form-control" id="filterResponsavel" name="responsavel" placeholder="Filtrar por responsável">
+                            <label for="filterAcao">Ação</label>
+                            <input type="text" class="form-control" id="filterAcao" name="acao" placeholder="Digite a ação">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="filterResponsaveis">Responsáveis</label>
+                            <input type="text" class="form-control" id="filterResponsaveis" name="responsaveis" placeholder="Digite o responsável">
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="filterEquipe">Equipe</label>
-                            <input type="text" class="form-control" id="filterEquipe" name="equipe" placeholder="Filtrar por equipe">
+                            <label for="filterStatus">Status</label>
+                            <select class="form-control" id="filterStatus" name="status">
+                                <option value="">Todos</option>
+                                <?php foreach ($filtros['status'] as $status) : ?>
+                                    <option value="<?= esc($status['status']) ?>"><?= esc($status['status']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="filterPriorizacao">Priorização</label>
+                            <select class="form-control" id="filterPriorizacao" name="priorizacao_gab">
+                                <option value="">Todos</option>
+                                <option value="1">Priorizadas</option>
+                                <option value="0">Não priorizadas</option>
+                            </select>
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -128,8 +123,7 @@
                             <th class="align-middle">Projeto</th>
                             <th class="align-middle">Etapa</th>
                             <th class="align-middle">Ação</th>
-                            <th class="align-middle">Responsável</th>
-                            <th class="align-middle">Equipe</th>
+                            <th class="align-middle">Responsáveis</th>
                             <th class="align-middle">Entrega Estimada</th>
                             <th class="align-middle">Data Inicial</th>
                             <th class="align-middle">Data Final</th>
@@ -149,8 +143,7 @@
                                     <td class="text-wrap align-middle"><?= esc($registro['nome_projeto']) ?></td>
                                     <td class="text-wrap align-middle"><?= esc($registro['etapa']) ?></td>
                                     <td class="text-wrap align-middle"><?= esc($registro['acao']) ?></td>
-                                    <td class="text-wrap align-middle"><?= esc($registro['responsavel']) ?></td>
-                                    <td class="text-wrap align-middle"><?= esc($registro['equipe']) ?></td>
+                                    <td class="text-wrap align-middle"><?= esc($registro['responsaveis']) ?></td>
                                     <td class="text-center align-middle"><?= !empty($registro['entrega_estimada_formatada']) ? esc($registro['entrega_estimada_formatada']) : '-' ?></td>
                                     <td class="text-center align-middle"><?= !empty($registro['data_inicio_formatada']) ? esc($registro['data_inicio_formatada']) : '-' ?></td>
                                     <td class="text-center align-middle"><?= !empty($registro['data_fim_formatada']) ? esc($registro['data_fim_formatada']) : '-' ?></td>
@@ -182,7 +175,7 @@
                             <?php endforeach; ?>
                         <?php else : ?>
                             <tr>
-                                <td colspan="11" class="text-center">Nenhum registro encontrado</td>
+                                <td colspan="10" class="text-center">Nenhum registro encontrado</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
@@ -206,6 +199,10 @@
                         <div class="form-group">
                             <label>Selecione os campos a serem exibidos:</label>
                             <div class="form-check">
+                                <input class="form-check-input campo-visivel" type="checkbox" value="priorizacao" id="campoPriorizacao" checked>
+                                <label class="form-check-label" for="campoPriorizacao">Priorização</label>
+                            </div>
+                            <div class="form-check">
                                 <input class="form-check-input campo-visivel" type="checkbox" value="plano" id="campoPlano" checked>
                                 <label class="form-check-label" for="campoPlano">Plano</label>
                             </div>
@@ -222,12 +219,8 @@
                                 <label class="form-check-label" for="campoAcao">Ação</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input campo-visivel" type="checkbox" value="responsavel" id="campoResponsavel" checked>
-                                <label class="form-check-label" for="campoResponsavel">Responsável</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input campo-visivel" type="checkbox" value="equipe" id="campoEquipe" checked>
-                                <label class="form-check-label" for="campoEquipe">Equipe</label>
+                                <input class="form-check-input campo-visivel" type="checkbox" value="responsaveis" id="campoResponsaveis" checked>
+                                <label class="form-check-label" for="campoResponsaveis">Responsáveis</label>
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input campo-visivel" type="checkbox" value="entrega_estimada" id="campoEntregaEstimada" checked>
@@ -244,10 +237,6 @@
                             <div class="form-check">
                                 <input class="form-check-input campo-visivel" type="checkbox" value="status" id="campoStatus" checked>
                                 <label class="form-check-label" for="campoStatus">Status</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input campo-visivel" type="checkbox" value="priorizacao" id="campoPriorizacao" checked>
-                                <label class="form-check-label" for="campoPriorizacao">Priorização</label>
                             </div>
                         </div>
                     </form>

@@ -40,10 +40,10 @@ class VisaoGeral extends BaseController
         $filtros = [
             'priorizacao_gab' => $this->request->getPost('priorizacao_gab'),
             'plano' => $this->request->getPost('plano'),
+            'projeto' => $this->request->getPost('projeto'),
             'acao' => $this->request->getPost('acao'),
             'etapa' => $this->request->getPost('etapa'),
-            'responsavel' => $this->request->getPost('responsavel'),
-            'equipe' => $this->request->getPost('equipe'),
+            'responsaveis' => $this->request->getPost('responsaveis'),
             'status' => $this->request->getPost('status'),
             'data_inicio' => $this->request->getPost('data_inicio'),
             'data_fim' => $this->request->getPost('data_fim')
