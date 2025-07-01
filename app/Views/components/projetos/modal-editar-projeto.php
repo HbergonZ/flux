@@ -159,7 +159,7 @@
                             <div class="row no-gutters">
                                 <!-- Coluna de Evidências (Atuais e para Remover) -->
                                 <div class="col-md-6 border-right">
-                                    <div class="p-3 d-flex flex-column" style="height: 100%; min-height: 400px;">
+                                    <div class="p-3 d-flex flex-column" style="height: 100%; height: 600px;">
                                         <!-- Seção de Evidências Atuais -->
                                         <div class="mb-3 border-bottom flex-grow-1" style="height: 50%;">
                                             <h6 class="font-weight-bold mb-2">
@@ -246,7 +246,7 @@
                             <div class="row no-gutters">
                                 <!-- Coluna de Indicadores (Atuais e para Remover) -->
                                 <div class="col-md-6 border-right">
-                                    <div class="p-3 d-flex flex-column" style="height: 100%; min-height: 400px;">
+                                    <div class="p-3 d-flex flex-column" style="height: 100%; height: 600px;">
                                         <!-- Seção de Indicadores Atuais -->
                                         <div class="mb-3 border-bottom flex-grow-1" style="height: 50%;">
                                             <h6 class="font-weight-bold mb-2">
