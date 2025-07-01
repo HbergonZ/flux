@@ -63,6 +63,12 @@ $isAdmin = $loggedUser->inGroup('admin');
     <div class="card shadow mb-4 mx-md-5 mx-3">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Lista de Usuários</h6>
+            <?php if ($isSuperadmin): ?>
+                <?php $registroAtivo = service('settings')->get('Registro.ativo', null) ?? false; ?>
+                <button id="toggleRegistroBtn" class="btn btn-sm btn-<?= $registroAtivo ? 'success' : 'secondary' ?>">
+                    <i class="fas fa-user-plus"></i> Registro: <?= $registroAtivo ? 'Ativo' : 'Inativo' ?>
+                </button>
+            <?php endif; ?>
         </div>
         <div class="card-body">
             <div class="table-responsive">

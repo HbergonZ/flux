@@ -398,4 +398,42 @@ class Usuarios extends BaseController
             log_message('error', 'Falha ao registrar log: ' . $e->getMessage());
         }
     }
+
+    public function toggleRegistro()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Método não permitido']);
+        }
+
+        if (!auth()->user()->inGroup('superadmin')) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Acesso negado']);
+        }
+
+        // Alterado para usar null em vez de false
+        $currentStatus = service('settings')->get('Registro.ativo', null) ?? false;
+        $newStatus = !$currentStatus;
+
+        service('settings')->set('Registro.ativo', $newStatus);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Status do registro alterado com sucesso',
+            'novoStatus' => $newStatus
+        ]);
+    }
+
+    public function statusRegistro()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Método não permitido']);
+        }
+
+        // Alterado para usar null em vez de false
+        $status = service('settings')->get('Registro.ativo', null) ?? false;
+
+        return $this->response->setJSON([
+            'success' => true,
+            'status' => $status
+        ]);
+    }
 }

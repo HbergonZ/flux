@@ -17,6 +17,61 @@
             }]
         });
 
+        // Verificar status do registro ao carregar a página
+        $.get('<?= site_url("gerenciar-usuarios/status-registro") ?>', function(response) {
+            if (response.success) {
+                const btn = $('#toggleRegistroBtn');
+                if (response.status) {
+                    btn.removeClass('btn-secondary').addClass('btn-success');
+                    btn.html('<i class="fas fa-user-plus"></i> Registro: Ativo');
+                } else {
+                    btn.removeClass('btn-success').addClass('btn-secondary');
+                    btn.html('<i class="fas fa-user-plus"></i> Registro: Inativo');
+                }
+            }
+        });
+
+        // Alternar status do registro
+        $('#toggleRegistroBtn').on('click', function() {
+            Swal.fire({
+                title: 'Alterar status do registro',
+                text: 'Deseja realmente alterar o status do registro de usuários?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sim',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('<?= site_url("gerenciar-usuarios/toggle-registro") ?>', function(response) {
+                        if (response.success) {
+                            const btn = $('#toggleRegistroBtn');
+                            if (response.novoStatus) {
+                                btn.removeClass('btn-secondary').addClass('btn-success');
+                                btn.html('<i class="fas fa-user-plus"></i> Registro: Ativo');
+                            } else {
+                                btn.removeClass('btn-success').addClass('btn-secondary');
+                                btn.html('<i class="fas fa-user-plus"></i> Registro: Inativo');
+                            }
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Sucesso',
+                                text: response.message,
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                        }
+                    }).fail(function() {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erro',
+                            text: 'Falha ao alterar status do registro'
+                        });
+                    });
+                }
+            });
+        });
+
         // Filtros
         $('#formFiltros').on('submit', function(e) {
             e.preventDefault();

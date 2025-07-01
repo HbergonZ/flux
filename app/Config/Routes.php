@@ -152,4 +152,7 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
     $routes->post('gerenciar-usuarios/atualizar', 'Usuarios::atualizar');
     $routes->post('gerenciar-usuarios/alterar-grupo', 'Usuarios::alterarGrupo');
     $routes->post('gerenciar-usuarios/excluir', 'Usuarios::excluir');
+
+    $routes->post('gerenciar-usuarios/toggle-registro', 'Usuarios::toggleRegistro');
+    $routes->get('gerenciar-usuarios/status-registro', 'Usuarios::statusRegistro');
 });
