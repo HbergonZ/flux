@@ -236,24 +236,43 @@
     </a>
 
     <!-- Logout Modal-->
-    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog" role="document">
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="logoutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-md" role="document">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Pronto para sair?</h5>
-                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">×</span>
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="logoutModalLabel">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Pronto para sair?
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Fechar">
+                        <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <div class="modal-body">Selecione "Sair" abaixo se estiver pronto para encerrar sua sessão atual.</div>
+                <div class="modal-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="mr-3">
+                            <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+                        </div>
+                        <div>
+                            <span class="font-weight-bold text-danger">Atenção!</span><br>
+                            Você tem certeza que deseja encerrar sua sessão?
+                        </div>
+                    </div>
+                    <p class="mb-0 text-muted">
+                        Selecione <span class="font-weight-bold">"Sair"</span> abaixo se realmente deseja finalizar sua sessão atual.
+                    </p>
+                </div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                    <a class="btn btn-primary" href="<?php echo base_url('/logout'); ?>">Sair</a>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times mr-2"></i> Cancelar
+                    </button>
+                    <a class="btn btn-danger" href="<?php echo base_url('/logout'); ?>">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Sair
+                    </a>
                 </div>
             </div>
         </div>
     </div>
+
 
     <!-- Bootstrap core JavaScript-->
     <script src=<?php echo base_url("template/vendor/jquery/jquery.min.js"); ?>></script>
