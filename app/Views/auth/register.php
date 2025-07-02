@@ -4,6 +4,8 @@
 
 <?= $this->section('main') ?>
 
+<link rel="icon" type="image/x-icon" href="<?= base_url('template/img/flux.ico'); ?>">
+
 <div class="container d-flex justify-content-center p-5">
     <div class="card col-12 col-md-5 shadow-sm">
         <div class="card-body">
