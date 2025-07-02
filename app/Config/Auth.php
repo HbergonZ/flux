@@ -47,7 +47,7 @@ class Auth extends ShieldAuth
      */
     public array $views = [
         'login'                       => 'App\Views\auth\login',
-        'register'                    => '\CodeIgniter\Shield\Views\register',
+        'register'                    => 'App\Views\auth\register',
         'layout'                      => '\CodeIgniter\Shield\Views\layout',
         'action_email_2fa'            => '\CodeIgniter\Shield\Views\email_2fa_show',
         'action_email_2fa_verify'     => '\CodeIgniter\Shield\Views\email_2fa_verify',
@@ -217,7 +217,7 @@ class Auth extends ShieldAuth
      *
      * @var array<string, array<int, string>|string>
      */
-    public array $usernameValidationRules = [
+    /* public array $usernameValidationRules = [
         'label' => 'Auth.username',
         'rules' => [
             'required',
@@ -225,7 +225,7 @@ class Auth extends ShieldAuth
             'min_length[3]',
             'regex_match[/\A[a-zA-Z0-9\.]+\z/]',
         ],
-    ];
+    ]; */
 
     /**
      * --------------------------------------------------------------------
@@ -428,7 +428,7 @@ class Auth extends ShieldAuth
      *
      * @var class-string<UserModel>
      */
-    public string $userProvider = UserModel::class;
+    public string $userProvider = \App\Models\UserModel::class;
 
     /**
      * Returns the URL that a user should be redirected

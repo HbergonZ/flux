@@ -46,8 +46,130 @@
             }
         });
 
-        // Armazenar dados originais do formulário
-        let formOriginalData = {};
+        // Modal de confirmação de exclusão com verificação de relacionamentos
+        $(document).on('click', '.btn-danger[title="Excluir"]', function() {
+            var btn = $(this);
+            var planoId = btn.data('id').split('-')[0];
+            var planoName = btn.closest('tr').find('td:first').text();
+
+            // Verificar se há relacionamentos
+            $.ajax({
+                url: '<?= site_url('planos/verificar-relacionamentos/') ?>' + planoId,
+                type: 'GET',
+                dataType: 'json',
+                beforeSend: function() {
+                    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
+                },
+                complete: function() {
+                    btn.prop('disabled', false).html('<i class="fas fa-trash-alt"></i>');
+                },
+                success: function(response) {
+                    if (response.success) {
+                        var totalRelacionamentos = response.contagem.projetos + response.contagem.etapas + response.contagem.acoes;
+
+                        if (totalRelacionamentos > 0) {
+                            // Exibir alerta de confirmação com detalhes
+                            Swal.fire({
+                                title: 'Atenção! Exclusão em Cascata',
+                                html: `Você está prestes a excluir o plano <strong>${planoName}</strong> e <strong>TODOS</strong> os seus relacionamentos:<br><br>
+                                   <ul class="text-left">
+                                       <li>Projetos: ${response.contagem.projetos}</li>
+                                       <li>Etapas: ${response.contagem.etapas}</li>
+                                       <li>Ações: ${response.contagem.acoes}</li>
+                                   </ul>
+                                   <p class="text-danger mt-2"><strong>Esta ação é irreversível!</strong></p>`,
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonColor: '#d33',
+                                cancelButtonColor: '#3085d6',
+                                confirmButtonText: 'Sim, excluir tudo!',
+                                cancelButtonText: 'Cancelar',
+                                width: '600px'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    $('#deletePlanoId').val(planoId);
+                                    $('#planoNameToDelete').text(planoName);
+                                    $('#deletePlanoModal').modal('show');
+                                }
+                            });
+                        } else {
+                            // Exibir confirmação simples se não houver relacionamentos
+                            Swal.fire({
+                                title: 'Confirmar Exclusão',
+                                html: `Tem certeza que deseja excluir o plano <strong>${planoName}</strong>?`,
+                                icon: 'question',
+                                showCancelButton: true,
+                                confirmButtonColor: '#d33',
+                                cancelButtonColor: '#3085d6',
+                                confirmButtonText: 'Sim, excluir!',
+                                cancelButtonText: 'Cancelar'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    $('#deletePlanoId').val(planoId);
+                                    $('#planoNameToDelete').text(planoName);
+                                    $('#deletePlanoModal').modal('show');
+                                }
+                            });
+                        }
+                    } else {
+                        Swal.fire('Erro', response.message || 'Erro ao verificar relacionamentos', 'error');
+                    }
+                },
+                error: function(xhr) {
+                    Swal.fire('Erro', 'Falha na comunicação com o servidor', 'error');
+                }
+            });
+        });
+
+        // Processar exclusão após confirmação
+        $('#formDeletePlano').submit(function(e) {
+            e.preventDefault();
+            var form = $(this);
+            var submitBtn = form.find('button[type="submit"]');
+            var originalBtnText = submitBtn.html();
+
+            submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Excluindo...');
+
+            $.ajax({
+                type: "POST",
+                url: '<?= site_url('planos/excluir') ?>',
+                data: form.serialize(),
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        $('#deletePlanoModal').modal('hide');
+
+                        // Mostrar mensagem de sucesso com detalhes
+                        var msg = response.message;
+                        if (response.contagem) {
+                            msg += `<br><small>Itens excluídos:
+                                ${response.contagem.projetos} projetos,
+                                ${response.contagem.etapas} etapas,
+                                ${response.contagem.acoes} ações</small>`;
+                        }
+
+                        Swal.fire({
+                            title: 'Sucesso!',
+                            html: msg,
+                            icon: 'success',
+                            timer: 3000,
+                            timerProgressBar: true,
+                            willClose: () => {
+                                location.reload();
+                            }
+                        });
+                    } else {
+                        Swal.fire('Erro', response.message, 'error');
+                    }
+                },
+                error: function(xhr) {
+                    Swal.fire('Erro', 'Falha na comunicação com o servidor', 'error');
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).html(originalBtnText);
+                }
+            });
+        });
 
         // Cadastrar novo plano
         $('#formAddPlano').submit(function(e) {
@@ -55,166 +177,12 @@
             submitForm($(this), '#addPlanoModal');
         });
 
-        // Editar plano - Abrir modal (apenas admin)
-        $(document).on('click', '.btn-primary[title="Editar"]', function() {
-            var planoId = $(this).data('id').split('-')[0];
-
-            $.ajax({
-                url: '<?= site_url('planos/editar/') ?>' + planoId,
-                type: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success && response.data) {
-                        $('#editPlanoId').val(response.data.id);
-                        $('#editPlanoName').val(response.data.nome);
-                        $('#editPlanoSigla').val(response.data.sigla);
-                        $('#editPlanoDescription').val(response.data.descricao);
-                        $('#editPlanoModal').modal('show');
-                    } else {
-                        showErrorAlert(response.message || "Erro ao carregar plano");
-                    }
-                },
-                error: function(xhr, status, error) {
-                    showErrorAlert("Falha na comunicação com o servidor.");
-                }
-            });
-        });
-
-        // Solicitar edição de plano - Abrir modal (para não-admins)
-        $(document).on('click', '.btn-primary[title="Solicitar Edição"]', function() {
-            var planoId = $(this).data('id').split('-')[0];
-            var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
-            var url = isAdmin ? '<?= site_url('planos/editar/') ?>' : '<?= site_url('planos/dados-plano/') ?>';
-
-            $.ajax({
-                url: url + planoId,
-                type: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success && response.data) {
-                        var plano = response.data;
-
-                        // Preenche os campos do formulário
-                        $('#solicitarEdicaoId').val(plano.id);
-                        $('#solicitarEdicaoNome').val(plano.nome);
-                        $('#solicitarEdicaoSigla').val(plano.sigla);
-                        $('#solicitarEdicaoDescricao').val(plano.descricao);
-
-                        // Armazena os valores originais para comparação
-                        formOriginalData = {
-                            nome: plano.nome,
-                            sigla: plano.sigla,
-                            descricao: plano.descricao
-                        };
-
-                        $('#solicitarEdicaoModal').modal('show');
-                        $('#alertNenhumaAlteracao').addClass('d-none');
-                    } else {
-                        showErrorAlert(response.message || "Erro ao carregar plano");
-                    }
-                },
-                error: function(xhr, status, error) {
-                    showErrorAlert("Falha na comunicação com o servidor.");
-                }
-            });
-        });
-
-        // Verificar alterações em tempo real no modal de edição
-        $('#solicitarEdicaoModal').on('shown.bs.modal', function() {
-            $('#formSolicitarEdicao').on('input change', function() {
-                checkForChanges();
-            });
-        });
-
-        function checkForChanges() {
-            let hasChanges = false;
-            const form = $('#formSolicitarEdicao');
-
-            ['nome', 'sigla', 'descricao'].forEach(field => {
-                const currentValue = form.find(`[name="${field}"]`).val();
-                if (formOriginalData[field] != currentValue) {
-                    hasChanges = true;
-                }
-            });
-
-            if (hasChanges) {
-                $('#alertNenhumaAlteracao').addClass('d-none');
-                $('#formSolicitarEdicao button[type="submit"]').prop('disabled', false);
-            } else {
-                $('#alertNenhumaAlteracao').removeClass('d-none');
-                $('#formSolicitarEdicao button[type="submit"]').prop('disabled', true);
-            }
-        }
-
-        // Enviar solicitação de edição
-        $('#formSolicitarEdicao').submit(function(e) {
-            e.preventDefault();
-            submitForm($(this), '#solicitarEdicaoModal', 'Solicitação de edição enviada com sucesso!');
-        });
-
-        // Solicitar exclusão de plano - Abrir modal (para não-admins)
-        $(document).on('click', '.btn-danger[title="Solicitar Exclusão"]', function() {
-            var planoId = $(this).data('id').split('-')[0];
-            var planoName = $(this).closest('tr').find('td:first').text();
-            var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
-            var url = isAdmin ? '<?= site_url('planos/editar/') ?>' : '<?= site_url('planos/dados-plano/') ?>';
-
-            $.ajax({
-                url: url + planoId,
-                type: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success && response.data) {
-                        var plano = response.data;
-                        var dadosAtuais = `Nome: ${plano.nome}\nSigla: ${plano.sigla}\nDescrição: ${plano.descricao}`;
-
-                        $('#solicitarExclusaoId').val(plano.id);
-                        $('#planoNameToRequestDelete').text(planoName);
-                        $('#solicitarExclusaoDadosAtuais').val(dadosAtuais);
-                        $('#solicitarExclusaoModal').modal('show');
-                    } else {
-                        showErrorAlert(response.message || "Erro ao carregar plano");
-                    }
-                },
-                error: function(xhr, status, error) {
-                    showErrorAlert("Falha na comunicação com o servidor.");
-                }
-            });
-        });
-
-        // Enviar solicitação de exclusão
-        $('#formSolicitarExclusao').submit(function(e) {
-            e.preventDefault();
-            submitForm($(this), '#solicitarExclusaoModal', 'Solicitação de exclusão enviada com sucesso!');
-        });
-
-        // Enviar solicitação de inclusão
-        $('#formSolicitarInclusao').submit(function(e) {
-            e.preventDefault();
-            submitForm($(this), '#solicitarInclusaoModal', 'Solicitação de inclusão enviada com sucesso!');
-        });
-
-        // Atualizar plano (apenas admin)
+        // Atualizar plano
         $('#formEditPlano').submit(function(e) {
             e.preventDefault();
             submitForm($(this), '#editPlanoModal');
         });
 
-        // Excluir plano - Abrir modal de confirmação (apenas admin)
-        $(document).on('click', '.btn-danger[title="Excluir"]', function() {
-            var planoId = $(this).data('id').split('-')[0];
-            var planoName = $(this).closest('tr').find('td:first').text();
-
-            $('#deletePlanoId').val(planoId);
-            $('#planoNameToDelete').text(planoName);
-            $('#deletePlanoModal').modal('show');
-        });
-
-        // Confirmar exclusão (apenas admin)
-        $('#formDeletePlano').submit(function(e) {
-            e.preventDefault();
-            submitForm($(this), '#deletePlanoModal');
-        });
 
         // Aplicar filtros
         $('#formFiltros').submit(function(e) {
@@ -247,7 +215,6 @@
                         }
                         showSuccessAlert(successMessage || response.message || 'Operação realizada com sucesso!');
 
-                        // Recarregar a página apenas se for uma operação que altera dados
                         if (!modalId || (modalId !== '#solicitarEdicaoModal' && modalId !== '#solicitarExclusaoModal' && modalId !== '#solicitarInclusaoModal')) {
                             setTimeout(() => location.reload(), 1500);
                         }
@@ -295,39 +262,39 @@
 
                             if (isAdmin) {
                                 actionButtons = `
-                                    <div class="d-inline-flex">
-                                        <a href="<?= site_url('acoes/') ?>${plano.id}" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Ações">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </div>`;
+                                <div class="d-inline-flex">
+                                    <a href="<?= site_url('planos/') ?>${plano.id}/projetos" class="btn btn-info btn-sm mx-1" title="Visualizar Projetos">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-primary btn-sm mx-1" data-id="${id}" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-danger btn-sm mx-1" data-id="${id}" title="Excluir">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>`;
                             } else {
                                 actionButtons = `
-                                    <div class="d-inline-flex">
-                                        <a href="<?= site_url('acoes/') ?>${plano.id}" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Ações">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </div>`;
+                                <div class="d-inline-flex">
+                                    <a href="<?= site_url('planos/') ?>${plano.id}/projetos" class="btn btn-info btn-sm mx-1" title="Visualizar Projetos">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-primary btn-sm mx-1" data-id="${id}" title="Solicitar Edição">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-danger btn-sm mx-1" data-id="${id}" title="Solicitar Exclusão">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>`;
                             }
 
                             var row = `
-                                <tr>
-                                    <td class="text-wrap align-middle">${plano.nome}</td>
-                                    <td class="text-center align-middle">${plano.sigla}</td>
-                                    <td class="text-wrap align-middle">${plano.descricao || ''}</td>
-                                    <td class="text-center align-middle">${actionButtons}</td>
-                                </tr>`;
+                            <tr>
+                                <td class="text-wrap align-middle">${plano.nome}</td>
+                                <td class="text-center align-middle">${plano.sigla}</td>
+                                <td class="text-wrap align-middle">${plano.descricao || ''}</td>
+                                <td class="text-center align-middle">${actionButtons}</td>
+                            </tr>`;
 
                             $('#dataTable tbody').append(row);
                         });
@@ -375,5 +342,50 @@
                 confirmButtonText: 'Entendi'
             });
         }
+
+        // Abrir modal de edição quando clicar no botão de edição
+        $(document).on('click', '.btn-primary[title="Editar"], .btn-primary[title="Solicitar Edição"]', function() {
+            var btn = $(this);
+            var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
+            var planoId = btn.data('id').split('-')[0];
+
+            if (isAdmin) {
+                // Carregar dados do plano para edição
+                $.ajax({
+                    url: '<?= site_url('planos/editar/') ?>' + planoId,
+                    type: 'GET',
+                    dataType: 'json',
+                    beforeSend: function() {
+                        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
+                    },
+                    complete: function() {
+                        btn.prop('disabled', false).html('<i class="fas fa-edit"></i>');
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Preencher o modal de edição com os dados do plano
+                            $('#editPlanoId').val(response.data.id);
+                            $('#editPlanoName').val(response.data.nome);
+                            $('#editPlanoSigla').val(response.data.sigla);
+                            $('#editPlanoDescription').val(response.data.descricao);
+
+                            // Configurar o formulário de edição
+                            $('#formEditPlano').attr('action', '<?= site_url('planos/atualizar') ?>');
+
+                            // Mostrar o modal
+                            $('#editPlanoModal').modal('show');
+                        } else {
+                            Swal.fire('Erro', response.message || 'Erro ao carregar dados do plano', 'error');
+                        }
+                    },
+                    error: function(xhr) {
+                        Swal.fire('Erro', 'Falha na comunicação com o servidor', 'error');
+                    }
+                });
+            } else {
+
+            }
+        });
+
     });
 </script>

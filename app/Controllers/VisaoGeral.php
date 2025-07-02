@@ -15,22 +15,18 @@ class VisaoGeral extends BaseController
 
     public function index(): string
     {
-        // Busca todos os registros da view
-        $dados = $this->visaoGeralModel->findAll();
+        // Busca todos os registros
+        $dados = $this->visaoGeralModel->getVisaoGeral();
 
         // Busca os valores distintos para os filtros
         $filtros = $this->visaoGeralModel->getFiltrosDistinct();
 
-        // Passa os dados para a view
         $data = [
             'dados' => $dados,
             'filtros' => $filtros
         ];
 
-        // Conteúdo da página interna
         $this->content_data['content'] = view('sys/visao-geral', $data);
-
-        // Conteúdo da estrutura externa
         return view('layout', $this->content_data);
     }
 
@@ -42,43 +38,24 @@ class VisaoGeral extends BaseController
 
         // Recebe os parâmetros de filtro
         $filtros = [
+            'priorizacao_gab' => $this->request->getPost('priorizacao_gab'),
             'plano' => $this->request->getPost('plano'),
+            'projeto' => $this->request->getPost('projeto'),
             'acao' => $this->request->getPost('acao'),
-            'meta' => $this->request->getPost('meta'),
             'etapa' => $this->request->getPost('etapa'),
-            'responsavel' => $this->request->getPost('responsavel'),
-            'equipe' => $this->request->getPost('equipe'),
+            'responsaveis' => $this->request->getPost('responsaveis'),
             'status' => $this->request->getPost('status'),
             'data_inicio' => $this->request->getPost('data_inicio'),
             'data_fim' => $this->request->getPost('data_fim')
         ];
 
         // Aplica os filtros
-        $dados = $this->visaoGeralModel->filtrar($filtros);
-
-        // Conta o total de registros filtrados
-        $totalRegistros = count($dados);
-
-        // Formata as datas antes de enviar
-        foreach ($dados as &$registro) {
-            if (!empty($registro['data_inicio'])) {
-                $registro['data_inicio_formatada'] = date('d/m/Y', strtotime($registro['data_inicio']));
-            } else {
-                $registro['data_inicio_formatada'] = '';
-            }
-
-            if (!empty($registro['data_fim'])) {
-                $registro['data_fim_formatada'] = date('d/m/Y', strtotime($registro['data_fim']));
-            } else {
-                $registro['data_fim_formatada'] = '';
-            }
-        }
-        unset($registro);
+        $dados = $this->visaoGeralModel->getVisaoGeral($filtros);
 
         return $this->response->setJSON([
             'success' => true,
             'data' => $dados,
-            'totalRegistros' => $totalRegistros
+            'totalRegistros' => count($dados)
         ]);
     }
 }

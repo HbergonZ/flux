@@ -1,7 +1,6 @@
 <?php
 
 use CodeIgniter\Router\RouteCollection;
-use App\Controllers\LoginController;
 
 /**
  * @var RouteCollection $routes
@@ -13,103 +12,147 @@ $routes->get('register', '\App\Controllers\Auth\RegisterController::registerView
 $routes->get('logout', '\App\Controllers\Auth\LoginController::logoutAction');
 
 $routes->get('/', 'VisaoGeral::index');
-$routes->group('', function ($routes) {
-    // Rotas para visualização de projeto
-    $routes->get('visao-projeto/(:num)', 'VisaoProjeto::index/$1');
-    $routes->post('visao-projeto/filtrar/(:num)', 'VisaoProjeto::filtrar/$1');
 
-    // Novas rotas para solicitação de edição
-    $routes->get('visao-projeto/dados-etapa/(:num)/(:any)', 'VisaoProjeto::dadosEtapa/$1/$2');
-    $routes->post('visao-projeto/solicitar-edicao', 'VisaoProjeto::solicitarEdicao');
+// Rotas principais hierárquicas
+$routes->group('', function ($routes) {
+    // Visão Geral
+    $routes->get('visao-geral', 'VisaoGeral::index');
+    $routes->post('visao-geral/filtrar', 'VisaoGeral::filtrar');
+
+    // Planos
+    $routes->get('planos', 'Planos::index');
+    $routes->post('planos/filtrar', 'Planos::filtrar');
+
+    // Projetos
+    $routes->get('planos/(:num)/projetos', 'Projetos::index/$1');
+    $routes->post('projetos/filtrar/(:num)', 'Projetos::filtrar/$1');
+
+    // Etapas
+    $routes->get('planos/(:num)/projetos/(:num)/etapas', 'Etapas::index/$1/$2');
+    $routes->post('etapas/filtrar/(:num)', 'Etapas::filtrar/$1');
+
+    // Ações
+    $routes->get('planos/(:num)/projetos/(:num)/acoes', 'Acoes::index/$2/projeto');
+    $routes->get('planos/(:num)/projetos/(:num)/etapas/(:num)/acoes', 'Acoes::index/$3/etapa');
+
+    // Rotas alternativas para compatibilidade
+    $routes->get('projetos/(:num)/etapas', 'Etapas::index/$1');
+    $routes->get('projetos/(:num)/acoes', 'Acoes::index/$1/projeto');
+    $routes->get('etapas/(:num)/acoes', 'Acoes::index/$1/etapa');
+
+    // Solicitações
+    $routes->get('minhas-solicitacoes', 'MinhasSolicitacoes::index');
+    $routes->get('minhas-solicitacoes/detalhes/(:num)', 'MinhasSolicitacoes::detalhes/$1');
+
+    // Dados para solicitações
+    $routes->get('acoes/dados-acao/(:num)', 'Acoes::dadosAcao/$1');
+    $routes->get('etapas/dados-etapa/(:num)', 'Etapas::dadosEtapa/$1');
+    $routes->get('projetos/dados-projeto/(:num)', 'Projetos::dadosProjeto/$1');
+    $routes->get('planos/dados-plano/(:num)', 'Planos::dadosPlano/$1');
+
+    // Solicitações de edição
+    $routes->post('etapas/solicitar-edicao', 'Etapas::solicitarEdicao');
+    $routes->post('etapas/solicitar-exclusao', 'Etapas::solicitarExclusao');
+    $routes->post('etapas/solicitar-inclusao', 'Etapas::solicitarInclusao');
+
+    $routes->post('projetos/solicitar-edicao', 'Projetos::solicitarEdicao');
+    $routes->post('projetos/solicitar-exclusao', 'Projetos::solicitarExclusao');
+    $routes->post('projetos/solicitar-inclusao', 'Projetos::solicitarInclusao');
+    $routes->get('projetos/listar-evidencias/(:num)', 'Projetos::listarEvidencias/$1');
+    $routes->get('projetos/progresso/(:num)', 'Projetos::progresso/$1');
+    $routes->get('projetos/responsaveis/(:num)', 'Projetos::getResponsaveis/$1');
+    $routes->get('projetos/usuarios-disponiveis/(:num)', 'Projetos::getUsuariosDisponiveis/$1');
+    $routes->get('projetos/listar-indicadores/(:num)', 'Projetos::listarIndicadores/$1');
+
+
+    $routes->post('planos/solicitar-edicao', 'Planos::solicitarEdicao');
+    $routes->post('planos/solicitar-exclusao', 'Planos::solicitarExclusao');
+    $routes->post('planos/solicitar-inclusao', 'Planos::solicitarInclusao');
+
+    $routes->post('acoes/solicitar-edicao', 'Acoes::solicitarEdicao');
+    $routes->post('acoes/solicitar-exclusao', 'Acoes::solicitarExclusao');
+    $routes->post('acoes/solicitar-inclusao', 'Acoes::solicitarInclusao');
+    $routes->get('acoes/listar-evidencias/(:num)', 'Acoes::listarEvidencias/$1');
+    $routes->post('acoes/filtrar/(:num)/(:segment)', 'Acoes::filtrar/$1/$2');
+    $routes->get('acoes/get-acoes/(:num)/(:segment)', 'Acoes::getAcoes/$1/$2');
+    $routes->get('acoes/acoes-atrasadas-usuario', 'Acoes::getAcoesAtrasadasUsuario');
+    $routes->get('acoes/get-responsaveis/(:num)', 'Acoes::getResponsaveis/$1');
+    $routes->get('acoes/responsaveis/(:num)', 'Acoes::getResponsaveis/$1');
+    $routes->get('acoes/usuarios-disponiveis/(:num)', 'Acoes::buscarUsuariosDisponiveis/$1');
+    $routes->get('acoes/usuarios-disponiveis/(:num)', 'Acoes::getUsuariosDisponiveis/$1');
+    $routes->get('acoes/buscar-usuarios', 'Acoes::buscarUsuariosParaResponsaveis');
+    $routes->get('acoes/get-usuarios-disponiveis/(:num)', 'Acoes::getUsuariosDisponiveis/$1');
 });
 
-
-$routes->get('planos', 'Planos::index');
-$routes->post('planos/filtrar', 'Planos::filtrar');
-
-
-$routes->get('acoes/(:num)', 'Acoes::index/$1');
-$routes->post('acoes/filtrar/(:num)', 'Acoes::filtrar/$1');
-
-$routes->get('metas/(:num)', 'Metas::index/$1');
-$routes->post('metas/filtrar/(:num)', 'Metas::filtrar/$1');
-
-// Para acessar via ações
-$routes->get('etapas/(:num)', 'Etapas::index/$1');
-$routes->post('etapas/filtrar/acao/(:num)', 'Etapas::filtrar/acao/$1');
-
-// Para acessar via metas
-$routes->get('etapas/meta/(:num)', 'Etapas::meta/$1');
-$routes->post('etapas/filtrar/meta/(:num)', 'Etapas::filtrar/meta/$1');
-
-$routes->get('visao-geral', 'VisaoGeral::index');
-$routes->post('visao-geral/filtrar', 'VisaoGeral::filtrar');
-
-$routes->post('etapas/solicitar-edicao', 'Etapas::solicitarEdicao');
-$routes->post('etapas/solicitar-exclusao', 'Etapas::solicitarExclusao');
-$routes->post('etapas/solicitar-inclusao', 'Etapas::solicitarInclusao');
-$routes->get('etapas/dados-etapa/(:num)', 'Etapas::dadosEtapa/$1');
-
-$routes->get('minhas-solicitacoes', 'MinhasSolicitacoes::index');
-$routes->get('minhas-solicitacoes/detalhes/(:num)', 'MinhasSolicitacoes::detalhes/$1');
-
-$routes->post('metas/solicitar-edicao', 'Metas::solicitarEdicao');
-$routes->post('metas/solicitar-exclusao', 'Metas::solicitarExclusao');
-$routes->post('metas/solicitar-inclusao', 'Metas::solicitarInclusao');
-$routes->get('metas/dados-meta/(:num)', 'Metas::dadosMeta/$1');
-
-$routes->post('acoes/solicitar-edicao', 'Acoes::solicitarEdicao');
-$routes->post('acoes/solicitar-exclusao', 'Acoes::solicitarExclusao');
-$routes->post('acoes/solicitar-inclusao', 'Acoes::solicitarInclusao');
-$routes->get('acoes/dados-acao/(:num)', 'Acoes::dadosAcao/$1');
-
-$routes->post('planos/solicitar-edicao', 'Planos::solicitarEdicao');
-$routes->post('planos/solicitar-exclusao', 'Planos::solicitarExclusao');
-$routes->post('planos/solicitar-inclusao', 'Planos::solicitarInclusao');
-$routes->get('planos/dados-plano/(:num)', 'Planos::dadosPlano/$1');
-
-$routes->group('', ['filter' => 'group:admin'], function ($routes) {
-
+// Rotas administrativas
+$routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
+    // Planos
     $routes->post('planos/cadastrar', 'Planos::cadastrar');
     $routes->get('planos/editar/(:num)', 'Planos::editar/$1');
     $routes->post('planos/atualizar', 'Planos::atualizar');
     $routes->post('planos/excluir', 'Planos::excluir');
+    $routes->get('planos/verificar-relacionamentos/(:num)', 'Planos::verificarRelacionamentos/$1');
 
-    $routes->post('acoes/cadastrar/(:num)', 'Acoes::cadastrar/$1');
-    $routes->get('acoes/editar/(:num)', 'Acoes::editar/$1');
-    $routes->post('acoes/atualizar/(:num)', 'Acoes::atualizar/$1');
-    $routes->post('acoes/excluir/(:num)', 'Acoes::excluir/$1');
+    // Projetos
+    $routes->post('projetos/cadastrar/(:num)', 'Projetos::cadastrar/$1');
+    $routes->get('projetos/editar/(:num)', 'Projetos::editar/$1');
+    $routes->post('projetos/atualizar/(:num)', 'Projetos::atualizar/$1');
+    $routes->post('projetos/excluir/(:num)', 'Projetos::excluir/$1');
+    $routes->post('projetos/cadastrar-acao-direta/(:num)', 'Projetos::cadastrarAcaoDireta/$1');
+    $routes->post('projetos/editar/(:num)', 'Projetos::editar/$1');
+    $routes->post('projetos/adicionar-responsavel/(:num)', 'Projetos::adicionarResponsavel/$1');
+    $routes->post('projetos/remover-responsavel/(:num)', 'Projetos::removerResponsavel/$1');
+    $routes->post('projetos/adicionar-indicador/(:num)', 'Projetos::adicionarIndicador/$1');
+    $routes->post('projetos/remover-indicador/(:num)/(:num)', 'Projetos::removerIndicador/$1/$2');
 
-    $routes->post('metas/cadastrar/(:num)', 'Metas::cadastrar/$1');
-    $routes->get('metas/editar/(:num)', 'Metas::editar/$1');
-    $routes->post('metas/atualizar/(:num)', 'Metas::atualizar/$1');
-    $routes->post('metas/excluir/(:num)', 'Metas::excluir/$1');
 
-    $routes->post('etapas/cadastrar/acao/(:num)', 'Etapas::cadastrar/acao/$1');
+    // Etapas
+    $routes->post('etapas/cadastrar/(:num)', 'Etapas::cadastrar/$1');
     $routes->get('etapas/editar/(:num)', 'Etapas::editar/$1');
-    $routes->post('etapas/atualizar/acao/(:num)', 'Etapas::atualizar/acao/$1');
-    $routes->post('etapas/excluir/acao/(:num)', 'Etapas::excluir/acao/$1');
+    $routes->post('etapas/atualizar/(:num)', 'Etapas::atualizar/$1');
+    $routes->post('etapas/excluir/(:num)', 'Etapas::excluir/$1');
+    $routes->get('etapas/proxima-ordem/(:num)', 'Etapas::proximaOrdem/$1');
+    $routes->post('etapas/salvar-ordem/(:num)', 'Etapas::salvarOrdem/$1');
+    $routes->get('etapas/verificar-relacionamentos/(:num)', 'Etapas::verificarRelacionamentos/$1');
 
-    $routes->post('etapas/cadastrar/meta/(:num)', 'Etapas::cadastrar/meta/$1');
-    $routes->post('etapas/atualizar/meta/(:num)', 'Etapas::atualizar/meta/$1');
-    $routes->post('etapas/excluir/meta/(:num)', 'Etapas::excluir/meta/$1');
+    // Ações
+    $routes->post('acoes/cadastrar/(:num)/(:segment)', 'Acoes::cadastrar/$1/$2');
+    $routes->get('acoes/proxima-ordem/(:num)/(:segment)', 'Acoes::proximaOrdem/$1/$2');
+    $routes->post('acoes/salvar-ordem/(:num)/(:segment)', 'Acoes::salvarOrdem/$1/$2');
+    $routes->get('acoes/editar/(:num)', 'Acoes::editar/$1');
+    $routes->post('acoes/atualizar/(:num)/(:segment)', 'Acoes::atualizar/$1/$2');
+    $routes->post('acoes/excluir/(:num)/(:segment)', 'Acoes::excluir/$1/$2');
+    $routes->post('acoes/adicionar-evidencia/(:num)', 'Acoes::adicionarEvidencia/$1');
+    $routes->post('acoes/remover-evidencia/(:num)', 'Acoes::removerEvidencia/$1');
+    $routes->get('acoes/gerenciar-evidencias/(:num)', 'Acoes::gerenciarEvidencias/$1');
+    $routes->get('acoes/carregar-para-ordenacao/(:num)/(:segment)', 'Acoes::carregarAcoesParaOrdenacao/$1/$2');
+    $routes->post('acoes/adicionar-responsavel', 'Acoes::adicionarResponsavel');
+    $routes->post('acoes/remover-responsavel', 'Acoes::removerResponsavel');
 
+
+
+
+    // Solicitações
     $routes->get('solicitacoes', 'Solicitacoes::index');
     $routes->get('solicitacoes/avaliar/(:num)', 'Solicitacoes::avaliar/$1');
     $routes->post('solicitacoes/processar', 'Solicitacoes::processar');
 
+    // Histórico
     $routes->group('historico-solicitacoes', function ($routes) {
         $routes->get('/', 'HistoricoSolicitacoes::index');
         $routes->get('detalhes/(:num)', 'HistoricoSolicitacoes::detalhes/$1');
     });
 
+    // Usuários e Grupos
     $routes->get('atribuir-grupos', 'AtribuirGrupos::index');
-    $routes->post('atribuir-grupos/atribuir', 'AtribuirGrupos::atribuir'); // Exemplo extra
-
+    $routes->post('atribuir-grupos/atribuir', 'AtribuirGrupos::atribuir');
     $routes->get('gerenciar-usuarios', 'Usuarios::index');
     $routes->post('gerenciar-usuarios/filtrar', 'Usuarios::filtrar');
     $routes->get('gerenciar-usuarios/editar/(:num)', 'Usuarios::editar/$1');
     $routes->post('gerenciar-usuarios/atualizar', 'Usuarios::atualizar');
     $routes->post('gerenciar-usuarios/alterar-grupo', 'Usuarios::alterarGrupo');
     $routes->post('gerenciar-usuarios/excluir', 'Usuarios::excluir');
+
+    $routes->post('gerenciar-usuarios/toggle-registro', 'Usuarios::toggleRegistro');
+    $routes->get('gerenciar-usuarios/status-registro', 'Usuarios::statusRegistro');
 });

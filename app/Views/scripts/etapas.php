@@ -6,11 +6,10 @@
 
 <script>
     $(document).ready(function() {
-        // Inicializa o DataTable
+        // Inicializa o DataTable com configuração mais robusta
         var dataTable = $('#dataTable').DataTable({
             "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json",
                 "emptyTable": "Nenhum dado disponível na tabela",
                 "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
                 "infoEmpty": "Mostrando 0 a 0 de 0 registros",
@@ -25,17 +24,74 @@
                     "last": "Última",
                     "next": "Próxima",
                     "previous": "Anterior"
-                },
-                "aria": {
-                    "sortAscending": ": ativar para ordenar coluna ascendente",
-                    "sortDescending": ": ativar para ordenar coluna descendente"
                 }
             },
+
             "searching": false,
             "responsive": true,
             "autoWidth": false,
             "lengthMenu": [5, 10, 25, 50, 100],
-            "pageLength": 10
+            "pageLength": 10,
+            "columns": [{
+                    "data": "ordem",
+                    "className": "text-center"
+                },
+                {
+                    "data": "nome",
+                    "className": "text-wrap"
+                },
+                {
+                    "data": "data_criacao",
+                    "className": "text-center",
+                    "render": function(data) {
+                        return data ? formatDate(data) : '-';
+                    }
+                },
+                {
+                    "data": "data_atualizacao",
+                    "className": "text-center",
+                    "render": function(data) {
+                        return data ? formatDate(data) : '-';
+                    }
+                },
+                {
+                    "data": null,
+                    "className": "text-center",
+                    "orderable": false,
+                    "render": function(data, type, row) {
+                        var id = row.id + '-' + row.nome.toLowerCase().replace(/\s+/g, '-');
+                        var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
+
+                        var buttons = `
+                            <div class="d-inline-flex">
+                                <a href="<?= site_url('etapas/') ?>${row.id}/acoes" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Ações">
+                                    <i class="fas fa-th-list"></i>
+                                </a>`;
+
+                        if (isAdmin) {
+                            buttons += `
+                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>`;
+                        } else {
+                            buttons += `
+                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>`;
+                        }
+
+                        buttons += `</div>`;
+                        return buttons;
+                    }
+                }
+            ],
+            "data": <?= json_encode($etapas ?? []) ?>
         });
 
         // Configuração do AJAX
@@ -49,7 +105,78 @@
         // Armazenar dados originais do formulário
         let formOriginalData = {};
 
-        // Cadastrar nova etapa
+        // Event listener para a troca de ordens
+        $(document).on('change', '.ordem-select', function() {
+            const selectAtual = this;
+            const novaOrdem = parseInt(selectAtual.value);
+            const idAtual = selectAtual.name.match(/\[(.*?)\]/)[1];
+            const ordemOriginal = parseInt($(selectAtual).data('original'));
+
+            // Se a nova ordem for igual à original, não faz nada
+            if (novaOrdem === ordemOriginal) return;
+
+            // Encontrar o select que tinha a nova ordem
+            let selectAlvo = null;
+            $('.ordem-select').each(function() {
+                if (this !== selectAtual && parseInt(this.value) === novaOrdem) {
+                    selectAlvo = this;
+                    return false; // sai do loop
+                }
+            });
+
+            // Se encontrou um select com a ordem que queremos trocar
+            if (selectAlvo) {
+                // Troca a ordem do select alvo para a ordem original do select atual
+                $(selectAlvo).val(ordemOriginal).data('original', ordemOriginal);
+            }
+
+            // Atualiza o data-original do select atual para a nova ordem
+            $(selectAtual).data('original', novaOrdem);
+        });
+
+        // Inicializar ordens originais quando o modal é aberto
+        $('#ordenarEtapasModal').on('shown.bs.modal', function() {
+            $('.ordem-select').each(function() {
+                $(this).data('original', $(this).val());
+            });
+        });
+
+        // Carregar próxima ordem ao abrir o modal de adição
+        $('#addEtapaModal').on('show.bs.modal', function() {
+            $.ajax({
+                url: '<?= site_url("etapas/proxima-ordem/$idProjeto") ?>',
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        $('#etapaOrdem').val(response.proximaOrdem);
+                    } else {
+                        // Fallback: calcular no cliente
+                        var maxOrdem = 0;
+                        $('#dataTable tbody tr').each(function() {
+                            var ordem = parseInt($(this).find('td:eq(0)').text()) || 0;
+                            if (ordem > maxOrdem) {
+                                maxOrdem = ordem;
+                            }
+                        });
+                        $('#etapaOrdem').val(maxOrdem + 1);
+                    }
+                },
+                error: function() {
+                    // Fallback: calcular no cliente
+                    var maxOrdem = 0;
+                    $('#dataTable tbody tr').each(function() {
+                        var ordem = parseInt($(this).find('td:eq(0)').text()) || 0;
+                        if (ordem > maxOrdem) {
+                            maxOrdem = ordem;
+                        }
+                    });
+                    $('#etapaOrdem').val(maxOrdem + 1);
+                }
+            });
+        });
+
+        // Cadastrar nova etapa (apenas admin)
         $('#formAddEtapa').submit(function(e) {
             e.preventDefault();
             submitForm($(this), '#addEtapaModal');
@@ -65,15 +192,16 @@
                 dataType: 'json',
                 success: function(response) {
                     if (response.success && response.data) {
-                        $('#editEtapaId').val(response.data.id_etapa);
-                        $('#editEtapaNome').val(response.data.etapa);
-                        $('#editEtapaAcao').val(response.data.acao);
-                        $('#editEtapaResponsavel').val(response.data.responsavel);
-                        $('#editEtapaEquipe').val(response.data.equipe);
-                        $('#editEtapaTempoEstimado').val(response.data.tempo_estimado_dias);
-                        $('#editEtapaDataInicio').val(response.data.data_inicio);
-                        $('#editEtapaDataFim').val(response.data.data_fim);
-                        $('#editEtapaStatus').val(response.data.status);
+                        $('#editEtapaId').val(response.data.id);
+                        $('#editEtapaNome').val(response.data.nome);
+                        $('#editEtapaOrdem').val(response.data.ordem);
+
+                        // Armazena os valores originais para comparação
+                        formOriginalData = {
+                            nome: response.data.nome,
+                            ordem: response.data.ordem
+                        };
+
                         $('#editEtapaModal').modal('show');
                     } else {
                         showErrorAlert(response.message || "Erro ao carregar etapa");
@@ -88,7 +216,6 @@
         // Solicitar edição de etapa - Abrir modal (para não-admins)
         $(document).on('click', '.btn-primary[title="Solicitar Edição"]', function() {
             var etapaId = $(this).data('id').split('-')[0];
-            var etapaRow = $(this).closest('tr');
             var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
             var url = isAdmin ? '<?= site_url('etapas/editar/') ?>' : '<?= site_url('etapas/dados-etapa/') ?>';
 
@@ -101,26 +228,14 @@
                         var etapa = response.data;
 
                         // Preenche os campos do formulário
-                        $('#solicitarEdicaoId').val(etapa.id_etapa);
-                        $('#solicitarEdicaoEtapa').val(etapa.etapa);
-                        $('#solicitarEdicaoAcao').val(etapa.acao);
-                        $('#solicitarEdicaoResponsavel').val(etapa.responsavel);
-                        $('#solicitarEdicaoEquipe').val(etapa.equipe);
-                        $('#solicitarEdicaoTempoEstimado').val(etapa.tempo_estimado_dias);
-                        $('#solicitarEdicaoDataInicio').val(etapa.data_inicio);
-                        $('#solicitarEdicaoDataFim').val(etapa.data_fim);
-                        $('#solicitarEdicaoStatus').val(etapa.status);
+                        $('#solicitarEdicaoId').val(etapa.id);
+                        $('#solicitarEdicaoNome').val(etapa.nome);
+                        $('#solicitarEdicaoOrdem').val(etapa.ordem);
 
                         // Armazena os valores originais para comparação
                         formOriginalData = {
-                            etapa: etapa.etapa,
-                            acao: etapa.acao,
-                            responsavel: etapa.responsavel,
-                            equipe: etapa.equipe,
-                            tempo_estimado_dias: etapa.tempo_estimado_dias,
-                            data_inicio: etapa.data_inicio,
-                            data_fim: etapa.data_fim,
-                            status: etapa.status
+                            nome: etapa.nome,
+                            ordem: etapa.ordem
                         };
 
                         $('#solicitarEdicaoModal').modal('show');
@@ -146,7 +261,7 @@
             let hasChanges = false;
             const form = $('#formSolicitarEdicao');
 
-            ['etapa', 'acao', 'responsavel', 'equipe', 'tempo_estimado_dias', 'data_inicio', 'data_fim', 'status'].forEach(field => {
+            ['nome', 'ordem'].forEach(field => {
                 const currentValue = form.find(`[name="${field}"]`).val();
                 if (formOriginalData[field] != currentValue) {
                     hasChanges = true;
@@ -171,7 +286,7 @@
         // Solicitar exclusão de etapa - Abrir modal (para não-admins)
         $(document).on('click', '.btn-danger[title="Solicitar Exclusão"]', function() {
             var etapaId = $(this).data('id').split('-')[0];
-            var etapaName = $(this).closest('tr').find('td:first').text();
+            var etapaName = $(this).closest('tr').find('td:nth-child(2)').text();
             var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
             var url = isAdmin ? '<?= site_url('etapas/editar/') ?>' : '<?= site_url('etapas/dados-etapa/') ?>';
 
@@ -182,9 +297,9 @@
                 success: function(response) {
                     if (response.success && response.data) {
                         var etapa = response.data;
-                        var dadosAtuais = `Etapa: ${etapa.etapa}\nAção: ${etapa.acao}\nResponsável: ${etapa.responsavel}\nEquipe: ${etapa.equipe}\nTempo Estimado: ${etapa.tempo_estimado_dias} dias\nData Início: ${etapa.data_inicio}\nData Fim: ${etapa.data_fim}\nStatus: ${etapa.status}`;
+                        var dadosAtuais = `Nome: ${etapa.nome}\nOrdem: ${etapa.ordem}\nProjeto: ${etapa.id_projeto}`;
 
-                        $('#solicitarExclusaoId').val(etapa.id_etapa);
+                        $('#solicitarExclusaoId').val(etapa.id);
                         $('#etapaNameToRequestDelete').text(etapaName);
                         $('#solicitarExclusaoDadosAtuais').val(dadosAtuais);
                         $('#solicitarExclusaoModal').modal('show');
@@ -216,20 +331,157 @@
             submitForm($(this), '#editEtapaModal');
         });
 
-        // Excluir etapa - Abrir modal de confirmação (apenas admin)
+        // Modal de confirmação de exclusão com verificação de relacionamentos
         $(document).on('click', '.btn-danger[title="Excluir"]', function() {
-            var etapaId = $(this).data('id').split('-')[0];
-            var etapaName = $(this).closest('tr').find('td:first').text();
+            var btn = $(this);
+            var etapaId = btn.data('id').split('-')[0];
+            var etapaName = btn.closest('tr').find('td:nth-child(2)').text();
 
-            $('#deleteEtapaId').val(etapaId);
-            $('#etapaNameToDelete').text(etapaName);
-            $('#deleteEtapaModal').modal('show');
+            // Verificar se há relacionamentos
+            $.ajax({
+                url: '<?= site_url('etapas/verificar-relacionamentos/') ?>' + etapaId,
+                type: 'GET',
+                dataType: 'json',
+                beforeSend: function() {
+                    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
+                },
+                complete: function() {
+                    btn.prop('disabled', false).html('<i class="fas fa-trash-alt"></i>');
+                },
+                success: function(response) {
+                    if (response.success) {
+                        var totalAcoes = response.contagem.acoes;
+
+                        if (totalAcoes > 0) {
+                            // Exibir alerta de confirmação com detalhes
+                            Swal.fire({
+                                title: 'Atenção! Exclusão em Cascata',
+                                html: `Você está prestes a excluir a etapa <strong>${etapaName}</strong> e <strong>TODAS</strong> as suas ações vinculadas:<br><br>
+                                   <ul class="text-left">
+                                       <li>Ações: ${response.contagem.acoes}</li>
+                                   </ul>
+                                   <p class="text-danger mt-2"><strong>Esta ação é irreversível!</strong></p>`,
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonColor: '#d33',
+                                cancelButtonColor: '#3085d6',
+                                confirmButtonText: 'Sim, excluir tudo!',
+                                cancelButtonText: 'Cancelar',
+                                width: '600px'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    $('#deleteEtapaId').val(etapaId);
+                                    $('#etapaNameToDelete').text(etapaName);
+                                    $('#deleteEtapaModal').modal('show');
+                                }
+                            });
+                        } else {
+                            // Exibir confirmação simples se não houver relacionamentos
+                            Swal.fire({
+                                title: 'Confirmar Exclusão',
+                                html: `Tem certeza que deseja excluir a etapa <strong>${etapaName}</strong>?`,
+                                icon: 'question',
+                                showCancelButton: true,
+                                confirmButtonColor: '#d33',
+                                cancelButtonColor: '#3085d6',
+                                confirmButtonText: 'Sim, excluir!',
+                                cancelButtonText: 'Cancelar'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    $('#deleteEtapaId').val(etapaId);
+                                    $('#etapaNameToDelete').text(etapaName);
+                                    $('#deleteEtapaModal').modal('show');
+                                }
+                            });
+                        }
+                    } else {
+                        Swal.fire('Erro', response.message || 'Erro ao verificar relacionamentos', 'error');
+                    }
+                },
+                error: function(xhr) {
+                    Swal.fire('Erro', 'Falha na comunicação com o servidor', 'error');
+                }
+            });
         });
 
-        // Confirmar exclusão (apenas admin)
+        // Processar exclusão após confirmação
         $('#formDeleteEtapa').submit(function(e) {
             e.preventDefault();
-            submitForm($(this), '#deleteEtapaModal');
+            var form = $(this);
+            var submitBtn = form.find('button[type="submit"]');
+            var originalBtnText = submitBtn.html();
+
+            submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Excluindo...');
+
+            $.ajax({
+                type: "POST",
+                url: form.attr('action'),
+                data: form.serialize(),
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        $('#deleteEtapaModal').modal('hide');
+
+                        // Mostrar mensagem de sucesso com detalhes
+                        var msg = response.message;
+                        if (response.contagem) {
+                            msg += `<br><small>Ações excluídas: ${response.contagem.acoes}</small>`;
+                        }
+
+                        Swal.fire({
+                            title: 'Sucesso!',
+                            html: msg,
+                            icon: 'success',
+                            timer: 3000,
+                            timerProgressBar: true,
+                            willClose: () => {
+                                location.reload();
+                            }
+                        });
+                    } else {
+                        Swal.fire('Erro', response.message, 'error');
+                    }
+                },
+                error: function(xhr) {
+                    Swal.fire('Erro', 'Falha na comunicação com o servidor', 'error');
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).html(originalBtnText);
+                }
+            });
+        });
+
+        // Enviar formulário de ordenação
+        $('#formOrdenarEtapas').submit(function(e) {
+            e.preventDefault();
+
+            const submitBtn = $(this).find('button[type="submit"]');
+            const originalBtnText = submitBtn.html();
+
+            submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...');
+
+            $.ajax({
+                type: "POST",
+                url: $(this).attr('action'),
+                data: $(this).serialize(),
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        $('#ordenarEtapasModal').modal('hide');
+                        showSuccessAlert(response.message || 'Ordem atualizada com sucesso!');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showErrorAlert(response.message || 'Ocorreu um erro ao atualizar a ordem.');
+                    }
+                },
+                error: function(xhr) {
+                    console.error(xhr.responseText);
+                    showErrorAlert('Erro na comunicação com o servidor.');
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).html(originalBtnText);
+                }
+            });
         });
 
         // Aplicar filtros
@@ -257,22 +509,27 @@
                 data: form.serialize(),
                 dataType: "json",
                 success: function(response) {
+                    console.log('Resposta recebida:', response);
                     if (response.success) {
                         if (modalId) {
                             $(modalId).modal('hide');
+                            form[0].reset();
                         }
                         showSuccessAlert(successMessage || response.message || 'Operação realizada com sucesso!');
 
-                        // Recarregar a página apenas se for uma operação que altera dados
+                        // Recarregar a página apenas se não for uma solicitação
                         if (!modalId || (modalId !== '#solicitarEdicaoModal' && modalId !== '#solicitarExclusaoModal' && modalId !== '#solicitarInclusaoModal')) {
-                            setTimeout(() => location.reload(), 1500);
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1500);
                         }
                     } else {
+                        console.error('Erro na operação:', response.message);
                         showErrorAlert(response.message || 'Ocorreu um erro durante a operação.');
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.error(xhr.responseText);
+                    console.error('Erro na requisição AJAX:', error, xhr.responseText);
                     showErrorAlert('Erro na comunicação com o servidor: ' + error);
                 },
                 complete: function() {
@@ -292,7 +549,7 @@
 
             $.ajax({
                 type: "POST",
-                url: '<?= site_url("etapas/filtrar/$tipo/$idVinculo") ?>',
+                url: '<?= site_url("etapas/filtrar/$idProjeto") ?>',
                 data: $('#formFiltros').serialize(),
                 dataType: "json",
                 beforeSend: function() {
@@ -300,80 +557,7 @@
                 },
                 success: function(response) {
                     if (response.success) {
-                        dataTable.destroy();
-                        $('#dataTable tbody').empty();
-
-                        $.each(response.data, function(index, etapa) {
-                            var id = etapa.id_etapa + '-' + etapa.etapa.toLowerCase().replace(/\s+/g, '-');
-
-                            var badge_class = '';
-                            switch (etapa.status) {
-                                case 'Em andamento':
-                                    badge_class = 'badge-primary';
-                                    break;
-                                case 'Finalizado':
-                                    badge_class = 'badge-success';
-                                    break;
-                                case 'Paralisado':
-                                    badge_class = 'badge-warning';
-                                    break;
-                                case 'Não iniciado':
-                                    badge_class = 'badge-secondary';
-                                    break;
-                            }
-
-                            var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
-                            var actionButtons = '';
-
-                            if (isAdmin) {
-                                actionButtons = `
-                                    <div class="d-inline-flex">
-                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </div>`;
-                            } else {
-                                actionButtons = `
-                                    <div class="d-inline-flex">
-                                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </div>`;
-                            }
-
-                            var row = `
-                                <tr>
-                                    <td class="text-wrap align-middle">${etapa.etapa}</td>
-                                    <td class="text-wrap align-middle">${etapa.acao}</td>
-                                    <td class="text-center align-middle">${etapa.responsavel}</td>
-                                    <td class="text-wrap align-middle">${etapa.equipe}</td>
-                                    <td class="text-center align-middle">${etapa.tempo_estimado_dias ? etapa.tempo_estimado_dias + ' dias' : ''}</td>
-                                    <td class="text-center align-middle">${etapa.data_inicio ? formatDate(etapa.data_inicio) : ''}</td>
-                                    <td class="text-center align-middle">${etapa.data_fim ? formatDate(etapa.data_fim) : ''}</td>
-                                    <td class="text-center align-middle"><span class="badge ${badge_class}">${etapa.status}</span></td>
-                                    <td class="text-center align-middle">${actionButtons}</td>
-                                </tr>`;
-
-                            $('#dataTable tbody').append(row);
-                        });
-
-                        dataTable = $('#dataTable').DataTable({
-                            "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-                            "language": {
-                                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json"
-                            },
-                            "searching": false,
-                            "responsive": true,
-                            "autoWidth": false,
-                            "lengthMenu": [5, 10, 25, 50, 100],
-                            "pageLength": 10
-                        });
+                        dataTable.clear().rows.add(response.data).draw();
                     } else {
                         showErrorAlert('Erro ao filtrar etapas: ' + response.message);
                     }
@@ -389,12 +573,9 @@
 
         // Função para formatar data
         function formatDate(dateString) {
-            if (!dateString) return '';
+            if (!dateString) return '-';
             const date = new Date(dateString);
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
-            return `${day}/${month}/${year}`;
+            return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR');
         }
 
         // Funções para exibir alertas

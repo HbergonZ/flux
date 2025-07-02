@@ -15,7 +15,7 @@ class Usuarios extends BaseController
     public function __construct()
     {
         $this->userModel = new UserModel();
-        $this->authGroups = config('AuthGroups')->groups ?? ['admin' => [], 'user' => []];
+        $this->authGroups = config('AuthGroups')->groups ?? ['superadmin' => [], 'admin' => [], 'user' => []];
         $this->authIdentities = db_connect()->table('auth_identities');
     }
 
@@ -25,10 +25,9 @@ class Usuarios extends BaseController
 
         foreach ($users as $user) {
             $user->groups = $user->getGroups();
-            // Carrega o email da tabela auth_identities
             $identity = $this->authIdentities->where('user_id', $user->id)->get()->getRow();
             if ($identity) {
-                $user->email = $identity->secret; // 'secret' é a coluna que armazena o email
+                $user->email = $identity->secret;
             }
         }
 
@@ -72,7 +71,6 @@ class Usuarios extends BaseController
 
         foreach ($users as $user) {
             $user->groups = $user->getGroups();
-            // Carrega o email da tabela auth_identities
             $identity = $this->authIdentities->where('user_id', $user->id)->get()->getRow();
             if ($identity) {
                 $user->email = $identity->secret;
@@ -100,7 +98,6 @@ class Usuarios extends BaseController
             return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Usuário não encontrado']);
         }
 
-        // Busca o email da tabela auth_identities
         $identity = $this->authIdentities->where('user_id', $user->id)->get()->getRow();
         $email = $identity ? $identity->secret : '';
 
@@ -111,12 +108,9 @@ class Usuarios extends BaseController
             'username' => $user->username,
             'email' => $email,
             'active' => $user->active,
-            'is_self_edit' => $isSelfEdit
+            'is_self_edit' => $isSelfEdit,
+            'groups' => $user->getGroups()
         ];
-
-        if (!$isSelfEdit) {
-            $responseData['groups'] = $user->getGroups();
-        }
 
         return $this->response->setJSON([
             'success' => true,
@@ -141,8 +135,6 @@ class Usuarios extends BaseController
         }
 
         $isSelfEdit = (auth()->user()->id == $user->id);
-
-        // Busca o email atual para validação
         $currentIdentity = $this->authIdentities->where('user_id', $user->id)->get()->getRow();
         $currentEmail = $currentIdentity ? $currentIdentity->secret : '';
 
@@ -151,16 +143,9 @@ class Usuarios extends BaseController
             'email' => 'required|valid_email'
         ];
 
-        // Verifica se o email foi alterado
         $newEmail = $this->request->getPost('email');
         if ($newEmail !== $currentEmail) {
             $rules['email'] .= '|is_unique[auth_identities.secret]';
-        }
-
-        if (!$isSelfEdit && $this->request->getPost('group')) {
-            $rules['group'] = 'required|in_list[' . implode(',', array_keys($this->authGroups)) . ']';
-        } else {
-            $this->request->setGlobal('post', array_merge($this->request->getPost(), ['group' => null]));
         }
 
         if (!$this->validate($rules)) {
@@ -171,26 +156,42 @@ class Usuarios extends BaseController
         }
 
         try {
-            // Atualiza dados básicos na tabela users
+            // Dados antes da alteração
+            $dadosAntigos = [
+                'username' => $user->username,
+                'email' => $currentEmail,
+                'active' => $user->active,
+                'groups' => $user->getGroups()
+            ];
+
             $user->fill([
                 'username' => $this->request->getPost('username')
             ]);
 
-            // Atualiza email na tabela auth_identities
             if ($newEmail !== $currentEmail) {
                 $this->authIdentities->where('user_id', $user->id)
                     ->update(['secret' => $newEmail]);
             }
 
-            // Só altera grupos se não for self-edit
-            if (!$isSelfEdit && $this->request->getPost('group')) {
-                foreach ($user->getGroups() as $oldGroup) {
-                    $user->removeGroup($oldGroup);
-                }
-                $user->addGroup($this->request->getPost('group'));
-            }
-
             $this->userModel->save($user);
+
+            // Dados após alteração
+            $dadosNovos = [
+                'username' => $user->username,
+                'email' => $newEmail,
+                'active' => $user->active,
+                'groups' => $user->getGroups()
+            ];
+
+            // Registrar log da edição
+            $this->registrarLog(
+                'edicao',
+                'usuario',
+                $user->id,
+                $dadosAntigos,
+                $dadosNovos,
+                $isSelfEdit ? 'Auto-edição de perfil' : null
+            );
 
             return $this->response->setJSON([
                 'success' => true,
@@ -221,8 +222,20 @@ class Usuarios extends BaseController
             return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Usuário não encontrado']);
         }
 
-        if (in_array('admin', $user->getGroups()) && auth()->user()->id != $user->id) {
-            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Você não pode alterar o grupo de outro administrador']);
+        // Verificar se está tentando alterar a si mesmo
+        if (auth()->user()->id == $user->id) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'success' => false,
+                'message' => 'Você não pode alterar seu próprio grupo'
+            ]);
+        }
+
+        // Verificar se usuário é superadmin
+        if (in_array('superadmin', $user->getGroups())) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'success' => false,
+                'message' => 'Você não pode alterar o grupo de um superadministrador'
+            ]);
         }
 
         $group = $this->request->getPost('group');
@@ -235,11 +248,45 @@ class Usuarios extends BaseController
             ]);
         }
 
+        // Verificar permissões do usuário logado
+        $loggedUser = auth()->user();
+
+        // Se for admin tentando criar superadmin
+        if ($loggedUser->inGroup('admin') && $group === 'superadmin') {
+            return $this->response->setStatusCode(403)->setJSON([
+                'success' => false,
+                'message' => 'Administradores não podem atribuir o grupo superadmin'
+            ]);
+        }
+
+        // Se for admin tentando alterar outro admin
+        if ($loggedUser->inGroup('admin') && in_array('admin', $user->getGroups())) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'success' => false,
+                'message' => 'Administradores não podem alterar outros administradores'
+            ]);
+        }
+
         try {
-            foreach ($user->getGroups() as $oldGroup) {
+            $gruposAntigos = $user->getGroups();
+
+            // Remover todos os grupos atuais
+            foreach ($gruposAntigos as $oldGroup) {
                 $user->removeGroup($oldGroup);
             }
+
+            // Adicionar novo grupo
             $user->addGroup($group);
+
+            // Registrar log da alteração de grupo
+            $this->registrarLog(
+                'alteracao',
+                'grupo',
+                $user->id,
+                ['grupos' => $gruposAntigos],
+                ['grupos' => [$group]],
+                'Alteração de grupo do usuário'
+            );
 
             return $this->response->setJSON([
                 'success' => true,
@@ -270,19 +317,52 @@ class Usuarios extends BaseController
             return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Usuário não encontrado']);
         }
 
-        if (in_array('admin', $user->getGroups())) {
-            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Você não pode excluir um administrador']);
+        if (auth()->user()->id == $user->id) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'success' => false,
+                'message' => 'Você não pode excluir a si mesmo'
+            ]);
         }
 
-        if (auth()->user()->id == $user->id) {
-            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Você não pode excluir a si mesmo']);
+        if (in_array('superadmin', $user->getGroups())) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'success' => false,
+                'message' => 'Você não pode excluir um superadministrador'
+            ]);
+        }
+
+        // Admin não pode excluir outro admin
+        if (in_array('admin', $user->getGroups()) && auth()->user()->inGroup('admin')) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'success' => false,
+                'message' => 'Administradores não podem excluir outros administradores'
+            ]);
         }
 
         try {
-            // Primeiro remove as identidades associadas
-            $this->authIdentities->where('user_id', $user->id)->delete();
+            // Obter dados do usuário antes de excluir
+            $identity = $this->authIdentities->where('user_id', $user->id)->get()->getRow();
+            $dadosUsuario = [
+                'username' => $user->username,
+                'email' => $identity ? $identity->secret : null,
+                'active' => $user->active,
+                'groups' => $user->getGroups(),
+                'created_at' => $user->created_at,
+                'updated_at' => $user->updated_at
+            ];
 
-            // Depois remove o usuário
+            // Registrar log da exclusão
+            $this->registrarLog(
+                'exclusao',
+                'usuario',
+                $user->id,
+                $dadosUsuario,
+                null,
+                'Exclusão de usuário pelo administrador'
+            );
+
+            // Executar exclusão
+            $this->authIdentities->where('user_id', $user->id)->delete();
             $this->userModel->delete($user->id);
 
             return $this->response->setJSON([
@@ -296,5 +376,64 @@ class Usuarios extends BaseController
                 'message' => 'Erro ao excluir usuário. Por favor, tente novamente.'
             ]);
         }
+    }
+    protected function registrarLog(string $tipoOperacao, string $entidade, ?int $idEntidade, ?array $dadosAntigos = null, ?array $dadosNovos = null, ?string $justificativa = null)
+    {
+        $logModel = new \App\Models\LogAdminModel();
+
+        $dadosLog = [
+            'id_usuario' => auth()->user()->id,
+            'tipo_operacao' => $tipoOperacao,
+            'entidade' => $entidade,
+            'id_entidade' => $idEntidade,
+            'nome_entidade' => $dadosNovos['username'] ?? $dadosAntigos['username'] ?? 'Usuário ' . $idEntidade,
+            'dados_antigos' => $dadosAntigos ? json_encode($dadosAntigos) : null,
+            'dados_novos' => $dadosNovos ? json_encode($dadosNovos) : null,
+            'justificativa' => $justificativa
+        ];
+
+        try {
+            $logModel->insert($dadosLog);
+        } catch (\Exception $e) {
+            log_message('error', 'Falha ao registrar log: ' . $e->getMessage());
+        }
+    }
+
+    public function toggleRegistro()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Método não permitido']);
+        }
+
+        if (!auth()->user()->inGroup('superadmin')) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Acesso negado']);
+        }
+
+        // Alterado para usar null em vez de false
+        $currentStatus = service('settings')->get('Registro.ativo', null) ?? false;
+        $newStatus = !$currentStatus;
+
+        service('settings')->set('Registro.ativo', $newStatus);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Status do registro alterado com sucesso',
+            'novoStatus' => $newStatus
+        ]);
+    }
+
+    public function statusRegistro()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Método não permitido']);
+        }
+
+        // Alterado para usar null em vez de false
+        $status = service('settings')->get('Registro.ativo', null) ?? false;
+
+        return $this->response->setJSON([
+            'success' => true,
+            'status' => $status
+        ]);
     }
 }

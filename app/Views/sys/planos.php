@@ -2,11 +2,17 @@
 <?php echo view('components/planos/modal-editar-plano.php'); ?>
 <?php echo view('components/planos/modal-confirmar-exclusao.php'); ?>
 <?php echo view('components/planos/modal-adicionar-plano.php'); ?>
-<?php echo view('components/planos/modal-solicitar-edicao.php'); ?>
-<?php echo view('components/planos/modal-solicitar-exclusao.php'); ?>
-<?php echo view('components/planos/modal-solicitar-inclusao.php'); ?>
 
 <div class="container-fluid">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="<?= site_url('/planos') ?>">Início</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Planos</li>
+        </ol>
+    </nav>
+
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Planos</h1>
@@ -62,13 +68,6 @@
                     </span>
                     <span class="text">Incluir Plano</span>
                 </a>
-            <?php else: ?>
-                <a href="#" class="btn btn-primary btn-icon-split btn-sm" data-toggle="modal" data-target="#solicitarInclusaoModal">
-                    <span class="icon text-white-50">
-                        <i class="fas fa-plus"></i>
-                    </span>
-                    <span class="text">Solicitar Inclusão</span>
-                </a>
             <?php endif; ?>
         </div>
         <div class="card-body">
@@ -79,7 +78,8 @@
                             <th>Nome</th>
                             <th>Sigla</th>
                             <th>Descrição</th>
-                            <th>Ações</th>
+                            <th>Progresso</th>
+                            <th>Opções</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -91,9 +91,21 @@
                                     <td class="text-center align-middle"><?= $plano['sigla'] ?></td>
                                     <td class="text-wrap align-middle"><?= $plano['descricao'] ?></td>
                                     <td class="text-center align-middle">
+                                        <div class="progress-container" title="<?= $plano['progresso']['texto'] ?>">
+                                            <div class="progress progress-sm">
+                                                <div class="progress-bar progress-bar-striped <?= $plano['progresso']['class'] ?>"
+                                                    role="progressbar" style="width: <?= $plano['progresso']['percentual'] ?>%"
+                                                    aria-valuenow="<?= $plano['progresso']['percentual'] ?>"
+                                                    aria-valuemin="0" aria-valuemax="100">
+                                                </div>
+                                            </div>
+                                            <small class="progress-text"><?= $plano['progresso']['percentual'] ?>%</small>
+                                        </div>
+                                    </td>
+                                    <td class="text-center align-middle">
                                         <div class="d-inline-flex">
-                                            <!-- Botão Visualizar Ações -->
-                                            <a href="<?= site_url('acoes/' . $plano['id']) ?>" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Ações">
+                                            <!-- Botão Visualizar Projetos -->
+                                            <a href="<?= site_url('planos/' . $plano['id'] . '/projetos') ?>" class="btn btn-info btn-sm mx-1 d-flex justify-content-center align-items-center" style="width: 32px; height: 32px;" title="Visualizar Projetos">
                                                 <i class="fas fa-eye"></i>
                                             </a>
 
@@ -108,15 +120,7 @@
                                                     <i class="fas fa-trash-alt"></i>
                                                 </button>
                                             <?php else: ?>
-                                                <!-- Botão Solicitar Edição -->
-                                                <button type="button" class="btn btn-primary btn-sm mx-1 d-flex justify-content-center align-items-center" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Edição">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
 
-                                                <!-- Botão Solicitar Exclusão -->
-                                                <button type="button" class="btn btn-danger btn-sm mx-1 d-flex justify-content-center align-items-center" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Exclusão">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
                                             <?php endif; ?>
                                         </div>
                                     </td>

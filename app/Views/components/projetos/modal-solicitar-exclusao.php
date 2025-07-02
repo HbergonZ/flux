@@ -2,24 +2,23 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="solicitarExclusaoModalLabel">Solicitar Exclusão de Meta</h5>
+                <h5 class="modal-title" id="solicitarExclusaoModalLabel">Solicitar Exclusão de Projeto</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="formSolicitarExclusao" method="post" action="<?= site_url('metas/solicitar-exclusao') ?>">
+            <form id="formSolicitarExclusao" method="post" action="<?= site_url('projetos/solicitar-exclusao') ?>">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
-                <input type="hidden" name="id_meta" id="solicitarExclusaoId">
+                <input type="hidden" name="id_projeto" id="solicitarExclusaoId">
                 <input type="hidden" name="tipo" value="exclusao">
-                <input type="hidden" name="id_acao" value="<?= $idAcao ?>">
-                <input type="hidden" name="id_plano" value="<?= $acao['id_plano'] ?>">
+                <input type="hidden" name="id_plano" value="<?= $idPlano ?>">
 
                 <div class="modal-body">
-                    <p>Você está solicitando a exclusão da meta: <strong id="metaNameToRequestDelete"></strong></p>
+                    <p>Você está solicitando a exclusão do projeto: <strong id="projetoNameToRequestDelete"></strong></p>
 
                     <div class="form-group">
                         <label for="solicitarExclusaoDadosAtuais">Dados Atuais</label>
-                        <textarea class="form-control" id="solicitarExclusaoDadosAtuais" name="dados_atuais" rows="4" readonly></textarea>
+                        <textarea class="form-control" id="solicitarExclusaoDadosAtuais" name="dados_atuais" rows="6" readonly></textarea>
                     </div>
 
                     <div class="form-group">

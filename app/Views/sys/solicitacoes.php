@@ -2,7 +2,6 @@
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Solicitações Pendentes</h1>
     </div>
-
     <div class="card shadow mb-4 mx-md-5 mx-3">
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">Lista de Solicitações</h6>
@@ -25,9 +24,9 @@
                         <?php foreach ($solicitacoes as $solicitacao) : ?>
                             <tr>
                                 <td class="text-center"><?= ucfirst($solicitacao['tipo']) ?></td>
-                                <td class="text-center"><?= ucfirst($solicitacao['nivel']) ?></td>
-                                <td><?= $solicitacao['nome'] ?></td>
-                                <td class="text-center"><?= $solicitacao['solicitante'] ?></td>
+                                <td class="text-center"><?= ucfirst(str_replace('acao', 'ação', $solicitacao['nivel'])) ?></td>
+                                <td><?= esc($solicitacao['nome']) ?></td>
+                                <td class="text-center"><?= esc($solicitacao['solicitante']) ?></td>
                                 <td class="text-center"><?= date('d/m/Y H:i', strtotime($solicitacao['data_solicitacao'])) ?></td>
                                 <td class="text-center">
                                     <span class="badge badge-warning"><?= ucfirst($solicitacao['status']) ?></span>
@@ -47,7 +46,6 @@
         </div>
     </div>
 </div>
-
 <!-- Modal de Avaliação -->
 <div class="modal fade" id="avaliarModal" tabindex="-1" role="dialog" aria-labelledby="avaliarModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
@@ -65,61 +63,61 @@
                         <i class="fas fa-spinner fa-spin fa-3x"></i>
                         <p class="mt-2">Carregando dados da solicitação...</p>
                     </div>
-                    <div class="card mb-4">
-                        <div class="card-header bg-light">
-                            <h6 class="m-0 font-weight-bold text-primary">Dados da Solicitação</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6 class="font-weight-bold">Dados Atuais no Momento da Solicitação</h6>
-                                    <div class="table-responsive">
-                                        <table class="table table-sm table-bordered" id="tabelaDadosAtuais"></table>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6 class="font-weight-bold">Alterações Solicitadas</h6>
-                                    <div class="table-responsive">
-                                        <table class="table table-sm table-bordered" id="tabelaDadosAlterados"></table>
-                                    </div>
-                                </div>
+                    <div id="modalContent" style="display: none;">
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="m-0 font-weight-bold text-primary">Dados da Solicitação</h6>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Seção do Solicitante -->
-                    <div class="card mb-4">
-                        <div class="card-header bg-light">
-                            <h6 class="m-0 font-weight-bold text-primary">Informações do Solicitante</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label class="font-weight-bold">Solicitante:</label>
-                                        <p id="nomeSolicitante">-</p>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="font-weight-bold">Dados Atuais no Momento da Solicitação</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-bordered" id="tabelaDadosAtuais"></table>
+                                        </div>
                                     </div>
-                                    <div class="form-group">
-                                        <label class="font-weight-bold">Data da Solicitação:</label>
-                                        <p id="dataSolicitacao">-</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label class="font-weight-bold">Justificativa:</label>
-                                        <div class="p-3 bg-light rounded border" id="justificativaSolicitacao">
-                                            <em class="text-muted">Nenhuma justificativa fornecida.</em>
+                                    <div class="col-md-6">
+                                        <h6 class="font-weight-bold">Alterações Solicitadas</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-bordered" id="tabelaDadosAlterados"></table>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <div>
-                        <div class="form-group">
-                            <label for="justificativa-avaliador">Justificativa do Avaliador (Opcional)</label>
-                            <textarea class="form-control" id="justificativa-avaliador" name="justificativa" rows="3" placeholder="Adicione uma justificativa para sua decisão..."></textarea>
+                        <!-- Seção do Solicitante -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="m-0 font-weight-bold text-primary">Informações do Solicitante</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="font-weight-bold">Solicitante:</label>
+                                            <p id="nomeSolicitante">-</p>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="font-weight-bold">Data da Solicitação:</label>
+                                            <p id="dataSolicitacao">-</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="font-weight-bold">Justificativa:</label>
+                                            <div class="p-3 bg-light rounded border" id="justificativaSolicitacao">
+                                                <em class="text-muted">Nenhuma justificativa fornecida.</em>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="form-group">
+                                <label for="justificativa-avaliador">Justificativa do Avaliador (Opcional)</label>
+                                <textarea class="form-control" id="justificativa-avaliador" name="justificativa" rows="3" placeholder="Adicione uma justificativa para sua decisão..."></textarea>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -135,277 +133,316 @@
         </div>
     </div>
 </div>
-
+<script>
+    var eixos = <?= json_encode($eixos, JSON_UNESCAPED_UNICODE) ?>;
+</script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap4.min.css" />
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap4.min.js"></script>
-<!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 <script>
     $(document).ready(function() {
-        // Inicializa o DataTable
         $('#dataTable').DataTable({
             "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json",
-                "emptyTable": "Nenhum dado disponível na tabela",
-                "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
-                "infoEmpty": "Mostrando 0 a 0 de 0 registros",
-                "infoFiltered": "(filtrado de _MAX_ registros no total)",
-                "lengthMenu": "Mostrar _MENU_ registros por página",
-                "loadingRecords": "Carregando...",
-                "processing": "Processando...",
-                "search": "Pesquisar:",
-                "zeroRecords": "Nenhum registro correspondente encontrado",
-                "paginate": {
-                    "first": "Primeira",
-                    "last": "Última",
-                    "next": "Próxima",
-                    "previous": "Anterior"
-                },
-                "aria": {
-                    "sortAscending": ": ativar para ordenar coluna ascendente",
-                    "sortDescending": ": ativar para ordenar coluna descendente"
-                }
+                "url": "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json"
             },
-            "searching": false,
             "responsive": true,
             "autoWidth": false,
             "lengthMenu": [5, 10, 25, 50, 100],
             "pageLength": 10,
             "order": [
                 [4, 'desc']
-            ],
-            "columnDefs": [{
-                    responsivePriority: 1,
-                    targets: 0
-                },
-                {
-                    responsivePriority: 2,
-                    targets: 6
-                },
-                {
-                    responsivePriority: 3,
-                    targets: 4
-                },
-                {
-                    responsivePriority: 4,
-                    targets: 5
-                },
-                {
-                    responsivePriority: 5,
-                    targets: 2
-                },
-                {
-                    responsivePriority: 6,
-                    targets: 3
-                },
-                {
-                    responsivePriority: 7,
-                    targets: 1
-                }
             ]
         });
-
-        // Abre modal de avaliação
         $(document).on('click', '.avaliar-btn', function() {
             var id = $(this).data('id');
-
-            // Reset do modal
             $('#formAvaliar')[0].reset();
             $('#modalLoading').show();
             $('#modalContent').hide();
-
             $('#avaliarModal').modal('show');
-
             $.ajax({
                 url: '<?= site_url('solicitacoes/avaliar') ?>/' + id,
                 type: 'GET',
                 dataType: 'json',
                 success: function(response) {
                     if (response.success) {
+                        var data = response.data;
                         $('#solicitacaoId').val(id);
-
-                        // Formatadores para melhor exibição
-                        function formatFieldName(name) {
-                            const names = {
-                                'etapa': 'Etapa',
-                                'acao': 'Ação',
-                                'nome': 'Nome',
-                                'responsavel': 'Responsável',
-                                'equipe': 'Equipe',
-                                'tempo_estimado_dias': 'Tempo Estimado (dias)',
-                                'data_inicio': 'Data Início',
-                                'data_fim': 'Data Fim',
-                                'status': 'Status',
-                                'descricao': 'Descrição',
-                                'prioridade': 'Prioridade',
-                                'orcamento': 'Orçamento'
-                            };
-                            return names[name] || name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                        }
-
-                        function formatFieldValue(value) {
-                            if (value === null || value === '' || value === undefined)
-                                return '<span class="text-muted">Não informado</span>';
-                            if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                                const [year, month, day] = value.split('-');
-                                return `${day}/${month}/${year}`;
-                            }
-                            if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
-                                const [date, time] = value.split(' ');
-                                const [year, month, day] = date.split('-');
-                                return `${day}/${month}/${year} ${time}`;
-                            }
-                            return value;
-                        }
-
-                        const tipoSolicitacao = response.tipo.toLowerCase();
-                        const isInclusao = tipoSolicitacao === 'inclusão';
-                        const isExclusao = tipoSolicitacao === 'exclusão';
-                        const nivel = response.nivel || 'registro';
-                        const nivelFormatado = nivel.charAt(0).toUpperCase() + nivel.slice(1);
-
-                        // Preenche tabela de dados atuais
+                        // DADOS ATUAIS ---------------------------
                         let htmlAtuais = '';
-
-                        if (isInclusao) {
+                        if (data.tipo && data.tipo.toLowerCase() === 'inclusão') {
                             htmlAtuais = `
-                        <tr>
-                            <th width="30%">Tipo</th>
-                            <td>Novo(a) ${nivelFormatado}</td>
-                        </tr>
-                        <tr>
-                            <th width="30%">Status</th>
-                            <td><span class="badge badge-info">Novo Registro</span></td>
-                        </tr>`;
-                        } else if (isExclusao) {
-                            for (let key in response.dados_atuais) {
-                                htmlAtuais += `
-                        <tr>
-                            <th width="30%">${formatFieldName(key)}</th>
-                            <td>${formatFieldValue(response.dados_atuais[key])}</td>
-                        </tr>`;
-                            }
+<tr><th width="30%">Tipo</th><td>Novo(a) ${capitalize(data.nivel)}</td></tr>
+<tr><th width="30%">Status</th><td><span class="badge badge-info">Novo Registro</span></td></tr>`;
                         } else {
-                            for (let key in response.dados_atuais) {
-                                htmlAtuais += `
-                        <tr>
-                            <th width="30%">${formatFieldName(key)}</th>
-                            <td>${formatFieldValue(response.dados_atuais[key])}</td>
-                        </tr>`;
+                            let respJaExibido = false;
+                            for (let key in data.dados_atuais) {
+                                if (key === 'equipe' || key === 'ordem' || key === 'id') continue;
+                                // Exibir Projeto por nome nos atuais
+                                if (key === 'id_projeto') {
+                                    htmlAtuais += `
+<tr>
+    <th width="30%">Projeto</th>
+    <td>` + (data.nome_projeto ?? data.dados_atuais[key]) + `</td>
+</tr>`;
+                                }
+                                // Exibir Plano por nome nos atuais
+                                else if (key === 'id_plano') {
+                                    htmlAtuais += `
+<tr>
+    <th width="30%">Plano</th>
+    <td>` + (data.nome_plano ?? data.dados_atuais[key]) + `</td>
+</tr>`;
+                                } else if (key === 'id_eixo') {
+                                    htmlAtuais += `
+<tr>
+    <th width="30%">Eixo</th>
+    <td>` + (eixos[data.dados_atuais[key]] ?? '<span class="text-muted">Não informado</span>') + `</td>
+</tr>`;
+                                } else if (key === 'evidencias') {
+                                    let qtdEv = data.dados_atuais.total_evidencias !== undefined ?
+                                        data.dados_atuais.total_evidencias :
+                                        (Array.isArray(data.dados_atuais.evidencias) ? data.dados_atuais.evidencias.length : 0);
+                                    htmlAtuais += `
+<tr>
+    <th width="30%">Evidências</th>
+    <td><span class="badge badge-secondary">Qtd. evidências: <b>${qtdEv}</b></span></td>
+</tr>`;
+                                } else if (key === 'indicadores') {
+                                    let qtdInd = data.dados_atuais.total_indicadores !== undefined ?
+                                        data.dados_atuais.total_indicadores :
+                                        (Array.isArray(data.dados_atuais.indicadores) ? data.dados_atuais.indicadores.length : 0);
+                                    htmlAtuais += `
+<tr>
+    <th width="30%">Indicadores</th>
+    <td><span class="badge badge-secondary">Qtd. indicadores: <b>${qtdInd}</b></span></td>
+</tr>`;
+                                } else if (key === 'responsaveis_nomes' && !respJaExibido) {
+                                    htmlAtuais += `
+<tr>
+    <th width="30%">Responsáveis</th>
+    <td>` + formatFieldValue(data.dados_atuais[key], key) + `</td>
+</tr>`;
+                                    respJaExibido = true;
+                                } else if (key === 'priorizacao_gab') {
+                                    htmlAtuais += `
+<tr>
+    <th width="30%">Priorização GAB</th>
+    <td>` + formatFieldValue(data.dados_atuais[key], key) + `</td>
+</tr>`;
+                                } else if (
+                                    key !== 'total_evidencias' &&
+                                    key !== 'total_indicadores' &&
+                                    key !== 'responsaveis' &&
+                                    key !== 'responsaveis_nomes' &&
+                                    key !== 'id_eixo' &&
+                                    key !== 'id_projeto' &&
+                                    key !== 'id_plano'
+                                ) {
+                                    htmlAtuais += `
+<tr>
+    <th width="30%">` + formatFieldName(key) + `</th>
+    <td>` + formatFieldValue(data.dados_atuais[key], key) + `</td>
+</tr>`;
+                                }
                             }
                         }
                         $('#tabelaDadosAtuais').html(htmlAtuais);
-
-                        // Preenche tabela de alterações
+                        // ----- ALTERAÇÕES SOLICITADAS --------
                         let htmlAlterados = '';
-
-                        if (isInclusao) {
-                            // Para inclusão, response.dados_alterados contém os campos diretamente
-                            for (let key in response.dados_alterados) {
-                                htmlAlterados += `
-                        <tr>
-                            <th width="30%">${formatFieldName(key)}</th>
-                            <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key])}</strong></td>
-                        </tr>`;
-                            }
-                        } else if (isExclusao) {
-                            htmlAlterados = `
-                        <tr>
-                            <th width="30%">Tipo</th>
-                            <td class="text-danger"><strong>Exclusão de ${nivelFormatado}</strong></td>
-                        </tr>
-                        <tr>
-                            <th width="30%">Status</th>
-                            <td><span class="badge badge-danger">Registro será removido</span></td>
-                        </tr>`;
-                        } else {
-                            // Para edição, response.dados_alterados contém {de: valor_antigo, para: valor_novo}
-                            for (let key in response.dados_alterados) {
-                                // Verifica se é um objeto com propriedades 'de' e 'para'
-                                if (response.dados_alterados[key] && typeof response.dados_alterados[key] === 'object') {
+                        if (data.tipo && data.tipo.toLowerCase() === 'inclusão') {
+                            for (let key in data.dados_alterados) {
+                                if (
+                                    key === 'ordem' ||
+                                    key === 'id' ||
+                                    key === 'id_solicitante' ||
+                                    key === 'total_evidencias' ||
+                                    key === 'total_indicadores'
+                                ) continue;
+                                // Exibir Projeto por nome na inclusão
+                                if (key === 'id_projeto') {
                                     htmlAlterados += `
-                            <tr>
-                                <th width="30%">${formatFieldName(key)}</th>
-                                <td>
-                                    <div class="text-danger mb-1"><small>Atual:</small><br><s>${formatFieldValue(response.dados_alterados[key].de)}</s></div>
-                                    <div class="text-success"><small>Novo:</small><br><strong>${formatFieldValue(response.dados_alterados[key].para)}</strong></div>
-                                </td>
-                            </tr>`;
+<tr>
+    <th width="30%">Projeto</th>
+    <td class="text-success"><strong>${data.nome_projeto ?? data.dados_alterados[key]}</strong></td>
+</tr>`;
+                                }
+                                // Exibir Plano por nome na inclusão
+                                else if (key === 'id_plano') {
+                                    htmlAlterados += `
+<tr>
+    <th width="30%">Plano</th>
+    <td class="text-success"><strong>${data.nome_plano ?? data.dados_alterados[key]}</strong></td>
+</tr>`;
+                                } else if (key === 'id_eixo') {
+                                    htmlAlterados += `
+<tr>
+    <th width="30%">Eixo</th>
+    <td class="text-success"><strong>` + (eixos[data.dados_alterados[key]] ?? '<span class="text-muted">Não informado</span>') + `</strong></td>
+</tr>`;
                                 } else {
-                                    // Caso não esteja no formato esperado, mostra o valor diretamente
                                     htmlAlterados += `
-                            <tr>
-                                <th width="30%">${formatFieldName(key)}</th>
-                                <td class="text-success"><strong>${formatFieldValue(response.dados_alterados[key])}</strong></td>
-                            </tr>`;
+<tr>
+    <th width="30%">` + formatFieldName(key) + `</th>
+    <td class="text-success"><strong>` + formatFieldValue(data.dados_alterados[key], key) + `</strong></td>
+</tr>`;
                                 }
                             }
-
-                            if (htmlAlterados === '') {
-                                htmlAlterados = `
-                            <tr>
-                                <td colspan="2" class="text-center text-muted">
-                                    Nenhuma alteração detectada nos campos
-                                </td>
-                            </tr>`;
+                        } else if (data.tipo && data.tipo.toLowerCase() === 'exclusão') {
+                            htmlAlterados = `
+<tr><th width="30%">Tipo</th><td class="text-danger"><strong>Exclusão de ${capitalize(data.nivel)}</strong></td></tr>
+<tr><th width="30%">Status</th><td><span class="badge badge-danger">Registro será removido</span></td></tr>`;
+                        } else {
+                            for (let key in data.dados_alterados) {
+                                if (
+                                    key === 'equipe' ||
+                                    key === 'ordem' ||
+                                    key === 'id' ||
+                                    key === 'total_evidencias' ||
+                                    key === 'total_indicadores'
+                                ) continue;
+                                // Exibir Projeto por nome na edição
+                                if (key === 'id_projeto') {
+                                    htmlAlterados += `
+<tr>
+    <th width="30%">Projeto</th>
+    <td><strong>${data.nome_projeto ?? data.dados_alterados[key]}</strong></td>
+</tr>`;
+                                }
+                                // Exibir Plano por nome na edição
+                                else if (key === 'id_plano') {
+                                    htmlAlterados += `
+<tr>
+    <th width="30%">Plano</th>
+    <td><strong>${data.nome_plano ?? data.dados_alterados[key]}</strong></td>
+</tr>`;
+                                } else if (key === 'id_eixo') {
+                                    htmlAlterados += `
+<tr>
+    <th width="30%">Eixo</th>
+    <td>` + (eixos[data.dados_alterados[key]] ?? '<span class="text-muted">Não informado</span>') + `</td>
+</tr>`;
+                                } else if (key === 'evidencias') {
+                                    if (data.dados_alterados.evidencias.adicionar && data.dados_alterados.evidencias.adicionar.length > 0) {
+                                        htmlAlterados += `
+<tr>
+    <th width="30%">Evidências a Adicionar</th>
+    <td>
+        <div class="text-success">`;
+                                        data.dados_alterados.evidencias.adicionar.forEach(ev => {
+                                            htmlAlterados += `
+            <div class="mb-3 p-2 border border-success rounded">
+                ${formatEvidence(ev)}
+            </div>`;
+                                        });
+                                        htmlAlterados += `</div></td></tr>`;
+                                    }
+                                    if (data.dados_alterados.evidencias.remover && data.dados_alterados.evidencias.remover.length > 0) {
+                                        htmlAlterados += `
+<tr>
+    <th width="30%">Evidências a Remover</th>
+    <td>
+        <div class="text-danger">`;
+                                        data.dados_alterados.evidencias.remover.forEach(ev => {
+                                            htmlAlterados += `
+            <div class="mb-3 p-2 border border-danger rounded">
+                ${formatEvidence(ev)}
+            </div>`;
+                                        });
+                                        htmlAlterados += `</div></td></tr>`;
+                                    }
+                                } else if (key === 'indicadores') {
+                                    if (data.dados_alterados.indicadores.adicionar && data.dados_alterados.indicadores.adicionar.length > 0) {
+                                        htmlAlterados += `
+<tr>
+    <th width="30%">Indicadores a Adicionar</th>
+    <td>
+        <div class="text-success">`;
+                                        data.dados_alterados.indicadores.adicionar.forEach(ev => {
+                                            htmlAlterados += `
+            <div class="mb-3 p-2 border border-success rounded">
+                ${formatIndicator(ev)}
+            </div>`;
+                                        });
+                                        htmlAlterados += `</div></td></tr>`;
+                                    }
+                                    if (data.dados_alterados.indicadores.remover && data.dados_alterados.indicadores.remover.length > 0) {
+                                        htmlAlterados += `
+<tr>
+    <th width="30%">Indicadores a Remover</th>
+    <td>
+        <div class="text-danger">`;
+                                        data.dados_alterados.indicadores.remover.forEach(ev => {
+                                            htmlAlterados += `
+            <div class="mb-3 p-2 border border-danger rounded">
+                ${formatIndicator(ev)}
+            </div>`;
+                                        });
+                                        htmlAlterados += `</div></td></tr>`;
+                                    }
+                                } else if (key === 'responsaveis') {
+                                    htmlAlterados += `
+<tr>
+    <th width="30%">Responsáveis</th>
+    <td>` + formatFieldValue(data.dados_alterados[key], key) + `</td>
+</tr>`;
+                                } else if (
+                                    typeof data.dados_alterados[key] === 'object' &&
+                                    data.dados_alterados[key] !== null &&
+                                    data.dados_alterados[key].hasOwnProperty('de') &&
+                                    data.dados_alterados[key].hasOwnProperty('para')
+                                ) {
+                                    htmlAlterados += `
+<tr>
+    <th width="30%">` + formatFieldName(key) + `</th>
+    <td>` + formatFieldValue(data.dados_alterados[key].para, key) + `</td>
+</tr>`;
+                                } else if (key !== 'responsaveis_nomes' && key !== 'id_eixo' && key !== 'id_projeto' && key !== 'id_plano') {
+                                    htmlAlterados += `
+<tr>
+    <th width="30%">` + formatFieldName(key) + `</th>
+    <td>` + formatFieldValue(data.dados_alterados[key], key) + `</td>
+</tr>`;
+                                }
                             }
                         }
                         $('#tabelaDadosAlterados').html(htmlAlterados);
-
-                        $('#nomeSolicitante').text(response.data.solicitante || 'Não informado');
-
-                        const dataSolicitacao = response.data.data_solicitacao ?
-                            new Date(response.data.data_solicitacao).toLocaleString('pt-BR') :
-                            'Não informado';
-                        $('#dataSolicitacao').text(dataSolicitacao);
-
-                        if (response.data.justificativa_solicitante && response.data.justificativa_solicitante.trim() !== '') {
-                            $('#justificativaSolicitacao').html(response.data.justificativa_solicitante);
+                        // Info solicitante
+                        $('#nomeSolicitante').text(data.solicitante || 'Não informado');
+                        $('#dataSolicitacao').text(data.data_solicitacao ?
+                            new Date(data.data_solicitacao).toLocaleString('pt-BR') : 'Não informado');
+                        if (data.justificativa_solicitante && data.justificativa_solicitante.trim()) {
+                            $('#justificativaSolicitacao').html(data.justificativa_solicitante);
                         } else {
                             $('#justificativaSolicitacao').html('<em class="text-muted">Nenhuma justificativa fornecida.</em>');
                         }
-
-                        // Mostra conteúdo e esconde loader
                         $('#modalLoading').hide();
                         $('#modalContent').show();
-
                     } else {
                         Swal.fire('Erro', response.message || 'Erro ao carregar solicitação', 'error');
                         $('#avaliarModal').modal('hide');
                     }
                 },
-                error: function() {
-                    Swal.fire('Erro', 'Falha ao comunicar com o servidor', 'error');
+                error: function(xhr, status, error) {
+                    Swal.fire({
+                        title: 'Erro de Comunicação',
+                        text: 'Falha ao carregar dados da solicitação. Verifique sua conexão e tente novamente.',
+                        icon: 'error'
+                    });
                     $('#avaliarModal').modal('hide');
                 }
             });
         });
-
-        // Processa aceitação
-        $('.aceitar-btn').click(function() {
-            processarSolicitacao('aceitar');
-        });
-
-        // Processa recusa
-        $('.recusar-btn').click(function() {
-            processarSolicitacao('recusar');
-        });
-
-        function processarSolicitacao(acao) {
-            var formData = {
-                id: $('#solicitacaoId').val(),
-                acao: acao,
-                justificativa: $('#justificativa-avaliador').val()
-            };
-
-            var buttons = $('#avaliarModal .modal-footer button');
+        // Processamento aceitar/recusar
+        $('.aceitar-btn, .recusar-btn').click(function() {
+            var acao = $(this).hasClass('aceitar-btn') ? 'aceitar' : 'recusar';
+            var formData = $('#formAvaliar').serialize() + '&acao=' + acao;
+            var buttons = $('.aceitar-btn, .recusar-btn');
             buttons.prop('disabled', true);
-            $('.aceitar-btn, .recusar-btn').html('<i class="fas fa-spinner fa-spin"></i> Processando...');
-
+            if (acao === 'aceitar') $('.aceitar-btn').html('<i class="fas fa-spinner fa-spin"></i> Processando...');
+            if (acao === 'recusar') $('.recusar-btn').html('<i class="fas fa-spinner fa-spin"></i> Processando...');
             $.ajax({
                 url: '<?= site_url('solicitacoes/processar') ?>',
                 type: 'POST',
@@ -431,8 +468,11 @@
                     let errorMsg = 'Falha ao processar solicitação';
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMsg = xhr.responseJSON.message;
+                    } else if (xhr.statusText) {
+                        errorMsg += ` (${xhr.statusText})`;
                     }
                     Swal.fire('Erro!', errorMsg, 'error');
+                    $('#avaliarModal').modal('hide');
                 },
                 complete: function() {
                     buttons.prop('disabled', false);
@@ -440,6 +480,130 @@
                     $('.recusar-btn').html('<i class="fas fa-times"></i> Recusar');
                 }
             });
+        });
+        // Funções auxiliares
+        function formatFieldName(name) {
+            const names = {
+                'id': 'ID',
+                'nome': 'Nome',
+                'sigla': 'Sigla',
+                'descricao': 'Descrição',
+                'identificador': 'Identificador',
+                'projeto_vinculado': 'Projeto Vinculado',
+                'priorizacao_gab': 'Priorização GAB',
+                'id_eixo': 'Eixo',
+                'id_plano': 'Plano',
+                'responsaveis': 'Responsáveis',
+                'projeto': 'Projeto',
+                'responsavel': 'Responsável',
+                'equipe': 'Equipe',
+                'tempo_estimado_dias': 'Tempo Estimado (dias)',
+                'entrega_estimada': 'Entrega Estimada',
+                'data_inicio': 'Data Início',
+                'data_fim': 'Data Fim',
+                'status': 'Status',
+                'ordem': 'Ordem'
+            };
+            return names[name] || name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+        function formatFieldValue(value, key) {
+            if (value === null || value === '' || value === undefined) {
+                return '<span class="text-muted">Não informado</span>';
+            }
+            if (key === 'responsaveis_nomes' && Array.isArray(value)) {
+                return value.length > 0 ? value.join(', ') : '<span class="text-muted">Nenhum responsável</span>';
+            }
+            if (key === 'responsaveis' && typeof value === 'object') {
+                let html = '';
+                if (value.adicionar_nomes && value.adicionar_nomes.length) {
+                    html += '<span class="text-success"><b>Adicionar:</b> ' + value.adicionar_nomes.join(', ') + '</span><br>';
+                }
+                if (value.remover_nomes && value.remover_nomes.length) {
+                    html += '<span class="text-danger"><b>Remover:</b> ' + value.remover_nomes.join(', ') + '</span>';
+                }
+                if (!html) html = '<span class="text-muted">Sem alterações</span>';
+                return html;
+            }
+            if (key === 'priorizacao_gab') {
+                if (value == 1) return '<span class="badge badge-success">Priorizado</span>';
+                if (value == 0) return '<span class="badge badge-danger">Não priorizado</span>';
+                if (typeof value === 'boolean')
+                    return value ? '<span class="badge badge-success">Priorizado</span>' : '<span class="badge badge-danger">Não priorizado</span>';
+                if (typeof value === 'string')
+                    return value.charAt(0).toUpperCase() + value.slice(1);
+                if (typeof value === 'object' && value !== null) {
+                    return Object.values(value).join(', ');
+                }
+            }
+            if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                const [y, m, d] = value.split('-');
+                return `${d}/${m}/${y}`;
+            }
+            if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+                const [date, time] = value.split(' ');
+                const [y, m, d] = date.split('-');
+                return `${d}/${m}/${y} ${time}`;
+            }
+            if (Array.isArray(value)) {
+                return value.join(', ');
+            }
+            if (typeof value === 'object' && value !== null) {
+                return Object.values(value).join(', ');
+            }
+            return value;
+        }
+
+        function formatEvidence(evidence) {
+            let conteudo = evidence.link || evidence.evidencia || evidence.conteudo || '';
+            let descricao = evidence.descricao || evidence.descricao_evidencia || '';
+            let isLink = (
+                evidence.tipo === 'link' ||
+                evidence.tipo === 'url' ||
+                (typeof conteudo === 'string' && (conteudo.startsWith('http://') || conteudo.startsWith('https://')))
+            );
+            let html = '<div class="mb-2">';
+            html += '<div class="mb-2"><strong>Evidência:</strong></div>';
+            if (isLink && conteudo) {
+                html += `<div class="mb-2">
+                    <a href="${conteudo}" class="btn btn-primary btn-sm text-truncate" style="max-width:160px;" target="_blank" rel="noopener">
+                        <i class="fas fa-external-link-alt"></i> Acessar
+                    </a>
+                </div>`;
+            } else if (conteudo) {
+                html += `<div class="mb-2 text-break">${conteudo}</div>`;
+            } else {
+                html += `<div class="mb-2 text-muted">Sem evidência informada</div>`;
+            }
+            if (descricao) {
+                html += `<div class="mb-1"><strong>Descrição:</strong></div>
+                         <div class="mb-2 text-break">${descricao}</div>`;
+            }
+            html += '</div>';
+            return html;
+        }
+
+        function formatIndicator(ind) {
+            let nome = ind.nome || ind.indicador || ind.conteudo || '';
+            let valor = ind.valor || '';
+            let unidade = ind.unidade || '';
+            let descricao = ind.descricao || '';
+            let html = '<div class="mb-2">';
+            html += '<div class="mb-2"><strong>Indicador:</strong></div>';
+            html += `<div class="mb-2 text-break">${nome ? nome : '<span class="text-muted">N/A</span>'}</div>`;
+            if (descricao) {
+                html += '<div class="mb-1"><strong>Descrição:</strong></div>';
+                html += `<div class="mb-2 text-break">${descricao}</div>`;
+            }
+            if (valor || unidade) {
+                html += `<div class="mb-2"><span class="text-primary">${valor}${unidade ? ' ' + unidade : ''}</span></div>`;
+            }
+            html += '</div>';
+            return html;
+        }
+
+        function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
         }
     });
 </script>

@@ -11,9 +11,8 @@
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                 <input type="hidden" name="id_etapa" id="solicitarExclusaoId">
                 <input type="hidden" name="tipo" value="exclusao">
-                <input type="hidden" name="id_plano" value="<?= $acao['id_plano'] ?>">
-                <input type="hidden" name="id_acao" value="<?= $tipo === 'acao' ? $idVinculo : $acao['id'] ?>">
-                <input type="hidden" name="id_meta" value="<?= $tipo === 'meta' ? $idVinculo : null ?>">
+                <input type="hidden" name="id_projeto" value="<?= $idProjeto ?>">
+                <input type="hidden" name="id_plano" value="<?= $projeto['id_plano'] ?>">
 
                 <div class="modal-body">
                     <p>Você está solicitando a exclusão da etapa: <strong id="etapaNameToRequestDelete"></strong></p>
