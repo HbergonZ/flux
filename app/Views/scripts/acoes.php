@@ -1682,36 +1682,28 @@
         $('#formEditAcao').submit(function(e) {
             e.preventDefault();
 
-            const submitBtn = $(this).find('button[type="submit"]');
-            const originalBtnText = submitBtn.html();
-
-            submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...');
-
-            // Coletar IDs dos responsáveis selecionados
-            const responsaveisIds = [];
-            $('#responsaveisSelecionadosEdit .list-group-item').each(function() {
-                responsaveisIds.push($(this).data('id'));
-            });
-            $('#responsaveisIdsEdit').val(responsaveisIds.join(','));
-
-            // Formatar evidências para envio
+            // Preparar evidências no formato correto
             const evidenciasParaEnviar = {
                 adicionar: evidenciasAdicionadasAcao.map(ev => ({
                     tipo: ev.tipo,
-                    evidencia: ev.conteudo,
+                    evidencia: ev.tipo === 'texto' ? ev.conteudo : '', // Para texto
+                    link: ev.tipo === 'link' ? ev.conteudo : '', // Para link
                     descricao: ev.descricao
                 })),
                 remover: evidenciasRemovidasAcao
             };
 
-            $('#evidenciasAdicionadasSolicitacao').val(JSON.stringify(evidenciasParaEnviar.adicionar));
-            $('#evidenciasRemovidasSolicitacao').val(JSON.stringify(evidenciasParaEnviar.remover));
+            // Definir valores nos campos hidden
+            $('#evidencias_adicionadas').val(JSON.stringify(evidenciasParaEnviar.adicionar));
+            $('#evidencias_removidas').val(JSON.stringify(evidenciasParaEnviar.remover));
 
-            // Enviar via AJAX
+            // Agora envia o formulário via AJAX
+            const formData = $(this).serialize();
+
             $.ajax({
                 type: "POST",
                 url: $(this).attr('action'),
-                data: $(this).serialize(),
+                data: formData,
                 dataType: "json",
                 success: function(response) {
                     if (response.success) {
@@ -1723,11 +1715,7 @@
                     }
                 },
                 error: function(xhr) {
-                    console.error(xhr.responseText);
                     showErrorAlert('Erro na comunicação com o servidor.');
-                },
-                complete: function() {
-                    submitBtn.prop('disabled', false).html(originalBtnText);
                 }
             });
         });

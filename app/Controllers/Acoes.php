@@ -356,6 +356,9 @@ class Acoes extends BaseController
 
         $response = ['success' => false, 'message' => ''];
 
+        // Log para depuração - dados recebidos
+        log_message('info', 'Dados recebidos no método atualizar: ' . print_r($this->request->getPost(), true));
+
         $rules = [
             'id' => 'required',
             'nome' => 'required|min_length[3]|max_length[255]',
@@ -384,21 +387,13 @@ class Acoes extends BaseController
                 $acaoAntiga = $this->acoesModel->find($id);
 
                 if (!$acaoAntiga) {
+                    log_message('error', "Ação não encontrada (ID: $id)");
                     $response['message'] = 'Ação não encontrada';
                     return $this->response->setJSON($response);
                 }
 
-                // Validação adicional para data fim
-                if (!empty($this->request->getPost('data_fim'))) {
-                    $temEvidencias = $this->evidenciasModel->where('nivel', 'acao')
-                        ->where('id_nivel', $id)
-                        ->countAllResults() > 0;
-
-                    if (!$temEvidencias) {
-                        $response['message'] = 'Para definir uma data de fim, é necessário cadastrar pelo menos uma evidência.';
-                        return $this->response->setJSON($response);
-                    }
-                }
+                // Log dos dados atuais antes da edição
+                log_message('info', "Dados atuais da ação (ID: $id): " . print_r($acaoAntiga, true));
 
                 $this->acoesModel->transStart();
 
@@ -415,6 +410,9 @@ class Acoes extends BaseController
                     'status' => $this->calcularStatusNovo($this->request->getPost())
                 ];
 
+                // Log dos dados que serão atualizados
+                log_message('info', "Dados para atualização: " . print_r($data, true));
+
                 $updated = $this->acoesModel->save($data);
 
                 if (!$updated) {
@@ -423,34 +421,62 @@ class Acoes extends BaseController
 
                 // Processar responsáveis
                 $responsaveisIds = $this->request->getPost('responsaveis_ids');
+                log_message('info', "IDs dos responsáveis recebidos: " . $responsaveisIds);
                 $this->processarResponsaveis($id, $responsaveisIds);
 
                 // Processar evidências adicionadas
                 $evidenciasAdicionadas = $this->request->getPost('evidencias_adicionadas');
                 if (!empty($evidenciasAdicionadas)) {
+                    log_message('info', "Evidências adicionadas (raw): {$evidenciasAdicionadas}");
+
                     $evidencias = json_decode($evidenciasAdicionadas, true);
+
+                    log_message('info', "Evidências adicionadas (decodificadas): " . print_r($evidencias, true));
+
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        throw new \Exception('Erro ao decodificar evidências adicionadas: ' . json_last_error_msg());
+                    }
+
                     foreach ($evidencias as $evidencia) {
                         $evidenciaData = [
                             'tipo' => $evidencia['tipo'],
-                            'evidencia' => $evidencia['conteudo'],
+                            'evidencia' => $evidencia['evidencia'] ?? $evidencia['conteudo'] ?? '', // Compatibilidade com ambos formatos
                             'descricao' => $evidencia['descricao'] ?? null,
                             'nivel' => 'acao',
                             'id_nivel' => $id,
                             'created_by' => auth()->id(),
                             'created_at' => date('Y-m-d H:i:s')
                         ];
-                        $this->evidenciasModel->insert($evidenciaData);
+
+                        log_message('info', "Inserindo evidência: " . print_r($evidenciaData, true));
+
+                        $insertId = $this->evidenciasModel->insert($evidenciaData);
+                        log_message('info', "Evidência inserida com ID: {$insertId}");
                     }
                 }
 
-                // Processar evidências removidas
+                // Processar evidências removidas - CORREÇÃO APLICADA AQUI
                 $evidenciasRemovidas = $this->request->getPost('evidencias_removidas');
                 if (!empty($evidenciasRemovidas)) {
+                    log_message('info', "Evidências a remover (raw): {$evidenciasRemovidas}");
+
                     $idsRemover = json_decode($evidenciasRemovidas, true);
-                    $this->evidenciasModel->whereIn('id', $idsRemover)
-                        ->where('nivel', 'acao')
-                        ->where('id_nivel', $id)
-                        ->delete();
+
+                    log_message('info', "IDs de evidências a remover: " . print_r($idsRemover, true));
+
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        throw new \Exception('Erro ao decodificar evidências removidas: ' . json_last_error_msg());
+                    }
+
+                    // Só executa se houver IDs para remover
+                    if (!empty($idsRemover)) {
+                        $this->evidenciasModel->whereIn('id', $idsRemover)
+                            ->where('nivel', 'acao')
+                            ->where('id_nivel', $id)
+                            ->delete();
+
+                        log_message('info', "Evidências removidas: " . $this->evidenciasModel->affectedRows());
+                    }
                 }
 
                 // Registrar log
@@ -469,13 +495,18 @@ class Acoes extends BaseController
                 $response['success'] = true;
                 $response['message'] = 'Ação atualizada com sucesso!';
                 $response['data'] = $acaoAtualizada;
+
+                log_message('info', "Ação ID {$id} atualizada com sucesso");
             } catch (\Exception $e) {
                 $this->acoesModel->transRollback();
                 $response['message'] = 'Erro ao atualizar ação: ' . $e->getMessage();
-                log_message('error', 'Erro na atualização de ação: ' . $e->getMessage());
+
+                log_message('error', "Erro ao atualizar ação ID {$id}: " . $e->getMessage());
+                log_message('debug', "Stack trace: " . $e->getTraceAsString());
             }
         } else {
             $response['message'] = implode('<br>', $this->validator->getErrors());
+            log_message('info', "Erros de validação na atualização: " . $response['message']);
         }
 
         return $this->response->setJSON($response);
