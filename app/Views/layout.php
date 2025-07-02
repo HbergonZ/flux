@@ -9,6 +9,9 @@
     <meta name="author" content="">
 
     <title>Flux</title>
+    <link rel="icon" type="image/x-icon" href="<?= base_url('template/img/flux.ico'); ?>">
+
+
 
     <!-- Custom fonts for this template-->
     <link href=<?php echo base_url("template/vendor/fontawesome-free/css/all.min.css"); ?> rel="stylesheet" type="text/css">
