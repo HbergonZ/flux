@@ -1744,6 +1744,227 @@
             }
         }
 
+        //------------------------------------------------------------
+        // INCLUIR AÇÃO (admin)
+        //------------------------------------------------------------
+
+        // Configuração do AJAX para adicionar ação
+        $('#formAddAcao').submit(function(e) {
+            e.preventDefault();
+
+            const submitBtn = $(this).find('button[type="submit"]');
+            const originalBtnText = submitBtn.html();
+
+            submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...');
+
+            // Coletar IDs dos responsáveis selecionados
+            const responsaveisIds = [];
+            $('#responsaveisSelecionadosAdd .list-group-item').each(function() {
+                responsaveisIds.push($(this).data('id'));
+            });
+
+            // Atualizar o campo hidden com os IDs
+            $('#responsaveisIdsAdd').val(responsaveisIds.join(','));
+
+            $.ajax({
+                type: "POST",
+                url: $(this).attr('action'),
+                data: $(this).serialize(),
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        $('#addAcaoModal').modal('hide');
+                        showSuccessAlert(response.message || 'Ação cadastrada com sucesso!');
+                        dataTable.ajax.reload(null, false);
+
+                        // Resetar o formulário
+                        $('#formAddAcao')[0].reset();
+                        $('#responsaveisSelecionadosAdd').html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
+                        $('#contadorResponsaveisAdd').text('0');
+                    } else {
+                        showErrorAlert(response.message || 'Ocorreu um erro ao cadastrar a ação.');
+                    }
+                },
+                error: function(xhr) {
+                    showErrorAlert('Erro na comunicação com o servidor.');
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).html(originalBtnText);
+                }
+            });
+        });
+
+        // Carregar usuários disponíveis quando o modal é aberto
+        $('#addAcaoModal').on('show.bs.modal', function() {
+            carregarUsuariosDisponiveisParaAdicao();
+            calcularProximaOrdem();
+        });
+
+        // Função para carregar usuários disponíveis
+        function carregarUsuariosDisponiveisParaAdicao() {
+            $.ajax({
+                url: '<?= site_url("acoes/buscar-usuarios") ?>',
+                type: 'GET',
+                dataType: 'json',
+                beforeSend: function() {
+                    $('#usuariosDisponiveisAdd').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>');
+                },
+                success: function(response) {
+                    if (response.success && response.data && response.data.length > 0) {
+                        let html = '<div class="list-group">';
+                        response.data.forEach(usuario => {
+                            html += `
+                        <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
+                            <div>
+                                <span class="font-weight-bold">${usuario.name}</span>
+                                <small class="d-block text-muted">${usuario.email}</small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary btn-adicionar-responsavel" data-id="${usuario.id}">
+                                <i class="fas fa-user-plus"></i>
+                            </button>
+                        </div>
+                    `;
+                        });
+                        html += '</div>';
+                        $('#usuariosDisponiveisAdd').html(html);
+                        $('#contadorUsuariosAdd').text(response.data.length);
+                    } else {
+                        $('#usuariosDisponiveisAdd').html('<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>');
+                        $('#contadorUsuariosAdd').text('0');
+                    }
+                },
+                error: function() {
+                    $('#usuariosDisponiveisAdd').html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
+                    $('#contadorUsuariosAdd').text('0');
+                }
+            });
+        }
+
+        // Adicionar responsável
+        $(document).on('click', '#usuariosDisponiveisAdd .btn-adicionar-responsavel', function() {
+            const usuarioId = $(this).data('id');
+            const item = $(this).closest('.list-group-item').clone();
+
+            item.find('button')
+                .removeClass('btn-outline-primary btn-adicionar-responsavel')
+                .addClass('btn-outline-danger btn-remover-responsavel')
+                .html('<i class="fas fa-user-minus"></i>');
+
+            if ($('#responsaveisSelecionadosAdd').text().includes('Nenhum responsável selecionado')) {
+                $('#responsaveisSelecionadosAdd').html('<div class="list-group"></div>');
+            }
+
+            $('#responsaveisSelecionadosAdd .list-group').append(item);
+            $(this).closest('.list-group-item').remove();
+
+            const countResponsaveis = parseInt($('#contadorResponsaveisAdd').text()) + 1;
+            const countDisponiveis = parseInt($('#contadorUsuariosAdd').text()) - 1;
+
+            $('#contadorResponsaveisAdd').text(countResponsaveis);
+            $('#contadorUsuariosAdd').text(countDisponiveis);
+        });
+
+        // Remover responsável
+        $(document).on('click', '#responsaveisSelecionadosAdd .btn-remover-responsavel', function() {
+            const usuarioId = $(this).data('id');
+            const item = $(this).closest('.list-group-item').clone();
+
+            item.find('button')
+                .removeClass('btn-outline-danger btn-remover-responsavel')
+                .addClass('btn-outline-primary btn-adicionar-responsavel')
+                .html('<i class="fas fa-user-plus"></i>');
+
+            $('#usuariosDisponiveisAdd').append(item);
+            $(this).closest('.list-group-item').remove();
+
+            const countResponsaveis = parseInt($('#contadorResponsaveisAdd').text()) - 1;
+            const countDisponiveis = parseInt($('#contadorUsuariosAdd').text()) + 1;
+
+            $('#contadorResponsaveisAdd').text(countResponsaveis);
+            $('#contadorUsuariosAdd').text(countDisponiveis);
+
+            if (countResponsaveis === 0) {
+                $('#responsaveisSelecionadosAdd').html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
+            }
+        });
+
+        // Buscar usuários
+        $('#buscarUsuarioAdd').on('input', function() {
+            const termo = $(this).val().toLowerCase().trim();
+
+            if (termo === '') {
+                carregarUsuariosDisponiveisParaAdicao();
+                return;
+            }
+
+            $('#usuariosDisponiveisAdd .list-group-item').each(function() {
+                const nome = $(this).find('.font-weight-bold').text().toLowerCase();
+                const email = $(this).find('.text-muted').text().toLowerCase();
+
+                if (nome.includes(termo) || email.includes(termo)) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        });
+
+        // Habilitar data fim quando data início for preenchida
+        $('#acaoDataInicio').change(function() {
+            if ($(this).val()) {
+                $('#acaoDataFim').prop('disabled', false);
+            } else {
+                $('#acaoDataFim').val('').prop('disabled', true);
+            }
+        });
+
+        //------------------------------------------------------------
+        // EXCLUIR AÇÃO (admin)
+        //------------------------------------------------------------
+
+        // Abrir modal de exclusão (para admins)
+        $(document).on('click', '.btn-danger[title="Excluir"]', function() {
+            var acaoId = $(this).data('id').split('-')[0];
+            var acaoName = $(this).closest('tr').find('td:nth-child(2)').text();
+
+            $('#deleteAcaoId').val(acaoId);
+            $('#acaoNameToDelete').text(acaoName);
+            $('#deleteAcaoModal').modal('show');
+        });
+
+        // Enviar formulário de exclusão
+        $('#formDeleteAcao').submit(function(e) {
+            e.preventDefault();
+
+            const form = $(this);
+            const submitBtn = form.find('button[type="submit"]');
+            const originalBtnText = submitBtn.html();
+
+            submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...');
+
+            $.ajax({
+                type: "POST",
+                url: form.attr('action'),
+                data: form.serialize(),
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        $('#deleteAcaoModal').modal('hide');
+                        showSuccessAlert(response.message || 'Ação excluída com sucesso!');
+                        dataTable.ajax.reload(null, false);
+                    } else {
+                        showErrorAlert(response.message || 'Ocorreu um erro ao excluir a ação.');
+                    }
+                },
+                error: function(xhr) {
+                    showErrorAlert('Erro na comunicação com o servidor.');
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).html(originalBtnText);
+                }
+            });
+        });
+
 
     });
 </script>

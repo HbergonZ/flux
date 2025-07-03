@@ -53,20 +53,23 @@
     <div class="card mb-4 mx-md-5 mx-3">
         <div class="card-body">
             <form id="formFiltros">
-                <div class="row">
-                    <div class="col-md-3">
+                <div class="row g-3">
+                    <!-- Linha 1: Nome, Responsável, Status -->
+                    <div class="col-md-4">
                         <div class="form-group">
                             <label for="filterNome">Nome</label>
                             <input type="text" class="form-control" id="filterNome" name="nome" placeholder="Filtrar por nome">
                         </div>
                     </div>
-                    <div class="col-md-3">
+
+                    <div class="col-md-4">
                         <div class="form-group">
                             <label for="filterResponsavel">Responsável</label>
                             <input type="text" class="form-control" id="filterResponsavel" name="responsavel" placeholder="Filtrar por responsável">
                         </div>
                     </div>
-                    <div class="col-md-3">
+
+                    <div class="col-md-4">
                         <div class="form-group">
                             <label for="filterStatus">Status</label>
                             <select class="form-control" id="filterStatus" name="status">
@@ -80,20 +83,17 @@
                             </select>
                         </div>
                     </div>
-                </div>
 
-                <div class="row mt-3">
+                    <!-- Linha 2: Data e Botões -->
                     <div class="col-md-4">
                         <div class="form-group">
                             <label for="filterData">Data</label>
                             <input type="date" class="form-control" id="filterData" name="data_filtro">
                         </div>
                     </div>
-                </div>
 
-                <div class="row mt-3">
-                    <div class="col-md-12 text-right">
-                        <button type="button" id="btnLimparFiltros" class="btn btn-secondary btn-icon-split btn-sm">
+                    <div class="col-md-8 d-flex align-items-end justify-content-end gap-2">
+                        <button type="button" id="btnLimparFiltros" class="btn btn-secondary btn-icon-split btn-sm mr-2">
                             <span class="icon text-white-50">
                                 <i class="fas fa-broom"></i>
                             </span>
