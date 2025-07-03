@@ -86,17 +86,19 @@ class AcoesModel extends Model
             return 'Paralisado';
         }
 
-        // 2. Se tem data_fim, verifica se foi finalizado com atraso
-        if (!empty($acao['data_fim'])) {
-            if (empty($acao['data_inicio'])) {
+        // Converter datas para timestamp para comparação
+        $entregaEstimada = !empty($acao['entrega_estimada']) ? strtotime($acao['entrega_estimada']) : null;
+        $dataInicio = !empty($acao['data_inicio']) ? strtotime($acao['data_inicio']) : null;
+        $dataFim = !empty($acao['data_fim']) ? strtotime($acao['data_fim']) : null;
+
+        // 2. Se tem data_fim, está finalizado (verifica se foi com atraso)
+        if ($dataFim !== null) {
+            if ($dataInicio === null) {
                 throw new \RuntimeException('Não é possível definir data de fim sem data de início');
             }
 
             // Verifica se foi finalizado com atraso
-            if (
-                !empty($acao['entrega_estimada']) &&
-                strtotime($acao['data_fim']) > strtotime($acao['entrega_estimada'])
-            ) {
+            if ($entregaEstimada !== null && $dataFim > $entregaEstimada) {
                 return 'Finalizado com atraso';
             }
 
@@ -104,16 +106,13 @@ class AcoesModel extends Model
         }
 
         // 3. Verifica se está atrasado (data atual > entrega estimada)
-        if (
-            !empty($acao['entrega_estimada']) &&
-            empty($acao['data_fim']) &&
-            strtotime($acao['entrega_estimada']) < strtotime(date('Y-m-d'))
-        ) {
+        $dataAtual = strtotime(date('Y-m-d'));
+        if ($entregaEstimada !== null && $entregaEstimada < $dataAtual) {
             return 'Atrasado';
         }
 
         // 4. Se tem data_inicio, status é Em andamento
-        if (!empty($acao['data_inicio'])) {
+        if ($dataInicio !== null) {
             return 'Em andamento';
         }
 

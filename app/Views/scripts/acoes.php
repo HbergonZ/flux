@@ -31,74 +31,6 @@
 </style>
 
 <script>
-    // Variáveis globais para controle de evidências na edição
-    let evidenciasAdicionadasAcao = [];
-    let evidenciasRemovidasAcao = [];
-
-    // Limpar formulários quando os modais são fechados
-    $('#solicitarEdicaoModal, #solicitarInclusaoModal, #solicitarExclusaoModal').on('hidden.bs.modal', function() {
-        const $form = $(this).find('form');
-        $form.trigger('reset'); // Limpa os campos do formulário
-
-        // Limpar outros elementos específicos
-        $(this).find('.list-group').empty();
-        $(this).find('.badge-pill').text('0');
-
-        // Limpar variáveis globais
-        evidenciasAdicionadasAcao = [];
-        evidenciasRemovidasAcao = [];
-        responsaveisSelecionadosSolicitacao = [];
-
-        // Resetar selects e outros elementos específicos
-        $(this).find('select').val('').trigger('change');
-    });
-
-    // Limpar arrays quando o modal é fechado
-    $('#editAcaoModal').on('hidden.bs.modal', function() {
-        evidenciasAdicionadasAcao = [];
-        evidenciasRemovidasAcao = [];
-    });
-
-    // Função para atualizar a lista de evidências adicionadas
-    function atualizarListaEvidenciasAdicionadas() {
-        const lista = $('#evidenciasAtuaisList');
-        lista.empty();
-
-        if (evidenciasAdicionadasAcao.length === 0) {
-            lista.html('<div class="text-center py-3 text-muted">Nenhuma evidência será adicionada</div>');
-            return;
-        }
-
-        let html = '<div class="list-group">';
-        evidenciasAdicionadasAcao.forEach((evidencia, index) => {
-            html += `
-            <div class="list-group-item" data-id="${evidencia.id}">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div class="flex-grow-1">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <strong>Nova Evidência #${index + 1}</strong>
-                            <small class="text-muted">${evidencia.data}</small>
-                        </div>
-                        ${evidencia.tipo === 'texto' ?
-                            `<div class="bg-light p-2 rounded mb-2">${evidencia.conteudo.substring(0, 50)}${evidencia.conteudo.length > 50 ? '...' : ''}</div>` :
-                            `<div class="mb-2"><small class="text-truncate d-block">${evidencia.conteudo}</small></div>`
-                        }
-                        ${evidencia.descricao ?
-                            `<small class="text-muted">${evidencia.descricao.substring(0, 30)}${evidencia.descricao.length > 30 ? '...' : ''}</small>` :
-                            ''
-                        }
-                    </div>
-                    <button type="button" class="btn btn-sm btn-danger ml-2 btn-remover-evidencia-add" data-id="${evidencia.id}">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-        });
-        html += '</div>';
-        lista.html(html);
-    }
-
     $(document).ready(function() {
         // Variáveis globais
         let dataTable;
@@ -303,106 +235,6 @@
             calcularProximaOrdem();
         });
 
-
-        // Solicitar exclusão de ação - Abrir modal (para não-admins)
-        $(document).on('click', '.btn-danger[title="Solicitar Exclusão"]', function() {
-            var acaoId = $(this).data('id').split('-')[0];
-            var acaoName = $(this).closest('tr').find('td:nth-child(2)').text();
-
-            loadAcaoForRequest(acaoId, acaoName, '#solicitarExclusaoModal');
-        });
-
-        // Excluir ação - Abrir modal de confirmação (apenas admin)
-        $(document).on('click', '.btn-danger[title="Excluir"]', function() {
-            var acaoId = $(this).data('id').split('-')[0];
-
-            $.ajax({
-                url: `<?= site_url('acoes/dados-acao/') ?>${acaoId}`,
-                type: 'GET',
-                dataType: 'json',
-                beforeSend: function() {
-                    // Mostrar loading se necessário
-                },
-                success: function(response) {
-                    if (response.success && response.data) {
-                        $('#deleteAcaoId').val(acaoId);
-                        $('#acaoNameToDelete').text(response.data.nome);
-                        $('#deleteAcaoModal').modal('show');
-                    } else {
-                        showErrorAlert(response.message || "Erro ao carregar ação");
-                    }
-                },
-                error: function() {
-                    showErrorAlert("Falha na comunicação com o servidor.");
-                }
-            });
-        });
-
-        // Função para carregar dados para solicitação
-        function loadAcaoForRequest(acaoId, acaoName, modalId) {
-            const isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
-            const endpoint = isAdmin ? 'editar' : 'dados-acao';
-
-            $.ajax({
-                url: `<?= site_url('acoes/') ?>${endpoint}/${acaoId}`,
-                type: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success && response.data) {
-                        const acao = response.data;
-                        const dadosAtuais = `Nome: ${acao.nome}\nResponsável: ${acao.responsavel}\nEquipe: ${acao.equipe}\nStatus: ${acao.status}\nEntrega Estimada: ${acao.entrega_estimada}\nData Início: ${acao.data_inicio}\nData Fim: ${acao.data_fim}\nEtapa: ${acao.id_etapa}\nProjeto: ${acao.id_projeto}`;
-
-                        $('#solicitarExclusaoId').val(acao.id);
-                        $('#acaoNameToRequestDelete').text(acaoName);
-                        $('#solicitarExclusaoDadosAtuais').val(dadosAtuais);
-                        $('#solicitarExclusaoModal').modal('show');
-                    } else {
-                        showErrorAlert(response.message || "Erro ao carregar ação");
-                    }
-                },
-                error: function() {
-                    showErrorAlert("Falha na comunicação com o servidor.");
-                }
-            });
-        }
-
-        // Enviar solicitação de exclusão
-        $('#formSolicitarExclusao').submit(function(e) {
-            e.preventDefault();
-            submitForm($(this), '#solicitarExclusaoModal', 'Solicitação de exclusão enviada com sucesso!');
-        });
-
-        // Enviar solicitação de inclusão
-        $('#formSolicitarInclusao').submit(function(e) {
-            e.preventDefault();
-
-            // Coletar IDs dos responsáveis selecionados
-            const responsaveisIds = responsaveisSelecionadosSolicitacao.map(u => u.id);
-
-            // Atualizar o campo hidden com os dados no formato correto
-            $('#responsaveisSolicitacao').val(JSON.stringify({
-                responsaveis: {
-                    adicionar: responsaveisIds
-                }
-            }));
-
-            submitForm($(this), '#solicitarInclusaoModal', 'Solicitação de inclusão enviada com sucesso!');
-        });
-
-        // Confirmar exclusão (apenas admin)
-        $('#formDeleteAcao').submit(function(e) {
-            e.preventDefault();
-
-            // Validação adicional para exclusão
-            const acaoId = $('#deleteAcaoId').val();
-            if (!acaoId) {
-                showErrorAlert('ID da ação não encontrado');
-                return;
-            }
-
-            submitForm($(this), '#deleteAcaoModal', 'Ação excluída com sucesso!');
-        });
-
         // Aplicar filtros
         $('#formFiltros').submit(function(e) {
             e.preventDefault();
@@ -594,6 +426,100 @@
                 }
             });
         });
+        // Função para validar datas
+        function isValidDate(dateString) {
+            if (!dateString || dateString === '0000-00-00') return false;
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return false;
+            const date = new Date(dateString);
+            return !isNaN(date.getTime()) && date.toISOString().slice(0, 10) === dateString;
+        }
+
+        // Função para formatar data
+        function formatDate(dateString) {
+            if (!dateString || !isValidDate(dateString)) return '';
+
+            // Ajuste para garantir que a data seja tratada corretamente
+            const date = new Date(dateString);
+            // Ajuste para o fuso horário local
+            const adjustedDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+
+            const day = String(adjustedDate.getDate()).padStart(2, '0');
+            const month = String(adjustedDate.getMonth() + 1).padStart(2, '0');
+            const year = adjustedDate.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        // Funções para exibir alertas
+        function showSuccessAlert(message) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Sucesso',
+                text: message,
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+
+        function showErrorAlert(message) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro',
+                text: message,
+                confirmButtonText: 'Entendi'
+            });
+        }
+
+
+        //------------------------------------------------------------
+        // SOLICITAR EXCLUSÃO
+        //------------------------------------------------------------
+
+        // Solicitar exclusão de ação - Abrir modal (para não-admins)
+        $(document).on('click', '.btn-danger[title="Solicitar Exclusão"]', function() {
+            var acaoId = $(this).data('id').split('-')[0];
+            var acaoName = $(this).closest('tr').find('td:nth-child(2)').text();
+
+            loadAcaoForRequest(acaoId, acaoName, '#solicitarExclusaoModal');
+        });
+
+        // Função para carregar dados para solicitação
+        function loadAcaoForRequest(acaoId, acaoName, modalId) {
+            const isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
+            const endpoint = isAdmin ? 'editar' : 'dados-acao';
+
+            $.ajax({
+                url: `<?= site_url('acoes/') ?>${endpoint}/${acaoId}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success && response.data) {
+                        const acao = response.data;
+                        const dadosAtuais = `Nome: ${acao.nome}\nResponsável: ${acao.responsavel}\nEquipe: ${acao.equipe}\nStatus: ${acao.status}\nEntrega Estimada: ${acao.entrega_estimada}\nData Início: ${acao.data_inicio}\nData Fim: ${acao.data_fim}\nEtapa: ${acao.id_etapa}\nProjeto: ${acao.id_projeto}`;
+
+                        $('#solicitarExclusaoId').val(acao.id);
+                        $('#acaoNameToRequestDelete').text(acaoName);
+                        $('#solicitarExclusaoDadosAtuais').val(dadosAtuais);
+                        $('#solicitarExclusaoModal').modal('show');
+                    } else {
+                        showErrorAlert(response.message || "Erro ao carregar ação");
+                    }
+                },
+                error: function() {
+                    showErrorAlert("Falha na comunicação com o servidor.");
+                }
+            });
+        }
+
+        // Enviar solicitação de exclusão
+        $('#formSolicitarExclusao').submit(function(e) {
+            e.preventDefault();
+            submitForm($(this), '#solicitarExclusaoModal', 'Solicitação de exclusão enviada com sucesso!');
+        });
+
+
+        //------------------------------------------------------------
+        // SOLICITAÇÕES
+        //------------------------------------------------------------
 
         // Função genérica para enviar formulários
         function submitForm(form, modalId, successMessage = null) {
@@ -658,935 +584,10 @@
             });
         }
 
-        // Função para validar datas
-        function isValidDate(dateString) {
-            if (!dateString || dateString === '0000-00-00') return false;
-            if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return false;
-            const date = new Date(dateString);
-            return !isNaN(date.getTime()) && date.toISOString().slice(0, 10) === dateString;
-        }
 
-        // Função para formatar data
-        function formatDate(dateString) {
-            if (!dateString || !isValidDate(dateString)) return '';
-
-            // Ajuste para garantir que a data seja tratada corretamente
-            const date = new Date(dateString);
-            // Ajuste para o fuso horário local
-            const adjustedDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
-
-            const day = String(adjustedDate.getDate()).padStart(2, '0');
-            const month = String(adjustedDate.getMonth() + 1).padStart(2, '0');
-            const year = adjustedDate.getFullYear();
-            return `${day}/${month}/${year}`;
-        }
-
-        // Funções para exibir alertas
-        function showSuccessAlert(message) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Sucesso',
-                text: message,
-                timer: 2000,
-                showConfirmButton: false
-            });
-        }
-
-        function showErrorAlert(message) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Erro',
-                text: message,
-                confirmButtonText: 'Entendi'
-            });
-        }
-
-        // Debug - verifique se a requisição está sendo feita
-        $('#selectUsuarioEquipe').on('select2:open', function() {
-            console.log('Select2 aberto, acaoIdEquipe:', acaoIdEquipe);
-        });
-
-        $('#selectUsuarioEquipe').on('select2:select', function(e) {
-            console.log('Usuário selecionado:', e.params.data);
-        });
-
-        // Adicione este código no seu script
-        $('#addAcaoModal').on('hidden.bs.modal', function() {
-            $(this).removeAttr('aria-hidden');
-            $('body').removeClass('modal-open');
-            $('.modal-backdrop').remove();
-        });
-
-        // Função para filtrar os usuários no select
-        function filtrarUsuarios(termo) {
-            const select = document.getElementById('selectUsuarioEquipe');
-            const options = select.options;
-
-            for (let i = 0; i < options.length; i++) {
-                const option = options[i];
-                const text = option.text.toLowerCase();
-                const matches = text.includes(termo.toLowerCase());
-
-                option.style.display = matches ? '' : 'none';
-                if (matches && termo !== '') {
-                    option.style.backgroundColor = '#ffff99'; // Destacar resultados
-                } else {
-                    option.style.backgroundColor = '';
-                }
-            }
-        }
-
-        // Event listener para o campo de busca
-        $('#buscaUsuario').on('input', function() {
-            filtrarUsuarios($(this).val());
-        });
-
-        // Atualize a função carregarUsuariosDisponiveis para manter uma cópia dos usuários
-        let todosUsuarios = [];
-
-        function carregarUsuariosDisponiveis(acaoId, listaElement, contadorElement, termo = '') {
-            $.ajax({
-                url: `<?= site_url('acoes/buscar-usuarios') ?>`,
-                type: 'GET',
-                data: {
-                    acao_id: acaoId,
-                    term: termo
-                },
-                dataType: 'json',
-                beforeSend: function() {
-                    listaElement.html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i></div>');
-                },
-                success: function(response) {
-                    if (response.success && response.data.length > 0) {
-                        let html = '';
-                        const responsaveisAtuais = acaoId ? responsaveisSelecionadosEdit : responsaveisSelecionadosAdd;
-
-                        response.data.forEach(usuario => {
-                            // Filtra usuários que já foram selecionados
-                            if (!responsaveisAtuais.some(r => r.id === usuario.id)) {
-                                html += `
-                            <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
-                                <div>
-                                    <span class="font-weight-bold">${usuario.name}</span>
-                                    <small class="d-block text-muted">${usuario.email}</small>
-                                </div>
-                                <button class="btn btn-sm btn-primary btn-adicionar-responsavel" data-id="${usuario.id}">
-                                    <i class="fas fa-user-plus"></i>
-                                </button>
-                            </div>
-                        `;
-                            }
-                        });
-
-                        if (html === '') {
-                            html = '<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>';
-                        }
-
-                        listaElement.html(html);
-                        contadorElement.text(response.data.length);
-                    } else {
-                        listaElement.html('<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>');
-                        contadorElement.text('0');
-                    }
-                },
-                error: function() {
-                    listaElement.html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
-                }
-            });
-        }
-
-        // Limpar busca quando o modal é fechado
-        $('#equipeAcaoModal').on('hidden.bs.modal', function() {
-            $('#buscaUsuario').val('');
-        });
-
-        // Variáveis globais para controle
-        let responsaveisSelecionadosAdd = [];
-        let usuariosDisponiveisAdd = [];
-
-        // Função para carregar usuários disponíveis
-        function carregarUsuariosDisponiveisAdd() {
-            $.ajax({
-                url: '<?= site_url("acoes/buscar-usuarios") ?>',
-                type: 'GET',
-                dataType: 'json',
-                beforeSend: function() {
-                    $('#usuariosDisponiveisAdd').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i></div>');
-                },
-                success: function(response) {
-                    if (response.success && response.data.length > 0) {
-                        usuariosDisponiveisAdd = response.data;
-                        atualizarListaUsuariosDisponiveisAdd();
-                    } else {
-                        $('#usuariosDisponiveisAdd').html('<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>');
-                    }
-                    $('#contadorUsuariosAdd').text(response.data.length || 0);
-                },
-                error: function() {
-                    $('#usuariosDisponiveisAdd').html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
-                }
-            });
-        }
-
-        // Função para atualizar a lista de usuários disponíveis
-        function atualizarListaUsuariosDisponiveisAdd() {
-            const lista = $('#usuariosDisponiveisAdd');
-            lista.empty();
-
-            if (usuariosDisponiveisAdd.length === 0) {
-                lista.html('<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>');
-                return;
-            }
-
-            let html = '';
-            usuariosDisponiveisAdd.forEach(usuario => {
-                // Verifica se o usuário já está na lista de selecionados
-                const jaSelecionado = responsaveisSelecionadosAdd.some(r => r.id === usuario.id);
-
-                if (!jaSelecionado) {
-                    html += `
-                <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
-                    <div>
-                        <span class="font-weight-bold">${usuario.name}</span>
-                        <small class="d-block text-muted">${usuario.email}</small>
-                    </div>
-                    <button class="btn btn-sm btn-outline-primary btn-adicionar-responsavel" data-id="${usuario.id}">
-                        <i class="fas fa-user-plus"></i>
-                    </button>
-                </div>
-            `;
-                }
-            });
-
-            if (html === '') {
-                html = '<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>';
-            }
-
-            lista.html(html);
-        }
-
-        // Função para atualizar a lista de responsáveis selecionados
-        function atualizarResponsaveisSelecionadosAdd() {
-            const lista = $('#responsaveisSelecionadosAdd');
-            lista.empty();
-
-            if (responsaveisSelecionadosAdd.length === 0) {
-                lista.html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
-                $('#contadorResponsaveisAdd').text('0');
-                return;
-            }
-
-            let html = '';
-            responsaveisSelecionadosAdd.forEach(usuario => {
-                html += `
-            <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
-                <div>
-                    <span class="font-weight-bold">${usuario.name}</span>
-                    <small class="d-block text-muted">${usuario.email}</small>
-                </div>
-                <button class="btn btn-sm btn-outline-danger btn-remover-responsavel" data-id="${usuario.id}">
-                    <i class="fas fa-user-minus"></i>
-                </button>
-            </div>
-        `;
-            });
-
-            lista.html(html);
-            $('#contadorResponsaveisAdd').text(responsaveisSelecionadosAdd.length);
-
-            // Atualiza o campo hidden com os IDs dos responsáveis
-            const ids = responsaveisSelecionadosAdd.map(u => u.id).join(',');
-            $('#responsaveisIdsAdd').val(ids);
-        }
-
-        // Evento para adicionar responsável
-        $(document).on('click', '.btn-adicionar-responsavel', function() {
-            const usuarioId = $(this).data('id');
-            const usuario = usuariosDisponiveisAdd.find(u => u.id == usuarioId);
-
-            if (usuario && !responsaveisSelecionadosAdd.some(u => u.id == usuarioId)) {
-                responsaveisSelecionadosAdd.push(usuario);
-                atualizarResponsaveisSelecionadosAdd();
-                atualizarListaUsuariosDisponiveisAdd();
-            }
-        });
-
-        // Evento para remover responsável
-        $(document).on('click', '.btn-remover-responsavel', function() {
-            const usuarioId = $(this).data('id');
-            responsaveisSelecionadosAdd = responsaveisSelecionadosAdd.filter(u => u.id != usuarioId);
-            atualizarResponsaveisSelecionadosAdd();
-            atualizarListaUsuariosDisponiveisAdd();
-        });
-
-        // Buscar usuários ao digitar
-        $('#buscarUsuarioAdd').on('input', function() {
-            const termo = $(this).val().toLowerCase();
-            if (termo === '') {
-                atualizarListaUsuariosDisponiveisAdd();
-                return;
-            }
-
-            const resultados = usuariosDisponiveisAdd.filter(usuario =>
-                usuario.name.toLowerCase().includes(termo) ||
-                usuario.email.toLowerCase().includes(termo)
-            );
-
-            const lista = $('#usuariosDisponiveisAdd');
-            lista.empty();
-
-            if (resultados.length === 0) {
-                lista.html('<div class="text-center py-3 text-muted">Nenhum resultado encontrado</div>');
-                return;
-            }
-
-            let html = '';
-            resultados.forEach(usuario => {
-                const jaSelecionado = responsaveisSelecionadosAdd.some(r => r.id === usuario.id);
-
-                if (!jaSelecionado) {
-                    html += `
-                <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
-                    <div>
-                        <span class="font-weight-bold">${usuario.name}</span>
-                        <small class="d-block text-muted">${usuario.email}</small>
-                    </div>
-                    <button class="btn btn-sm btn-outline-primary btn-adicionar-responsavel" data-id="${usuario.id}">
-                        <i class="fas fa-user-plus"></i>
-                    </button>
-                </div>
-            `;
-                }
-            });
-
-            lista.html(html || '<div class="text-center py-3 text-muted">Nenhum resultado disponível</div>');
-        });
-
-        // Carregar usuários quando o modal é aberto
-        $('#addAcaoModal').on('show.bs.modal', function() {
-            responsaveisSelecionadosAdd = [];
-            carregarUsuariosDisponiveisAdd();
-            atualizarResponsaveisSelecionadosAdd();
-        });
-
-        // Adicione estas variáveis globais no início do script
-        let evidenciasAdicionadasAcao = [];
-        let evidenciasRemovidasAcao = [];
-
-        // Evento quando o modal de adição de ação é aberto
-        $('#addAcaoModal').on('shown.bs.modal', function() {
-            // Limpar arrays de evidências
-            evidenciasAdicionadasAcao = [];
-            evidenciasRemovidasAcao = [];
-
-            // Limpar listas
-            $('#evidenciasAtuaisListAdd .list-group').empty();
-            $('#evidenciasRemoverListAdd .list-group').empty();
-
-            // Atualizar contadores
-            $('#contadorEvidenciasAtuaisAdd').text('0');
-            $('#contadorEvidenciasRemoverAdd').text('0');
-        });
-
-        // Alternar entre tipos de evidência (texto/link) no modal de adição
-        $('input[name="evidencia_tipo_add"]').change(function() {
-            if ($(this).val() === 'texto') {
-                $('#grupoTextoAdd').removeClass('d-none');
-                $('#grupoLinkAdd').addClass('d-none');
-            } else {
-                $('#grupoTextoAdd').addClass('d-none');
-                $('#grupoLinkAdd').removeClass('d-none');
-            }
-        });
-
-        // Adicionar evidência à lista (apenas localmente) no modal de adição
-        $('#btnAdicionarEvidenciaAdd').click(function() {
-            var tipo = $('input[name="evidencia_tipo_add"]:checked').val();
-            var conteudo = tipo === 'texto' ?
-                $('#evidenciaTextoAdd').val().trim() :
-                $('#evidenciaLinkAdd').val().trim();
-            var descricao = $('#evidenciaDescricaoAdd').val().trim();
-
-            if ((tipo === 'texto' && conteudo.length < 3) ||
-                (tipo === 'link' && !isValidUrl(conteudo))) {
-                showErrorAlert(tipo === 'texto' ?
-                    'O texto da evidência deve ter pelo menos 3 caracteres' :
-                    'Por favor, insira uma URL válida');
-                return;
-            }
-
-            // Criar objeto de evidência
-            var novaEvidencia = {
-                id: Date.now(), // ID temporário
-                tipo: tipo,
-                conteudo: conteudo,
-                descricao: descricao,
-                data: new Date().toLocaleString('pt-BR'),
-                acao: 'incluir' // Marcamos como inclusão para a solicitação
-            };
-
-            // Adicionar ao array e à lista
-            evidenciasAdicionadasAcao.push(novaEvidencia);
-            atualizarListaEvidenciasAdicionadasAdd();
-
-            // Limpar campos
-            $('#evidenciaTextoAdd, #evidenciaLinkAdd, #evidenciaDescricaoAdd').val('');
-            $('#grupoTextoAdd').removeClass('d-none');
-            $('#grupoLinkAdd').addClass('d-none');
-            $('input[name="evidencia_tipo_add"][value="texto"]').prop('checked', true);
-        });
-
-        // Função para atualizar a lista de evidências adicionadas
-        function atualizarListaEvidenciasAdicionadasAdd() {
-            const lista = $('#evidenciasAtuaisListAdd');
-            lista.empty();
-
-            if (evidenciasAdicionadasAcao.length === 0) {
-                lista.html('<div class="text-center py-3 text-muted">Nenhuma evidência será adicionada</div>');
-                $('#contadorEvidenciasAtuaisAdd').text('0');
-                return;
-            }
-
-            let html = '<div class="list-group">';
-
-            evidenciasAdicionadasAcao.forEach((evidencia, index) => {
-                html += `
-        <div class="list-group-item" data-id="${evidencia.id}">
-            <div class="d-flex justify-content-between align-items-start">
-                <div class="flex-grow-1">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <strong>Nova Evidência #${index + 1}</strong>
-                        <small class="text-muted">${evidencia.data}</small>
-                    </div>
-                    ${evidencia.tipo === 'texto' ?
-                        `<div class="bg-light p-2 rounded mb-2">${evidencia.conteudo.substring(0, 50)}${evidencia.conteudo.length > 50 ? '...' : ''}</div>` :
-                        `<div class="mb-2"><small class="text-truncate d-block">${evidencia.conteudo}</small></div>`
-                    }
-                    ${evidencia.descricao ?
-                        `<small class="text-muted">${evidencia.descricao.substring(0, 30)}${evidencia.descricao.length > 30 ? '...' : ''}</small>` :
-                        ''
-                    }
-                </div>
-                <button type="button" class="btn btn-sm btn-danger ml-2 btn-remover-evidencia-add" data-id="${evidencia.id}">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
-            </div>
-        </div>`;
-            });
-
-            html += '</div>';
-            lista.html(html);
-            $('#contadorEvidenciasAtuaisAdd').text(evidenciasAdicionadasAcao.length);
-        }
-
-        // Remover evidência da lista de adição
-        $(document).on('click', '.btn-remover-evidencia-add', function() {
-            const id = $(this).data('id');
-            evidenciasAdicionadasAcao = evidenciasAdicionadasAcao.filter(e => e.id != id);
-            atualizarListaEvidenciasAdicionadasAdd();
-        });
-
-        // Função para validar URL
-        function isValidUrl(string) {
-            try {
-                new URL(string);
-                return true;
-            } catch (_) {
-                return false;
-            }
-        }
-
-        // Modificar o submit do formulário de adição para incluir evidências
-        $('#formAddAcao').submit(function(e) {
-            e.preventDefault();
-
-            const submitBtn = $(this).find('button[type="submit"]');
-            const originalBtnText = submitBtn.html();
-
-            submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...');
-
-            // Criar FormData para enviar arquivos se necessário
-            const formData = new FormData(this);
-
-            // Adicionar evidências ao FormData
-            if (evidenciasAdicionadasAcao.length > 0) {
-                formData.append('evidencias_adicionadas', JSON.stringify(evidenciasAdicionadasAcao));
-            }
-
-            $.ajax({
-                type: "POST",
-                url: $(this).attr('action'),
-                data: formData,
-                processData: false,
-                contentType: false,
-                dataType: "json",
-                success: function(response) {
-                    if (response.success) {
-                        $('#addAcaoModal').modal('hide');
-                        showSuccessAlert(response.message || 'Ação cadastrada com sucesso!');
-                        setTimeout(() => location.reload(), 1500);
-                    } else {
-                        showErrorAlert(response.message || 'Ocorreu um erro ao cadastrar a ação.');
-                    }
-                },
-                error: function(xhr) {
-                    console.error(xhr.responseText);
-                    showErrorAlert('Erro na comunicação com o servidor.');
-                },
-                complete: function() {
-                    submitBtn.prop('disabled', false).html(originalBtnText);
-                }
-            });
-        });
-
-
-        //--------------------------------------------------------------
-        // JavaScript para abrir o modal de edição
-        // -------------------------------------------------------------
-
-        // Editar ação - Abrir modal (apenas admin)
-        $(document).on('click', '.btn-primary[title="Editar"]', function() {
-            var acaoId = $(this).data('id').split('-')[0];
-
-            $.ajax({
-                url: `<?= site_url('acoes/editar/') ?>${acaoId}`,
-                type: 'GET',
-                dataType: 'json',
-                beforeSend: function() {
-                    // Mostrar loading se necessário
-                },
-                success: function(response) {
-                    if (response.success && response.data) {
-                        carregarDadosParaEdicao(response.data);
-                        $('#editAcaoModal').modal('show');
-                    } else {
-                        showErrorAlert(response.message || "Erro ao carregar ação");
-                    }
-                },
-                error: function() {
-                    showErrorAlert("Falha na comunicação com o servidor.");
-                }
-            });
-        });
-
-        // Função para carregar dados no modal de edição
-        function carregarDadosParaEdicao(acao) {
-            // Preencher campos básicos
-            $('#editAcaoId').val(acao.id);
-            $('#editAcaoNome').val(acao.nome);
-            $('#editAcaoOrdem').val(acao.ordem);
-            $('#editAcaoEntregaEstimada').val(acao.entrega_estimada ? formatDateForInput(acao.entrega_estimada) : '');
-            $('#editAcaoDataInicio').val(acao.data_inicio ? formatDateForInput(acao.data_inicio) : '');
-            $('#editAcaoDataFim').val(acao.data_fim ? formatDateForInput(acao.data_fim) : '');
-
-            // Carregar responsáveis
-            carregarResponsaveisParaEdicao(acao.id);
-
-            // Carregar evidências
-            carregarEvidenciasParaEdicao(acao.id);
-
-            // Habilitar/desabilitar data fim conforme data início
-            if (acao.data_inicio) {
-                $('#editAcaoDataFim').prop('disabled', false);
-            } else {
-                $('#editAcaoDataFim').prop('disabled', true);
-            }
-        }
-
-        // Função auxiliar para formatar data para input date
-        function formatDateForInput(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            return date.toISOString().split('T')[0];
-        }
-
-        // Carregar responsáveis para edição
-        function carregarResponsaveisParaEdicao(acaoId) {
-            $.ajax({
-                url: `<?= site_url('acoes/get-responsaveis/') ?>${acaoId}`,
-                type: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        // Limpar listas
-                        $('#responsaveisSelecionadosEdit').empty();
-
-                        // Preencher responsáveis selecionados
-                        if (response.data && response.data.length > 0) {
-                            let html = '<div class="list-group">';
-                            response.data.forEach(usuario => {
-                                html += `
-                            <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
-                                <div>
-                                    <span class="font-weight-bold">${usuario.name}</span>
-                                    <small class="d-block text-muted">${usuario.email}</small>
-                                </div>
-                                <button class="btn btn-sm btn-outline-danger btn-remover-responsavel" data-id="${usuario.id}">
-                                    <i class="fas fa-user-minus"></i>
-                                </button>
-                            </div>
-                        `;
-                            });
-                            html += '</div>';
-                            $('#responsaveisSelecionadosEdit').html(html);
-                            $('#contadorResponsaveisEdit').text(response.data.length);
-                        } else {
-                            $('#responsaveisSelecionadosEdit').html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
-                            $('#contadorResponsaveisEdit').text('0');
-                        }
-
-                        // Carregar usuários disponíveis
-                        carregarUsuariosDisponiveisParaEdicao(acaoId);
-                    }
-                },
-                error: function() {
-                    showErrorAlert("Erro ao carregar responsáveis");
-                }
-            });
-        }
-
-
-        // Carregar usuários disponíveis para edição
-        function carregarUsuariosDisponiveisParaEdicao(acaoId, termo = '') {
-            $.ajax({
-                url: `<?= site_url('acoes/get-usuarios-disponiveis/') ?>${acaoId}`,
-                type: 'GET',
-                data: {
-                    term: termo
-                },
-                beforeSend: function() {
-                    $('#usuariosDisponiveisEdit').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i></div>');
-                },
-                success: function(response) {
-                    if (response.success) {
-                        let html = '';
-
-                        // Obter IDs dos responsáveis atuais
-                        const responsaveisIds = [];
-                        $('#responsaveisSelecionadosEdit .list-group-item').each(function() {
-                            responsaveisIds.push($(this).data('id'));
-                        });
-
-                        if (response.data.length > 0) {
-                            html = '<div class="list-group">';
-                            response.data.forEach(usuario => {
-                                // Verificar se o usuário já está na lista de responsáveis
-                                if (!responsaveisIds.includes(usuario.id.toString())) {
-                                    html += `
-                                <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
-                                    <div>
-                                        <span class="font-weight-bold">${usuario.name}</span>
-                                        <small class="d-block text-muted">${usuario.email}</small>
-                                    </div>
-                                    <button class="btn btn-sm btn-outline-primary btn-adicionar-responsavel" data-id="${usuario.id}">
-                                        <i class="fas fa-user-plus"></i>
-                                    </button>
-                                </div>
-                            `;
-                                }
-                            });
-                            html += '</div>';
-                        }
-
-                        if (html === '') {
-                            html = '<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>';
-                        }
-
-                        $('#usuariosDisponiveisEdit').html(html);
-                        $('#contadorUsuariosEdit').text($('#usuariosDisponiveisEdit .list-group-item').length);
-                    } else {
-                        $('#usuariosDisponiveisEdit').html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
-                    }
-                },
-                error: function() {
-                    $('#usuariosDisponiveisEdit').html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
-                }
-            });
-        }
-
-        // Atualize o evento de input para usar a nova função
-        $('#buscarUsuarioEdit').on('input', function() {
-            const termo = $(this).val().trim();
-            const acaoId = $('#editAcaoId').val();
-            carregarUsuariosDisponiveisParaEdicao(acaoId, termo);
-        });
-
-        // Carregar evidências para edição
-        function carregarEvidenciasParaEdicao(acaoId) {
-            $.ajax({
-                url: `<?= site_url('acoes/listar-evidencias/') ?>${acaoId}`,
-                type: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        // Limpar listas
-                        $('#evidenciasAtuaisList').empty();
-                        $('#evidenciasRemoverList').empty();
-
-                        // Preencher evidências atuais
-                        if (response.evidencias && response.evidencias.length > 0) {
-                            let html = '';
-                            response.evidencias.forEach((evidencia, index) => {
-                                html += `
-                            <div class="list-group-item mb-2" data-id="${evidencia.id}">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div class="flex-grow-1">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <strong>Evidência #${index + 1}</strong>
-                                            <small class="text-muted">${formatDateTime(evidencia.created_at)}</small>
-                                        </div>
-                                        ${evidencia.tipo === 'texto' ?
-                                            `<div class="bg-light p-2 rounded mb-2">${evidencia.evidencia.substring(0, 50)}${evidencia.evidencia.length > 50 ? '...' : ''}</div>` :
-                                            `<div class="mb-2"><small class="text-truncate d-block">${evidencia.evidencia}</small></div>`
-                                        }
-                                        ${evidencia.descricao ?
-                                            `<small class="text-muted">${evidencia.descricao.substring(0, 30)}${evidencia.descricao.length > 30 ? '...' : ''}</small>` :
-                                            ''
-                                        }
-                                    </div>
-                                    <button class="btn btn-sm btn-danger ml-2 btn-marcar-remocao-evidencia" data-id="${evidencia.id}">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                            });
-                            $('#evidenciasAtuaisList').html(html);
-                            $('#contadorEvidenciasAtuais').text(response.evidencias.length);
-                        } else {
-                            $('#evidenciasAtuaisList').html('<div class="list-group"><div class="text-center py-3 text-muted">Nenhuma evidência cadastrada</div></div>');
-                            $('#contadorEvidenciasAtuais').text('0');
-                        }
-
-                        $('#contadorEvidenciasRemover').text('0');
-                    }
-                },
-                error: function() {
-                    showErrorAlert("Erro ao carregar evidências");
-                }
-            });
-        }
-
-        // Função para formatar data e hora
-        function formatDateTime(dateTimeString) {
-            if (!dateTimeString) return '';
-            const date = new Date(dateTimeString);
-            return date.toLocaleString('pt-BR');
-        }
-
-
-        //--------------------------------------------------------------
-        // Eventos para os botões no modal de edição
-        // -------------------------------------------------------------
-
-        // Alternar entre tipos de evidência no modal de edição
-        $('input[name="evidencia_tipo"]').change(function() {
-            if ($(this).val() === 'texto') {
-                $('#editAcaoGrupoTexto').removeClass('d-none');
-                $('#editAcaoGrupoLink').addClass('d-none');
-            } else {
-                $('#editAcaoGrupoTexto').addClass('d-none');
-                $('#editAcaoGrupoLink').removeClass('d-none');
-            }
-        });
-
-        // Adicionar evidência à lista no modal de edição
-        $('#btnAdicionarEvidencia').click(function() {
-            var tipo = $('input[name="evidencia_tipo"]:checked').val();
-            var conteudo = tipo === 'texto' ?
-                $('#editAcaoEvidenciaTexto').val().trim() :
-                $('#editAcaoEvidenciaLink').val().trim();
-            var descricao = $('#editAcaoEvidenciaDescricao').val().trim();
-
-            if ((tipo === 'texto' && conteudo.length < 3) ||
-                (tipo === 'link' && !isValidUrl(conteudo))) {
-                showErrorAlert(tipo === 'texto' ?
-                    'O texto da evidência deve ter pelo menos 3 caracteres' :
-                    'Por favor, insira uma URL válida');
-                return;
-            }
-
-            // Criar objeto de evidência
-            var novaEvidencia = {
-                id: Date.now(), // ID temporário
-                tipo: tipo,
-                conteudo: conteudo,
-                descricao: descricao,
-                data: new Date().toLocaleString('pt-BR'),
-                acao: 'incluir' // Marcamos como inclusão para a solicitação
-            };
-
-            // Adicionar ao array e à lista
-            evidenciasAdicionadasAcao.push(novaEvidencia);
-            atualizarListaEvidenciasAdicionadas();
-
-            // Limpar campos
-            $('#editAcaoEvidenciaTexto, #editAcaoEvidenciaLink, #editAcaoEvidenciaDescricao').val('');
-            $('#editAcaoGrupoTexto').removeClass('d-none');
-            $('#editAcaoGrupoLink').addClass('d-none');
-            $('input[name="evidencia_tipo"][value="texto"]').prop('checked', true);
-        });
-
-        // Marcar evidência para remoção
-        $(document).on('click', '.btn-marcar-remocao-evidencia', function() {
-            const id = $(this).data('id');
-            const item = $(this).closest('.list-group-item');
-
-            // Mover para a lista de remoção
-            item.find('button').removeClass('btn-danger btn-marcar-remocao-evidencia')
-                .addClass('btn-success btn-desmarcar-remocao-evidencia')
-                .html('<i class="fas fa-undo"></i>');
-
-            $('#evidenciasRemoverList .list-group').append(item);
-
-            // Atualizar contadores
-            const countAtuais = parseInt($('#contadorEvidenciasAtuais').text()) - 1;
-            const countRemover = parseInt($('#contadorEvidenciasRemover').text()) + 1;
-
-            $('#contadorEvidenciasAtuais').text(countAtuais);
-            $('#contadorEvidenciasRemover').text(countRemover);
-
-            // Adicionar ao array de evidências removidas
-            evidenciasRemovidasAcao.push(id);
-        });
-
-        // Desmarcar evidência para remoção
-        $(document).on('click', '.btn-desmarcar-remocao-evidencia', function() {
-            const id = $(this).data('id');
-            const item = $(this).closest('.list-group-item');
-
-            // Mover de volta para a lista atual
-            item.find('button').removeClass('btn-success btn-desmarcar-remocao-evidencia')
-                .addClass('btn-danger btn-marcar-remocao-evidencia')
-                .html('<i class="fas fa-trash-alt"></i>');
-
-            $('#evidenciasAtuaisList .list-group').append(item);
-
-            // Atualizar contadores
-            const countAtuais = parseInt($('#contadorEvidenciasAtuais').text()) + 1;
-            const countRemover = parseInt($('#contadorEvidenciasRemover').text()) - 1;
-
-            $('#contadorEvidenciasAtuais').text(countAtuais);
-            $('#contadorEvidenciasRemover').text(countRemover);
-
-            // Remover do array de evidências removidas
-            evidenciasRemovidasAcao = evidenciasRemovidasAcao.filter(e => e != id);
-        });
-
-        // Adicionar responsável no modal de edição
-        $(document).on('click', '#usuariosDisponiveisEdit .btn-adicionar-responsavel', function() {
-            const usuarioId = $(this).data('id');
-            const item = $(this).closest('.list-group-item').clone();
-
-            // Transformar em item de responsável
-            item.find('button')
-                .removeClass('btn-primary btn-adicionar-responsavel')
-                .addClass('btn-danger btn-remover-responsavel')
-                .html('<i class="fas fa-user-minus"></i>');
-
-            // Se a mensagem "Nenhum responsável selecionado" estiver visível, remova
-            if ($('#responsaveisSelecionadosEdit').text().includes('Nenhum responsável selecionado')) {
-                $('#responsaveisSelecionadosEdit').html('<div class="list-group"></div>');
-            }
-
-            // Adicionar à lista de responsáveis
-            $('#responsaveisSelecionadosEdit .list-group').append(item);
-
-            // Remover da lista de disponíveis
-            $(this).closest('.list-group-item').remove();
-
-            // Atualizar contadores
-            const countResponsaveis = parseInt($('#contadorResponsaveisEdit').text()) + 1;
-            const countDisponiveis = parseInt($('#contadorUsuariosEdit').text()) - 1;
-
-            $('#contadorResponsaveisEdit').text(countResponsaveis);
-            $('#contadorUsuariosEdit').text(countDisponiveis);
-
-            // Atualizar campo hidden com os IDs
-            atualizarIdsResponsaveis();
-        });
-
-        // Remover responsável no modal de edição
-        $(document).on('click', '#responsaveisSelecionadosEdit .btn-remover-responsavel', function() {
-            const usuarioId = $(this).data('id');
-            const item = $(this).closest('.list-group-item').clone();
-
-            // Transformar em item disponível
-            item.find('button')
-                .removeClass('btn-danger btn-remover-responsavel')
-                .addClass('btn-outline-primary btn-adicionar-responsavel')
-                .html('<i class="fas fa-user-plus"></i>');
-
-            // Adicionar à lista de disponíveis
-            $('#usuariosDisponiveisEdit').append(item);
-
-            // Remover da lista de responsáveis
-            $(this).closest('.list-group-item').remove();
-
-            // Atualizar contadores
-            const countResponsaveis = parseInt($('#contadorResponsaveisEdit').text()) - 1;
-            const countDisponiveis = parseInt($('#contadorUsuariosEdit').text()) + 1;
-
-            $('#contadorResponsaveisEdit').text(countResponsaveis);
-            $('#contadorUsuariosEdit').text(countDisponiveis);
-
-            // Se não houver mais responsáveis, mostrar mensagem
-            if (countResponsaveis === 0) {
-                $('#responsaveisSelecionadosEdit').html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
-            }
-        });
-
-        // Buscar usuários no modal de edição
-        $('#buscarUsuarioEdit').on('input', function() {
-            const termo = $(this).val().toLowerCase().trim();
-            const $itens = $('#usuariosDisponiveisEdit .list-group-item');
-
-            if (termo === '') {
-                $itens.show();
-                return;
-            }
-
-            $itens.each(function() {
-                const $item = $(this);
-                const texto = $item.text().toLowerCase();
-
-                if (texto.includes(termo)) {
-                    $item.show();
-                    // Destacar o termo encontrado (opcional)
-                    const html = $item.html();
-                    const highlighted = html.replace(
-                        new RegExp(termo, 'gi'),
-                        match => `<span class="bg-warning">${match}</span>`
-                    );
-                    $item.html(highlighted);
-                } else {
-                    $item.hide();
-                }
-            });
-        });
-
-        // Enviar formulário de edição
-        $('#formEditAcao').submit(function(e) {
-            e.preventDefault();
-
-            // Coletar IDs dos responsáveis
-            const responsaveisIds = [];
-            $('#responsaveisSelecionadosEdit .list-group-item').each(function() {
-                responsaveisIds.push($(this).data('id'));
-            });
-            $('#responsaveisIdsEdit').val(responsaveisIds.join(','));
-
-            // Coletar evidências para adicionar e remover
-            $('#formEditAcao input[name="evidencias_adicionadas"]').val(JSON.stringify(evidenciasAdicionadasAcao));
-            $('#formEditAcao input[name="evidencias_removidas"]').val(JSON.stringify(evidenciasRemovidasAcao));
-
-            submitForm($(this), '#editAcaoModal', 'Ação atualizada com sucesso!');
-        });
-
-
-        //--------------------------------------------------------------
-        // JavaScript para abrir o modal de solicitar inclusão
-        // -------------------------------------------------------------
+        //------------------------------------------------------------
+        // SOLICITAR INCLUSÃO
+        //------------------------------------------------------------
 
         // variáveis globais no início do script
         let responsaveisSelecionadosSolicitacao = [];
@@ -1773,9 +774,38 @@
             atualizarResponsaveisSelecionadosSolicitacao();
         });
 
+        // Enviar solicitação de inclusão
+        $('#formSolicitarInclusao').submit(function(e) {
+            e.preventDefault();
+
+            // Coletar IDs dos responsáveis selecionados
+            const responsaveisIds = responsaveisSelecionadosSolicitacao.map(u => u.id);
+
+            // Atualizar o campo hidden com os dados no formato correto
+            $('#responsaveisSolicitacao').val(JSON.stringify({
+                responsaveis: {
+                    adicionar: responsaveisIds
+                }
+            }));
+
+            submitForm($(this), '#solicitarInclusaoModal', 'Solicitação de inclusão enviada com sucesso!');
+        });
+
         //------------------------------------------------------------
         // SOLICITAR EDIÇÃO
         //------------------------------------------------------------
+
+        // Variáveis globais para controle
+
+        let evidenciasAdicionadasAcao = [];
+        let evidenciasRemovidasAcao = [];
+
+        // Função auxiliar para formatar data para input date
+        function formatDateForInput(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toISOString().split('T')[0];
+        }
 
         // Solicitar edição de ação - Abrir modal (para não-admins)
         $(document).on('click', '.btn-primary[title="Solicitar Edição"]', function() {
@@ -2255,6 +1285,686 @@
 
             return alteracoes;
         }
+
+        //------------------------------------------------------------
+        // EDITAR AÇÃO (admin)
+        //------------------------------------------------------------
+
+        // Abrir modal de edição (para admins)
+        $(document).on('click', '.btn-primary[title="Editar"]', function() {
+            var acaoId = $(this).data('id').split('-')[0];
+            carregarDadosParaEdicao(acaoId);
+        });
+
+        // Função para carregar dados no modal de edição
+        function carregarDadosParaEdicao(acaoId) {
+            $.ajax({
+                url: `<?= site_url('acoes/editar/') ?>${acaoId}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success && response.data) {
+                        const acao = response.data;
+
+                        // Preencher campos básicos
+                        $('#editAcaoId').val(acao.id);
+                        $('#editAcaoNome').val(acao.nome);
+                        $('#editAcaoOrdem').val(acao.ordem);
+                        $('#editAcaoEntregaEstimada').val(acao.entrega_estimada ? formatDateForInput(acao.entrega_estimada) : '');
+                        $('#editAcaoDataInicio').val(acao.data_inicio ? formatDateForInput(acao.data_inicio) : '');
+                        $('#editAcaoDataFim').val(acao.data_fim ? formatDateForInput(acao.data_fim) : '');
+
+                        // Habilitar/desabilitar data fim conforme data início
+                        if (acao.data_inicio) {
+                            $('#editAcaoDataFim').prop('disabled', false);
+                        } else {
+                            $('#editAcaoDataFim').prop('disabled', true);
+                        }
+
+                        // Carregar responsáveis
+                        carregarResponsaveisParaEdicao(acao.id);
+
+                        // Carregar evidências
+                        carregarEvidenciasParaEdicao(acao.id);
+
+                        // Abrir modal
+                        $('#editAcaoModal').modal('show');
+                    } else {
+                        showErrorAlert(response.message || "Erro ao carregar ação");
+                    }
+                },
+                error: function() {
+                    showErrorAlert("Falha na comunicação com o servidor.");
+                }
+            });
+        }
+
+        // Carregar responsáveis para edição
+        function carregarResponsaveisParaEdicao(acaoId) {
+            $.ajax({
+                url: `<?= site_url('acoes/get-responsaveis/') ?>${acaoId}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        // Limpar listas
+                        $('#responsaveisSelecionadosEdit').empty();
+
+                        // Preencher responsáveis atuais
+                        if (response.data && response.data.length > 0) {
+                            let html = '<div class="list-group">';
+                            response.data.forEach(usuario => {
+                                html += `
+                            <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
+                                <div>
+                                    <span class="font-weight-bold">${usuario.name}</span>
+                                    <small class="d-block text-muted">${usuario.email}</small>
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger btn-remover-responsavel" data-id="${usuario.id}">
+                                    <i class="fas fa-user-minus"></i>
+                                </button>
+                            </div>
+                        `;
+                            });
+                            html += '</div>';
+                            $('#responsaveisSelecionadosEdit').html(html);
+                            $('#contadorResponsaveisEdit').text(response.data.length);
+                        } else {
+                            $('#responsaveisSelecionadosEdit').html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
+                            $('#contadorResponsaveisEdit').text('0');
+                        }
+
+                        // Carregar usuários disponíveis
+                        carregarUsuariosDisponiveisParaEdicao(acaoId);
+                    }
+                },
+                error: function() {
+                    showErrorAlert("Erro ao carregar responsáveis");
+                }
+            });
+        }
+
+        // Carregar usuários disponíveis para edição
+        function carregarUsuariosDisponiveisParaEdicao(acaoId, termo = '') {
+            $.ajax({
+                url: `<?= site_url('acoes/get-usuarios-disponiveis/') ?>${acaoId}`,
+                type: 'GET',
+                data: {
+                    term: termo
+                },
+                beforeSend: function() {
+                    $('#usuariosDisponiveisEdit').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i></div>');
+                },
+                success: function(response) {
+                    if (response.success) {
+                        let html = '';
+                        if (response.data.length > 0) {
+                            html = '<div class="list-group">';
+                            response.data.forEach(usuario => {
+                                html += `
+                            <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
+                                <div>
+                                    <span class="font-weight-bold">${usuario.name}</span>
+                                    <small class="d-block text-muted">${usuario.email}</small>
+                                </div>
+                                <button class="btn btn-sm btn-outline-primary btn-adicionar-responsavel" data-id="${usuario.id}">
+                                    <i class="fas fa-user-plus"></i>
+                                </button>
+                            </div>
+                        `;
+                            });
+                            html += '</div>';
+                        }
+                        if (html === '') {
+                            html = '<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>';
+                        }
+                        $('#usuariosDisponiveisEdit').html(html);
+                        $('#contadorUsuariosEdit').text(response.data.length);
+                    } else {
+                        $('#usuariosDisponiveisEdit').html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
+                    }
+                },
+                error: function() {
+                    $('#usuariosDisponiveisEdit').html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
+                }
+            });
+        }
+
+        // Carregar evidências para edição
+        function carregarEvidenciasParaEdicao(acaoId) {
+            $.ajax({
+                url: `<?= site_url('acoes/listar-evidencias/') ?>${acaoId}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        $('#evidenciasAtuaisList .list-group').empty();
+                        $('#evidenciasRemoverList .list-group').empty();
+
+                        if (response.evidencias && response.evidencias.length > 0) {
+                            response.evidencias.forEach((evidencia, index) => {
+                                let html = `
+                            <div class="list-group-item d-flex justify-content-between align-items-start" data-id="${evidencia.id}">
+                                <div class="flex-grow-1 w-100">
+                                    <div><strong>Evidência:</strong></div>
+                                    <div class="mt-1 mb-2">
+                                        ${evidencia.tipo === 'texto'
+                                            ? `<span>${evidencia.evidencia}</span>`
+                                            : `<a href="${evidencia.evidencia}" target="_blank" class="btn btn-sm btn-outline-primary">Acessar</a>`
+                                        }
+                                    </div>
+                                    <div><span class="font-weight-bold small text-secondary">Descrição:</span><br>
+                                        <span>${evidencia.descricao && evidencia.descricao.trim() ? evidencia.descricao : 'Sem descrição'}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger btn-marcar-remocao-evidencia" title="Remover evidência" data-id="${evidencia.id}">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                                $('#evidenciasAtuaisList .list-group').append(html);
+                            });
+                            $('#contadorEvidenciasAtuais').text(response.evidencias.length);
+                        } else {
+                            $('#evidenciasAtuaisList .list-group').html('<div class="text-center py-3 text-muted">Nenhuma evidência cadastrada</div>');
+                            $('#contadorEvidenciasAtuais').text('0');
+                        }
+                        $('#contadorEvidenciasRemover').text('0');
+                    }
+                },
+                error: function() {
+                    showErrorAlert("Erro ao carregar evidências");
+                }
+            });
+        }
+
+        // Adicionar responsável na edição
+        $(document).on('click', '#usuariosDisponiveisEdit .btn-adicionar-responsavel', function() {
+            const usuarioId = $(this).data('id');
+            const item = $(this).closest('.list-group-item').clone();
+
+            item.find('button')
+                .removeClass('btn-outline-primary btn-adicionar-responsavel')
+                .addClass('btn-outline-danger btn-remover-responsavel')
+                .html('<i class="fas fa-user-minus"></i>');
+
+            if ($('#responsaveisSelecionadosEdit').text().includes('Nenhum responsável selecionado')) {
+                $('#responsaveisSelecionadosEdit').html('<div class="list-group"></div>');
+            }
+
+            $('#responsaveisSelecionadosEdit .list-group').append(item);
+            $(this).closest('.list-group-item').remove();
+
+            const countResponsaveis = parseInt($('#contadorResponsaveisEdit').text()) + 1;
+            const countDisponiveis = parseInt($('#contadorUsuariosEdit').text()) - 1;
+
+            $('#contadorResponsaveisEdit').text(countResponsaveis);
+            $('#contadorUsuariosEdit').text(countDisponiveis);
+
+            atualizarIdsResponsaveis();
+        });
+
+        // Remover responsável na edição
+        $(document).on('click', '#responsaveisSelecionadosEdit .btn-remover-responsavel', function() {
+            const usuarioId = $(this).data('id');
+            const item = $(this).closest('.list-group-item').clone();
+
+            item.find('button')
+                .removeClass('btn-outline-danger btn-remover-responsavel')
+                .addClass('btn-outline-primary btn-adicionar-responsavel')
+                .html('<i class="fas fa-user-plus"></i>');
+
+            $('#usuariosDisponiveisEdit').append(item);
+            $(this).closest('.list-group-item').remove();
+
+            const countResponsaveis = parseInt($('#contadorResponsaveisEdit').text()) - 1;
+            const countDisponiveis = parseInt($('#contadorUsuariosEdit').text()) + 1;
+
+            $('#contadorResponsaveisEdit').text(countResponsaveis);
+            $('#contadorUsuariosEdit').text(countDisponiveis);
+
+            if (countResponsaveis === 0) {
+                $('#responsaveisSelecionadosEdit').html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
+            }
+
+            atualizarIdsResponsaveis();
+        });
+
+        // Buscar usuários no modal de edição
+        $('#buscarUsuarioEdit').on('input', function() {
+            const termo = $(this).val().toLowerCase().trim();
+            const acaoId = $('#editAcaoId').val();
+            carregarUsuariosDisponiveisParaEdicao(acaoId, termo);
+        });
+
+        // Atualizar lista de IDs dos responsáveis
+        function atualizarIdsResponsaveis() {
+            const ids = [];
+            $('#responsaveisSelecionadosEdit .list-group-item').each(function() {
+                ids.push($(this).data('id'));
+            });
+            $('#responsaveisIdsEdit').val(ids.join(','));
+        }
+
+        // Alternar entre tipos de evidência no modal de edição
+        $('input[name="evidencia_tipo"]').change(function() {
+            if ($(this).val() === 'texto') {
+                $('#editAcaoGrupoTexto').removeClass('d-none');
+                $('#editAcaoGrupoLink').addClass('d-none');
+            } else {
+                $('#editAcaoGrupoTexto').addClass('d-none');
+                $('#editAcaoGrupoLink').removeClass('d-none');
+            }
+        });
+
+        // Adicionar evidência à lista no modal de edição
+        $('#btnAdicionarEvidencia').click(function() {
+            const tipo = $('input[name="evidencia_tipo"]:checked').val();
+            const conteudo = tipo === 'texto' ?
+                $('#editAcaoEvidenciaTexto').val().trim() :
+                $('#editAcaoEvidenciaLink').val().trim();
+            const descricao = $('#editAcaoEvidenciaDescricao').val().trim();
+
+            if ((tipo === 'texto' && conteudo.length < 3) ||
+                (tipo === 'link' && !isValidUrl(conteudo))) {
+                showErrorAlert(tipo === 'texto' ?
+                    'O texto da evidência deve ter pelo menos 3 caracteres' :
+                    'Por favor, insira uma URL válida');
+                return;
+            }
+
+            const novaEvidencia = {
+                id: Date.now(), // ID temporário
+                tipo: tipo,
+                conteudo: conteudo,
+                descricao: descricao,
+                data: new Date().toLocaleString('pt-BR'),
+                acao: 'incluir'
+            };
+
+            evidenciasAdicionadasAcao.push(novaEvidencia);
+            atualizarListaEvidenciasAdicionadas();
+
+            // Limpar campos
+            $('#editAcaoEvidenciaTexto, #editAcaoEvidenciaLink, #editAcaoEvidenciaDescricao').val('');
+            $('#editAcaoGrupoTexto').removeClass('d-none');
+            $('#editAcaoGrupoLink').addClass('d-none');
+            $('input[name="evidencia_tipo"][value="texto"]').prop('checked', true);
+        });
+
+        // Atualizar lista de evidências adicionadas
+        function atualizarListaEvidenciasAdicionadas() {
+            // Remove items adicionados anteriormente para não acumular duplicados
+            $('#evidenciasAtuaisList .nova-evidencia').remove();
+
+            if (evidenciasAdicionadasAcao.length === 0) {
+                $('#contadorEvidenciasAtuais').text($('#evidenciasAtuaisList .list-group-item').length);
+                return;
+            }
+
+            evidenciasAdicionadasAcao.forEach((evidencia, index) => {
+                let html = `
+            <div class="list-group-item nova-evidencia d-flex justify-content-between align-items-start" data-id="${evidencia.id}">
+                <div class="flex-grow-1 w-100">
+                    <div>
+                        <strong>Evidência: <span class="badge badge-success ml-1">Nova</span></strong>
+                    </div>
+                    <div class="mt-1 mb-2">
+                        ${evidencia.tipo === 'texto'
+                            ? `<span>${evidencia.conteudo}</span>`
+                            : `<a href="${evidencia.conteudo}" target="_blank" class="btn btn-sm btn-outline-primary">Acessar</a>`
+                        }
+                    </div>
+                    <div>
+                        <span class="small text-secondary">Descrição:</span><br>
+                        <span>${evidencia.descricao && evidencia.descricao.trim() ? evidencia.descricao : 'Sem descrição'}</span>
+                    </div>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-remover-evidencia-add" data-id="${evidencia.id}" title="Remover evidência">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+                $('#evidenciasAtuaisList .list-group').append(html);
+            });
+
+            // Atualiza o contador: atuais + novas
+            let total = $('#evidenciasAtuaisList .list-group-item').length;
+            $('#contadorEvidenciasAtuais').text(total);
+        }
+
+        // Remover evidência da lista de adição
+        $(document).on('click', '.btn-remover-evidencia-add', function() {
+            const id = $(this).data('id');
+            evidenciasAdicionadasAcao = evidenciasAdicionadasAcao.filter(e => e.id != id);
+            atualizarListaEvidenciasAdicionadas();
+        });
+
+        // Marcar evidência para remoção (move para lista removidas, deixa amarela e troca botão)
+        $(document).on('click', '.btn-marcar-remocao-evidencia', function() {
+            const $item = $(this).closest('.list-group-item');
+            $item.addClass('list-group-item-warning');
+            $(this)
+                .removeClass('btn-outline-danger btn-marcar-remocao-evidencia')
+                .addClass('btn-outline-secondary btn-desmarcar-remocao-evidencia')
+                .attr('title', 'Desfazer remoção')
+                .html('<i class="fas fa-undo"></i>');
+
+            $('#evidenciasRemoverList .list-group').append($item);
+            $('#contadorEvidenciasAtuais').text($('#evidenciasAtuaisList .list-group-item').length);
+            $('#contadorEvidenciasRemover').text($('#evidenciasRemoverList .list-group-item').length);
+
+            evidenciasRemovidasAcao.push($item.data('id'));
+        });
+
+        // Desfazer remoção (move para lista atuais, remove amarelo e volta botão)
+        $(document).on('click', '.btn-desmarcar-remocao-evidencia', function() {
+            const $item = $(this).closest('.list-group-item');
+            $item.removeClass('list-group-item-warning');
+            $(this)
+                .removeClass('btn-outline-secondary btn-desmarcar-remocao-evidencia')
+                .addClass('btn-outline-danger btn-marcar-remocao-evidencia')
+                .attr('title', 'Remover evidência')
+                .html('<i class="fas fa-trash-alt"></i>');
+
+            $('#evidenciasAtuaisList .list-group').append($item);
+            $('#contadorEvidenciasAtuais').text($('#evidenciasAtuaisList .list-group-item').length);
+            $('#contadorEvidenciasRemover').text($('#evidenciasRemoverList .list-group-item').length);
+
+            evidenciasRemovidasAcao = evidenciasRemovidasAcao.filter(e => e != $item.data('id'));
+        });
+
+        // Enviar formulário de edição
+        $('#formEditAcao').submit(function(e) {
+            e.preventDefault();
+
+            // Preparar evidências no formato correto
+            const evidenciasParaEnviar = {
+                adicionar: evidenciasAdicionadasAcao.map(ev => ({
+                    tipo: ev.tipo,
+                    evidencia: ev.tipo === 'texto' ? ev.conteudo : '', // Para texto
+                    link: ev.tipo === 'link' ? ev.conteudo : '', // Para link
+                    descricao: ev.descricao
+                })),
+                remover: evidenciasRemovidasAcao
+            };
+
+            // Definir valores nos campos hidden
+            $('#evidencias_adicionadas').val(JSON.stringify(evidenciasParaEnviar.adicionar));
+            $('#evidencias_removidas').val(JSON.stringify(evidenciasParaEnviar.remover));
+
+            // Agora envia o formulário via AJAX
+            const formData = $(this).serialize();
+
+            $.ajax({
+                type: "POST",
+                url: $(this).attr('action'),
+                data: formData,
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        $('#editAcaoModal').modal('hide');
+                        showSuccessAlert(response.message || 'Ação atualizada com sucesso!');
+                        dataTable.ajax.reload(null, false);
+                    } else {
+                        showErrorAlert(response.message || 'Ocorreu um erro ao atualizar a ação.');
+                    }
+                },
+                error: function(xhr) {
+                    showErrorAlert('Erro na comunicação com o servidor.');
+                }
+            });
+        });
+
+        // Habilitar data fim quando data início for preenchida
+        $('#editAcaoDataInicio').change(function() {
+            if ($(this).val()) {
+                $('#editAcaoDataFim').prop('disabled', false);
+            } else {
+                $('#editAcaoDataFim').val('').prop('disabled', true);
+            }
+        });
+
+        // Limpar variáveis quando o modal é fechado
+        $('#editAcaoModal').on('hidden.bs.modal', function() {
+            evidenciasAdicionadasAcao = [];
+            evidenciasRemovidasAcao = [];
+        });
+
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        //------------------------------------------------------------
+        // INCLUIR AÇÃO (admin)
+        //------------------------------------------------------------
+
+        // Configuração do AJAX para adicionar ação
+        $('#formAddAcao').submit(function(e) {
+            e.preventDefault();
+
+            const submitBtn = $(this).find('button[type="submit"]');
+            const originalBtnText = submitBtn.html();
+
+            submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...');
+
+            // Coletar IDs dos responsáveis selecionados
+            const responsaveisIds = [];
+            $('#responsaveisSelecionadosAdd .list-group-item').each(function() {
+                responsaveisIds.push($(this).data('id'));
+            });
+
+            // Atualizar o campo hidden com os IDs
+            $('#responsaveisIdsAdd').val(responsaveisIds.join(','));
+
+            $.ajax({
+                type: "POST",
+                url: $(this).attr('action'),
+                data: $(this).serialize(),
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        $('#addAcaoModal').modal('hide');
+                        showSuccessAlert(response.message || 'Ação cadastrada com sucesso!');
+                        dataTable.ajax.reload(null, false);
+
+                        // Resetar o formulário
+                        $('#formAddAcao')[0].reset();
+                        $('#responsaveisSelecionadosAdd').html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
+                        $('#contadorResponsaveisAdd').text('0');
+                    } else {
+                        showErrorAlert(response.message || 'Ocorreu um erro ao cadastrar a ação.');
+                    }
+                },
+                error: function(xhr) {
+                    showErrorAlert('Erro na comunicação com o servidor.');
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).html(originalBtnText);
+                }
+            });
+        });
+
+        // Carregar usuários disponíveis quando o modal é aberto
+        $('#addAcaoModal').on('show.bs.modal', function() {
+            carregarUsuariosDisponiveisParaAdicao();
+            calcularProximaOrdem();
+        });
+
+        // Função para carregar usuários disponíveis
+        function carregarUsuariosDisponiveisParaAdicao() {
+            $.ajax({
+                url: '<?= site_url("acoes/buscar-usuarios") ?>',
+                type: 'GET',
+                dataType: 'json',
+                beforeSend: function() {
+                    $('#usuariosDisponiveisAdd').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>');
+                },
+                success: function(response) {
+                    if (response.success && response.data && response.data.length > 0) {
+                        let html = '<div class="list-group">';
+                        response.data.forEach(usuario => {
+                            html += `
+                        <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${usuario.id}">
+                            <div>
+                                <span class="font-weight-bold">${usuario.name}</span>
+                                <small class="d-block text-muted">${usuario.email}</small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary btn-adicionar-responsavel" data-id="${usuario.id}">
+                                <i class="fas fa-user-plus"></i>
+                            </button>
+                        </div>
+                    `;
+                        });
+                        html += '</div>';
+                        $('#usuariosDisponiveisAdd').html(html);
+                        $('#contadorUsuariosAdd').text(response.data.length);
+                    } else {
+                        $('#usuariosDisponiveisAdd').html('<div class="text-center py-3 text-muted">Nenhum usuário disponível</div>');
+                        $('#contadorUsuariosAdd').text('0');
+                    }
+                },
+                error: function() {
+                    $('#usuariosDisponiveisAdd').html('<div class="text-center py-3 text-danger">Erro ao carregar usuários</div>');
+                    $('#contadorUsuariosAdd').text('0');
+                }
+            });
+        }
+
+        // Adicionar responsável
+        $(document).on('click', '#usuariosDisponiveisAdd .btn-adicionar-responsavel', function() {
+            const usuarioId = $(this).data('id');
+            const item = $(this).closest('.list-group-item').clone();
+
+            item.find('button')
+                .removeClass('btn-outline-primary btn-adicionar-responsavel')
+                .addClass('btn-outline-danger btn-remover-responsavel')
+                .html('<i class="fas fa-user-minus"></i>');
+
+            if ($('#responsaveisSelecionadosAdd').text().includes('Nenhum responsável selecionado')) {
+                $('#responsaveisSelecionadosAdd').html('<div class="list-group"></div>');
+            }
+
+            $('#responsaveisSelecionadosAdd .list-group').append(item);
+            $(this).closest('.list-group-item').remove();
+
+            const countResponsaveis = parseInt($('#contadorResponsaveisAdd').text()) + 1;
+            const countDisponiveis = parseInt($('#contadorUsuariosAdd').text()) - 1;
+
+            $('#contadorResponsaveisAdd').text(countResponsaveis);
+            $('#contadorUsuariosAdd').text(countDisponiveis);
+        });
+
+        // Remover responsável
+        $(document).on('click', '#responsaveisSelecionadosAdd .btn-remover-responsavel', function() {
+            const usuarioId = $(this).data('id');
+            const item = $(this).closest('.list-group-item').clone();
+
+            item.find('button')
+                .removeClass('btn-outline-danger btn-remover-responsavel')
+                .addClass('btn-outline-primary btn-adicionar-responsavel')
+                .html('<i class="fas fa-user-plus"></i>');
+
+            $('#usuariosDisponiveisAdd').append(item);
+            $(this).closest('.list-group-item').remove();
+
+            const countResponsaveis = parseInt($('#contadorResponsaveisAdd').text()) - 1;
+            const countDisponiveis = parseInt($('#contadorUsuariosAdd').text()) + 1;
+
+            $('#contadorResponsaveisAdd').text(countResponsaveis);
+            $('#contadorUsuariosAdd').text(countDisponiveis);
+
+            if (countResponsaveis === 0) {
+                $('#responsaveisSelecionadosAdd').html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
+            }
+        });
+
+        // Buscar usuários
+        $('#buscarUsuarioAdd').on('input', function() {
+            const termo = $(this).val().toLowerCase().trim();
+
+            if (termo === '') {
+                carregarUsuariosDisponiveisParaAdicao();
+                return;
+            }
+
+            $('#usuariosDisponiveisAdd .list-group-item').each(function() {
+                const nome = $(this).find('.font-weight-bold').text().toLowerCase();
+                const email = $(this).find('.text-muted').text().toLowerCase();
+
+                if (nome.includes(termo) || email.includes(termo)) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        });
+
+        // Habilitar data fim quando data início for preenchida
+        $('#acaoDataInicio').change(function() {
+            if ($(this).val()) {
+                $('#acaoDataFim').prop('disabled', false);
+            } else {
+                $('#acaoDataFim').val('').prop('disabled', true);
+            }
+        });
+
+        //------------------------------------------------------------
+        // EXCLUIR AÇÃO (admin)
+        //------------------------------------------------------------
+
+        // Abrir modal de exclusão (para admins)
+        $(document).on('click', '.btn-danger[title="Excluir"]', function() {
+            var acaoId = $(this).data('id').split('-')[0];
+            var acaoName = $(this).closest('tr').find('td:nth-child(2)').text();
+
+            $('#deleteAcaoId').val(acaoId);
+            $('#acaoNameToDelete').text(acaoName);
+            $('#deleteAcaoModal').modal('show');
+        });
+
+        // Enviar formulário de exclusão
+        $('#formDeleteAcao').submit(function(e) {
+            e.preventDefault();
+
+            const form = $(this);
+            const submitBtn = form.find('button[type="submit"]');
+            const originalBtnText = submitBtn.html();
+
+            submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...');
+
+            $.ajax({
+                type: "POST",
+                url: form.attr('action'),
+                data: form.serialize(),
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        $('#deleteAcaoModal').modal('hide');
+                        showSuccessAlert(response.message || 'Ação excluída com sucesso!');
+                        dataTable.ajax.reload(null, false);
+                    } else {
+                        showErrorAlert(response.message || 'Ocorreu um erro ao excluir a ação.');
+                    }
+                },
+                error: function(xhr) {
+                    showErrorAlert('Erro na comunicação com o servidor.');
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).html(originalBtnText);
+                }
+            });
+        });
+
 
     });
 </script>

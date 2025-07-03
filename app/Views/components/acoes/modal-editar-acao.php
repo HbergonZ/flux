@@ -14,8 +14,8 @@
                 <input type="hidden" name="id" id="editAcaoId">
                 <input type="hidden" name="id_etapa" value="<?= $tipoOrigem === 'etapa' ? $idOrigem : '' ?>">
                 <input type="hidden" name="id_projeto" value="<?= $tipoOrigem === 'projeto' ? $idOrigem : ($tipoOrigem === 'etapa' ? $etapa['id_projeto'] : '') ?>">
-                <input type="hidden" name="evidencias_adicionar" value="">
-                <input type="hidden" name="evidencias_remover" value="">
+                <input type="hidden" name="evidencias_adicionadas" id="evidencias_adicionadas" value="">
+                <input type="hidden" name="evidencias_removidas" id="evidencias_removidas" value="">
                 <input type="hidden" name="responsaveis_adicionar" value="">
                 <input type="hidden" name="responsaveis_remover" value="">
 
