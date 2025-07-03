@@ -177,12 +177,13 @@ class Projetos extends BaseController
                     'identificador' => $projeto['identificador'],
                     'nome' => $projeto['nome'],
                     'descricao' => $projeto['descricao'],
+                    'metas' => $projeto['metas'], // Adicione esta linha
                     'projeto_vinculado' => $projeto['projeto_vinculado'],
                     'priorizacao_gab' => $projeto['priorizacao_gab'],
                     'id_eixo' => $projeto['id_eixo'],
                     'id_plano' => $projeto['id_plano'],
                     'responsaveis' => $projeto['responsaveis'],
-                    'status' => $projeto['status'] ?? 'Ativo' // Adicione todos os campos necessários
+                    'status' => $projeto['status'] ?? 'Ativo'
                 ];
             } else {
                 $response['message'] = 'Projeto não encontrado';
