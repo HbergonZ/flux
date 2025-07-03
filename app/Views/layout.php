@@ -316,7 +316,7 @@
                                     const dataFormatada = new Date(acao.entrega_estimada).toLocaleDateString('pt-BR');
 
                                     html += `
-                                    <a class="dropdown-item d-flex align-items-center" href="<?= site_url('acoes') ?>/${acao.id}">
+                                    <a class="dropdown-item d-flex align-items-center" href="#">
                                         <div class="mr-3">
                                             <div class="icon-circle bg-danger">
                                                 <i class="fas fa-exclamation-triangle text-white"></i>
