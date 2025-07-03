@@ -1101,6 +1101,9 @@ class Acoes extends BaseController
                 $this->acoesModel->update($id, ['ordem' => (int)$ordem]);
             }
 
+            // Adicione esta linha para atualizar os status após alterar a ordem
+            $this->acoesModel->atualizarStatusAcoes($idOrigem, $tipoOrigem);
+
             $this->acoesModel->transComplete();
 
             if ($this->acoesModel->transStatus() === false) {
