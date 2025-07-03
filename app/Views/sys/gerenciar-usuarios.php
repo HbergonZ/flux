@@ -96,7 +96,7 @@ $isAdmin = $loggedUser->inGroup('admin');
                                             <?= $user->active ? 'Ativo' : 'Inativo' ?>
                                         </span>
                                     </td>
-                                    <td class="text-center align-middle">
+                                    <td class="text-center align-middle" data-sort="<?= !empty($user->created_at) ? strtotime($user->created_at) : 0 ?>">
                                         <?php
                                         if (!empty($user->created_at) && $user->created_at != "0000-00-00 00:00:00") {
                                             $date = new DateTime($user->created_at);

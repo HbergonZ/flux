@@ -11,9 +11,14 @@
                 url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json'
             },
             columnDefs: [{
-                orderable: false,
-                targets: [6] // Ajuste para corresponder à coluna de ações, se necessário
-            }]
+                    orderable: false,
+                    targets: [6] // Coluna de ações (ajuste conforme necessário)
+                },
+                {
+                    type: "num",
+                    targets: 0, // Coluna de ID (ajuste se for diferente)
+                }
+            ]
         });
 
         // Filtros DataTables (client-side)
