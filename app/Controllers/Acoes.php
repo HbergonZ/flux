@@ -440,7 +440,9 @@ class Acoes extends BaseController
                     foreach ($evidencias as $evidencia) {
                         $evidenciaData = [
                             'tipo' => $evidencia['tipo'],
-                            'evidencia' => $evidencia['evidencia'] ?? $evidencia['conteudo'] ?? '', // Compatibilidade com ambos formatos
+                            'evidencia' => $evidencia['tipo'] === 'texto'
+                                ? ($evidencia['evidencia'] ?? $evidencia['conteudo'] ?? '')
+                                : ($evidencia['link'] ?? $evidencia['evidencia'] ?? $evidencia['conteudo'] ?? ''),
                             'descricao' => $evidencia['descricao'] ?? null,
                             'nivel' => 'acao',
                             'id_nivel' => $id,
