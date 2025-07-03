@@ -204,11 +204,8 @@ class Etapas extends BaseController
         $response = ['success' => false, 'message' => ''];
         $id = $this->request->getPost('id');
 
-        $db = \Config\Database::connect();
-        $acoesModel = new AcoesModel($db);
-
         try {
-            $db->transStart();
+            $this->etapasModel->transStart();
 
             $etapa = $this->etapasModel->find($id);
             if (!$etapa || $etapa['id_projeto'] != $idProjeto) {
@@ -216,7 +213,7 @@ class Etapas extends BaseController
             }
 
             // Contar e excluir ações vinculadas
-            $acoes = $acoesModel->where('id_etapa', $id)->findAll();
+            $acoes = $this->acoesModel->where('id_etapa', $id)->findAll();
             $contagemAcoes = count($acoes);
 
             foreach ($acoes as $acao) {
@@ -225,7 +222,7 @@ class Etapas extends BaseController
                     throw new \Exception('Falha ao registrar log de exclusão da ação');
                 }
 
-                if (!$acoesModel->delete($acao['id'])) {
+                if (!$this->acoesModel->delete($acao['id'])) {
                     throw new \Exception("Falha ao excluir ação ID: {$acao['id']}");
                 }
             }
@@ -240,7 +237,7 @@ class Etapas extends BaseController
                 throw new \Exception('Falha ao excluir etapa');
             }
 
-            $db->transComplete();
+            $this->etapasModel->transComplete();
 
             $response['success'] = true;
             $response['message'] = 'Etapa e suas ações foram excluídas com sucesso!';
@@ -248,7 +245,7 @@ class Etapas extends BaseController
                 'acoes' => $contagemAcoes
             ];
         } catch (\Exception $e) {
-            $db->transRollback();
+            $this->etapasModel->transRollback();
             $response['message'] = 'Erro ao excluir etapa: ' . $e->getMessage();
         }
 

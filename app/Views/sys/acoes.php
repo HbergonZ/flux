@@ -34,7 +34,7 @@
         <div>
             <a href="<?= isset($acessoDireto) && $acessoDireto ?
                             site_url("planos/{$projeto['id_plano']}/projetos") :
-                            site_url("projetos/{$projeto['id']}/etapas")
+                            site_url("planos/{$plano['id']}/projetos/{$projeto['id']}/etapas")
                         ?>" class="btn btn-secondary btn-icon-split btn-sm">
                 <span class="icon text-white-50">
                     <i class="fas fa-arrow-left"></i>

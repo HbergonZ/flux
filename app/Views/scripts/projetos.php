@@ -210,7 +210,7 @@
                             <i class="fas fa-tasks"></i>
                         </a>
                         <a href="<?= site_url('planos/') ?><?= $plano['id'] ?>/projetos/${data.id.split('-')[0]}/acoes"
-                           class="btn btn-info btn-sm mx-1" title="Acessar Ações">
+                           class="btn btn-info btn-sm mx-1" title="Acessar ações não vinculadas à etapas">
                             <i class="fas fa-th-list"></i>
                         </a>`;
 
