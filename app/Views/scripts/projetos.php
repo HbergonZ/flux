@@ -582,6 +582,7 @@
                             $('#editProjetoIdentificador').val(response.data.identificador);
                             $('#editProjetoNome').val(response.data.nome);
                             $('#editProjetoDescricao').val(response.data.descricao);
+                            $('#editProjetoMetas').val(response.data.metas);
                             $('#editProjetoVinculado').val(response.data.projeto_vinculado);
                             $('#editProjetoEixo').val(response.data.id_eixo);
                             $('#editProjetoPriorizacao').val(response.data.priorizacao_gab);
