@@ -119,11 +119,11 @@ class Projetos extends BaseController
                 'identificador' => $this->request->getPost('identificador'),
                 'nome' => $this->request->getPost('nome'),
                 'descricao' => $this->request->getPost('descricao'),
+                'metas' => $this->request->getPost('metas'),
                 'projeto_vinculado' => $this->request->getPost('projeto_vinculado'),
                 'priorizacao_gab' => $this->request->getPost('priorizacao_gab') ?? 0,
                 'id_plano' => $idPlano,
                 'responsaveis' => $this->request->getPost('responsaveis'),
-                'metas' => $this->request->getPost('metas'),
                 'id_eixo' => $this->request->getPost('id_eixo') ?: null
             ];
 
