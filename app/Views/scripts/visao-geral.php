@@ -3,6 +3,24 @@
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap4.min.js"></script>
 
+<style>
+    /* Verde mais claro para "Finalizado com atraso" */
+    .badge-verde-claro {
+        background-color: #d4edda;
+        /* Tom pastel de verde */
+        color: #155724;
+        /* Texto verde escuro */
+        border: 1px solid #c3e6cb;
+        /* Borda verde mais clara */
+    }
+
+    /* Verde padrão do Bootstrap (pode ser redefinido se quiser) */
+    .badge-verde-normal {
+        background-color: #28a745;
+        color: white;
+    }
+</style>
+
 <script>
     $(document).ready(function() {
         // Configuração inicial dos campos visíveis
@@ -119,24 +137,16 @@
                     "data": "status",
                     "className": "text-center align-middle",
                     "render": function(data, type, row) {
-                        var badge_class = '';
-                        switch (data) {
-                            case 'Em andamento':
-                                badge_class = 'badge-primary';
-                                break;
-                            case 'Não iniciado':
-                                badge_class = 'badge-secondary';
-                                break;
-                            case 'Finalizado':
-                                badge_class = 'badge-success';
-                                break;
-                            case 'Paralisado':
-                                badge_class = 'badge-warning';
-                                break;
-                            default:
-                                badge_class = 'badge-light';
-                        }
-                        return '<span class="badge badge-pill ' + badge_class + ' py-2" style="min-width: 110px; display: inline-block; text-align: center;">' + data + '</span>';
+                        const badgeClass = {
+                            'Finalizado': 'badge-success',
+                            'Finalizado com atraso': 'badge-verde-claro',
+                            'Em andamento': 'badge-warning',
+                            'Paralisado': 'badge-dark',
+                            'Atrasado': 'badge-danger',
+                            'Não iniciado': 'badge-primary'
+                        } [data] || 'badge-secondary';
+
+                        return '<span class="badge badge-pill ' + badgeClass + ' py-2" style="min-width: 110px; display: inline-block; text-align: center;">' + data + '</span>';
                     }
                 }
             ],
@@ -201,13 +211,13 @@
             e.preventDefault();
 
             var formData = {
-                'priorizacao_gab': $('#filterPriorizacao').val(),
                 'plano': $('#filterPlano').val(),
                 'projeto': $('#filterProjeto').val(),
-                'acao': $('#filterAcao').val(),
                 'etapa': $('#filterEtapa').val(),
+                'acao': $('#filterAcao').val(),
                 'responsaveis': $('#filterResponsaveis').val(),
                 'status': $('#filterStatus').val(),
+                'priorizacao_gab': $('#filterPriorizacao').val(),
                 'data_inicio': $('#filterStartDate').val(),
                 'data_fim': $('#filterEndDate').val()
             };
@@ -248,6 +258,33 @@
                 },
                 error: function(xhr, status, error) {
                     alert('Erro na requisição: ' + error);
+                }
+            });
+        });
+
+        // Carregar projetos quando um plano for selecionado
+        $('#filterPlano').change(function() {
+            var plano = $(this).val();
+
+            $.ajax({
+                url: '<?= site_url('visao-geral/getProjetosPorPlano') ?>',
+                type: 'POST',
+                data: {
+                    plano: plano
+                },
+                dataType: 'json',
+                success: function(response) {
+                    var $projetoSelect = $('#filterProjeto');
+                    $projetoSelect.empty().append('<option value="">Todos</option>');
+
+                    if (response.success && response.data.length > 0) {
+                        $.each(response.data, function(index, projeto) {
+                            $projetoSelect.append('<option value="' + projeto.nome_projeto + '">' + projeto.nome_projeto + '</option>');
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Erro ao carregar projetos:', error);
                 }
             });
         });

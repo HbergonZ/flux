@@ -25,7 +25,12 @@
                     <div class="col-md-3">
                         <div class="form-group">
                             <label for="filterProjeto">Projeto</label>
-                            <input type="text" class="form-control" id="filterProjeto" name="projeto" placeholder="Digite o projeto">
+                            <select class="form-control" id="filterProjeto" name="projeto">
+                                <option value="">Todos</option>
+                                <?php foreach ($filtros['projetos'] as $projeto) : ?>
+                                    <option value="<?= esc($projeto['nome_projeto']) ?>"><?= esc($projeto['nome_projeto']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -42,7 +47,12 @@
                     <div class="col-md-3">
                         <div class="form-group">
                             <label for="filterAcao">Ação</label>
-                            <input type="text" class="form-control" id="filterAcao" name="acao" placeholder="Digite a ação">
+                            <select class="form-control" id="filterAcao" name="acao">
+                                <option value="">Todas</option>
+                                <?php foreach ($filtros['acoes'] as $acao) : ?>
+                                    <option value="<?= esc($acao['acao']) ?>"><?= esc($acao['acao']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
                 </div>

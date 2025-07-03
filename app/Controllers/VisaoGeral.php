@@ -52,10 +52,55 @@ class VisaoGeral extends BaseController
         // Aplica os filtros
         $dados = $this->visaoGeralModel->getVisaoGeral($filtros);
 
+        // Formata os dados para incluir todas as informações necessárias
+        $dadosFormatados = array_map(function ($item) {
+            return [
+                'priorizacao_gab' => $item['priorizacao_gab'],
+                'plano' => $item['plano'],
+                'nome_projeto' => $item['nome_projeto'],
+                'etapa' => $item['etapa'],
+                'acao' => $item['acao'],
+                'responsaveis' => $item['responsaveis'],
+                'entrega_estimada_formatada' => !empty($item['entrega_estimada']) ? date('d/m/Y', strtotime($item['entrega_estimada'])) : '',
+                'data_inicio_formatada' => !empty($item['data_inicio']) ? date('d/m/Y', strtotime($item['data_inicio'])) : '',
+                'data_fim_formatada' => !empty($item['data_fim']) ? date('d/m/Y', strtotime($item['data_fim'])) : '',
+                'status' => $item['status']
+            ];
+        }, $dados);
+
         return $this->response->setJSON([
             'success' => true,
-            'data' => $dados,
+            'data' => $dadosFormatados,
             'totalRegistros' => count($dados)
+        ]);
+    }
+
+    public function getProjetosPorPlano()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->to('/visao-geral');
+        }
+
+        $plano = $this->request->getPost('plano');
+
+        $db = $this->visaoGeralModel->db;
+
+        $builder = $db->table('projetos')
+            ->select('projetos.nome as nome_projeto')
+            ->join('planos', 'planos.id = projetos.id_plano', 'left');
+
+        if (!empty($plano)) {
+            $builder->where('planos.nome', $plano);
+        }
+
+        $projetos = $builder->groupBy('projetos.nome')
+            ->orderBy('projetos.nome')
+            ->get()
+            ->getResultArray();
+
+        return $this->response->setJSON([
+            'success' => true,
+            'data' => $projetos
         ]);
     }
 }

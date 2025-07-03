@@ -45,7 +45,7 @@ class ProjetosModel extends Model
     public function getProjetosByPlano($idPlano)
     {
         $subquery = $this->db->table('acoes')
-            ->select('id_projeto, COUNT(*) as total_acoes, SUM(CASE WHEN status = "Finalizado" THEN 1 ELSE 0 END) as acoes_finalizadas')
+            ->select('id_projeto, COUNT(*) as total_acoes, SUM(CASE WHEN status IN ("Finalizado", "Finalizado com atraso") THEN 1 ELSE 0 END) as acoes_finalizadas')
             ->where('id_projeto IS NOT NULL')
             ->groupBy('id_projeto')
             ->getCompiledSelect();
@@ -132,7 +132,7 @@ class ProjetosModel extends Model
         $subqueryAcoes = $this->db->table('acoes')
             ->select('id_projeto,
              COUNT(*) as total_acoes,
-             SUM(CASE WHEN status = "Finalizado" THEN 1 ELSE 0 END) as acoes_finalizadas,
+             SUM(CASE WHEN status IN ("Finalizado", "Finalizado com atraso") THEN 1 ELSE 0 END) as acoes_finalizadas,
              CASE
                 WHEN COUNT(*) = 0 THEN 0
                 ELSE (SUM(CASE WHEN status = "Finalizado" THEN 1 ELSE 0 END) / COUNT(*)) * 100

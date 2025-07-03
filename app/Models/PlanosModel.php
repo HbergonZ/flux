@@ -21,14 +21,16 @@ class PlanosModel extends Model
     {
         // Subquery para contar ações por projeto
         $subqueryAcoes = $this->db->table('acoes')
-            ->select('id_projeto, COUNT(*) as total_acoes, SUM(CASE WHEN status = "Finalizado" THEN 1 ELSE 0 END) as acoes_finalizadas')
+            ->select('id_projeto, COUNT(*) as total_acoes,
+                 SUM(CASE WHEN status IN ("Finalizado", "Finalizado com Atraso") THEN 1 ELSE 0 END) as acoes_finalizadas')
             ->where('id_projeto IS NOT NULL')
             ->groupBy('id_projeto')
             ->getCompiledSelect();
 
         // Subquery para contar ações por etapa (quando não vinculadas diretamente a projeto)
         $subqueryAcoesEtapas = $this->db->table('acoes')
-            ->select('id_etapa, COUNT(*) as total_acoes, SUM(CASE WHEN status = "Finalizado" THEN 1 ELSE 0 END) as acoes_finalizadas')
+            ->select('id_etapa, COUNT(*) as total_acoes,
+                 SUM(CASE WHEN status IN ("Finalizado", "Finalizado com Atraso") THEN 1 ELSE 0 END) as acoes_finalizadas')
             ->where('id_etapa IS NOT NULL')
             ->groupBy('id_etapa')
             ->getCompiledSelect();

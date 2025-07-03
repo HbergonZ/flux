@@ -647,6 +647,21 @@ class Acoes extends BaseController
 
         $filters = $this->request->getPost();
 
+        // Primeiro obtemos os IDs das ações que correspondem ao filtro de responsável
+        $acoesFiltradasIds = [];
+        if (!empty($filters['responsavel'])) {
+            $db = db_connect();
+            $subquery = $db->table('responsaveis r')
+                ->select('r.nivel_id')
+                ->join('users u', 'u.id = r.usuario_id')
+                ->where('r.nivel', 'acao')
+                ->like('u.name', $filters['responsavel'])
+                ->get()
+                ->getResultArray();
+
+            $acoesFiltradasIds = array_column($subquery, 'nivel_id');
+        }
+
         $builder = $this->acoesModel;
         $builder->select('acoes.*, GROUP_CONCAT(DISTINCT users.name SEPARATOR ", ") as responsaveis')
             ->join('responsaveis', 'responsaveis.nivel_id = acoes.id AND responsaveis.nivel = "acao"', 'left')
@@ -665,8 +680,9 @@ class Acoes extends BaseController
             $builder->like('acoes.nome', $filters['nome']);
         }
 
-        if (!empty($filters['responsavel'])) {
-            $builder->like('users.name', $filters['responsavel']);
+        // Filtro por responsável usando os IDs obtidos na subconsulta
+        if (!empty($acoesFiltradasIds)) {
+            $builder->whereIn('acoes.id', $acoesFiltradasIds);
         }
 
         if (!empty($filters['status'])) {

@@ -1440,7 +1440,7 @@ class Projetos extends BaseController
 
             $acoesFinalizadas = $db->table('acoes')
                 ->where('id_projeto', $idProjeto)
-                ->where('status', 'Finalizado')
+                ->whereIn('status', ['Finalizado', 'Finalizado com atraso'])
                 ->countAllResults();
 
             $percentual = $totalAcoes > 0 ? round(($acoesFinalizadas / $totalAcoes) * 100) : 0;

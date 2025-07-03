@@ -89,11 +89,6 @@ class VisaoGeralModel extends Model
 
     protected function aplicarFiltros(&$builder, array $filtros)
     {
-        // Priorização
-        if (isset($filtros['priorizacao_gab']) && $filtros['priorizacao_gab'] !== '') {
-            $builder->where('projetos.priorizacao_gab', $filtros['priorizacao_gab']);
-        }
-
         // Plano
         if (!empty($filtros['plano'])) {
             $builder->where('planos.nome', $filtros['plano']);
@@ -101,12 +96,7 @@ class VisaoGeralModel extends Model
 
         // Projeto
         if (!empty($filtros['projeto'])) {
-            $builder->like('projetos.nome', $filtros['projeto']);
-        }
-
-        // Ação
-        if (!empty($filtros['acao'])) {
-            $builder->like('acoes.nome', $filtros['acao']);
+            $builder->where('projetos.nome', $filtros['projeto']);
         }
 
         // Etapa
@@ -114,9 +104,9 @@ class VisaoGeralModel extends Model
             $builder->where('etapas.nome', $filtros['etapa']);
         }
 
-        // Status
-        if (!empty($filtros['status'])) {
-            $builder->where('acoes.status', $filtros['status']);
+        // Ação
+        if (!empty($filtros['acao'])) {
+            $builder->where('acoes.nome', $filtros['acao']);
         }
 
         // Responsáveis
@@ -127,6 +117,16 @@ class VisaoGeralModel extends Model
                 ->like('u.name', $filtros['responsaveis'])
                 ->orLike('acoes.responsavel', $filtros['responsaveis'])
                 ->groupEnd();
+        }
+
+        // Status
+        if (!empty($filtros['status'])) {
+            $builder->where('acoes.status', $filtros['status']);
+        }
+
+        // Priorização
+        if (isset($filtros['priorizacao_gab']) && $filtros['priorizacao_gab'] !== '') {
+            $builder->where('projetos.priorizacao_gab', $filtros['priorizacao_gab']);
         }
 
         // Data início
@@ -154,11 +154,28 @@ class VisaoGeralModel extends Model
             ->get()
             ->getResultArray();
 
+        // Consulta para projetos
+        $projetos = $db->table('projetos')
+            ->select('projetos.nome as nome_projeto')
+            ->join('acoes', 'acoes.id_projeto = projetos.id', 'left')
+            ->groupBy('projetos.nome')
+            ->orderBy('projetos.nome')
+            ->get()
+            ->getResultArray();
+
         // Consulta para etapas
         $etapas = $db->table('etapas')
             ->select('etapas.nome as etapa')
             ->groupBy('etapas.nome')
             ->orderBy('etapas.nome')
+            ->get()
+            ->getResultArray();
+
+        // Consulta para ações
+        $acoes = $db->table('acoes')
+            ->select('acoes.nome as acao')
+            ->groupBy('acoes.nome')
+            ->orderBy('acoes.nome')
             ->get()
             ->getResultArray();
 
@@ -171,15 +188,11 @@ class VisaoGeralModel extends Model
             ->getResultArray();
 
         return [
-            'planos' => array_map(function ($item) {
-                return ['plano' => $item['plano']];
-            }, $planos),
-            'etapas' => array_map(function ($item) {
-                return ['etapa' => $item['etapa']];
-            }, $etapas),
-            'status' => array_map(function ($item) {
-                return ['status' => $item['status']];
-            }, $status)
+            'planos' => $planos,
+            'projetos' => $projetos,
+            'etapas' => $etapas,
+            'acoes' => $acoes,
+            'status' => $status
         ];
     }
 }
