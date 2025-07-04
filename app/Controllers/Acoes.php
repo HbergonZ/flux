@@ -582,12 +582,37 @@ class Acoes extends BaseController
                 throw new \Exception('Falha ao excluir ação no banco de dados');
             }
 
-            $this->acoesModel->transComplete();
-
-            if ($this->acoesModel->transStatus()) {
-                // Atualiza status de todas as ações após inserção
-                $this->acoesModel->atualizarStatusAcoes($idOrigem, $tipoOrigem);
+            // Obter o status do projeto
+            $projeto = null;
+            if ($tipoOrigem === 'etapa') {
+                $etapa = $this->etapasModel->find($idOrigem);
+                if ($etapa) {
+                    $projeto = $this->projetosModel->find($etapa['id_projeto']);
+                }
+            } else {
+                $projeto = $this->projetosModel->find($idOrigem);
             }
+
+            $statusProjeto = $projeto ? $projeto['status'] : null;
+
+            // Recalcular status das ações restantes
+            $builder = $this->acoesModel;
+            if ($tipoOrigem === 'etapa') {
+                $builder->where('id_etapa', $idOrigem);
+            } else {
+                $builder->where('id_projeto', $idOrigem)
+                    ->where('id_etapa IS NULL');
+            }
+
+            $acoes = $builder->findAll();
+            foreach ($acoes as $acao) {
+                $novoStatus = $this->acoesModel->calcularStatus($acao, $statusProjeto);
+                if ($acao['status'] !== $novoStatus) {
+                    $this->acoesModel->update($acao['id'], ['status' => $novoStatus]);
+                }
+            }
+
+            $this->acoesModel->transComplete();
 
             $response['success'] = true;
             $response['message'] = 'Ação excluída com sucesso!';
@@ -1074,12 +1099,30 @@ class Acoes extends BaseController
         try {
             $this->acoesModel->transStart();
 
-            foreach ($ordens as $id => $ordem) {
-                $this->acoesModel->update($id, ['ordem' => (int)$ordem]);
+            // Obter o status do projeto
+            $projeto = null;
+            if ($tipoOrigem === 'etapa') {
+                $etapa = $this->etapasModel->find($idOrigem);
+                if ($etapa) {
+                    $projeto = $this->projetosModel->find($etapa['id_projeto']);
+                }
+            } else {
+                $projeto = $this->projetosModel->find($idOrigem);
             }
 
-            // Adicione esta linha para atualizar os status após alterar a ordem
-            $this->acoesModel->atualizarStatusAcoes($idOrigem, $tipoOrigem);
+            $statusProjeto = $projeto ? $projeto['status'] : null;
+
+            foreach ($ordens as $id => $ordem) {
+                $acao = $this->acoesModel->find($id);
+                if ($acao) {
+                    // Atualiza a ordem e recalcula o status
+                    $data = [
+                        'ordem' => (int)$ordem,
+                        'status' => $this->acoesModel->calcularStatus($acao, $statusProjeto)
+                    ];
+                    $this->acoesModel->update($id, $data);
+                }
+            }
 
             $this->acoesModel->transComplete();
 
@@ -1090,6 +1133,7 @@ class Acoes extends BaseController
             $response['success'] = true;
             $response['message'] = 'Ordem das ações atualizada com sucesso!';
         } catch (\Exception $e) {
+            $this->acoesModel->transRollback();
             log_message('error', 'Erro ao salvar ordem: ' . $e->getMessage());
             $response['message'] = 'Erro ao salvar ordem: ' . $e->getMessage();
         }
