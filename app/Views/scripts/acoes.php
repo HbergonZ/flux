@@ -93,22 +93,35 @@
                     {
                         "data": "entrega_estimada",
                         "className": "text-center align-middle",
-                        "render": function(data) {
-                            return data ? formatDate(data) : '';
+                        "type": "date",
+                        "render": function(data, type, row) {
+                            if (type === 'display') {
+                                return data ? formatDate(data) : '-';
+                            }
+                            // Para ordenação/filtro, retorna o valor original da data
+                            return data || '';
                         }
                     },
                     {
                         "data": "data_inicio",
                         "className": "text-center align-middle",
-                        "render": function(data) {
-                            return data ? formatDate(data) : '';
+                        "type": "date",
+                        "render": function(data, type, row) {
+                            if (type === 'display') {
+                                return data ? formatDate(data) : '-';
+                            }
+                            return data || '';
                         }
                     },
                     {
                         "data": "data_fim",
                         "className": "text-center align-middle",
-                        "render": function(data) {
-                            return data ? formatDate(data) : '';
+                        "type": "date",
+                        "render": function(data, type, row) {
+                            if (type === 'display') {
+                                return data ? formatDate(data) : '-';
+                            }
+                            return data || '';
                         }
                     },
                     {

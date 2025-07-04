@@ -123,15 +123,37 @@
                 },
                 {
                     "data": "entrega_estimada_formatada",
-                    "className": "text-center align-middle"
+                    "className": "text-center align-middle",
+                    "type": "date",
+                    "render": function(data, type, row) {
+                        if (type === 'display') {
+                            return data || '-';
+                        }
+                        // Para ordenação/filtro, retorna o valor original da data
+                        return row.entrega_estimada || '';
+                    }
                 },
                 {
                     "data": "data_inicio_formatada",
-                    "className": "text-center align-middle"
+                    "className": "text-center align-middle",
+                    "type": "date",
+                    "render": function(data, type, row) {
+                        if (type === 'display') {
+                            return data || '-';
+                        }
+                        return row.data_inicio || '';
+                    }
                 },
                 {
                     "data": "data_fim_formatada",
-                    "className": "text-center align-middle"
+                    "className": "text-center align-middle",
+                    "type": "date",
+                    "render": function(data, type, row) {
+                        if (type === 'display') {
+                            return data || '-';
+                        }
+                        return row.data_fim || '';
+                    }
                 },
                 {
                     "data": "status",
