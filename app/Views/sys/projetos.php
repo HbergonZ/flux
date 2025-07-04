@@ -117,7 +117,7 @@
                             <th>Nome</th>
                             <th>Descrição</th>
                             <th>Metas</th>
-                            <th>Projeto Vinculado</th>
+                            <th>Eixo</th>
                             <th>Responsáveis</th>
                             <th>Data Fim</th>
                             <th>Progresso</th>

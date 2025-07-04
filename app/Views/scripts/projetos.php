@@ -138,8 +138,11 @@
                     "className": "text-wrap align-middle"
                 },
                 {
-                    "data": "projeto_vinculado",
-                    "className": "text-wrap align-middle"
+                    "data": "eixo",
+                    "className": "text-wrap align-middle",
+                    "render": function(data, type, row) {
+                        return data ? data.nome : 'Nenhum eixo';
+                    }
                 },
                 {
                     "data": "responsaveis",

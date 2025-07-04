@@ -667,6 +667,10 @@ class Projetos extends BaseController
                 'descricao' => $projeto['descricao'],
                 'metas' => $projeto['metas'] ?? '',
                 'projeto_vinculado' => $projeto['projeto_vinculado'],
+                'eixo' => $projeto['id_eixo'] ? [
+                    'id' => $projeto['id_eixo'],
+                    'nome' => $projeto['nome_eixo'] ?? 'Nenhum eixo'
+                ] : null,
                 'responsaveis' => $responsaveis,
                 'data_fim' => $projeto['data_fim_projeto'],
                 'progresso' => [
