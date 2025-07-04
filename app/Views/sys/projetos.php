@@ -60,6 +60,7 @@
                             <label for="filterEixo">Eixo</label>
                             <select class="form-control" id="filterEixo" name="id_eixo">
                                 <option value="">Todos os eixos</option>
+                                <option value="null">Nenhum eixo</option>
                                 <?php foreach ($eixos as $eixo): ?>
                                     <option value="<?= $eixo['id'] ?>"><?= $eixo['nome'] ?></option>
                                 <?php endforeach; ?>
@@ -117,7 +118,7 @@
                             <th>Nome</th>
                             <th>Descrição</th>
                             <th>Metas</th>
-                            <th>Projeto Vinculado</th>
+                            <th>Eixo</th>
                             <th>Responsáveis</th>
                             <th>Data Fim</th>
                             <th>Progresso</th>
