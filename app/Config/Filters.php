@@ -75,7 +75,7 @@ class Filters extends BaseFilters
             // 'csrf',
             // 'invalidchars',
             'sharedata' => ['except' => ['api/*', 'ajax/*']],
-            'session' => ['except' => ['login*', 'auth/a/*', 'logout', 'register']],
+            'session' => ['except' => ['login*', 'auth/a/*', 'logout']],
         ],
         'after' => [
             // 'honeypot',

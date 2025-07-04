@@ -200,10 +200,6 @@ class Acoes extends BaseController
                 $statusProjeto = $projeto['status'] ?? null;
                 $data['status'] = $this->acoesModel->calcularStatus($data, $statusProjeto);
 
-                if ($this->acoesModel->transStatus()) {
-                    // Atualiza status de todas as ações após inserção
-                    $this->acoesModel->atualizarStatusAcoes($idOrigem, $tipoOrigem);
-                }
 
                 // Validação adicional para data fim
                 if (!empty($data['data_fim'])) {
@@ -356,9 +352,6 @@ class Acoes extends BaseController
 
         $response = ['success' => false, 'message' => ''];
 
-        // Log para depuração - dados recebidos
-        log_message('info', 'Dados recebidos no método atualizar: ' . print_r($this->request->getPost(), true));
-
         $rules = [
             'id' => 'required',
             'nome' => 'required|min_length[3]|max_length[255]',
@@ -387,13 +380,13 @@ class Acoes extends BaseController
                 $acaoAntiga = $this->acoesModel->find($id);
 
                 if (!$acaoAntiga) {
-                    log_message('error', "Ação não encontrada (ID: $id)");
                     $response['message'] = 'Ação não encontrada';
                     return $this->response->setJSON($response);
                 }
 
-                // Log dos dados atuais antes da edição
-                log_message('info', "Dados atuais da ação (ID: $id): " . print_r($acaoAntiga, true));
+                // Obter o status do projeto
+                $projeto = $this->projetosModel->find($acaoAntiga['id_projeto']);
+                $statusProjeto = $projeto['status'] ?? null;
 
                 $this->acoesModel->transStart();
 
@@ -407,12 +400,8 @@ class Acoes extends BaseController
                     'entrega_estimada' => $this->request->getPost('entrega_estimada') ?: null,
                     'data_inicio' => $this->request->getPost('data_inicio') ?: null,
                     'data_fim' => $this->request->getPost('data_fim') ?: null,
-                    'status' => $this->calcularStatusNovo($this->request->getPost())
+                    'status' => $this->acoesModel->calcularStatus($this->request->getPost(), $statusProjeto)
                 ];
-
-                // Log dos dados que serão atualizados
-                log_message('info', "Dados para atualização: " . print_r($data, true));
-
                 $updated = $this->acoesModel->save($data);
 
                 if (!$updated) {
@@ -421,21 +410,13 @@ class Acoes extends BaseController
 
                 // Processar responsáveis
                 $responsaveisIds = $this->request->getPost('responsaveis_ids');
-                log_message('info', "IDs dos responsáveis recebidos: " . $responsaveisIds);
                 $this->processarResponsaveis($id, $responsaveisIds);
 
                 // Processar evidências adicionadas
                 $evidenciasAdicionadas = $this->request->getPost('evidencias_adicionadas');
                 if (!empty($evidenciasAdicionadas)) {
-                    log_message('info', "Evidências adicionadas (raw): {$evidenciasAdicionadas}");
-
                     $evidencias = json_decode($evidenciasAdicionadas, true);
-
-                    log_message('info', "Evidências adicionadas (decodificadas): " . print_r($evidencias, true));
-
-                    if (json_last_error() !== JSON_ERROR_NONE) {
-                        throw new \Exception('Erro ao decodificar evidências adicionadas: ' . json_last_error_msg());
-                    }
+                    $evidenciasModel = new \App\Models\EvidenciasModel();
 
                     foreach ($evidencias as $evidencia) {
                         $evidenciaData = [
@@ -449,35 +430,19 @@ class Acoes extends BaseController
                             'created_by' => auth()->id(),
                             'created_at' => date('Y-m-d H:i:s')
                         ];
-
-                        log_message('info', "Inserindo evidência: " . print_r($evidenciaData, true));
-
-                        $insertId = $this->evidenciasModel->insert($evidenciaData);
-                        log_message('info', "Evidência inserida com ID: {$insertId}");
+                        $evidenciasModel->insert($evidenciaData);
                     }
                 }
 
-                // Processar evidências removidas - CORREÇÃO APLICADA AQUI
+                // Processar evidências removidas
                 $evidenciasRemovidas = $this->request->getPost('evidencias_removidas');
                 if (!empty($evidenciasRemovidas)) {
-                    log_message('info', "Evidências a remover (raw): {$evidenciasRemovidas}");
-
                     $idsRemover = json_decode($evidenciasRemovidas, true);
-
-                    log_message('info', "IDs de evidências a remover: " . print_r($idsRemover, true));
-
-                    if (json_last_error() !== JSON_ERROR_NONE) {
-                        throw new \Exception('Erro ao decodificar evidências removidas: ' . json_last_error_msg());
-                    }
-
-                    // Só executa se houver IDs para remover
                     if (!empty($idsRemover)) {
                         $this->evidenciasModel->whereIn('id', $idsRemover)
                             ->where('nivel', 'acao')
                             ->where('id_nivel', $id)
                             ->delete();
-
-                        log_message('info', "Evidências removidas: " . $this->evidenciasModel->affectedRows());
                     }
                 }
 
@@ -487,28 +452,18 @@ class Acoes extends BaseController
                     throw new \Exception('Falha ao registrar log de edição');
                 }
 
-                if ($this->acoesModel->transStatus()) {
-                    // Atualiza status de todas as ações após inserção
-                    $this->acoesModel->atualizarStatusAcoes($idOrigem, $tipoOrigem);
-                }
 
                 $this->acoesModel->transComplete();
 
                 $response['success'] = true;
                 $response['message'] = 'Ação atualizada com sucesso!';
                 $response['data'] = $acaoAtualizada;
-
-                log_message('info', "Ação ID {$id} atualizada com sucesso");
             } catch (\Exception $e) {
                 $this->acoesModel->transRollback();
                 $response['message'] = 'Erro ao atualizar ação: ' . $e->getMessage();
-
-                log_message('error', "Erro ao atualizar ação ID {$id}: " . $e->getMessage());
-                log_message('debug', "Stack trace: " . $e->getTraceAsString());
             }
         } else {
             $response['message'] = implode('<br>', $this->validator->getErrors());
-            log_message('info', "Erros de validação na atualização: " . $response['message']);
         }
 
         return $this->response->setJSON($response);
@@ -544,9 +499,15 @@ class Acoes extends BaseController
         }
     }
 
-    private function calcularStatusNovo($postData)
+    private function calcularStatusNovo($postData, $statusProjeto = null)
     {
-        // 1. Se tem data_fim, verifica se foi finalizado com atraso
+        // 1. Força Paralisado se o projeto estiver Paralisado (mesma regra que no Model)
+        if ($statusProjeto === 'Paralisado' && ($postData['status'] ?? null) !== 'Finalizado') {
+            return 'Paralisado';
+        }
+
+        // Restante do cálculo do status...
+        // 2. Se tem data_fim, está finalizado (verifica se foi com atraso)
         if (!empty($postData['data_fim'])) {
             if (empty($postData['data_inicio'])) {
                 throw new \RuntimeException('Não é possível definir data de fim sem data de início');
@@ -563,7 +524,7 @@ class Acoes extends BaseController
             return 'Finalizado';
         }
 
-        // 2. Verifica se está atrasado
+        // 3. Verifica se está atrasado
         if (
             !empty($postData['entrega_estimada']) &&
             empty($postData['data_fim']) &&
@@ -572,12 +533,12 @@ class Acoes extends BaseController
             return 'Atrasado';
         }
 
-        // 3. Se tem data_inicio, status é Em andamento
+        // 4. Se tem data_inicio, status é Em andamento
         if (!empty($postData['data_inicio'])) {
             return 'Em andamento';
         }
 
-        // 4. Caso contrário, mantém o status atual ou define como Não iniciado
+        // 5. Caso contrário, mantém o status atual ou define como Não iniciado
         return $postData['status'] ?? 'Não iniciado';
     }
 

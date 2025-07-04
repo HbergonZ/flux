@@ -160,15 +160,21 @@
                 {
                     "data": "data_fim",
                     "className": "text-center align-middle",
+                    "type": "date", // Isso é essencial para a ordenação correta
                     "render": function(data, type, row) {
                         if (type === 'display') {
                             if (!data) {
-                                return '<span class="text-muted"></span>';
+                                return '<span class="text-muted">-</span>'; // Exibe um traço para datas vazias
                             }
                             // Formata a data para exibição (DD/MM/YYYY)
-                            return new Date(data).toLocaleDateString('pt-BR');
+                            const date = new Date(data);
+                            const day = String(date.getDate()).padStart(2, '0');
+                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                            const year = date.getFullYear();
+                            return `${day}/${month}/${year}`;
                         }
-                        return data; // Para ordenação/filtro, retorna o valor original
+                        // Para ordenação/filtro, retorna o valor original no formato ISO (YYYY-MM-DD)
+                        return data || ''; // Retorna string vazia se data for nula
                     }
                 },
                 {
