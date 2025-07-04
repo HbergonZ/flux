@@ -499,59 +499,6 @@ class Acoes extends BaseController
         }
     }
 
-    private function calcularStatusNovo($postData, $statusProjeto = null)
-    {
-        // 1. Força Paralisado se o projeto estiver Paralisado (mesma regra que no Model)
-        if ($statusProjeto === 'Paralisado' && ($postData['status'] ?? null) !== 'Finalizado') {
-            return 'Paralisado';
-        }
-
-        // Restante do cálculo do status...
-        // 2. Se tem data_fim, está finalizado (verifica se foi com atraso)
-        if (!empty($postData['data_fim'])) {
-            if (empty($postData['data_inicio'])) {
-                throw new \RuntimeException('Não é possível definir data de fim sem data de início');
-            }
-
-            // Verifica se foi finalizado com atraso
-            if (
-                !empty($postData['entrega_estimada']) &&
-                strtotime($postData['data_fim']) > strtotime($postData['entrega_estimada'])
-            ) {
-                return 'Finalizado com atraso';
-            }
-
-            return 'Finalizado';
-        }
-
-        // 3. Verifica se está atrasado
-        if (
-            !empty($postData['entrega_estimada']) &&
-            empty($postData['data_fim']) &&
-            strtotime($postData['entrega_estimada']) < strtotime(date('Y-m-d'))
-        ) {
-            return 'Atrasado';
-        }
-
-        // 4. Se tem data_inicio, status é Em andamento
-        if (!empty($postData['data_inicio'])) {
-            return 'Em andamento';
-        }
-
-        // 5. Caso contrário, mantém o status atual ou define como Não iniciado
-        return $postData['status'] ?? 'Não iniciado';
-    }
-
-    private function ajustarData($dataString)
-    {
-        if (empty($dataString)) {
-            return null;
-        }
-
-        // Converte para objeto DateTime e formata corretamente
-        $date = new \DateTime($dataString);
-        return $date->format('Y-m-d');
-    }
 
     public function excluir($idOrigem, $tipoOrigem = 'etapa')
     {

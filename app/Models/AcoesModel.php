@@ -28,7 +28,6 @@ class AcoesModel extends Model
     protected $createdField = 'created_at';
     protected $updatedField = 'updated_at';
     protected $returnType = 'array';
-    protected $beforeUpdate = ['calcularStatusAntesDeAtualizar'];
 
     // Validações
     protected $validationRules = [
@@ -108,11 +107,11 @@ class AcoesModel extends Model
         // 3. Verifica se está atrasado (data atual > entrega estimada)
         $dataAtual = strtotime(date('Y-m-d'));
         if ($entregaEstimada !== null && $entregaEstimada < $dataAtual) {
-            return 'Atrasado';
+            return 'Atrasadaço';
         }
 
         // 4. Se tem data_inicio, status é Em andamento
-        if ($dataInicio !== null) {
+        if ($dataInicio !== null && $entregaEstimada !== null && $entregaEstimada >= $dataAtual) {
             return 'Em andamento';
         }
 
