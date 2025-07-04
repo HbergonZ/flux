@@ -184,8 +184,12 @@ class ProjetosModel extends Model
             $builder->like('projetos.projeto_vinculado', $filtros['projeto_vinculado']);
         }
 
-        if (!empty($filtros['id_eixo'])) {
-            $builder->where('projetos.id_eixo', $filtros['id_eixo']);
+        if (isset($filtros['id_eixo'])) {
+            if ($filtros['id_eixo'] === 'null') {
+                $builder->where('projetos.id_eixo IS NULL');
+            } elseif (!empty($filtros['id_eixo'])) {
+                $builder->where('projetos.id_eixo', $filtros['id_eixo']);
+            }
         }
 
         // Busca global
