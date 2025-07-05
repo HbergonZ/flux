@@ -28,7 +28,6 @@ class AcoesModel extends Model
     protected $createdField = 'created_at';
     protected $updatedField = 'updated_at';
     protected $returnType = 'array';
-    protected $beforeUpdate = ['calcularStatusAntesDeAtualizar'];
 
     // Validações
     protected $validationRules = [
@@ -112,7 +111,7 @@ class AcoesModel extends Model
         }
 
         // 4. Se tem data_inicio, status é Em andamento
-        if ($dataInicio !== null) {
+        if ($dataInicio !== null && $entregaEstimada !== null && $entregaEstimada >= $dataAtual) {
             return 'Em andamento';
         }
 
@@ -139,12 +138,36 @@ class AcoesModel extends Model
                 $builder->where('id', $acao['id'])
                     ->update(['status' => 'Paralisado']);
                 $atualizadas++;
-            } elseif ($statusProjeto === 'Ativo' && $acao['status'] === 'Paralisado') {
+            } else {
                 $novoStatus = $this->calcularStatus($acao, 'Ativo');
                 $builder->where('id', $acao['id'])
                     ->update(['status' => $novoStatus]);
                 $atualizadas++;
             }
+        }
+
+        return ['total_acoes' => count($acoes), 'atualizadas' => $atualizadas];
+    }
+
+    public function atualizarStatusTodasAcoesProjeto(int $idProjeto)
+    {
+
+        $db = \Config\Database::connect();
+
+        $builder = $db->table($this->table);
+        $atualizadas = 0;
+
+        // Busca todas as ações do projeto
+        $acoes = $builder->where('id_projeto', $idProjeto)
+            ->get()
+            ->getResultArray();
+
+        foreach ($acoes as $acao) {
+
+            $novoStatus = $this->calcularStatus($acao, 'Ativo');
+            $builder->where('id', $acao['id'])
+                ->update(['status' => $novoStatus]);
+            $atualizadas++;
         }
 
         return ['total_acoes' => count($acoes), 'atualizadas' => $atualizadas];

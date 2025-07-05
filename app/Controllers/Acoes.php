@@ -184,6 +184,7 @@ class Acoes extends BaseController
                     $data['id_projeto'] = $idOrigem;
                     $data['id_etapa'] = null;
                     $idPlano = $projeto['id_plano'];
+                    $idProjeto = $idOrigem;
                 } else {
                     $etapa = $this->etapasModel->find($idOrigem);
                     if (!$etapa) {
@@ -194,11 +195,15 @@ class Acoes extends BaseController
                     $data['id_etapa'] = $idOrigem;
                     $projeto = $this->projetosModel->find($etapa['id_projeto']);
                     $idPlano = $projeto['id_plano'];
+                    $idProjeto = $etapa['id_projeto'];
                 }
 
                 // Calcula o status automaticamente
                 $statusProjeto = $projeto['status'] ?? null;
                 $data['status'] = $this->acoesModel->calcularStatus($data, $statusProjeto);
+
+                // Atualizar status das ações do projeto
+                $this->acoesModel->atualizarStatusTodasAcoesProjeto($idProjeto);
 
 
                 // Validação adicional para data fim
@@ -384,11 +389,20 @@ class Acoes extends BaseController
                     return $this->response->setJSON($response);
                 }
 
+                // Processar responsáveis APENAS se o campo foi enviado
+                if ($this->request->getPost('responsaveis_ids') !== null) {
+                    $responsaveisIds = $this->request->getPost('responsaveis_ids');
+                    $this->processarResponsaveis($id, $responsaveisIds);
+                }
+
                 // Obter o status do projeto
                 $projeto = $this->projetosModel->find($acaoAntiga['id_projeto']);
                 $statusProjeto = $projeto['status'] ?? null;
 
                 $this->acoesModel->transStart();
+
+                // Atualizar status das ações do projeto
+                $this->acoesModel->atualizarStatusTodasAcoesProjeto($acaoAntiga['id_projeto']);
 
                 // Dados básicos da ação
                 $data = [
@@ -499,59 +513,6 @@ class Acoes extends BaseController
         }
     }
 
-    private function calcularStatusNovo($postData, $statusProjeto = null)
-    {
-        // 1. Força Paralisado se o projeto estiver Paralisado (mesma regra que no Model)
-        if ($statusProjeto === 'Paralisado' && ($postData['status'] ?? null) !== 'Finalizado') {
-            return 'Paralisado';
-        }
-
-        // Restante do cálculo do status...
-        // 2. Se tem data_fim, está finalizado (verifica se foi com atraso)
-        if (!empty($postData['data_fim'])) {
-            if (empty($postData['data_inicio'])) {
-                throw new \RuntimeException('Não é possível definir data de fim sem data de início');
-            }
-
-            // Verifica se foi finalizado com atraso
-            if (
-                !empty($postData['entrega_estimada']) &&
-                strtotime($postData['data_fim']) > strtotime($postData['entrega_estimada'])
-            ) {
-                return 'Finalizado com atraso';
-            }
-
-            return 'Finalizado';
-        }
-
-        // 3. Verifica se está atrasado
-        if (
-            !empty($postData['entrega_estimada']) &&
-            empty($postData['data_fim']) &&
-            strtotime($postData['entrega_estimada']) < strtotime(date('Y-m-d'))
-        ) {
-            return 'Atrasado';
-        }
-
-        // 4. Se tem data_inicio, status é Em andamento
-        if (!empty($postData['data_inicio'])) {
-            return 'Em andamento';
-        }
-
-        // 5. Caso contrário, mantém o status atual ou define como Não iniciado
-        return $postData['status'] ?? 'Não iniciado';
-    }
-
-    private function ajustarData($dataString)
-    {
-        if (empty($dataString)) {
-            return null;
-        }
-
-        // Converte para objeto DateTime e formata corretamente
-        $date = new \DateTime($dataString);
-        return $date->format('Y-m-d');
-    }
 
     public function excluir($idOrigem, $tipoOrigem = 'etapa')
     {
@@ -571,6 +532,8 @@ class Acoes extends BaseController
             }
 
             $this->acoesModel->transStart();
+            // Atualizar status das ações do projeto
+            $this->acoesModel->atualizarStatusTodasAcoesProjeto($acao['id_projeto']);
 
             if (!$this->logController->registrarExclusao('acao', $acao, 'Exclusão realizada via interface')) {
                 throw new \Exception('Falha ao registrar log de exclusão');
@@ -1349,14 +1312,15 @@ class Acoes extends BaseController
             $db = db_connect();
 
             $builder = $db->table('acoes as a')
-                ->select('a.id, a.nome, a.entrega_estimada,
-         DATEDIFF(CURDATE(), a.entrega_estimada) as dias_atraso,
-         p.nome as projeto_nome')
+                ->select('a.id, a.nome,
+                DATE_FORMAT(a.entrega_estimada, "%d/%m/%Y") as entrega_estimada_formatada,
+                DATEDIFF(CURDATE(), a.entrega_estimada) as dias_atraso,
+                p.nome as projeto_nome')
                 ->join('responsaveis as r', 'r.nivel_id = a.id AND r.nivel = "acao"')
                 ->join('projetos as p', 'p.id = a.id_projeto')
                 ->where('r.usuario_id', $userId)
                 ->where('a.status', 'Atrasado')
-                ->where('a.data_fim IS NULL') // Ainda não foi finalizada
+                ->where('a.data_fim IS NULL')
                 ->orderBy('a.entrega_estimada', 'ASC')
                 ->get();
 
