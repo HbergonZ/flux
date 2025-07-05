@@ -1695,6 +1695,9 @@
         $('#formEditAcao').submit(function(e) {
             e.preventDefault();
 
+            // Garantir que os IDs dos responsáveis estão atualizados
+            atualizarIdsResponsaveis();
+
             // Preparar evidências no formato correto
             const evidenciasParaEnviar = {
                 adicionar: evidenciasAdicionadasAcao.map(ev => ({

@@ -184,6 +184,7 @@ class Acoes extends BaseController
                     $data['id_projeto'] = $idOrigem;
                     $data['id_etapa'] = null;
                     $idPlano = $projeto['id_plano'];
+                    $idProjeto = $idOrigem;
                 } else {
                     $etapa = $this->etapasModel->find($idOrigem);
                     if (!$etapa) {
@@ -194,11 +195,15 @@ class Acoes extends BaseController
                     $data['id_etapa'] = $idOrigem;
                     $projeto = $this->projetosModel->find($etapa['id_projeto']);
                     $idPlano = $projeto['id_plano'];
+                    $idProjeto = $etapa['id_projeto'];
                 }
 
                 // Calcula o status automaticamente
                 $statusProjeto = $projeto['status'] ?? null;
                 $data['status'] = $this->acoesModel->calcularStatus($data, $statusProjeto);
+
+                // Atualizar status das ações do projeto
+                $this->acoesModel->atualizarStatusTodasAcoesProjeto($idProjeto);
 
 
                 // Validação adicional para data fim
@@ -384,11 +389,20 @@ class Acoes extends BaseController
                     return $this->response->setJSON($response);
                 }
 
+                // Processar responsáveis APENAS se o campo foi enviado
+                if ($this->request->getPost('responsaveis_ids') !== null) {
+                    $responsaveisIds = $this->request->getPost('responsaveis_ids');
+                    $this->processarResponsaveis($id, $responsaveisIds);
+                }
+
                 // Obter o status do projeto
                 $projeto = $this->projetosModel->find($acaoAntiga['id_projeto']);
                 $statusProjeto = $projeto['status'] ?? null;
 
                 $this->acoesModel->transStart();
+
+                // Atualizar status das ações do projeto
+                $this->acoesModel->atualizarStatusTodasAcoesProjeto($acaoAntiga['id_projeto']);
 
                 // Dados básicos da ação
                 $data = [
@@ -518,6 +532,8 @@ class Acoes extends BaseController
             }
 
             $this->acoesModel->transStart();
+            // Atualizar status das ações do projeto
+            $this->acoesModel->atualizarStatusTodasAcoesProjeto($acao['id_projeto']);
 
             if (!$this->logController->registrarExclusao('acao', $acao, 'Exclusão realizada via interface')) {
                 throw new \Exception('Falha ao registrar log de exclusão');

@@ -107,7 +107,7 @@ class AcoesModel extends Model
         // 3. Verifica se está atrasado (data atual > entrega estimada)
         $dataAtual = strtotime(date('Y-m-d'));
         if ($entregaEstimada !== null && $entregaEstimada < $dataAtual) {
-            return 'Atrasadaço';
+            return 'Atrasado';
         }
 
         // 4. Se tem data_inicio, status é Em andamento
@@ -138,12 +138,36 @@ class AcoesModel extends Model
                 $builder->where('id', $acao['id'])
                     ->update(['status' => 'Paralisado']);
                 $atualizadas++;
-            } elseif ($statusProjeto === 'Ativo' && $acao['status'] === 'Paralisado') {
+            } else {
                 $novoStatus = $this->calcularStatus($acao, 'Ativo');
                 $builder->where('id', $acao['id'])
                     ->update(['status' => $novoStatus]);
                 $atualizadas++;
             }
+        }
+
+        return ['total_acoes' => count($acoes), 'atualizadas' => $atualizadas];
+    }
+
+    public function atualizarStatusTodasAcoesProjeto(int $idProjeto)
+    {
+
+        $db = \Config\Database::connect();
+
+        $builder = $db->table($this->table);
+        $atualizadas = 0;
+
+        // Busca todas as ações do projeto
+        $acoes = $builder->where('id_projeto', $idProjeto)
+            ->get()
+            ->getResultArray();
+
+        foreach ($acoes as $acao) {
+
+            $novoStatus = $this->calcularStatus($acao, 'Ativo');
+            $builder->where('id', $acao['id'])
+                ->update(['status' => $novoStatus]);
+            $atualizadas++;
         }
 
         return ['total_acoes' => count($acoes), 'atualizadas' => $atualizadas];
