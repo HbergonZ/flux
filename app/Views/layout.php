@@ -328,7 +328,7 @@
                                             </div>
                                             <span class="font-weight-bold">${acao.nome}</span>
                                             <div class="small">
-                                                <span class="text-danger">Data máxima: ${dataFormatada}</span> |
+                                                <span class="text-danger">Data máxima: ${acao.entrega_estimada_formatada}</span> |
                                                 Atraso: ${diasAtraso} ${diasAtraso > 1 ? 'dias' : 'dia'}
                                             </div>
                                         </div>
