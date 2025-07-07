@@ -89,7 +89,7 @@
             <li class="nav-item">
                 <a class="nav-link" href="<?php echo base_url('/planos'); ?>">
                     <i class="fas fa-tasks"></i>
-                    <span>Atividades</span>
+                    <span>Visão Detalhada</span>
                 </a>
             </li>
 
