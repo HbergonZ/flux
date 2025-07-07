@@ -54,6 +54,8 @@ $routes->group('', function ($routes) {
     $routes->post('etapas/solicitar-edicao', 'Etapas::solicitarEdicao');
     $routes->post('etapas/solicitar-exclusao', 'Etapas::solicitarExclusao');
     $routes->post('etapas/solicitar-inclusao', 'Etapas::solicitarInclusao');
+    $routes->get('etapas/carregar-etapas/(:num)', 'Etapas::carregarEtapas/$1');
+    $routes->get('etapas/progresso/(:num)', 'Etapas::progresso/$1');
 
     $routes->post('projetos/solicitar-edicao', 'Projetos::solicitarEdicao');
     $routes->post('projetos/solicitar-exclusao', 'Projetos::solicitarExclusao');

@@ -59,31 +59,50 @@
                     "className": "text-center",
                     "orderable": false,
                     "render": function(data, type, row) {
-                        var id = row.id + '-' + row.nome.toLowerCase().replace(/\s+/g, '-');
-                        var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
+                        // Renderização da barra de progresso
+                        return `
+                <div class="progress-container" data-etapa-id="${row.id}" title="Carregando progresso...">
+                    <div class="progress progress-sm">
+                        <div class="progress-bar progress-bar-striped bg-secondary"
+                             role="progressbar" style="width: 0%"
+                             aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                        </div>
+                    </div>
+                    <small class="progress-text">0%</small>
+                </div>`;
+                    }
+                },
+                {
+                    "data": null,
+                    "className": "text-center",
+                    "orderable": false,
+                    "render": function(data, type, row) {
+                        // Renderização dos botões de ação
+                        const id = row.id + '-' + row.nome.toLowerCase().replace(/\s+/g, '-');
+                        const isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
 
-                        var buttons = `
-                            <div class="d-inline-flex">
-                                <a href="<?= site_url('etapas/') ?>${row.id}/acoes" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Ações">
-                                    <i class="fas fa-th-list"></i>
-                                </a>`;
+                        let buttons = `
+                <div class="d-inline-flex">
+                    <a href="<?= site_url('etapas/') ?>${row.id}/acoes" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Ações">
+                        <i class="fas fa-th-list"></i>
+                    </a>`;
 
                         if (isAdmin) {
                             buttons += `
-                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>`;
+                    <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>`;
                         } else {
                             buttons += `
-                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>`;
+                    <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Edição">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${id}" title="Solicitar Exclusão">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>`;
                         }
 
                         buttons += `</div>`;
@@ -597,5 +616,49 @@
                 confirmButtonText: 'Entendi'
             });
         }
+
+        function carregarProgressoEtapas() {
+            $('.progress-container[data-etapa-id]').each(function() {
+                const container = $(this);
+                const etapaId = container.data('etapa-id');
+                const progressBar = container.find('.progress-bar');
+                const progressText = container.find('.progress-text');
+                $.ajax({
+                    url: `<?= site_url('etapas/progresso/') ?>${etapaId}`,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            const percentual = response.percentual || 0;
+                            // Definir a largura e valor sem animação
+                            progressBar.css('width', percentual + '%');
+                            progressBar.attr('aria-valuenow', percentual);
+                            progressText.text(percentual + '%'); // Atualização do texto
+                            container.attr('title', response.texto || `${response.acoes_finalizadas} de ${response.total_acoes} ações finalizadas`);
+                            progressBar.removeClass('bg-success bg-warning bg-danger bg-secondary').addClass(response.class || 'bg-secondary');
+                        } else {
+                            container.attr('title', 'Erro ao carregar progresso');
+                            console.error('Erro no progresso:', response.message);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        container.attr('title', 'Erro ao carregar progresso');
+                        console.error('Erro na requisição de progresso:', error);
+                    }
+                });
+            });
+        }
+
+
+        // Chamar a função quando a página carrega
+        carregarProgressoEtapas();
+
+        // Chamar novamente quando a tabela for atualizada (se usar DataTables)
+        if (typeof dataTable !== 'undefined') {
+            dataTable.on('draw', function() {
+                carregarProgressoEtapas();
+            });
+        }
+
     });
 </script>
