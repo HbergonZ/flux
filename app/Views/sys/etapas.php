@@ -104,55 +104,12 @@
                             <th>Nome</th>
                             <th>Data Criação</th>
                             <th>Data Atualização</th>
+                            <th>Progresso</th>
                             <th>Opções</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if (isset($etapas) && !empty($etapas)) : ?>
-                            <?php foreach ($etapas as $etapa) :
-                                $id = $etapa['id'] . '-' . str_replace(' ', '-', strtolower($etapa['nome'])); ?>
-                                <tr>
-                                    <td class="text-center"><?= $etapa['ordem'] ?? '-' ?></td>
-                                    <td class="text-wrap"><?= $etapa['nome'] ?></td>
-                                    <td class="text-center"><?= date('d/m/Y H:i', strtotime($etapa['data_criacao'])) ?></td>
-                                    <td class="text-center"><?= date('d/m/Y H:i', strtotime($etapa['data_atualizacao'])) ?></td>
-                                    <td class="text-center">
-                                        <div class="d-inline-flex">
-                                            <!-- Botão Visualizar Ações -->
-                                            <a href="<?= site_url("etapas/{$etapa['id']}/acoes") ?>" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Ações">
-                                                <i class="fas fa-th-list"></i>
-                                            </a>
-
-                                            <?php if (auth()->user()->inGroup('admin')): ?>
-                                                <!-- Botão Editar -->
-                                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Editar">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-
-                                                <!-- Botão Excluir -->
-                                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Excluir">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                            <?php else: ?>
-                                                <!-- Botão Solicitar Edição -->
-                                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Edição">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-
-                                                <!-- Botão Solicitar Exclusão -->
-                                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="<?= $id ?>" title="Solicitar Exclusão">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else : ?>
-                            <tr>
-                                <td colspan="5" class="text-center">Nenhuma etapa encontrada</td>
-                            </tr>
-                        <?php endif; ?>
+                        <!-- O conteúdo será carregado via AJAX -->
                     </tbody>
                 </table>
             </div>

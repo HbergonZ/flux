@@ -551,4 +551,88 @@ class Etapas extends BaseController
 
         return $this->response->setJSON($response);
     }
+    public function progresso($idEtapa)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $acoesModel = new AcoesModel();
+
+            // Obter todas as ações desta etapa
+            $acoes = $acoesModel->where('id_etapa', $idEtapa)->findAll();
+            $totalAcoes = count($acoes);
+
+            // Contar ações finalizadas (incluindo finalizadas com atraso)
+            $acoesFinalizadas = 0;
+            foreach ($acoes as $acao) {
+                if (in_array($acao['status'], ['Finalizado', 'Finalizado com atraso'])) {
+                    $acoesFinalizadas++;
+                }
+            }
+
+            // Calcular percentual
+            $percentual = $totalAcoes > 0 ? round(($acoesFinalizadas / $totalAcoes) * 100) : 0;
+
+            // Determinar a classe CSS baseada no percentual
+            $progressClass = 'bg-secondary';
+            if ($percentual >= 80) {
+                $progressClass = 'bg-success';
+            } elseif ($percentual >= 50) {
+                $progressClass = 'bg-warning';
+            } elseif ($percentual > 0) {
+                $progressClass = 'bg-danger';
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'percentual' => $percentual,
+                'class' => $progressClass,
+                'texto' => "$acoesFinalizadas de $totalAcoes ações finalizadas",
+                'total_acoes' => $totalAcoes,
+                'acoes_finalizadas' => $acoesFinalizadas
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Erro ao calcular progresso: ' . $e->getMessage()
+            ]);
+        }
+    }
+    public function carregarEtapas($idProjeto)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->back();
+        }
+
+        try {
+            $etapas = $this->etapasModel->getEtapasByProjeto($idProjeto);
+
+            // Formatar os dados para a tabela
+            $data = [];
+            foreach ($etapas as $etapa) {
+                $data[] = [
+                    'ordem' => $etapa['ordem'] ?? '-',
+                    'nome' => $etapa['nome'],
+                    'data_criacao' => $etapa['data_criacao'],
+                    'data_atualizacao' => $etapa['data_atualizacao'],
+                    'progresso' => '', // Será preenchido pelo JavaScript
+                    'opcoes' => '', // Será preenchido pelo JavaScript
+                    'id' => $etapa['id'],
+                    'id_slug' => $etapa['id'] . '-' . str_replace(' ', '-', strtolower($etapa['nome']))
+                ];
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $data
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Erro ao carregar etapas: ' . $e->getMessage()
+            ]);
+        }
+    }
 }
