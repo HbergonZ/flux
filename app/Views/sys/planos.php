@@ -8,7 +8,7 @@
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="<?= site_url('/planos') ?>">Início</a></li>
+            <li class="breadcrumb-item"><a href="<?= site_url('/planos') ?>">Visão Detalhada</a></li>
             <li class="breadcrumb-item active" aria-current="page">Planos</li>
         </ol>
     </nav>
