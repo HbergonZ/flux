@@ -23,6 +23,15 @@
         /* Borda verde mais clara */
     }
 
+    .badge-white {
+        background-color: rgba(228, 248, 112, 0.62);
+        /* Tom pastel de verde */
+        color: #155724;
+        /* Texto verde escuro */
+        border: 1px solid #c3e6cb;
+        /* Borda verde mais clara */
+    }
+
     /* Verde padrão do Bootstrap (pode ser redefinido se quiser) */
     .badge-verde-normal {
         background-color: #28a745;
@@ -131,7 +140,8 @@
                             if (!data) data = 'Não iniciado';
                             const badgeClass = {
                                 'Finalizado': 'badge-success',
-                                'Finalizado com atraso': 'badge-verde-claro',
+                                'Finalizado com antecedência': 'badge-white',
+                                'Finalizado com atraso': 'badge-success',
                                 'Em andamento': 'badge-warning',
                                 'Paralisado': 'badge-dark',
                                 'Atrasado': 'badge-danger',
