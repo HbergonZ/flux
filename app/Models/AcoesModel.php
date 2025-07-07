@@ -96,10 +96,6 @@ class AcoesModel extends Model
                 throw new \RuntimeException('Não é possível definir data de fim sem data de início');
             }
 
-            // Verifica se foi finalizado com atraso
-            if ($entregaEstimada !== null && $dataFim > $entregaEstimada) {
-                return 'Finalizado com atraso';
-            }
 
             return 'Finalizado';
         }
