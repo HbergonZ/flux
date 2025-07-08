@@ -147,8 +147,20 @@ class AcoesModel extends Model
 
     public function atualizarStatusTodasAcoesProjeto(int $idProjeto)
     {
-
         $db = \Config\Database::connect();
+
+        // Primeiro, pegar o status atual do projeto
+        $projeto = $db->table('projetos')
+            ->select('status')
+            ->where('id', $idProjeto)
+            ->get()
+            ->getRowArray();
+
+        if (!$projeto) {
+            throw new \RuntimeException("Projeto não encontrado");
+        }
+
+        $statusProjeto = $projeto['status'] ?? 'Ativo'; // Default para 'Ativo' se não encontrado
 
         $builder = $db->table($this->table);
         $atualizadas = 0;
@@ -159,8 +171,7 @@ class AcoesModel extends Model
             ->getResultArray();
 
         foreach ($acoes as $acao) {
-
-            $novoStatus = $this->calcularStatus($acao, 'Ativo');
+            $novoStatus = $this->calcularStatus($acao, $statusProjeto);
             $builder->where('id', $acao['id'])
                 ->update(['status' => $novoStatus]);
             $atualizadas++;
