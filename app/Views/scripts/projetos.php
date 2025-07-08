@@ -131,11 +131,32 @@
                 },
                 {
                     "data": "descricao",
+                    "render": function(data, type, row) {
+                        if (type === 'display') {
+                            const maxLength = 300;
+                            if (data && data.length > maxLength) {
+                                const truncated = data.substring(0, maxLength) + '...';
+                                return `<div class="text-break w-100">${truncated} <a href="#" class="veja-mais" data-fulltext="${escapeHtml(data)}">veja mais</a></div>`;
+                            }
+                            return `<div class="text-break w-100">${data || ''}</div>`;
+                        }
+                        return data || '';
+                    },
                     "className": "text-wrap align-middle"
                 },
                 {
                     "data": "metas",
-                    "className": "text-wrap align-middle"
+                    "render": function(data, type, row) {
+                        if (type === 'display') {
+                            const maxLength = 150; // Número menor para metas
+                            if (data && data.length > maxLength) {
+                                const truncated = data.substring(0, maxLength) + '...';
+                                return `<div class="text-break">${truncated} <a href="#" class="veja-mais" data-fulltext="${escapeHtml(data)}">veja mais</a></div>`;
+                            }
+                            return `<div class="text-break">${data || ''}</div>`;
+                        }
+                        return data || '';
+                    }
                 },
                 {
                     "data": "eixo",
@@ -252,6 +273,36 @@
             ],
             "createdRow": function(row, data, dataIndex) {
                 $(row).find('td').addClass('align-middle');
+            }
+        });
+
+        // Função auxiliar para escapar HTML (segurança)
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Evento para mostrar/ocultar texto completo
+        $(document).on('click', '.veja-mais', function(e) {
+            e.preventDefault();
+
+            const $link = $(this);
+            const fullText = $link.data('fulltext');
+            const $container = $link.closest('div.text-break');
+
+            // Alternar entre o texto truncado e completo
+            if ($link.text() === 'veja mais') {
+                $container.html(fullText + ' <a href="#" class="veja-mais" data-fulltext="' + escapeHtml(fullText) + '">ver menos</a>');
+            } else {
+                // Determina o maxLength com base no texto original
+                const originalText = $link.data('fulltext');
+                const maxLength = originalText.length > 200 ? 300 : 150; // Heurística simples
+                const truncated = originalText.substring(0, maxLength) + '...';
+                $container.html(truncated + ' <a href="#" class="veja-mais" data-fulltext="' + escapeHtml(originalText) + '">veja mais</a>');
             }
         });
 

@@ -43,12 +43,12 @@
 
                             <div class="form-group">
                                 <label for="editProjetoDescricao"><i class="fas fa-align-left mr-1"></i>Descrição</label>
-                                <textarea class="form-control" id="editProjetoDescricao" name="descricao" rows="3"></textarea>
+                                <textarea class="form-control" id="editProjetoDescricao" name="descricao" rows="3" maxlength="1000"></textarea>
                             </div>
 
                             <div class="form-group">
                                 <label for="editProjetoMetas"><i class="fas fa-bullseye mr-1"></i>Metas</label>
-                                <textarea class="form-control" id="editProjetoMetas" name="metas" rows="3"></textarea>
+                                <textarea class="form-control" id="editProjetoMetas" name="metas" rows="3" maxlength="1000"></textarea>
                             </div>
 
                             <div class="row">
