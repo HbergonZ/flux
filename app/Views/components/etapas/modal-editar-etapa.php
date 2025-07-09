@@ -12,6 +12,9 @@
             <form id="formEditEtapa" method="post" action="<?= site_url("etapas/atualizar/$idProjeto") ?>">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                 <input type="hidden" name="id" id="editEtapaId">
+                <!-- Adicione este campo hidden para a ordem -->
+                <input type="hidden" name="ordem" id="editEtapaOrdem">
+
                 <div class="modal-body">
                     <div class="card mb-3">
                         <div class="card-header bg-light">

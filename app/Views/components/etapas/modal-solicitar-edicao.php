@@ -12,13 +12,16 @@
             <form id="formSolicitarEdicao" method="post" action="<?= site_url('etapas/solicitar-edicao') ?>">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                 <input type="hidden" name="id_etapa" id="solicitarEdicaoId">
+                <input type="hidden" name="ordem" id="solicitarEdicaoOrdem">
                 <input type="hidden" name="tipo" value="edicao">
                 <input type="hidden" name="id_projeto" value="<?= $idProjeto ?>">
                 <input type="hidden" name="id_plano" value="<?= $projeto['id_plano'] ?>">
+
                 <div class="modal-body">
                     <div id="alertNenhumaAlteracao" class="alert alert-warning d-none">
                         Você não fez nenhuma alteração nos campos. Modifique pelo menos um campo para enviar a solicitação.
                     </div>
+
                     <div class="card mb-3">
                         <div class="card-header bg-light">
                             <h6 class="mb-0">
@@ -36,9 +39,21 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- Você pode expandir com mais campos relevantes à etapa aqui, se existir -->
+
+                            <div class="row mt-3">
+                                <div class="col-md-12">
+                                    <div class="alert alert-info">
+                                        <small>
+                                            <i class="fas fa-info-circle mr-1"></i>
+                                            A ordem desta etapa não pode ser alterada por esta solicitação.
+                                            Caso precise alterar a ordem, entre em contato diretamente com o administrador.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
                     <div class="card mb-3">
                         <div class="card-header bg-light">
                             <h6 class="mb-0">
@@ -54,8 +69,8 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Caso sua tela de ETAPA tenha outras seções como "Evidências" ou "Indicadores", inclua também em formato card aqui -->
                 </div>
+
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">
                         <i class="fas fa-times mr-2"></i>Cancelar
