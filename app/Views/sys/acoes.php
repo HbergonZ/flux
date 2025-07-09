@@ -16,7 +16,7 @@
             <li class="breadcrumb-item"><a href="<?= site_url("planos/{$projeto['id_plano']}/projetos") ?>"><?= $projeto['nome'] ?></a></li>
 
             <?php if (!isset($acessoDireto) || !$acessoDireto): ?>
-                <li class="breadcrumb-item"><a href="<?= site_url("projetos/{$projeto['id']}/etapas") ?>"><?= $etapa['nome'] ?></a></li>
+                <li class="breadcrumb-item"><a href="<?= site_url("planos/{$plano['id']}/projetos/{$projeto['id']}/etapas") ?>"><?= $etapa['nome'] ?></a></li>
             <?php endif; ?>
 
             <li class="breadcrumb-item active" aria-current="page">Ações</li>
