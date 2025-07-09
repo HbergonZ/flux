@@ -139,7 +139,6 @@ class Etapas extends BaseController
 
         return $this->response->setJSON($response);
     }
-
     public function atualizar($idProjeto)
     {
         if (!$this->request->isAJAX()) {

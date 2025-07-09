@@ -222,7 +222,7 @@
                         if (response.success && response.data) {
                             $('#editEtapaId').val(response.data.id);
                             $('#editEtapaNome').val(response.data.nome);
-                            $('#editEtapaOrdem').val(response.data.ordem);
+                            $('#editEtapaOrdem').val(response.data.ordem); // Define o valor do campo hidden
 
                             // Armazena os valores originais para comparação
                             formOriginalData = {
@@ -258,7 +258,7 @@
                             // Preenche os campos do formulário
                             $('#solicitarEdicaoId').val(etapa.id);
                             $('#solicitarEdicaoNome').val(etapa.nome);
-                            $('#solicitarEdicaoOrdem').val(etapa.ordem);
+                            $('#solicitarEdicaoOrdem').val(etapa.ordem); // Define o valor do campo hidden
 
                             // Armazena os valores originais para comparação
                             formOriginalData = {
