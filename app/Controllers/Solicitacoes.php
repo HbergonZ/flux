@@ -363,38 +363,42 @@ class Solicitacoes extends BaseController
         if (empty($idRegistro)) {
             throw new \Exception('ID do registro não informado');
         }
+
         $dadosAntigos = $model->find($idRegistro);
         if (!$dadosAntigos) {
             throw new \Exception('Registro não encontrado');
         }
+
         $dadosAlterados = json_decode($solicitacao['dados_alterados'], true) ?? [];
         $dadosAtualizar = $this->prepararDadosEdicao($dadosAlterados);
+
         $this->solicitacoesModel->transStart();
+
         // Processar alterações nos responsáveis (se houver)
         if (isset($dadosAlterados['responsaveis'])) {
-            $responsaveisModel = new \App\Models\ResponsaveisModel();
-            // Processar remoções
-            if (!empty($dadosAlterados['responsaveis']['remover'])) {
-                foreach ($dadosAlterados['responsaveis']['remover'] as $usuarioId) {
-                    if (!$responsaveisModel->removerResponsavel($solicitacao['nivel'], $idRegistro, $usuarioId)) {
-                        throw new \Exception('Falha ao remover responsável: ' . $usuarioId);
-                    }
-                }
-            }
-            // Processar adições
-            if (!empty($dadosAlterados['responsaveis']['adicionar'])) {
-                foreach ($dadosAlterados['responsaveis']['adicionar'] as $usuarioId) {
-                    if (!$responsaveisModel->adicionarResponsavel($solicitacao['nivel'], $idRegistro, $usuarioId)) {
-                        throw new \Exception('Falha ao adicionar responsável: ' . $usuarioId);
-                    }
-                }
-            }
+            $this->processarAlteracoesResponsaveis($solicitacao['nivel'], $idRegistro, $dadosAlterados['responsaveis']);
             unset($dadosAtualizar['responsaveis']);
         }
-        // Processar outras alterações
-        if (!empty($dadosAtualizar) && !$model->update($idRegistro, $dadosAtualizar)) {
-            throw new \Exception('Falha na atualização: ' . implode(', ', $model->errors()));
+
+        // Processar alterações nas evidências (se houver)
+        if (isset($dadosAlterados['evidencias'])) {
+            $this->processarAlteracoesEvidencias($solicitacao['nivel'], $idRegistro, $dadosAlterados['evidencias']);
+            unset($dadosAtualizar['evidencias']);
         }
+
+        // Processar alterações nos indicadores (se houver)
+        if (isset($dadosAlterados['indicadores'])) {
+            $this->processarAlteracoesIndicadores($solicitacao['nivel'], $idRegistro, $dadosAlterados['indicadores']);
+            unset($dadosAtualizar['indicadores']);
+        }
+
+        // Só atualiza o modelo principal se houver campos para atualizar
+        if (!empty($dadosAtualizar)) {
+            if (!$model->update($idRegistro, $dadosAtualizar)) {
+                throw new \Exception('Falha na atualização: ' . implode(', ', $model->errors()));
+            }
+        }
+
         $dadosNovos = $model->find($idRegistro);
         $this->logController->registrarEdicao(
             $solicitacao['nivel'],
@@ -402,9 +406,83 @@ class Solicitacoes extends BaseController
             $dadosNovos,
             $this->getJustificativa($solicitacao)
         );
+
         $this->solicitacoesModel->transComplete();
         return true;
     }
+
+    protected function processarAlteracoesEvidencias($nivel, $idRegistro, $alteracoesEvidencias)
+    {
+        $evidenciasModel = new \App\Models\EvidenciasModel();
+
+        // Processar remoções
+        if (!empty($alteracoesEvidencias['remover'])) {
+            foreach ($alteracoesEvidencias['remover'] as $evidenciaId) {
+                if (!$evidenciasModel->delete($evidenciaId)) {
+                    log_message('error', "Falha ao remover evidência ID: {$evidenciaId}");
+                    throw new \Exception("Falha ao remover evidência ID: {$evidenciaId}");
+                }
+            }
+        }
+
+        // Processar adições
+        if (!empty($alteracoesEvidencias['adicionar'])) {
+            foreach ($alteracoesEvidencias['adicionar'] as $evidencia) {
+                $dadosEvidencia = [
+                    'nivel' => $nivel,
+                    'id_nivel' => $idRegistro,
+                    'evidencia' => $evidencia['evidencia'] ?? $evidencia['conteudo'] ?? '',
+                    'descricao' => $evidencia['descricao'] ?? '',
+                    'tipo' => $evidencia['tipo'] ?? 'texto',
+                    'link' => $evidencia['link'] ?? null,
+                    'created_by' => auth()->id()
+                ];
+
+                if (!$evidenciasModel->insert($dadosEvidencia)) {
+                    log_message('error', "Falha ao adicionar evidência: " . print_r($evidenciasModel->errors(), true));
+                    throw new \Exception("Falha ao adicionar evidência");
+                }
+            }
+        }
+
+        return true;
+    }
+
+    protected function processarAlteracoesIndicadores($nivel, $idRegistro, $alteracoesIndicadores)
+    {
+        $indicadoresModel = new \App\Models\IndicadoresModel();
+
+        // Processar remoções
+        if (!empty($alteracoesIndicadores['remover'])) {
+            foreach ($alteracoesIndicadores['remover'] as $indicadorId) {
+                if (!$indicadoresModel->delete($indicadorId)) {
+                    log_message('error', "Falha ao remover indicador ID: {$indicadorId}");
+                    throw new \Exception("Falha ao remover indicador ID: {$indicadorId}");
+                }
+            }
+        }
+
+        // Processar adições
+        if (!empty($alteracoesIndicadores['adicionar'])) {
+            foreach ($alteracoesIndicadores['adicionar'] as $indicador) {
+                $dadosIndicador = [
+                    'nivel' => $nivel,
+                    'id_nivel' => $idRegistro,
+                    'conteudo' => $indicador['conteudo'] ?? $indicador['indicador'] ?? '',
+                    'descricao' => $indicador['descricao'] ?? '',
+                    'created_by' => auth()->id()
+                ];
+
+                if (!$indicadoresModel->insert($dadosIndicador)) {
+                    log_message('error', "Falha ao adicionar indicador: " . print_r($indicadoresModel->errors(), true));
+                    throw new \Exception("Falha ao adicionar indicador");
+                }
+            }
+        }
+
+        return true;
+    }
+
 
     protected function processarAlteracoesEquipe($acaoId, $alteracoesEquipe)
     {
