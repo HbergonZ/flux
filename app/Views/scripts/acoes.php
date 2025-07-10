@@ -851,6 +851,15 @@
             });
         });
 
+        // Habilitar data fim quando data início for preenchida
+        $('#solicitarEdicaoDataInicio').change(function() {
+            if ($(this).val()) {
+                $('#solicitarEdicaoDataFim').prop('disabled', false);
+            } else {
+                $('#solicitarEdicaoDataFim').val('').prop('disabled', true);
+            }
+        });
+
         // Função para carregar dados no modal de solicitação de edição
         function carregarDadosParaSolicitacaoEdicao(acao) {
             // Preencher campos básicos
@@ -1265,24 +1274,31 @@
         });
 
         // Função para verificar se houve alterações nos campos
+        // Atualize a função verificarAlteracoesCampos
         function verificarAlteracoesCampos() {
             const camposEditaveis = ['nome', 'entrega_estimada', 'data_inicio', 'data_fim', 'ordem'];
             const alteracoes = {};
-            const normalizeDate = function(date) {
-                if (!date) return null;
-                if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-                    return date;
-                }
-                return date.split('T')[0];
+
+            // Função para normalizar e comparar datas
+            const normalizeDate = function(dateString) {
+                if (!dateString) return null;
+                if (dateString instanceof Date) return dateString.toISOString().split('T')[0];
+                return dateString.split('T')[0]; // Remove a parte do tempo se existir
             };
 
             camposEditaveis.forEach(campo => {
                 const valorOriginal = $('#solicitarEdicaoModal').data('original_' + campo);
                 const valorAtual = $('#solicitarEdicao' + campo.charAt(0).toUpperCase() + campo.slice(1)).val();
-                const valorOriginalNormalizado = campo.includes('data') || campo.includes('entrega') ?
-                    normalizeDate(valorOriginal) : valorOriginal;
-                const valorAtualNormalizado = campo.includes('data') || campo.includes('entrega') ?
-                    normalizeDate(valorAtual) : valorAtual;
+
+                // Normaliza os valores para comparação
+                const valorOriginalNormalizado = campo.includes('data') ? normalizeDate(valorOriginal) : valorOriginal;
+                const valorAtualNormalizado = campo.includes('data') ? normalizeDate(valorAtual) : valorAtual;
+
+                console.log(`Campo: ${campo}`, {
+                    original: valorOriginalNormalizado,
+                    atual: valorAtualNormalizado,
+                    iguais: String(valorOriginalNormalizado) === String(valorAtualNormalizado)
+                });
 
                 if (String(valorOriginalNormalizado) !== String(valorAtualNormalizado)) {
                     alteracoes[campo] = {
@@ -1306,6 +1322,7 @@
                 alteracoes.evidencias.remover = evidenciasRemovidasAcao;
             }
 
+            console.log('Alterações detectadas:', alteracoes);
             return alteracoes;
         }
 

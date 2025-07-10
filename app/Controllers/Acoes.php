@@ -689,10 +689,10 @@ class Acoes extends BaseController
         // Log 1: Dados recebidos do formulário
         log_message('info', 'Dados recebidos na solicitação de edição: ' . print_r([
             'post_data' => $postData,
-            'responsaveis_raw' => isset($postData['responsaveis']) ? $postData['responsaveis'] : null,
-            'evidencias_adicionadas_raw' => isset($postData['evidencias_adicionadas']) ? $postData['evidencias_adicionadas'] : null,
-            'evidencias_removidas_raw' => isset($postData['evidencias_removidas']) ? $postData['evidencias_removidas'] : null,
-            'dados_alterados_raw' => isset($postData['dados_alterados']) ? $postData['dados_alterados'] : null
+            'responsaveis_raw' => $postData['responsaveis'] ?? null,
+            'evidencias_adicionadas_raw' => $postData['evidencias_adicionadas'] ?? null,
+            'evidencias_removidas_raw' => $postData['evidencias_removidas'] ?? null,
+            'dados_alterados_raw' => $postData['dados_alterados'] ?? null
         ], true));
 
         $rules = [
@@ -744,6 +744,29 @@ class Acoes extends BaseController
                 // Log 2: Dados alterados decodificados
                 log_message('info', 'Dados alterados decodificados: ' . print_r($dadosAlterados, true));
 
+                // Verificar se há alterações em campos específicos
+                $temAlteracoesCampos = false;
+                $camposRelevantes = ['nome', 'entrega_estimada', 'data_inicio', 'data_fim', 'ordem'];
+
+                foreach ($camposRelevantes as $campo) {
+                    if (isset($dadosAlterados[$campo])) {
+                        $temAlteracoesCampos = true;
+                        break;
+                    }
+                }
+
+                // Verificar se há alterações em outros elementos
+                $temAlteracoesResponsaveis = !empty($dadosAlterados['responsaveis']);
+                $temAlteracoesEvidencias = !empty($dadosAlterados['evidencias']);
+
+                $temAlteracoes = $temAlteracoesCampos || $temAlteracoesResponsaveis || $temAlteracoesEvidencias;
+
+                if (!$temAlteracoes) {
+                    log_message('info', 'Nenhuma alteração válida detectada nos dados enviados');
+                    $response['message'] = 'Nenhuma alteração foi feita nos campos editáveis';
+                    return $this->response->setJSON($response);
+                }
+
                 // Processar evidências
                 $evidenciasAdicionadas = [];
                 $evidenciasRemovidas = [];
@@ -789,19 +812,7 @@ class Acoes extends BaseController
                     }
                 }
 
-                // Verificar se ainda há alterações após a filtragem
-                $temAlteracoes = !empty($dadosAlterados);
-
-                if (
-                    !$temAlteracoes &&
-                    empty($dadosAlterados['responsaveis']) &&
-                    empty($dadosAlterados['evidencias'])
-                ) {
-                    $response['message'] = 'Nenhuma alteração foi feita nos campos editáveis';
-                    return $this->response->setJSON($response);
-                }
-
-                // Verificar se há alterações nos responsáveis
+                // Verificar alterações nos responsáveis
                 $alteracoesEquipe = [];
                 if (isset($dadosAlterados['responsaveis'])) {
                     $alteracoesEquipe = $dadosAlterados['responsaveis'];
