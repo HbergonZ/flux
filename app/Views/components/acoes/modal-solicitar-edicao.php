@@ -15,6 +15,7 @@
                 <input type="hidden" name="id_etapa" value="<?= $tipoOrigem === 'etapa' ? $idOrigem : '' ?>">
                 <input type="hidden" name="id_projeto" value="<?= $tipoOrigem === 'projeto' ? $idOrigem : ($tipoOrigem === 'etapa' ? $etapa['id_projeto'] : '') ?>">
                 <input type="hidden" name="responsaveis" id="responsaveisSolicitacaoEdicao" value='{"responsaveis":{"adicionar":[],"remover":[]}}'>
+                <input type="hidden" name="dados_alterados" id="dadosAlteradosSolicitacao">
 
                 <div class="modal-body">
                     <div id="alertNenhumaAlteracao" class="alert alert-warning d-none">

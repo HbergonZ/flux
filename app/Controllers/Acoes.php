@@ -686,14 +686,8 @@ class Acoes extends BaseController
         $response = ['success' => false, 'message' => ''];
         $postData = $this->request->getPost();
 
-        // Log 1: Dados recebidos do formulário
-        log_message('info', 'Dados recebidos na solicitação de edição: ' . print_r([
-            'post_data' => $postData,
-            'responsaveis_raw' => $postData['responsaveis'] ?? null,
-            'evidencias_adicionadas_raw' => $postData['evidencias_adicionadas'] ?? null,
-            'evidencias_removidas_raw' => $postData['evidencias_removidas'] ?? null,
-            'dados_alterados_raw' => $postData['dados_alterados'] ?? null
-        ], true));
+        // Log inicial dos dados brutos recebidos
+        log_message('info', 'Dados brutos recebidos: ' . print_r($this->request->getPost(), true));
 
         $rules = [
             'id' => 'required',
@@ -702,6 +696,20 @@ class Acoes extends BaseController
 
         if ($this->validate($rules)) {
             try {
+                $dadosAlterados = $this->request->getPost('dados_alterados');
+
+                // Corrigindo a decodificação dos dados alterados
+                $dadosAlteradosArray = json_decode($dadosAlterados, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    // Se não for JSON válido, tentar interpretar como string serializada
+                    $dadosAlteradosArray = unserialize($dadosAlterados);
+                    if ($dadosAlteradosArray === false) {
+                        $dadosAlteradosArray = [];
+                    }
+                }
+
+                log_message('info', 'Dados alterados decodificados: ' . print_r($dadosAlteradosArray, true));
+
                 $acaoAtual = $this->acoesModel->find($postData['id']);
                 if (!$acaoAtual) {
                     $response['message'] = 'Ação não encontrada';
@@ -720,11 +728,11 @@ class Acoes extends BaseController
                     ->where('nivel_id', $postData['id'])
                     ->findColumn('usuario_id') ?? [];
 
-                // Montar dados atuais sem o campo equipe e com os responsáveis
+                // Montar dados atuais
                 $dadosAtuais = [
                     'id' => $acaoAtual['id'],
                     'nome' => $acaoAtual['nome'],
-                    'responsaveis' => $responsaveisIds, // Lista de IDs dos responsáveis
+                    'responsaveis' => $responsaveisIds,
                     'entrega_estimada' => $acaoAtual['entrega_estimada'],
                     'data_inicio' => $acaoAtual['data_inicio'],
                     'data_fim' => $acaoAtual['data_fim'],
@@ -734,30 +742,20 @@ class Acoes extends BaseController
                     'id_etapa' => $acaoAtual['id_etapa']
                 ];
 
-                // Obter dados alterados
-                $dadosAlterados = json_decode($postData['dados_alterados'], true);
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    log_message('error', 'Erro ao decodificar dados_alterados: ' . json_last_error_msg());
-                    throw new \Exception('Erro ao processar os dados alterados');
-                }
-
-                // Log 2: Dados alterados decodificados
-                log_message('info', 'Dados alterados decodificados: ' . print_r($dadosAlterados, true));
-
                 // Verificar se há alterações em campos específicos
                 $temAlteracoesCampos = false;
                 $camposRelevantes = ['nome', 'entrega_estimada', 'data_inicio', 'data_fim', 'ordem'];
 
                 foreach ($camposRelevantes as $campo) {
-                    if (isset($dadosAlterados[$campo])) {
+                    if (isset($dadosAlteradosArray[$campo])) {
                         $temAlteracoesCampos = true;
                         break;
                     }
                 }
 
                 // Verificar se há alterações em outros elementos
-                $temAlteracoesResponsaveis = !empty($dadosAlterados['responsaveis']);
-                $temAlteracoesEvidencias = !empty($dadosAlterados['evidencias']);
+                $temAlteracoesResponsaveis = !empty($dadosAlteradosArray['responsaveis']);
+                $temAlteracoesEvidencias = !empty($dadosAlteradosArray['evidencias']);
 
                 $temAlteracoes = $temAlteracoesCampos || $temAlteracoesResponsaveis || $temAlteracoesEvidencias;
 
@@ -771,54 +769,13 @@ class Acoes extends BaseController
                 $evidenciasAdicionadas = [];
                 $evidenciasRemovidas = [];
 
-                if (isset($dadosAlterados['evidencias'])) {
-                    // Processar evidências para manter consistência com a tabela
-                    if (isset($dadosAlterados['evidencias']['adicionar'])) {
-                        $evidenciasAdicionadas = array_map(function ($ev) {
-                            return [
-                                'tipo' => $ev['tipo'],
-                                'evidencia' => $ev['evidencia'] ?? $ev['conteudo'] ?? '', // Compatibilidade com ambos formatos
-                                'descricao' => $ev['descricao'] ?? null
-                            ];
-                        }, $dadosAlterados['evidencias']['adicionar']);
+                if (isset($dadosAlteradosArray['evidencias'])) {
+                    if (isset($dadosAlteradosArray['evidencias']['adicionar'])) {
+                        $evidenciasAdicionadas = $dadosAlteradosArray['evidencias']['adicionar'];
                     }
-
-                    if (isset($dadosAlterados['evidencias']['remover'])) {
-                        $evidenciasRemovidas = $dadosAlterados['evidencias']['remover'];
+                    if (isset($dadosAlteradosArray['evidencias']['remover'])) {
+                        $evidenciasRemovidas = $dadosAlteradosArray['evidencias']['remover'];
                     }
-                }
-
-                // Função para normalizar datas
-                $normalizeDate = function ($date) {
-                    if (empty($date)) return null;
-                    try {
-                        $dt = new \DateTime($date);
-                        return $dt->format('Y-m-d');
-                    } catch (\Exception $e) {
-                        return $date; // se não for data válida, retorna original
-                    }
-                };
-
-                // Filtrar campos de data que não foram realmente alterados
-                $dateFields = ['entrega_estimada', 'data_inicio', 'data_fim'];
-                foreach ($dateFields as $field) {
-                    if (isset($dadosAlterados[$field])) {
-                        $original = $normalizeDate($dadosAlterados[$field]['de'] ?? null);
-                        $new = $normalizeDate($acaoAtual[$field] ?? null);
-
-                        if ($original === $new) {
-                            unset($dadosAlterados[$field]);
-                        }
-                    }
-                }
-
-                // Verificar alterações nos responsáveis
-                $alteracoesEquipe = [];
-                if (isset($dadosAlterados['responsaveis'])) {
-                    $alteracoesEquipe = $dadosAlterados['responsaveis'];
-
-                    // Log 3: Alterações na equipe
-                    log_message('info', 'Alterações na equipe: ' . print_r($alteracoesEquipe, true));
                 }
 
                 // Montar dados completos para a solicitação
@@ -831,7 +788,7 @@ class Acoes extends BaseController
                     'id_acao' => $postData['id'],
                     'tipo' => 'Edição',
                     'dados_atuais' => json_encode($dadosAtuais, JSON_UNESCAPED_UNICODE),
-                    'dados_alterados' => json_encode($dadosAlterados, JSON_UNESCAPED_UNICODE),
+                    'dados_alterados' => json_encode($dadosAlteradosArray, JSON_UNESCAPED_UNICODE), // Corrigido aqui
                     'justificativa_solicitante' => $postData['justificativa'],
                     'status' => 'pendente',
                     'data_solicitacao' => date('Y-m-d H:i:s'),
@@ -839,16 +796,14 @@ class Acoes extends BaseController
                     'evidencias_removidas' => !empty($evidenciasRemovidas) ? json_encode($evidenciasRemovidas, JSON_UNESCAPED_UNICODE) : null
                 ];
 
-                // Log 4: Dados completos que serão inseridos no banco
                 log_message('info', 'Dados completos para inserção no banco: ' . print_r([
                     'data' => $data,
                     'dados_atuais_decoded' => $dadosAtuais,
-                    'dados_alterados_decoded' => $dadosAlterados
+                    'dados_alterados_decoded' => $dadosAlteradosArray
                 ], true));
 
                 $insertId = $this->solicitacoesModel->insert($data);
 
-                // Log 5: Confirmação de inserção
                 log_message('info', 'Solicitação inserida com ID: ' . $insertId);
 
                 $response['success'] = true;

@@ -823,6 +823,24 @@
         let evidenciasAdicionadasAcao = [];
         let evidenciasRemovidasAcao = [];
 
+        $(document).on('click', '#btnEnviarSolicitacaoEdicao', function() {
+            console.log('Valores atuais:', {
+                nome: $('#solicitarEdicaoNome').val(),
+                entrega_estimada: $('#solicitarEdicaoEntregaEstimada').val(),
+                data_inicio: $('#solicitarEdicaoDataInicio').val(),
+                data_fim: $('#solicitarEdicaoDataFim').val(),
+                ordem: $('#solicitarEdicaoOrdem').val()
+            });
+
+            console.log('Valores originais:', {
+                nome: $('#solicitarEdicaoModal').data('original_nome'),
+                entrega_estimada: $('#solicitarEdicaoModal').data('original_entrega_estimada'),
+                data_inicio: $('#solicitarEdicaoModal').data('original_data_inicio'),
+                data_fim: $('#solicitarEdicaoModal').data('original_data_fim'),
+                ordem: $('#solicitarEdicaoModal').data('original_ordem')
+            });
+        });
+
         // Função auxiliar para formatar data para input date
         function formatDateForInput(dateString) {
             if (!dateString) return '';
@@ -862,29 +880,40 @@
 
         // Função para carregar dados no modal de solicitação de edição
         function carregarDadosParaSolicitacaoEdicao(acao) {
-            // Preencher campos básicos
+            // Converter datas para o formato do input (YYYY-MM-DD)
+            const formatForInput = (dateStr) => {
+                if (!dateStr) return '';
+                try {
+                    const date = new Date(dateStr);
+                    return isNaN(date.getTime()) ? '' : date.toISOString().split('T')[0];
+                } catch (e) {
+                    return '';
+                }
+            };
+
+            // Preencher campos
             $('#solicitarEdicaoId').val(acao.id);
-            $('#solicitarEdicaoNome').val(acao.nome);
-            $('#solicitarEdicaoOrdem').val(acao.ordem);
-            $('#solicitarEdicaoEntregaEstimada').val(acao.entrega_estimada ? formatDateForInput(acao.entrega_estimada) : '');
-            $('#solicitarEdicaoDataInicio').val(acao.data_inicio ? formatDateForInput(acao.data_inicio) : '');
-            $('#solicitarEdicaoDataFim').val(acao.data_fim ? formatDateForInput(acao.data_fim) : '');
-            // Armazenar valores originais para comparação
-            $('#solicitarEdicaoModal').data('original_nome', acao.nome);
-            $('#solicitarEdicaoModal').data('original_ordem', acao.ordem);
-            $('#solicitarEdicaoModal').data('original_entrega_estimada', acao.entrega_estimada);
-            $('#solicitarEdicaoModal').data('original_data_inicio', acao.data_inicio);
-            $('#solicitarEdicaoModal').data('original_data_fim', acao.data_fim);
-            // Carregar responsáveis
-            carregarResponsaveisParaSolicitacaoEdicao(acao.id);
-            // Carregar evidências
-            carregarEvidenciasParaSolicitacaoEdicao(acao.id);
+            $('#solicitarEdicaoNome').val(acao.nome || '');
+            $('#solicitarEdicaoOrdem').val(acao.ordem || '');
+            $('#solicitarEdicaoEntregaEstimada').val(formatForInput(acao.entrega_estimada));
+            $('#solicitarEdicaoDataInicio').val(formatForInput(acao.data_inicio));
+            $('#solicitarEdicaoDataFim').val(formatForInput(acao.data_fim));
+
+            // Armazenar valores originais (no formato original do banco)
+            $('#solicitarEdicaoModal').data({
+                'original_nome': acao.nome || '',
+                'original_ordem': acao.ordem || '',
+                'original_entrega_estimada': acao.entrega_estimada || null,
+                'original_data_inicio': acao.data_inicio || null,
+                'original_data_fim': acao.data_fim || null
+            });
+
             // Habilitar/desabilitar data fim conforme data início
-            if (acao.data_inicio) {
-                $('#solicitarEdicaoDataFim').prop('disabled', false);
-            } else {
-                $('#solicitarEdicaoDataFim').prop('disabled', true);
-            }
+            $('#solicitarEdicaoDataFim').prop('disabled', !acao.data_inicio);
+
+            // Carregar responsáveis e evidências
+            carregarResponsaveisParaSolicitacaoEdicao(acao.id);
+            carregarEvidenciasParaSolicitacaoEdicao(acao.id);
         }
 
         // Carregar responsáveis para solicitação de edição
@@ -1204,103 +1233,103 @@
         $('#formSolicitarEdicao').submit(function(e) {
             e.preventDefault();
 
-            // Ajustar o formato das evidências antes de enviar
-            const evidenciasParaEnviar = {
-                adicionar: evidenciasAdicionadasAcao.map(ev => ({
-                    tipo: ev.tipo,
-                    evidencia: ev.conteudo, // Mapeia conteudo para evidencia
-                    descricao: ev.descricao
-                    // Remove id temporário e campo acao
-                })),
-                remover: evidenciasRemovidasAcao
-            };
+            // Atualizar campos hidden
+            const alteracoes = verificarAlteracoesCampos();
 
-            // Preencher os campos hidden com as evidências no novo formato
-            $('#evidenciasAdicionadasSolicitacao').val(JSON.stringify(evidenciasParaEnviar.adicionar));
-            $('#evidenciasRemovidasSolicitacao').val(JSON.stringify(evidenciasParaEnviar.remover));
-
-            // Coletar IDs dos responsáveis atuais (originalmente na ação)
-            const responsaveisOriginais = [];
-            $('#responsaveisAtuaisEdicao .list-group-item').each(function() {
-                responsaveisOriginais.push($(this).data('id'));
-            });
-
-            // Coletar IDs dos responsáveis selecionados (após edição)
-            const responsaveisSelecionados = [];
-            $('#responsaveisSelecionadosEdit .list-group-item').each(function() {
-                responsaveisSelecionados.push($(this).data('id'));
-            });
-
-            // Calcular diferenças
-            const adicionar = responsaveisOriginais.filter(id => !responsaveisSelecionados.includes(id));
-            const remover = responsaveisSelecionados.filter(id => !responsaveisOriginais.includes(id));
-            const dadosResponsaveis = {
-                responsaveis: {
-                    adicionar: adicionar,
-                    remover: remover
-                }
-            };
-            $('#responsaveisSolicitacaoEdicao').val(JSON.stringify(dadosResponsaveis));
-
-            const alteracoesCampos = verificarAlteracoesCampos();
-            const temAlteracoesEvidencias = evidenciasAdicionadasAcao.length > 0 || evidenciasRemovidasAcao.length > 0;
-            const temAlteracoesResponsaveis = adicionar.length > 0 || remover.length > 0;
-            const temAlteracoes = Object.keys(alteracoesCampos).length > 0 ||
-                temAlteracoesResponsaveis ||
-                temAlteracoesEvidencias;
+            // Verificar se há alterações
+            const temAlteracoes = Object.keys(alteracoes).length > 0;
 
             if (!temAlteracoes) {
                 $('#alertNenhumaAlteracao').removeClass('d-none');
                 return;
             }
 
-            const alteracoes = {};
-            if (Object.keys(alteracoesCampos).length > 0) {
-                Object.assign(alteracoes, alteracoesCampos);
-            }
-            if (temAlteracoesResponsaveis) {
-                alteracoes.responsaveis = dadosResponsaveis.responsaveis;
-            }
-            if (temAlteracoesEvidencias) {
-                alteracoes.evidencias = evidenciasParaEnviar; // Usa o novo formato de evidências
-            }
-
-            if ($('#dadosAlteradosSolicitacao').length === 0) {
-                $('#formSolicitarEdicao').append('<input type="hidden" name="dados_alterados" id="dadosAlteradosSolicitacao">');
-            }
+            // Atualizar o campo hidden com as alterações
             $('#dadosAlteradosSolicitacao').val(JSON.stringify(alteracoes));
 
-            submitForm($(this), '#solicitarEdicaoModal', 'Solicitação de edição enviada com sucesso!');
+            // Preparar evidências
+            const evidenciasParaEnviar = {
+                adicionar: evidenciasAdicionadasAcao.map(ev => ({
+                    tipo: ev.tipo,
+                    conteudo: ev.conteudo,
+                    descricao: ev.descricao || ''
+                })),
+                remover: evidenciasRemovidasAcao
+            };
+
+            $('#evidenciasAdicionadasSolicitacao').val(JSON.stringify(evidenciasParaEnviar.adicionar));
+            $('#evidenciasRemovidasSolicitacao').val(JSON.stringify(evidenciasParaEnviar.remover));
+
+            // Enviar o formulário via AJAX
+            const formData = $(this).serialize();
+
+            const submitBtn = $(this).find('button[type="submit"]');
+            const originalBtnText = submitBtn.html();
+            submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...');
+
+            $.ajax({
+                type: "POST",
+                url: $(this).attr('action'),
+                data: formData,
+                dataType: "json",
+                success: function(response) {
+                    if (response.success) {
+                        $('#solicitarEdicaoModal').modal('hide');
+                        showSuccessAlert(response.message || 'Solicitação de edição enviada com sucesso!');
+                    } else {
+                        showErrorAlert(response.message || 'Ocorreu um erro ao enviar a solicitação.');
+                    }
+                },
+                error: function(xhr) {
+                    console.error(xhr.responseText);
+                    showErrorAlert('Erro na comunicação com o servidor.');
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).html(originalBtnText);
+                }
+            });
         });
 
         // Função para verificar se houve alterações nos campos
-        // Atualize a função verificarAlteracoesCampos
         function verificarAlteracoesCampos() {
-            const camposEditaveis = ['nome', 'entrega_estimada', 'data_inicio', 'data_fim', 'ordem'];
             const alteracoes = {};
 
-            // Função para normalizar e comparar datas
-            const normalizeDate = function(dateString) {
-                if (!dateString) return null;
-                if (dateString instanceof Date) return dateString.toISOString().split('T')[0];
-                return dateString.split('T')[0]; // Remove a parte do tempo se existir
+            // Mapeamento de campos para seus IDs no formulário
+            const campos = {
+                nome: 'solicitarEdicaoNome',
+                entrega_estimada: 'solicitarEdicaoEntregaEstimada',
+                data_inicio: 'solicitarEdicaoDataInicio',
+                data_fim: 'solicitarEdicaoDataFim',
+                ordem: 'solicitarEdicaoOrdem'
             };
 
-            camposEditaveis.forEach(campo => {
-                const valorOriginal = $('#solicitarEdicaoModal').data('original_' + campo);
-                const valorAtual = $('#solicitarEdicao' + campo.charAt(0).toUpperCase() + campo.slice(1)).val();
+            // Função para normalizar valores de data
+            const normalizeDate = (dateStr) => {
+                if (!dateStr) return null;
+                try {
+                    const date = new Date(dateStr);
+                    return isNaN(date.getTime()) ? dateStr : date.toISOString().split('T')[0];
+                } catch (e) {
+                    return dateStr;
+                }
+            };
 
-                // Normaliza os valores para comparação
-                const valorOriginalNormalizado = campo.includes('data') ? normalizeDate(valorOriginal) : valorOriginal;
-                const valorAtualNormalizado = campo.includes('data') ? normalizeDate(valorAtual) : valorAtual;
+            // Verificar cada campo
+            Object.entries(campos).forEach(([campo, id]) => {
+                const valorAtual = $(`#${id}`).val();
+                const valorOriginal = $('#solicitarEdicaoModal').data(`original_${campo}`);
 
-                console.log(`Campo: ${campo}`, {
-                    original: valorOriginalNormalizado,
-                    atual: valorAtualNormalizado,
-                    iguais: String(valorOriginalNormalizado) === String(valorAtualNormalizado)
-                });
+                // Normalizar datas para comparação
+                const valorAtualNormalizado = campo.includes('data') || campo.includes('entrega') ?
+                    normalizeDate(valorAtual) :
+                    valorAtual;
 
-                if (String(valorOriginalNormalizado) !== String(valorAtualNormalizado)) {
+                const valorOriginalNormalizado = campo.includes('data') || campo.includes('entrega') ?
+                    normalizeDate(valorOriginal) :
+                    valorOriginal;
+
+                // Comparar apenas se houve mudança real
+                if (String(valorAtualNormalizado) !== String(valorOriginalNormalizado)) {
                     alteracoes[campo] = {
                         de: valorOriginal,
                         para: valorAtual
@@ -1308,23 +1337,46 @@
                 }
             });
 
-            // Adicionar evidências às alterações se houver
-            if (evidenciasAdicionadasAcao.length > 0) {
-                alteracoes.evidencias = {
-                    adicionar: evidenciasAdicionadasAcao
+            // Verificar responsáveis (mantido igual)
+            const responsaveisOriginais = $('#responsaveisAtuaisEdicao .list-group-item').map(function() {
+                return $(this).data('id');
+            }).get();
+
+            const responsaveisSelecionados = $('#responsaveisSelecionadosEdit .list-group-item').map(function() {
+                return $(this).data('id');
+            }).get();
+
+            const adicionar = responsaveisSelecionados.filter(id => !responsaveisOriginais.includes(id));
+            const remover = responsaveisOriginais.filter(id => !responsaveisSelecionados.includes(id));
+
+            if (adicionar.length > 0 || remover.length > 0) {
+                alteracoes.responsaveis = {
+                    adicionar: adicionar,
+                    remover: remover
                 };
             }
 
-            if (evidenciasRemovidasAcao.length > 0) {
-                if (!alteracoes.evidencias) {
-                    alteracoes.evidencias = {};
-                }
-                alteracoes.evidencias.remover = evidenciasRemovidasAcao;
+            // Verificar evidências (mantido igual)
+            if (evidenciasAdicionadasAcao.length > 0 || evidenciasRemovidasAcao.length > 0) {
+                alteracoes.evidencias = {
+                    adicionar: evidenciasAdicionadasAcao,
+                    remover: evidenciasRemovidasAcao
+                };
             }
 
-            console.log('Alterações detectadas:', alteracoes);
+            console.log("Alterações detectadas (DEBUG):", {
+                alteracoes,
+                valoresAtuais: Object.fromEntries(
+                    Object.entries(campos).map(([campo, id]) => [campo, $(`#${id}`).val()])
+                ),
+                valoresOriginais: Object.fromEntries(
+                    Object.entries(campos).map(([campo]) => [campo, $('#solicitarEdicaoModal').data(`original_${campo}`)])
+                )
+            });
+
             return alteracoes;
         }
+
 
         //------------------------------------------------------------
         // EDITAR AÇÃO (admin)
