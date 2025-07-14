@@ -73,13 +73,25 @@
                                     <div class="col-md-6">
                                         <h6 class="font-weight-bold">Dados Atuais no Momento da Solicitação</h6>
                                         <div class="table-responsive">
-                                            <table class="table table-sm table-bordered" id="tabelaDadosAtuais"></table>
+                                            <table class="table table-sm table-bordered">
+                                                <colgroup>
+                                                    <col style="width: 30%">
+                                                    <col style="width: 70%">
+                                                </colgroup>
+                                                <tbody id="tabelaDadosAtuais"></tbody>
+                                            </table>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <h6 class="font-weight-bold">Alterações Solicitadas</h6>
                                         <div class="table-responsive">
-                                            <table class="table table-sm table-bordered" id="tabelaDadosAlterados"></table>
+                                            <table class="table table-sm table-bordered">
+                                                <colgroup>
+                                                    <col style="width: 30%">
+                                                    <col style="width: 70%">
+                                                </colgroup>
+                                                <tbody id="tabelaDadosAlterados"></tbody>
+                                            </table>
                                         </div>
                                     </div>
                                 </div>
@@ -156,12 +168,14 @@
                 [4, 'desc']
             ]
         });
+
         $(document).on('click', '.avaliar-btn', function() {
             var id = $(this).data('id');
             $('#formAvaliar')[0].reset();
             $('#modalLoading').show();
             $('#modalContent').hide();
             $('#avaliarModal').modal('show');
+
             $.ajax({
                 url: '<?= site_url('solicitacoes/avaliar') ?>/' + id,
                 type: 'GET',
@@ -170,68 +184,67 @@
                     if (response.success) {
                         var data = response.data;
                         $('#solicitacaoId').val(id);
-                        // DADOS ATUAIS ---------------------------
+
+                        // DADOS ATUAIS
                         let htmlAtuais = '';
                         if (data.tipo && data.tipo.toLowerCase() === 'inclusão') {
                             htmlAtuais = `
-<tr><th width="30%">Tipo</th><td>Novo(a) ${capitalize(data.nivel)}</td></tr>
-<tr><th width="30%">Status</th><td><span class="badge badge-info">Novo Registro</span></td></tr>`;
+                                <tr><th width="30%">Tipo</th><td>Novo(a) ${capitalize(data.nivel)}</td></tr>
+                                <tr><th width="30%">Status</th><td><span class="badge badge-info">Novo Registro</span></td></tr>`;
                         } else {
                             let respJaExibido = false;
                             for (let key in data.dados_atuais) {
                                 if (key === 'equipe' || key === 'ordem' || key === 'id') continue;
-                                // Exibir Projeto por nome nos atuais
+
                                 if (key === 'id_projeto') {
                                     htmlAtuais += `
-<tr>
-    <th width="30%">Projeto</th>
-    <td>` + (data.nome_projeto ?? data.dados_atuais[key]) + `</td>
-</tr>`;
-                                }
-                                // Exibir Plano por nome nos atuais
-                                else if (key === 'id_plano') {
+                                        <tr>
+                                            <th width="30%">Projeto</th>
+                                            <td class="text-break">` + (data.nome_projeto ?? data.dados_atuais[key]) + `</td>
+                                        </tr>`;
+                                } else if (key === 'id_plano') {
                                     htmlAtuais += `
-<tr>
-    <th width="30%">Plano</th>
-    <td>` + (data.nome_plano ?? data.dados_atuais[key]) + `</td>
-</tr>`;
+                                        <tr>
+                                            <th width="30%">Plano</th>
+                                            <td class="text-break">` + (data.nome_plano ?? data.dados_atuais[key]) + `</td>
+                                        </tr>`;
                                 } else if (key === 'id_eixo') {
                                     htmlAtuais += `
-<tr>
-    <th width="30%">Eixo</th>
-    <td>` + (eixos[data.dados_atuais[key]] ?? '<span class="text-muted">Não informado</span>') + `</td>
-</tr>`;
+                                        <tr>
+                                            <th width="30%">Eixo</th>
+                                            <td class="text-break">` + (eixos[data.dados_atuais[key]] ?? '<span class="text-muted">Não informado</span>') + `</td>
+                                        </tr>`;
                                 } else if (key === 'evidencias') {
                                     let qtdEv = data.dados_atuais.total_evidencias !== undefined ?
                                         data.dados_atuais.total_evidencias :
                                         (Array.isArray(data.dados_atuais.evidencias) ? data.dados_atuais.evidencias.length : 0);
                                     htmlAtuais += `
-<tr>
-    <th width="30%">Evidências</th>
-    <td><span class="badge badge-secondary">Qtd. evidências: <b>${qtdEv}</b></span></td>
-</tr>`;
+                                        <tr>
+                                            <th width="30%">Evidências</th>
+                                            <td class="text-break"><span class="badge badge-secondary">Qtd. evidências: <b>${qtdEv}</b></span></td>
+                                        </tr>`;
                                 } else if (key === 'indicadores') {
                                     let qtdInd = data.dados_atuais.total_indicadores !== undefined ?
                                         data.dados_atuais.total_indicadores :
                                         (Array.isArray(data.dados_atuais.indicadores) ? data.dados_atuais.indicadores.length : 0);
                                     htmlAtuais += `
-<tr>
-    <th width="30%">Indicadores</th>
-    <td><span class="badge badge-secondary">Qtd. indicadores: <b>${qtdInd}</b></span></td>
-</tr>`;
+                                        <tr>
+                                            <th width="30%">Indicadores</th>
+                                            <td class="text-break"><span class="badge badge-secondary">Qtd. indicadores: <b>${qtdInd}</b></span></td>
+                                        </tr>`;
                                 } else if (key === 'responsaveis_nomes' && !respJaExibido) {
                                     htmlAtuais += `
-<tr>
-    <th width="30%">Responsáveis</th>
-    <td>` + formatFieldValue(data.dados_atuais[key], key) + `</td>
-</tr>`;
+                                        <tr>
+                                            <th width="30%">Responsáveis</th>
+                                            <td class="text-break">` + formatFieldValue(data.dados_atuais[key], key) + `</td>
+                                        </tr>`;
                                     respJaExibido = true;
                                 } else if (key === 'priorizacao_gab') {
                                     htmlAtuais += `
-<tr>
-    <th width="30%">Priorização GAB</th>
-    <td>` + formatFieldValue(data.dados_atuais[key], key) + `</td>
-</tr>`;
+                                        <tr>
+                                            <th width="30%">Priorização GAB</th>
+                                            <td class="text-break">` + formatFieldValue(data.dados_atuais[key], key) + `</td>
+                                        </tr>`;
                                 } else if (
                                     key !== 'total_evidencias' &&
                                     key !== 'total_indicadores' &&
@@ -242,15 +255,16 @@
                                     key !== 'id_plano'
                                 ) {
                                     htmlAtuais += `
-<tr>
-    <th width="30%">` + formatFieldName(key) + `</th>
-    <td>` + formatFieldValue(data.dados_atuais[key], key) + `</td>
-</tr>`;
+                                        <tr>
+                                            <th width="30%">` + formatFieldName(key) + `</th>
+                                            <td class="text-break">` + formatFieldValue(data.dados_atuais[key], key) + `</td>
+                                        </tr>`;
                                 }
                             }
                         }
                         $('#tabelaDadosAtuais').html(htmlAtuais);
-                        // ----- ALTERAÇÕES SOLICITADAS --------
+
+                        // ALTERAÇÕES SOLICITADAS
                         let htmlAlterados = '';
                         if (data.tipo && data.tipo.toLowerCase() === 'inclusão') {
                             for (let key in data.dados_alterados) {
@@ -261,39 +275,37 @@
                                     key === 'total_evidencias' ||
                                     key === 'total_indicadores'
                                 ) continue;
-                                // Exibir Projeto por nome na inclusão
+
                                 if (key === 'id_projeto') {
                                     htmlAlterados += `
-<tr>
-    <th width="30%">Projeto</th>
-    <td class="text-success"><strong>${data.nome_projeto ?? data.dados_alterados[key]}</strong></td>
-</tr>`;
-                                }
-                                // Exibir Plano por nome na inclusão
-                                else if (key === 'id_plano') {
+                                        <tr>
+                                            <th width="30%">Projeto</th>
+                                            <td class="text-break text-success"><strong>${data.nome_projeto ?? data.dados_alterados[key]}</strong></td>
+                                        </tr>`;
+                                } else if (key === 'id_plano') {
                                     htmlAlterados += `
-<tr>
-    <th width="30%">Plano</th>
-    <td class="text-success"><strong>${data.nome_plano ?? data.dados_alterados[key]}</strong></td>
-</tr>`;
+                                        <tr>
+                                            <th width="30%">Plano</th>
+                                            <td class="text-break text-success"><strong>${data.nome_plano ?? data.dados_alterados[key]}</strong></td>
+                                        </tr>`;
                                 } else if (key === 'id_eixo') {
                                     htmlAlterados += `
-<tr>
-    <th width="30%">Eixo</th>
-    <td class="text-success"><strong>` + (eixos[data.dados_alterados[key]] ?? '<span class="text-muted">Não informado</span>') + `</strong></td>
-</tr>`;
+                                        <tr>
+                                            <th width="30%">Eixo</th>
+                                            <td class="text-break text-success"><strong>` + (eixos[data.dados_alterados[key]] ?? '<span class="text-muted">Não informado</span>') + `</strong></td>
+                                        </tr>`;
                                 } else {
                                     htmlAlterados += `
-<tr>
-    <th width="30%">` + formatFieldName(key) + `</th>
-    <td class="text-success"><strong>` + formatFieldValue(data.dados_alterados[key], key) + `</strong></td>
-</tr>`;
+                                        <tr>
+                                            <th width="30%">` + formatFieldName(key) + `</th>
+                                            <td class="text-break text-success"><strong>` + formatFieldValue(data.dados_alterados[key], key) + `</strong></td>
+                                        </tr>`;
                                 }
                             }
                         } else if (data.tipo && data.tipo.toLowerCase() === 'exclusão') {
                             htmlAlterados = `
-<tr><th width="30%">Tipo</th><td class="text-danger"><strong>Exclusão de ${capitalize(data.nivel)}</strong></td></tr>
-<tr><th width="30%">Status</th><td><span class="badge badge-danger">Registro será removido</span></td></tr>`;
+                                <tr><th width="30%">Tipo</th><td class="text-break text-danger"><strong>Exclusão de ${capitalize(data.nivel)}</strong></td></tr>
+                                <tr><th width="30%">Status</th><td class="text-break"><span class="badge badge-danger">Registro será removido</span></td></tr>`;
                         } else {
                             for (let key in data.dados_alterados) {
                                 if (
@@ -303,91 +315,89 @@
                                     key === 'total_evidencias' ||
                                     key === 'total_indicadores'
                                 ) continue;
-                                // Exibir Projeto por nome na edição
+
                                 if (key === 'id_projeto') {
                                     htmlAlterados += `
-<tr>
-    <th width="30%">Projeto</th>
-    <td><strong>${data.nome_projeto ?? data.dados_alterados[key]}</strong></td>
-</tr>`;
-                                }
-                                // Exibir Plano por nome na edição
-                                else if (key === 'id_plano') {
+                                        <tr>
+                                            <th width="30%">Projeto</th>
+                                            <td class="text-break"><strong>${data.nome_projeto ?? data.dados_alterados[key]}</strong></td>
+                                        </tr>`;
+                                } else if (key === 'id_plano') {
                                     htmlAlterados += `
-<tr>
-    <th width="30%">Plano</th>
-    <td><strong>${data.nome_plano ?? data.dados_alterados[key]}</strong></td>
-</tr>`;
+                                        <tr>
+                                            <th width="30%">Plano</th>
+                                            <td class="text-break"><strong>${data.nome_plano ?? data.dados_alterados[key]}</strong></td>
+                                        </tr>`;
                                 } else if (key === 'id_eixo') {
                                     htmlAlterados += `
-<tr>
-    <th width="30%">Eixo</th>
-    <td>` + (eixos[data.dados_alterados[key]] ?? '<span class="text-muted">Não informado</span>') + `</td>
-</tr>`;
+                                        <tr>
+                                            <th width="30%">Eixo</th>
+                                            <td class="text-break">` + (eixos[data.dados_alterados[key]] ?? '<span class="text-muted">Não informado</span>') + `</td>
+                                        </tr>`;
                                 } else if (key === 'evidencias') {
                                     if (data.dados_alterados.evidencias.adicionar && data.dados_alterados.evidencias.adicionar.length > 0) {
                                         htmlAlterados += `
-<tr>
-    <th width="30%">Evidências a Adicionar</th>
-    <td>
-        <div class="text-success">`;
+                                            <tr>
+                                                <th width="30%">Evidências a Adicionar</th>
+                                                <td class="text-break">
+                                                    <div class="text-success">`;
                                         data.dados_alterados.evidencias.adicionar.forEach(ev => {
                                             htmlAlterados += `
-            <div class="mb-3 p-2 border border-success rounded">
-                ${formatEvidence(ev)}
-            </div>`;
+                                                        <div class="mb-3 p-2 border border-success rounded">
+                                                            ${formatEvidence(ev)}
+                                                        </div>`;
                                         });
                                         htmlAlterados += `</div></td></tr>`;
                                     }
                                     if (data.dados_alterados.evidencias.remover && data.dados_alterados.evidencias.remover.length > 0) {
                                         htmlAlterados += `
-<tr>
-    <th width="30%">Evidências a Remover</th>
-    <td>
-        <div class="text-danger">`;
+                                            <tr>
+                                                <th width="30%">Evidências a Remover</th>
+                                                <td class="text-break">
+                                                    <div class="text-danger">`;
                                         data.dados_alterados.evidencias.remover.forEach(ev => {
                                             htmlAlterados += `
-            <div class="mb-3 p-2 border border-danger rounded">
-                ${formatEvidence(ev)}
-            </div>`;
+                                                        <div class="mb-3 p-2 border border-danger rounded">
+                                                            ${formatEvidence(ev)}
+                                                        </div>`;
                                         });
                                         htmlAlterados += `</div></td></tr>`;
                                     }
                                 } else if (key === 'indicadores') {
                                     if (data.dados_alterados.indicadores.adicionar && data.dados_alterados.indicadores.adicionar.length > 0) {
                                         htmlAlterados += `
-<tr>
-    <th width="30%">Indicadores a Adicionar</th>
-    <td>
-        <div class="text-success">`;
+                                            <tr>
+                                                <th width="30%">Indicadores a Adicionar</th>
+                                                <td class="text-break">
+                                                    <div class="text-success">`;
                                         data.dados_alterados.indicadores.adicionar.forEach(ev => {
                                             htmlAlterados += `
-            <div class="mb-3 p-2 border border-success rounded">
-                ${formatIndicator(ev)}
-            </div>`;
+                                                        <div class="mb-3 p-2 border border-success rounded">
+                                                            ${formatIndicator(ev)}
+                                                        </div>`;
                                         });
                                         htmlAlterados += `</div></td></tr>`;
                                     }
                                     if (data.dados_alterados.indicadores.remover && data.dados_alterados.indicadores.remover.length > 0) {
                                         htmlAlterados += `
-<tr>
-    <th width="30%">Indicadores a Remover</th>
-    <td>
-        <div class="text-danger">`;
+                                            <tr>
+                                                <th width="30%">Indicadores a Remover</th>
+                                                <td class="text-break">
+                                                    <div class="text-danger">`;
                                         data.dados_alterados.indicadores.remover.forEach(ev => {
                                             htmlAlterados += `
-            <div class="mb-3 p-2 border border-danger rounded">
-                ${formatIndicator(ev)}
-            </div>`;
+                                                        <div class="mb-3 p-2 border border-danger rounded">
+                                                            ${formatIndicator(ev)}
+                                                        </div>`;
                                         });
                                         htmlAlterados += `</div></td></tr>`;
                                     }
                                 } else if (key === 'responsaveis') {
                                     htmlAlterados += `
-<tr>
-    <th width="30%">Responsáveis</th>
-    <td>` + formatFieldValue(data.dados_alterados[key], key) + `</td>
-</tr>`;
+                                        <tr>
+                                            <th width="30%">Responsáveis</th>
+                                            <td class="text-break">` + formatFieldValue(data.dados_alterados[key], key) + `</td>
+                                        </tr>`;
                                 } else if (
                                     typeof data.dados_alterados[key] === 'object' &&
                                     data.dados_alterados[key] !== null &&
@@ -395,20 +405,21 @@
                                     data.dados_alterados[key].hasOwnProperty('para')
                                 ) {
                                     htmlAlterados += `
-<tr>
-    <th width="30%">` + formatFieldName(key) + `</th>
-    <td>` + formatFieldValue(data.dados_alterados[key].para, key) + `</td>
-</tr>`;
+                                        <tr>
+                                            <th width="30%">` + formatFieldName(key) + `</th>
+                                            <td class="text-break">` + formatFieldValue(data.dados_alterados[key].para, key) + `</td>
+                                        </tr>`;
                                 } else if (key !== 'responsaveis_nomes' && key !== 'id_eixo' && key !== 'id_projeto' && key !== 'id_plano') {
                                     htmlAlterados += `
-<tr>
-    <th width="30%">` + formatFieldName(key) + `</th>
-    <td>` + formatFieldValue(data.dados_alterados[key], key) + `</td>
-</tr>`;
+                                        <tr>
+                                            <th width="30%">` + formatFieldName(key) + `</th>
+                                            <td class="text-break">` + formatFieldValue(data.dados_alterados[key], key) + `</td>
+                                        </tr>`;
                                 }
                             }
                         }
                         $('#tabelaDadosAlterados').html(htmlAlterados);
+
                         // Info solicitante
                         $('#nomeSolicitante').text(data.solicitante || 'Não informado');
                         $('#dataSolicitacao').text(data.data_solicitacao ?
@@ -435,6 +446,7 @@
                 }
             });
         });
+
         // Processamento aceitar/recusar
         $('.aceitar-btn, .recusar-btn').click(function() {
             var acao = $(this).hasClass('aceitar-btn') ? 'aceitar' : 'recusar';
@@ -443,6 +455,7 @@
             buttons.prop('disabled', true);
             if (acao === 'aceitar') $('.aceitar-btn').html('<i class="fas fa-spinner fa-spin"></i> Processando...');
             if (acao === 'recusar') $('.recusar-btn').html('<i class="fas fa-spinner fa-spin"></i> Processando...');
+
             $.ajax({
                 url: '<?= site_url('solicitacoes/processar') ?>',
                 type: 'POST',
@@ -481,6 +494,7 @@
                 }
             });
         });
+
         // Funções auxiliares
         function formatFieldName(name) {
             const names = {
@@ -511,6 +525,17 @@
             if (value === null || value === '' || value === undefined) {
                 return '<span class="text-muted">Não informado</span>';
             }
+
+            // Campos longos com tratamento especial
+            const longTextFields = ['descricao', 'metas', 'justificativa', 'conteudo', 'evidencia'];
+            if (longTextFields.some(field => key.includes(field))) {
+                const truncated = typeof value === 'string' ? value : JSON.stringify(value);
+                return `
+                    <div class="d-inline-block text-break" style="max-width: 100%;">
+                        ${truncated}
+                    </div>`;
+            }
+
             if (key === 'responsaveis_nomes' && Array.isArray(value)) {
                 return value.length > 0 ? value.join(', ') : '<span class="text-muted">Nenhum responsável</span>';
             }
@@ -562,8 +587,10 @@
                 evidence.tipo === 'url' ||
                 (typeof conteudo === 'string' && (conteudo.startsWith('http://') || conteudo.startsWith('https://')))
             );
+
             let html = '<div class="mb-2">';
             html += '<div class="mb-2"><strong>Evidência:</strong></div>';
+
             if (isLink && conteudo) {
                 html += `<div class="mb-2">
                     <a href="${conteudo}" class="btn btn-primary btn-sm text-truncate" style="max-width:160px;" target="_blank" rel="noopener">
@@ -575,10 +602,12 @@
             } else {
                 html += `<div class="mb-2 text-muted">Sem evidência informada</div>`;
             }
+
             if (descricao) {
                 html += `<div class="mb-1"><strong>Descrição:</strong></div>
                          <div class="mb-2 text-break">${descricao}</div>`;
             }
+
             html += '</div>';
             return html;
         }
@@ -588,16 +617,20 @@
             let valor = ind.valor || '';
             let unidade = ind.unidade || '';
             let descricao = ind.descricao || '';
+
             let html = '<div class="mb-2">';
             html += '<div class="mb-2"><strong>Indicador:</strong></div>';
             html += `<div class="mb-2 text-break">${nome ? nome : '<span class="text-muted">N/A</span>'}</div>`;
+
             if (descricao) {
                 html += '<div class="mb-1"><strong>Descrição:</strong></div>';
                 html += `<div class="mb-2 text-break">${descricao}</div>`;
             }
+
             if (valor || unidade) {
                 html += `<div class="mb-2"><span class="text-primary">${valor}${unidade ? ' ' + unidade : ''}</span></div>`;
             }
+
             html += '</div>';
             return html;
         }
