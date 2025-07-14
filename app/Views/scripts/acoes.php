@@ -899,13 +899,14 @@
             $('#solicitarEdicaoDataInicio').val(formatForInput(acao.data_inicio));
             $('#solicitarEdicaoDataFim').val(formatForInput(acao.data_fim));
 
-            // Armazenar valores originais (no formato original do banco)
+            // Armazenar valores originais
             $('#solicitarEdicaoModal').data({
                 'original_nome': acao.nome || '',
                 'original_ordem': acao.ordem || '',
                 'original_entrega_estimada': acao.entrega_estimada || null,
                 'original_data_inicio': acao.data_inicio || null,
-                'original_data_fim': acao.data_fim || null
+                'original_data_fim': acao.data_fim || null,
+                'original_responsaveis': acao.responsaveis ? acao.responsaveis.map(r => r.id) : []
             });
 
             // Habilitar/desabilitar data fim conforme data início
@@ -926,7 +927,7 @@
                     if (response.success) {
                         // Limpar listas
                         $('#responsaveisAtuaisEdicao').empty();
-                        $('#responsaveisSelecionadosEdit').empty();
+
                         // Preencher responsáveis atuais
                         if (response.data && response.data.length > 0) {
                             let html = '<div class="list-group">';
@@ -946,10 +947,8 @@
                             html += '</div>';
                             $('#responsaveisAtuaisEdicao').html(html);
                             $('#contadorResponsaveisAtuaisEdicao').text(response.data.length);
-                            $('#responsaveisSelecionadosEdit').html(html);
                         } else {
                             $('#responsaveisAtuaisEdicao').html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
-                            $('#responsaveisSelecionadosEdit').html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
                             $('#contadorResponsaveisAtuaisEdicao').text('0');
                         }
                         carregarUsuariosDisponiveisParaSolicitacaoEdicao(acaoId);
@@ -1188,18 +1187,25 @@
             const usuarioId = $(this).data('id');
             const item = $(this).closest('.list-group-item').clone();
             item.find('button')
-                .removeClass('btn-primary btn-adicionar-responsavel-solicitacao')
+                .removeClass('btn-outline-primary btn-adicionar-responsavel-solicitacao')
                 .addClass('btn-outline-danger btn-remover-responsavel-solicitacao')
                 .html('<i class="fas fa-user-minus"></i>');
+
             if ($('#responsaveisAtuaisEdicao').text().includes('Nenhum responsável selecionado')) {
                 $('#responsaveisAtuaisEdicao').html('<div class="list-group"></div>');
             }
+
             $('#responsaveisAtuaisEdicao .list-group').append(item);
             $(this).closest('.list-group-item').remove();
-            const countResponsaveis = parseInt($('#contadorResponsaveisAtuaisEdicao').text()) + 1;
-            const countDisponiveis = parseInt($('#contadorUsuariosDisponiveisEdicao').text()) - 1;
+
+            // Atualizar contadores
+            const countResponsaveis = $('#responsaveisAtuaisEdicao .list-group-item').length;
+            const countDisponiveis = $('#usuariosDisponiveisEdicao .list-group-item').length;
+
             $('#contadorResponsaveisAtuaisEdicao').text(countResponsaveis);
             $('#contadorUsuariosDisponiveisEdicao').text(countDisponiveis);
+
+            // Atualizar campo hidden
             atualizarIdsResponsaveisSolicitacao();
         });
 
@@ -1208,18 +1214,26 @@
             const usuarioId = $(this).data('id');
             const item = $(this).closest('.list-group-item').clone();
             item.find('button')
-                .removeClass('btn-danger btn-remover-responsavel-solicitacao')
+                .removeClass('btn-outline-danger btn-remover-responsavel-solicitacao')
                 .addClass('btn-outline-primary btn-adicionar-responsavel-solicitacao')
                 .html('<i class="fas fa-user-plus"></i>');
-            $('#usuariosDisponiveisEdicao').append(item);
+
+            $('#usuariosDisponiveisEdicao .list-group').append(item);
             $(this).closest('.list-group-item').remove();
-            const countResponsaveis = parseInt($('#contadorResponsaveisAtuaisEdicao').text()) - 1;
-            const countDisponiveis = parseInt($('#contadorUsuariosDisponiveisEdicao').text()) + 1;
+
+            // Atualizar contadores
+            const countResponsaveis = $('#responsaveisAtuaisEdicao .list-group-item').length;
+            const countDisponiveis = $('#usuariosDisponiveisEdicao .list-group-item').length;
+
             $('#contadorResponsaveisAtuaisEdicao').text(countResponsaveis);
             $('#contadorUsuariosDisponiveisEdicao').text(countDisponiveis);
+
             if (countResponsaveis === 0) {
                 $('#responsaveisAtuaisEdicao').html('<div class="text-center py-3 text-muted">Nenhum responsável selecionado</div>');
             }
+
+            // Atualizar campo hidden
+            atualizarIdsResponsaveisSolicitacao();
         });
 
         // Buscar usuários no modal de solicitação de edição
@@ -1337,17 +1351,14 @@
                 }
             });
 
-            // Verificar responsáveis (mantido igual)
-            const responsaveisOriginais = $('#responsaveisAtuaisEdicao .list-group-item').map(function() {
+            // Verificar responsáveis
+            const responsaveisOriginais = $('#solicitarEdicaoModal').data('original_responsaveis') || [];
+            const responsaveisAtuais = $('#responsaveisAtuaisEdicao .list-group-item').map(function() {
                 return $(this).data('id');
             }).get();
 
-            const responsaveisSelecionados = $('#responsaveisSelecionadosEdit .list-group-item').map(function() {
-                return $(this).data('id');
-            }).get();
-
-            const adicionar = responsaveisSelecionados.filter(id => !responsaveisOriginais.includes(id));
-            const remover = responsaveisOriginais.filter(id => !responsaveisSelecionados.includes(id));
+            const adicionar = responsaveisAtuais.filter(id => !responsaveisOriginais.includes(id));
+            const remover = responsaveisOriginais.filter(id => !responsaveisAtuais.includes(id));
 
             if (adicionar.length > 0 || remover.length > 0) {
                 alteracoes.responsaveis = {
@@ -1356,7 +1367,7 @@
                 };
             }
 
-            // Verificar evidências (mantido igual)
+            // Verificar evidências
             if (evidenciasAdicionadasAcao.length > 0 || evidenciasRemovidasAcao.length > 0) {
                 alteracoes.evidencias = {
                     adicionar: evidenciasAdicionadasAcao,
@@ -1364,17 +1375,25 @@
                 };
             }
 
-            console.log("Alterações detectadas (DEBUG):", {
-                alteracoes,
-                valoresAtuais: Object.fromEntries(
-                    Object.entries(campos).map(([campo, id]) => [campo, $(`#${id}`).val()])
-                ),
-                valoresOriginais: Object.fromEntries(
-                    Object.entries(campos).map(([campo]) => [campo, $('#solicitarEdicaoModal').data(`original_${campo}`)])
-                )
-            });
-
             return alteracoes;
+        }
+
+        function atualizarIdsResponsaveisSolicitacao() {
+            const responsaveisAtuais = $('#responsaveisAtuaisEdicao .list-group-item').map(function() {
+                return $(this).data('id');
+            }).get();
+
+            const responsaveisOriginais = $('#solicitarEdicaoModal').data('original_responsaveis') || [];
+
+            const adicionar = responsaveisAtuais.filter(id => !responsaveisOriginais.includes(id));
+            const remover = responsaveisOriginais.filter(id => !responsaveisAtuais.includes(id));
+
+            $('#responsaveisSolicitacaoEdicao').val(JSON.stringify({
+                responsaveis: {
+                    adicionar: adicionar,
+                    remover: remover
+                }
+            }));
         }
 
 
