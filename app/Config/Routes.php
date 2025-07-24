@@ -6,11 +6,17 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 
-service('auth')->routes($routes);
-$routes->get('login', '\App\Controllers\Auth\LoginController::loginView');
-$routes->get('register', '\App\Controllers\Auth\RegisterController::registerView');
-$routes->get('logout', '\App\Controllers\Auth\LoginController::logoutAction');
+// Rotas de autenticação personalizadas (substituem as do Shield)
+$routes->group('', function ($routes) {
+    $routes->get('login', 'LoginController::loginView');
+    $routes->post('login', 'LoginController::loginAction');
+    $routes->get('register', '\App\Controllers\Auth\RegisterController::registerView');
+    $routes->post('register', '\App\Controllers\Auth\RegisterController::registerAction');
+    $routes->get('logout', 'LoginController::logoutAction');
+});
 
+// Rotas adicionais
+$routes->get('testeldap', 'TesteLDAP::index');
 $routes->get('/', 'VisaoGeral::index');
 
 // Rotas principais hierárquicas

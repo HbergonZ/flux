@@ -1,0 +1,170 @@
+<?php
+
+namespace App\Authentication\Authenticators;
+
+use CodeIgniter\Shield\Authentication\Authenticators\Session;
+use CodeIgniter\Shield\Result;
+use Config\AD;
+use CodeIgniter\Shield\Entities\User;
+
+class LDAPAuthenticator extends Session
+{
+    public function attempt(array $credentials): Result
+    {
+        // Validação mais robusta
+        if (
+            !isset($credentials['username']) || !isset($credentials['password']) ||
+            empty($credentials['username']) || empty($credentials['password'])
+        ) {
+            return new Result([
+                'success' => false,
+                'reason' => lang('Auth.badAttempt')
+            ]);
+        }
+
+        $username = trim($credentials['username']);
+        $password = $credentials['password'];
+
+        // Autenticação LDAP
+        $ldapResult = $this->validateLDAPCredentials($username, $password);
+
+        if (!$ldapResult['success']) {
+            return new Result([
+                'success' => false,
+                'reason' => $ldapResult['error'] ?? lang('Auth.badAttempt')
+            ]);
+        }
+
+        // Busca ou cria usuário
+        $user = $this->provider->findByCredentials(['username' => $username]);
+
+        if ($user === null) {
+            try {
+                $user = $this->createUserFromLDAP($username, $ldapResult['user_data']);
+            } catch (\Exception $e) {
+                return new Result([
+                    'success' => false,
+                    'reason' => 'Falha ao criar usuário local: ' . $e->getMessage()
+                ]);
+            }
+        }
+
+        // Atualiza dados do usuário se necessário
+        $this->syncUserData($user, $ldapResult['user_data']);
+
+        return new Result([
+            'success' => true,
+            'extraInfo' => $user
+        ]);
+    }
+
+    protected function validateLDAPCredentials(string $username, string $password): array
+    {
+        $config = config(AD::class);
+
+        if (!function_exists('ldap_connect')) {
+            return ['success' => false, 'error' => 'Extensão LDAP não está instalada no PHP'];
+        }
+
+        $ldapConn = ldap_connect($config->host, $config->port);
+
+        if (!$ldapConn) {
+            log_message('error', 'Falha ao conectar ao servidor LDAP: ' . $config->host);
+            return ['success' => false, 'error' => 'Erro de conexão com o servidor'];
+        }
+
+        ldap_set_option($ldapConn, LDAP_OPT_PROTOCOL_VERSION, 3);
+        ldap_set_option($ldapConn, LDAP_OPT_REFERRALS, 0);
+
+        try {
+            // Bind com conta de serviço
+            $bind = @ldap_bind($ldapConn, $config->bindUser, $config->bindPassword);
+            if (!$bind) {
+                log_message('error', 'Falha no bind LDAP: ' . ldap_error($ldapConn));
+                return ['success' => false, 'error' => 'Erro de autenticação'];
+            }
+
+            // Busca usuário por CPF (sAMAccountName)
+            $search = ldap_search($ldapConn, $config->baseDn, "(sAMAccountName={$username})");
+            if ($search === false) {
+                return ['success' => false, 'error' => 'Erro na busca LDAP'];
+            }
+
+            $entries = ldap_get_entries($ldapConn, $search);
+            if ($entries['count'] === 0) {
+                return ['success' => false, 'error' => 'Usuário não encontrado'];
+            }
+
+            $userDn = $entries[0]['dn'];
+
+            // Valida credenciais do usuário
+            $userBind = @ldap_bind($ldapConn, $userDn, $password);
+            if (!$userBind) {
+                return ['success' => false, 'error' => 'Credenciais inválidas'];
+            }
+
+            return [
+                'success' => true,
+                'user_data' => $entries[0]
+            ];
+        } catch (\Exception $e) {
+            log_message('error', 'Erro LDAP: ' . $e->getMessage());
+            return ['success' => false, 'error' => 'Erro durante a autenticação'];
+        } finally {
+            if ($ldapConn) {
+                ldap_unbind($ldapConn);
+            }
+        }
+    }
+
+    protected function createUserFromLDAP(string $username, array $ldapData): User
+    {
+        $user = new User([
+            'username' => $username,
+            'email' => $ldapData['mail'][0] ?? "{$username}@empresa.com",
+            'name' => $ldapData['displayname'][0] ?? $ldapData['cn'][0] ?? $username,
+            'auth_source' => 'ldap',
+            'active' => 1,
+            'password' => bin2hex(random_bytes(16)) // Senha aleatória, já que a autenticação é via LDAP
+        ]);
+
+        $this->provider->save($user);
+        return $user;
+    }
+
+    protected function syncUserData(User $user, array $ldapData): void
+    {
+        $updateData = [];
+
+        // Sincroniza nome se diferente
+        $ldapName = $ldapData['displayname'][0] ?? $ldapData['cn'][0] ?? null;
+        if ($ldapName && $user->name !== $ldapName) {
+            $updateData['name'] = $ldapName;
+        }
+
+        // Sincroniza email se diferente
+        $ldapEmail = $ldapData['mail'][0] ?? null;
+        if ($ldapEmail && $user->email !== $ldapEmail) {
+            $updateData['email'] = $ldapEmail;
+        }
+
+        if (!empty($updateData)) {
+            $this->provider->update($user->id, $updateData);
+        }
+    }
+
+    protected function findUser(string $username): ?User
+    {
+        // Primeiro busca pela identidade LDAP
+        $identity = model('AuthIdentitiesModel')
+            ->where('type', 'ldap')
+            ->where('name', $username)
+            ->first();
+
+        if ($identity) {
+            return $this->provider->findById($identity->user_id);
+        }
+
+        return null;
+    }
+}

@@ -23,14 +23,26 @@
                                 <div class="p-5">
                                     <div class="text-center">
                                         <!-- Ícone centralizado -->
-                                        <div
-                                            class="mx-auto d-flex align-items-center justify-content-center mb-4"
+                                        <div class="mx-auto d-flex align-items-center justify-content-center mb-4"
                                             style="width: 60px; height: 60px; background: linear-gradient(135deg,#2e59d9 60%,#224abe 100%); border-radius: 14px; box-shadow: 0 4px 12px 0 rgba(46,89,217,.13);">
                                             <i class="fas fa-project-diagram fa-2x text-white" style="transform: rotate(-15deg);"></i>
                                         </div>
                                         <h1 class="h3 text-gray-900 font-weight-bold mb-1">Bem-vindo(a) ao Flux</h1>
                                         <p class="text-secondary mb-4">Faça login para acessar sua conta</p>
                                     </div>
+
+                                    <!-- Switch de Autenticação -->
+                                    <div class="form-group text-center mb-4">
+                                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                            <label class="btn btn-outline-primary <?= (old('auth_type') !== 'ldap') ? 'active' : '' ?>" id="localAuthLabel">
+                                                <input type="radio" name="authType" value="local" <?= (old('auth_type') !== 'ldap') ? 'checked' : '' ?>> Email/Senha
+                                            </label>
+                                            <label class="btn btn-outline-primary <?= (old('auth_type') === 'ldap') ? 'active' : '' ?>" id="ldapAuthLabel">
+                                                <input type="radio" name="authType" value="ldap" <?= (old('auth_type') === 'ldap') ? 'checked' : '' ?>> AD (CPF/Senha)
+                                            </label>
+                                        </div>
+                                    </div>
+
                                     <!-- Mensagens de erro/sucesso -->
                                     <?php if (session('error') !== null) : ?>
                                         <div class="alert alert-danger" role="alert"><?= session('error') ?></div>
@@ -49,11 +61,12 @@
                                         <div class="alert alert-success" role="alert"><?= session('message') ?></div>
                                     <?php endif ?>
 
-                                    <form class="user" action="<?= url_to('login') ?>" method="post">
+                                    <form class="user" action="<?= url_to('login') ?>" method="post" id="loginForm">
                                         <?= csrf_field() ?>
+                                        <input type="hidden" name="auth_type" id="authType" value="<?= old('auth_type', 'local') ?>">
 
-                                        <!-- Email -->
-                                        <div class="form-group mb-3">
+                                        <!-- Campo de Email (mostrado por padrão) -->
+                                        <div class="form-group mb-3" id="emailField" style="<?= (old('auth_type') === 'ldap') ? 'display:none;' : '' ?>">
                                             <label for="email" class="font-weight-bold small mb-1">E-mail</label>
                                             <div class="input-group">
                                                 <div class="input-group-prepend">
@@ -62,7 +75,21 @@
                                                     </span>
                                                 </div>
                                                 <input type="email" id="email" name="email" class="form-control border-left-0"
-                                                    value="<?= old('email') ?>" autocomplete="email" required autofocus>
+                                                    value="<?= old('email') ?>" autocomplete="email" <?= (old('auth_type') !== 'ldap') ? 'required' : '' ?>>
+                                            </div>
+                                        </div>
+
+                                        <!-- Campo de CPF (oculto por padrão) -->
+                                        <div class="form-group mb-3" id="cpfField" style="<?= (old('auth_type') !== 'ldap') ? 'display:none;' : '' ?>">
+                                            <label for="cpf" class="font-weight-bold small mb-1">CPF (somente números)</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text bg-white border-right-0">
+                                                        <i class="fas fa-user text-primary"></i>
+                                                    </span>
+                                                </div>
+                                                <input type="text" id="cpf" name="cpf" class="form-control border-left-0 cpf-mask"
+                                                    value="<?= old('cpf') ?>" autocomplete="username" maxlength="11" <?= (old('auth_type') === 'ldap') ? 'required' : '' ?>>
                                             </div>
                                         </div>
 
@@ -84,7 +111,7 @@
                                         <?php if (setting('Auth.sessionConfig')['allowRemembering']): ?>
                                             <div class="form-group mb-3">
                                                 <div class="custom-control custom-checkbox small">
-                                                    <input type="checkbox" class="custom-control-input" id="remember" name="remember" <?php if (old('remember')): ?> checked<?php endif ?>>
+                                                    <input type="checkbox" class="custom-control-input" id="remember" name="remember" <?= old('remember') ? 'checked' : '' ?>>
                                                     <label class="custom-control-label" for="remember">Lembrar-me</label>
                                                 </div>
                                             </div>
@@ -93,19 +120,6 @@
                                         <button type="submit" class="btn btn-primary btn-block btn-user font-weight-bold mb-2">
                                             Entrar
                                         </button>
-                                        <hr>
-                                        <!--
-                                        <?php if (setting('Auth.allowMagicLinkLogins')) : ?>
-                                        <div class="text-center">
-                                            <a class="small" href="<?= url_to('magic-link') ?>">Esqueceu a senha? Use um link mágico</a>
-                                        </div>
-                                        <?php endif ?>
-                                        <?php if (setting('Auth.allowRegistration')) : ?>
-                                        <div class="text-center">
-                                            <a class="small" href="<?= url_to('register') ?>">Criar uma conta!</a>
-                                        </div>
-                                        <?php endif ?>
-                                        -->
                                     </form>
                                 </div>
                             </div>
@@ -121,6 +135,67 @@
     <script src="<?php echo base_url('template/vendor/bootstrap/js/bootstrap.bundle.min.js'); ?>"></script>
     <script src="<?php echo base_url('template/vendor/jquery-easing/jquery.easing.min.js'); ?>"></script>
     <script src="<?php echo base_url('template/js/sb-admin-2.min.js'); ?>"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Função principal para atualizar a visibilidade e obrigatoriedade dos campos
+            function updateFields() {
+                const isLDAP = $('#authType').val() === 'ldap';
+
+                // Controle de visibilidade
+                $('#emailField').toggle(!isLDAP);
+                $('#cpfField').toggle(isLDAP);
+
+                // Controle de obrigatoriedade
+                $('#email').prop('required', !isLDAP);
+                $('#cpf').prop('required', isLDAP);
+
+                // Limpa os campos quando alternados
+                if (isLDAP) {
+                    $('#email').val('');
+                } else {
+                    $('#cpf').val('');
+                }
+            }
+
+            // Manipulador de mudança no tipo de autenticação
+            $('input[name="authType"]').change(function() {
+                $('#authType').val($(this).val());
+                updateFields();
+            });
+
+            // Manipulador de envio do formulário - desativa validação HTML5 para campos não usados
+            $('#loginForm').on('submit', function(e) {
+                const isLDAP = $('#authType').val() === 'ldap';
+
+                // Remove temporariamente o required do campo não utilizado
+                if (isLDAP) {
+                    $('#email').prop('required', false);
+                } else {
+                    $('#cpf').prop('required', false);
+                }
+
+                // Se quiser adicionar validação customizada, pode ser feita aqui
+                // Retorna true para enviar o formulário
+                return true;
+            });
+
+            // Máscara para CPF (somente números)
+            $('.cpf-mask').on('input', function() {
+                this.value = this.value.replace(/\D/g, '');
+            });
+
+            // Inicialização baseada no estado atual
+            <?php if (session('errors.cpf') || old('auth_type') === 'ldap'): ?>
+                $('#localAuthLabel').removeClass('active');
+                $('#ldapAuthLabel').addClass('active');
+                $('#authType').val('ldap');
+            <?php endif; ?>
+
+            // Atualiza campos na carga inicial
+            updateFields();
+        });
+    </script>
 </body>
 
 </html>

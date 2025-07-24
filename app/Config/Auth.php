@@ -117,6 +117,7 @@ class Auth extends ShieldAuth
         'tokens'  => AccessTokens::class,
         'session' => Session::class,
         'hmac'    => HmacSha256::class,
+        'ldap' => \App\Authentication\Authenticators\LDAPAuthenticator::class,
         // 'jwt'     => JWT::class,
     ];
 
@@ -140,6 +141,7 @@ class Auth extends ShieldAuth
      * @var list<string>
      */
     public array $authenticationChain = [
+        'ldap',
         'session',
         'tokens',
         'hmac',
@@ -280,7 +282,7 @@ class Auth extends ShieldAuth
      */
     public array $validFields = [
         'email',
-        // 'username',
+        'username',
     ];
 
     /**
