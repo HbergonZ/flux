@@ -175,10 +175,37 @@ class LDAPAuthenticator extends Session
             throw new \RuntimeException('Falha ao recuperar usuário recém-criado');
         }
 
+        // Atribui o grupo padrão 'user' ao novo usuário LDAP
+        $this->assignDefaultGroup($savedUser->id);
+
         // Cria a identidade LDAP
         $this->createLDAPIdentity($savedUser->id, $username);
 
         return $savedUser;
+    }
+
+    protected function assignDefaultGroup(int $userId): void
+    {
+        try {
+            $db = \Config\Database::connect();
+            $builder = $db->table('auth_groups_users');
+
+            // Verifica se o usuário já tem o grupo
+            $exists = $builder->where('user_id', $userId)
+                ->where('group', 'user')
+                ->countAllResults();
+
+            if ($exists === 0) {
+                $builder->insert([
+                    'user_id' => $userId,
+                    'group' => 'user', // Grupo padrão
+                    'created_at' => date('Y-m-d H:i:s')
+                ]);
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Erro ao atribuir grupo padrão: ' . $e->getMessage());
+            throw $e;
+        }
     }
 
     protected function createLDAPIdentity(int $userId, string $username): void
