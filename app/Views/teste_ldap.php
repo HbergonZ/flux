@@ -30,7 +30,11 @@
                                 <p><strong>Usuário DN:</strong> <?= esc($userDn) ?></p>
 
                                 <h5 class="mt-4">Dados do Usuário:</h5>
-                                <pre><?= print_r($userData, true) ?></pre>
+                                <ul class="list-group">
+                                    <li class="list-group-item"><strong>Nome:</strong> <?= esc($userData['nome']) ?></li>
+                                    <li class="list-group-item"><strong>Email:</strong> <?= esc($userData['email']) ?></li>
+                                    <li class="list-group-item"><strong>Base DN:</strong> <?= esc($userData['base_dn']) ?></li>
+                                </ul>
 
                                 <div class="d-flex justify-content-between mt-3">
                                     <a href="<?= site_url('testeldap') ?>" class="btn btn-primary">Testar Novamente</a>

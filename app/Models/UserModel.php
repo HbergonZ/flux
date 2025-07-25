@@ -18,7 +18,6 @@ class UserModel extends ShieldUserModel
         'username',
         'name',
         'email',
-        'password',
         'active',
         'last_active',
         'deleted_at',
@@ -29,8 +28,6 @@ class UserModel extends ShieldUserModel
 
     protected $validationRules = [
         'username' => 'permit_empty|regex_match[/^\d{11}$/]|is_unique[users.username,id,{id}]',
-        'email' => 'permit_empty|valid_email|is_unique[users.email,id,{id}]',
-        'password' => 'permit_empty|min_length[8]',
         'name' => 'permit_empty|max_length[255]',
         'auth_source' => 'permit_empty|in_list[local,ldap]',
     ];
@@ -84,25 +81,26 @@ class UserModel extends ShieldUserModel
     public function syncLdapUserData(User $user, array $ldapData): bool
     {
         $updateData = [];
-
         $ldapName = $ldapData['displayname'][0] ?? $ldapData['cn'][0] ?? null;
+
         if ($ldapName && $user->name !== $ldapName) {
             $updateData['name'] = $ldapName;
         }
 
+        // Atualiza o email na tabela auth_identities se existir
         $ldapEmail = $ldapData['mail'][0] ?? null;
-        if ($ldapEmail && $user->email !== $ldapEmail) {
-            $updateData['email'] = $ldapEmail;
-        }
+        if ($ldapEmail) {
+            $identities = model('CodeIgniter\Shield\Models\UserIdentityModel');
+            $identity = $identities->where('user_id', $user->id)
+                ->where('type', 'email_password')
+                ->first();
 
-        // Verifica se o usuário tem algum grupo
-        $hasGroup = $this->db->table('auth_groups_users')
-            ->where('user_id', $user->id)
-            ->countAllResults() > 0;
-
-        // Se não tiver grupo, atribui o grupo padrão
-        if (!$hasGroup) {
-            $this->addToDefaultGroup($user); // Agora passando o objeto User
+            if ($identity) {
+                $identities->update($identity->id, [
+                    'name' => $ldapEmail,
+                    'secret' => $ldapEmail
+                ]);
+            }
         }
 
         if (!empty($updateData)) {

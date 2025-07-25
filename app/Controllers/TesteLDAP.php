@@ -3,38 +3,31 @@
 namespace App\Controllers;
 
 use Config\AD;
+use CodeIgniter\Controller;
 
-class TesteLDAP extends BaseController
+class TesteLDAP extends Controller
 {
     public function index()
     {
-        return view('teste_ldap_view');
+        return view('teste_ldap');
     }
 
     public function testar()
     {
-        // Carrega configurações
-        $config = new AD();
-
-        // Obter dados do formulário
         $username = $this->request->getPost('username');
         $password = $this->request->getPost('password');
+        $config = config(AD::class);
 
-        if (empty($username) || empty($password)) {
-            return redirect()->back()->with('error', 'Usuário e senha são obrigatórios');
-        }
-
-        // 1. Teste conexão LDAP
+        // 1. Conexão com o servidor LDAP
         $ldapConn = ldap_connect($config->host, $config->port);
         if (!$ldapConn) {
-            return redirect()->back()->with('error', "Falha ao conectar ao LDAP: " . $config->host);
+            return redirect()->back()->with('error', 'Falha ao conectar ao servidor LDAP');
         }
 
         ldap_set_option($ldapConn, LDAP_OPT_PROTOCOL_VERSION, 3);
         ldap_set_option($ldapConn, LDAP_OPT_REFERRALS, 0);
-        ldap_set_option($ldapConn, LDAP_OPT_DEBUG_LEVEL, 7); // Ativa logs detalhados
 
-        // Tentativa de bind
+        // 2. Bind com usuário de serviço
         $bind = @ldap_bind($ldapConn, $config->bindUser, $config->bindPassword);
         if (!$bind) {
             $error = ldap_error($ldapConn);
@@ -42,41 +35,58 @@ class TesteLDAP extends BaseController
             return redirect()->back()->with('error', "Falha no bind com usuário de serviço. Erro: " . $error);
         }
 
-        // 3. Busca pelo usuário
-        $search = ldap_search(
-            $ldapConn,
-            $config->baseDn,
-            "(sAMAccountName=$username)"
-        );
+        // 3. Tenta buscar em cada base DN
+        $found = false;
+        $result = null;
+        $baseDnFound = null;
 
-        if ($search === false) {
-            ldap_close($ldapConn);
-            return redirect()->back()->with('error', "Erro na busca LDAP: " . ldap_error($ldapConn));
+        foreach ($config->baseDns as $baseDn) {
+            $search = ldap_search(
+                $ldapConn,
+                $baseDn,
+                "(sAMAccountName=$username)"
+            );
+
+            if ($search !== false) {
+                $entries = ldap_get_entries($ldapConn, $search);
+                if ($entries['count'] > 0) {
+                    $found = true;
+                    $result = $entries;
+                    $baseDnFound = $baseDn;
+                    break;
+                }
+            }
         }
 
-        $entries = ldap_get_entries($ldapConn, $search);
-        if ($entries['count'] === 0) {
+        if (!$found) {
             ldap_close($ldapConn);
-            return redirect()->back()->with('error', "Usuário não encontrado no AD");
+            return redirect()->back()->with('error', 'Usuário não encontrado em nenhuma base DN');
         }
 
-        $userDn = $entries[0]['dn'];
-
-        // 4. Teste autenticação do usuário
+        // 4. Tenta autenticar o usuário
+        $userDn = $result[0]['dn'];
         $userBind = @ldap_bind($ldapConn, $userDn, $password);
-        ldap_close($ldapConn);
 
         if (!$userBind) {
-            return redirect()->back()->with('error', "Credenciais inválidas para: $username");
+            $error = ldap_error($ldapConn);
+            ldap_close($ldapConn);
+            return redirect()->back()->with('error', "Falha na autenticação. Erro: " . $error);
         }
 
-        // Se chegou aqui, autenticação foi bem-sucedida
+        // 5. Se chegou aqui, autenticação foi bem sucedida
+        ldap_close($ldapConn);
+
+        // Prepara os dados para a view
         $data = [
             'success' => true,
             'userDn' => $userDn,
-            'userData' => $entries[0]
+            'userData' => [
+                'nome' => $result[0]['displayname'][0] ?? $result[0]['cn'][0] ?? 'Não informado',
+                'email' => $result[0]['mail'][0] ?? 'Não informado',
+                'base_dn' => $baseDnFound
+            ]
         ];
 
-        return view('teste_ldap_view', $data);
+        return view('teste_ldap', $data);
     }
 }
