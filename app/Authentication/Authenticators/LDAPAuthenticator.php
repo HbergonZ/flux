@@ -11,11 +11,12 @@ class LDAPAuthenticator extends Session
 {
     public function attempt(array $credentials): Result
     {
-        // Validação mais robusta
-        if (
-            !isset($credentials['username']) || !isset($credentials['password']) ||
-            empty($credentials['username']) || empty($credentials['password'])
-        ) {
+        // Carrega os modelos necessários
+        $userModel = model('App\Models\UserModel');
+        $identityModel = model('CodeIgniter\Shield\Models\UserIdentityModel');
+
+        // Validação das credenciais
+        if (empty($credentials['username']) || empty($credentials['password'])) {
             return new Result([
                 'success' => false,
                 'reason' => lang('Auth.badAttempt')
@@ -29,33 +30,65 @@ class LDAPAuthenticator extends Session
         $ldapResult = $this->validateLDAPCredentials($username, $password);
 
         if (!$ldapResult['success']) {
+            log_message('error', 'Falha LDAP: ' . ($ldapResult['error'] ?? 'Erro desconhecido'));
             return new Result([
                 'success' => false,
-                'reason' => $ldapResult['error'] ?? lang('Auth.badAttempt')
+                'reason' => $ldapResult['error'] ?? lang('Auth.invalidCredential')
             ]);
         }
 
-        // Busca ou cria usuário
-        $user = $this->provider->findByCredentials(['username' => $username]);
+        try {
+            // Limpa sessão existente antes de novo login
+            if (session()->has('user')) {
+                session()->remove(['user', 'logged_in']);
+            }
 
-        if ($user === null) {
-            try {
+            // Busca ou cria usuário
+            $user = $userModel->findByUsername($username);
+
+            if ($user === null) {
                 $user = $this->createUserFromLDAP($username, $ldapResult['user_data']);
-            } catch (\Exception $e) {
+                log_message('info', "Novo usuário LDAP criado: {$username}");
+            } else {
+                // Sincroniza dados do LDAP
+                $userModel->syncLdapUserData($user, $ldapResult['user_data']);
+            }
+
+            // Verifica se usuário está ativo
+            if (!$user->active) {
                 return new Result([
                     'success' => false,
-                    'reason' => 'Falha ao criar usuário local: ' . $e->getMessage()
+                    'reason' => lang('Auth.inactiveUser')
                 ]);
             }
+
+            // Cria identidade LDAP se não existir
+            $identity = $identityModel->where('user_id', $user->id)
+                ->where('type', 'ldap_identity')
+                ->first();
+
+            if (!$identity) {
+                $this->createLDAPIdentity($user->id, $username);
+            }
+
+            // Realiza o login via sessão
+            auth('session')->login($user);
+
+            // Atualiza último acesso
+            $user->last_active = date('Y-m-d H:i:s');
+            $userModel->save($user);
+
+            return new Result([
+                'success' => true,
+                'extraInfo' => $user
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Erro LDAP: ' . $e->getMessage());
+            return new Result([
+                'success' => false,
+                'reason' => 'Erro durante a autenticação. Tente novamente.'
+            ]);
         }
-
-        // Atualiza dados do usuário se necessário
-        $this->syncUserData($user, $ldapResult['user_data']);
-
-        return new Result([
-            'success' => true,
-            'extraInfo' => $user
-        ]);
     }
 
     protected function validateLDAPCredentials(string $username, string $password): array
@@ -128,32 +161,61 @@ class LDAPAuthenticator extends Session
             'name' => $ldapData['displayname'][0] ?? $ldapData['cn'][0] ?? $username,
             'auth_source' => 'ldap',
             'active' => 1,
-            'password' => $randomPassword // Senha aleatória, já que a autenticação é via LDAP
+            'password' => $randomPassword
         ]);
 
-        $user = $this->provider->save($user);
+        // Primeiro salvamos o usuário
+        if (!$this->provider->save($user)) {
+            throw new \RuntimeException('Falha ao criar usuário: ' . implode(' ', $this->provider->errors()));
+        }
+
+        // Depois recuperamos o usuário pelo username
+        $savedUser = $this->provider->findByCredentials(['username' => $username]);
+        if (!$savedUser) {
+            throw new \RuntimeException('Falha ao recuperar usuário recém-criado');
+        }
 
         // Cria a identidade LDAP
-        $this->createLDAPIdentity($user->id, $username);
+        $this->createLDAPIdentity($savedUser->id, $username);
 
-        return $user;
+        return $savedUser;
     }
 
     protected function createLDAPIdentity(int $userId, string $username): void
     {
-        $identities = model('AuthIdentitiesModel');
+        try {
+            $identities = model('CodeIgniter\Shield\Models\UserIdentityModel');
 
-        // Usamos o próprio username como "secret" para satisfazer a constraint NOT NULL
-        $identities->insert([
-            'user_id' => $userId,
-            'type' => 'ldap_identity', // Tipo personalizado para LDAP
-            'name' => $username,
-            'secret' => $username, // Campo obrigatório - usamos o username como valor
-            'secret2' => null,
-            'extra' => json_encode(['auth_source' => 'ldap']),
-            'created_at' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s')
-        ]);
+            if (!$identities) {
+                throw new \RuntimeException('Falha ao carregar o modelo de identidades');
+            }
+
+            $existing = $identities->where('user_id', $userId)
+                ->where('type', 'ldap_identity')
+                ->first();
+
+            if ($existing) {
+                return;
+            }
+
+            $result = $identities->insert([
+                'user_id' => $userId,
+                'type' => 'ldap_identity',
+                'name' => $username,
+                'secret' => $username,
+                'secret2' => null,
+                'extra' => json_encode(['auth_source' => 'ldap']),
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+
+            if (!$result) {
+                throw new \RuntimeException('Falha ao criar identidade LDAP: ' . implode(' ', $identities->errors()));
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Erro ao criar identidade LDAP: ' . $e->getMessage());
+            throw $e;
+        }
     }
 
     protected function syncUserData(User $user, array $ldapData): void

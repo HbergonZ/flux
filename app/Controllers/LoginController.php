@@ -14,17 +14,20 @@ class LoginController extends ShieldLoginController
      */
     public function loginAction(): RedirectResponse
     {
-        // Carrega o serviço de validação
-        $validation = \Config\Services::validation();
+        // Se já estiver logado, redireciona
+        if (auth()->loggedIn()) {
+            return redirect()->to(config('Auth')->loginRedirect());
+        }
 
+        $validation = \Config\Services::validation();
         $authType = $this->request->getPost('auth_type') ?? 'local';
 
-        // Resetar validação ANTES de definir as regras
+        // Reset das regras de validação
         $validation->reset();
 
-        // Regras de validação diferentes para cada tipo
+        // Define regras conforme tipo de autenticação
         $rules = [
-            'password' => 'required',
+            'password' => 'required|min_length[8]',
         ];
 
         if ($authType === 'ldap') {
@@ -33,47 +36,54 @@ class LoginController extends ShieldLoginController
             $rules['email'] = 'required|valid_email';
         }
 
-        // Validar apenas os campos necessários
+        // Valida os dados
         if (!$validation->setRules($rules)->run($this->request->getPost())) {
             return redirect()->back()
                 ->withInput()
                 ->with('errors', $validation->getErrors());
         }
 
-        if ($authType === 'ldap') {
-            // Para LDAP, usamos o username (CPF) como credencial
-            $credentials = [
-                'username' => $this->request->getPost('cpf'),
-                'password' => $this->request->getPost('password')
-            ];
+        try {
+            if ($authType === 'ldap') {
+                $credentials = [
+                    'username' => $this->request->getPost('cpf'),
+                    'password' => $this->request->getPost('password')
+                ];
 
-            $result = auth('ldap')->attempt($credentials);
+                $result = auth('ldap')->attempt($credentials);
 
-            if ($result->isOK()) {
-                auth('session')->login($result->extraInfo());
-                return redirect()->to(config('Auth')->loginRedirect());
+                if ($result->isOK()) {
+                    return redirect()->to(config('Auth')->loginRedirect())
+                        ->with('message', 'Login realizado com sucesso!');
+                }
+
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', $result->reason() ?? 'Credenciais inválidas');
+            } else {
+                // Autenticação local
+                $credentials = [
+                    'email' => $this->request->getPost('email'),
+                    'password' => $this->request->getPost('password')
+                ];
+
+                $remember = (bool) $this->request->getPost('remember');
+                $result = auth('session')->attempt($credentials, $remember);
+
+                if ($result->isOK()) {
+                    return redirect()->to(config('Auth')->loginRedirect())
+                        ->with('message', 'Bem-vindo de volta!');
+                }
+
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', $result->reason() ?? 'Credenciais inválidas');
             }
-
+        } catch (\Exception $e) {
+            log_message('error', 'Erro login: ' . $e->getMessage());
             return redirect()->back()
                 ->withInput()
-                ->with('error', $result->reason() ?? 'Credenciais LDAP inválidas');
+                ->with('error', 'Ocorreu um erro inesperado. Tente novamente.');
         }
-
-        // Autenticação local (email/senha)
-        $credentials = [
-            'email' => $this->request->getPost('email'),
-            'password' => $this->request->getPost('password')
-        ];
-
-        $remember = (bool) $this->request->getPost('remember');
-        $result = auth('session')->attempt($credentials, $remember);
-
-        if (!$result->isOK()) {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', $result->reason());
-        }
-
-        return redirect()->to(config('Auth')->loginRedirect());
     }
 }
