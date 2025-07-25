@@ -119,17 +119,41 @@ class LDAPAuthenticator extends Session
 
     protected function createUserFromLDAP(string $username, array $ldapData): User
     {
+        // Gera uma senha aleatória para o campo password (requerido pelo Shield)
+        $randomPassword = bin2hex(random_bytes(16));
+
         $user = new User([
             'username' => $username,
             'email' => $ldapData['mail'][0] ?? "{$username}@empresa.com",
             'name' => $ldapData['displayname'][0] ?? $ldapData['cn'][0] ?? $username,
             'auth_source' => 'ldap',
             'active' => 1,
-            'password' => bin2hex(random_bytes(16)) // Senha aleatória, já que a autenticação é via LDAP
+            'password' => $randomPassword // Senha aleatória, já que a autenticação é via LDAP
         ]);
 
-        $this->provider->save($user);
+        $user = $this->provider->save($user);
+
+        // Cria a identidade LDAP
+        $this->createLDAPIdentity($user->id, $username);
+
         return $user;
+    }
+
+    protected function createLDAPIdentity(int $userId, string $username): void
+    {
+        $identities = model('AuthIdentitiesModel');
+
+        // Usamos o próprio username como "secret" para satisfazer a constraint NOT NULL
+        $identities->insert([
+            'user_id' => $userId,
+            'type' => 'ldap_identity', // Tipo personalizado para LDAP
+            'name' => $username,
+            'secret' => $username, // Campo obrigatório - usamos o username como valor
+            'secret2' => null,
+            'extra' => json_encode(['auth_source' => 'ldap']),
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
     }
 
     protected function syncUserData(User $user, array $ldapData): void
@@ -155,9 +179,9 @@ class LDAPAuthenticator extends Session
 
     protected function findUser(string $username): ?User
     {
-        // Primeiro busca pela identidade LDAP
+        // Busca pela identidade LDAP
         $identity = model('AuthIdentitiesModel')
-            ->where('type', 'ldap')
+            ->where('type', 'ldap_identity')
             ->where('name', $username)
             ->first();
 

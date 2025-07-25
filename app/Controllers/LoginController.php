@@ -7,7 +7,7 @@ use CodeIgniter\HTTP\RedirectResponse;
 
 class LoginController extends ShieldLoginController
 {
-    protected $helpers = ['form']; // Carrega o helper de formulários
+    protected $helpers = ['form'];
 
     /**
      * Sobrescreve o método de login para adicionar suporte a LDAP
@@ -40,14 +40,13 @@ class LoginController extends ShieldLoginController
                 ->with('errors', $validation->getErrors());
         }
 
-        $credentials = [
-            'password' => $this->request->getPost('password'),
-            'remember' => (bool) $this->request->getPost('remember')
-        ];
-
         if ($authType === 'ldap') {
             // Para LDAP, usamos o username (CPF) como credencial
-            $credentials['username'] = $this->request->getPost('cpf');
+            $credentials = [
+                'username' => $this->request->getPost('cpf'),
+                'password' => $this->request->getPost('password')
+            ];
+
             $result = auth('ldap')->attempt($credentials);
 
             if ($result->isOK()) {
@@ -61,8 +60,13 @@ class LoginController extends ShieldLoginController
         }
 
         // Autenticação local (email/senha)
-        $credentials['email'] = $this->request->getPost('email');
-        $result = auth('session')->attempt($credentials);
+        $credentials = [
+            'email' => $this->request->getPost('email'),
+            'password' => $this->request->getPost('password')
+        ];
+
+        $remember = (bool) $this->request->getPost('remember');
+        $result = auth('session')->attempt($credentials, $remember);
 
         if (!$result->isOK()) {
             return redirect()->back()

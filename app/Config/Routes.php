@@ -17,6 +17,7 @@ $routes->group('', function ($routes) {
 
 // Rotas adicionais
 $routes->get('testeldap', 'TesteLDAP::index');
+$routes->post('testeldap/testar', 'TesteLDAP::testar');
 $routes->get('/', 'VisaoGeral::index');
 
 // Rotas principais hierárquicas
