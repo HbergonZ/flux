@@ -5,7 +5,7 @@ namespace App\Controllers;
 use Config\AD;
 use CodeIgniter\Controller;
 
-class TesteLDAP extends Controller
+class TesteLDAPController extends Controller
 {
     public function index()
     {
