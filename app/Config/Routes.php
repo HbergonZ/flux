@@ -36,15 +36,15 @@ $routes->group('', function ($routes) {
     $routes->post('projetos/filtrar/(:num)', 'Projetos::filtrar/$1');
 
     // Etapas
-    $routes->get('planos/(:num)/projetos/(:num)/etapas', 'Etapas::index/$1/$2');
-    $routes->post('etapas/filtrar/(:num)', 'Etapas::filtrar/$1');
+    $routes->get('planos/(:num)/projetos/(:num)/etapas', 'EtapasController::index/$1/$2');
+    $routes->post('etapas/filtrar/(:num)', 'EtapasController::filtrar/$1');
 
     // Ações
     $routes->get('planos/(:num)/projetos/(:num)/acoes', 'AcoesController::index/$2/projeto');
     $routes->get('planos/(:num)/projetos/(:num)/etapas/(:num)/acoes', 'AcoesController::index/$3/etapa');
 
     // Rotas alternativas para compatibilidade
-    $routes->get('projetos/(:num)/etapas', 'Etapas::index/$1');
+    $routes->get('projetos/(:num)/etapas', 'EtapasController::index/$1');
     $routes->get('projetos/(:num)/acoes', 'AcoesController::index/$1/projeto');
     $routes->get('etapas/(:num)/acoes', 'AcoesController::index/$1/etapa');
 
@@ -54,16 +54,16 @@ $routes->group('', function ($routes) {
 
     // Dados para solicitações
     $routes->get('acoes/dados-acao/(:num)', 'AcoesController::dadosAcao/$1');
-    $routes->get('etapas/dados-etapa/(:num)', 'Etapas::dadosEtapa/$1');
+    $routes->get('etapas/dados-etapa/(:num)', 'EtapasController::dadosEtapa/$1');
     $routes->get('projetos/dados-projeto/(:num)', 'Projetos::dadosProjeto/$1');
     $routes->get('planos/dados-plano/(:num)', 'Planos::dadosPlano/$1');
 
     // Solicitações de edição
-    $routes->post('etapas/solicitar-edicao', 'Etapas::solicitarEdicao');
-    $routes->post('etapas/solicitar-exclusao', 'Etapas::solicitarExclusao');
-    $routes->post('etapas/solicitar-inclusao', 'Etapas::solicitarInclusao');
-    $routes->get('etapas/carregar-etapas/(:num)', 'Etapas::carregarEtapas/$1');
-    $routes->get('etapas/progresso/(:num)', 'Etapas::progresso/$1');
+    $routes->post('etapas/solicitar-edicao', 'EtapasController::solicitarEdicao');
+    $routes->post('etapas/solicitar-exclusao', 'EtapasController::solicitarExclusao');
+    $routes->post('etapas/solicitar-inclusao', 'EtapasController::solicitarInclusao');
+    $routes->get('etapas/carregar-etapas/(:num)', 'EtapasController::carregarEtapas/$1');
+    $routes->get('etapas/progresso/(:num)', 'EtapasController::progresso/$1');
 
     $routes->post('projetos/solicitar-edicao', 'Projetos::solicitarEdicao');
     $routes->post('projetos/solicitar-exclusao', 'Projetos::solicitarExclusao');
@@ -117,13 +117,13 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
 
 
     // Etapas
-    $routes->post('etapas/cadastrar/(:num)', 'Etapas::cadastrar/$1');
-    $routes->get('etapas/editar/(:num)', 'Etapas::editar/$1');
-    $routes->post('etapas/atualizar/(:num)', 'Etapas::atualizar/$1');
-    $routes->post('etapas/excluir/(:num)', 'Etapas::excluir/$1');
-    $routes->get('etapas/proxima-ordem/(:num)', 'Etapas::proximaOrdem/$1');
-    $routes->post('etapas/salvar-ordem/(:num)', 'Etapas::salvarOrdem/$1');
-    $routes->get('etapas/verificar-relacionamentos/(:num)', 'Etapas::verificarRelacionamentos/$1');
+    $routes->post('etapas/cadastrar/(:num)', 'EtapasController::cadastrar/$1');
+    $routes->get('etapas/editar/(:num)', 'EtapasController::editar/$1');
+    $routes->post('etapas/atualizar/(:num)', 'EtapasController::atualizar/$1');
+    $routes->post('etapas/excluir/(:num)', 'EtapasController::excluir/$1');
+    $routes->get('etapas/proxima-ordem/(:num)', 'EtapasController::proximaOrdem/$1');
+    $routes->post('etapas/salvar-ordem/(:num)', 'EtapasController::salvarOrdem/$1');
+    $routes->get('etapas/verificar-relacionamentos/(:num)', 'EtapasController::verificarRelacionamentos/$1');
 
     // Ações
     $routes->post('acoes/cadastrar/(:num)/(:segment)', 'AcoesController::cadastrar/$1/$2');

@@ -9,7 +9,7 @@ use App\Models\ProjetosModel;
 use App\Models\SolicitacoesModel;
 use App\Controllers\LogController;
 
-class Etapas extends BaseController
+class EtapasController extends BaseController
 {
     protected $etapasModel;
     protected $acoesModel;
