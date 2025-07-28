@@ -115,7 +115,7 @@
                     <thead>
                         <tr class="text-center">
                             <th>Identificador</th>
-                            <th>Nome</th>
+                            <th>Projeto</th>
                             <th>Descrição</th>
                             <th>Metas</th>
                             <th>Eixo</th>
