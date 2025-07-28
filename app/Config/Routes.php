@@ -18,13 +18,13 @@ $routes->group('', function ($routes) {
 // Rotas adicionais
 $routes->get('testeldap', 'TesteLDAPController::index');
 $routes->post('testeldap/testar', 'TesteLDAPController::testar');
-$routes->get('/', 'VisaoGeral::index');
+$routes->get('/', 'VisaoGeralController::index');
 
 // Rotas principais hierárquicas
 $routes->group('', function ($routes) {
     // Visão Geral
-    $routes->get('visao-geral', 'VisaoGeral::index');
-    $routes->post('visao-geral/filtrar', 'VisaoGeral::filtrar');
+    $routes->get('visao-geral', 'VisaoGeralController::index');
+    $routes->post('visao-geral/filtrar', 'VisaoGeralController::filtrar');
     $routes->get('teste', 'AtualizarStatusController::index');
 
     // Planos

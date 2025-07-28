@@ -4,7 +4,7 @@ namespace App\Controllers;
 
 use App\Models\VisaoGeralModel;
 
-class VisaoGeral extends BaseController
+class VisaoGeralController extends BaseController
 {
     protected $visaoGeralModel;
 
