@@ -28,8 +28,8 @@ $routes->group('', function ($routes) {
     $routes->get('teste', 'AtualizarStatusController::index');
 
     // Planos
-    $routes->get('planos', 'Planos::index');
-    $routes->post('planos/filtrar', 'Planos::filtrar');
+    $routes->get('planos', 'PlanosController::index');
+    $routes->post('planos/filtrar', 'PlanosController::filtrar');
 
     // Projetos
     $routes->get('planos/(:num)/projetos', 'Projetos::index/$1');
@@ -49,14 +49,14 @@ $routes->group('', function ($routes) {
     $routes->get('etapas/(:num)/acoes', 'AcoesController::index/$1/etapa');
 
     // Solicitações
-    $routes->get('minhas-solicitacoes', 'MinhasSolicitacoes::index');
-    $routes->get('minhas-solicitacoes/detalhes/(:num)', 'MinhasSolicitacoes::detalhes/$1');
+    $routes->get('minhas-solicitacoes', 'MinhasSolicitacoesController::index');
+    $routes->get('minhas-solicitacoes/detalhes/(:num)', 'MinhasSolicitacoesController::detalhes/$1');
 
     // Dados para solicitações
     $routes->get('acoes/dados-acao/(:num)', 'AcoesController::dadosAcao/$1');
     $routes->get('etapas/dados-etapa/(:num)', 'EtapasController::dadosEtapa/$1');
     $routes->get('projetos/dados-projeto/(:num)', 'Projetos::dadosProjeto/$1');
-    $routes->get('planos/dados-plano/(:num)', 'Planos::dadosPlano/$1');
+    $routes->get('planos/dados-plano/(:num)', 'PlanosController::dadosPlano/$1');
 
     // Solicitações de edição
     $routes->post('etapas/solicitar-edicao', 'EtapasController::solicitarEdicao');
@@ -75,9 +75,9 @@ $routes->group('', function ($routes) {
     $routes->get('projetos/listar-indicadores/(:num)', 'Projetos::listarIndicadores/$1');
 
 
-    $routes->post('planos/solicitar-edicao', 'Planos::solicitarEdicao');
-    $routes->post('planos/solicitar-exclusao', 'Planos::solicitarExclusao');
-    $routes->post('planos/solicitar-inclusao', 'Planos::solicitarInclusao');
+    $routes->post('planos/solicitar-edicao', 'PlanosController::solicitarEdicao');
+    $routes->post('planos/solicitar-exclusao', 'PlanosController::solicitarExclusao');
+    $routes->post('planos/solicitar-inclusao', 'PlanosController::solicitarInclusao');
 
     $routes->post('acoes/solicitar-edicao', 'AcoesController::solicitarEdicao');
     $routes->post('acoes/solicitar-exclusao', 'AcoesController::solicitarExclusao');
@@ -97,11 +97,11 @@ $routes->group('', function ($routes) {
 // Rotas administrativas
 $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
     // Planos
-    $routes->post('planos/cadastrar', 'Planos::cadastrar');
-    $routes->get('planos/editar/(:num)', 'Planos::editar/$1');
-    $routes->post('planos/atualizar', 'Planos::atualizar');
-    $routes->post('planos/excluir', 'Planos::excluir');
-    $routes->get('planos/verificar-relacionamentos/(:num)', 'Planos::verificarRelacionamentos/$1');
+    $routes->post('planos/cadastrar', 'PlanosController::cadastrar');
+    $routes->get('planos/editar/(:num)', 'PlanosController::editar/$1');
+    $routes->post('planos/atualizar', 'PlanosController::atualizar');
+    $routes->post('planos/excluir', 'PlanosController::excluir');
+    $routes->get('planos/verificar-relacionamentos/(:num)', 'PlanosController::verificarRelacionamentos/$1');
 
     // Projetos
     $routes->post('projetos/cadastrar/(:num)', 'Projetos::cadastrar/$1');

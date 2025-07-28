@@ -9,7 +9,7 @@ use App\Models\AcoesModel;
 use App\Models\SolicitacoesModel;
 use App\Controllers\LogController;
 
-class Planos extends BaseController
+class PlanosController extends BaseController
 {
     protected $planoModel;
     protected $solicitacoesModel;
