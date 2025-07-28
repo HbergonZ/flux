@@ -337,31 +337,24 @@ class PlanosController extends BaseController
     public function filtrar()
     {
         if (!$this->request->isAJAX()) {
-            return redirect()->to('/planos');
+            return redirect()->back();
         }
 
-        $filtros = [
-            'nome' => $this->request->getPost('nome'),
-            'sigla' => $this->request->getPost('sigla')
-        ];
+        $nome = $this->request->getPost('nome');
+        $sigla = $this->request->getPost('sigla');
 
-        if (empty(array_filter($filtros))) {
-            $planos = $this->planoModel->findAll();
-            return $this->response->setJSON(['success' => true, 'data' => $planos]);
+        $planosModel = new PlanosModel();
+        $planos = $planosModel->getPlanosFiltrados($nome, $sigla);
+
+        // Adiciona progresso aos planos
+        foreach ($planos as &$plano) {
+            $plano['progresso'] = $this->calcularProgressoPlano($plano['id']);
         }
 
-        $builder = $this->planoModel->builder();
-
-        if (!empty($filtros['nome'])) {
-            $builder->like('nome', $filtros['nome']);
-        }
-
-        if (!empty($filtros['sigla'])) {
-            $builder->like('sigla', $filtros['sigla']);
-        }
-
-        $planos = $builder->get()->getResultArray();
-        return $this->response->setJSON(['success' => true, 'data' => $planos]);
+        return $this->response->setJSON([
+            'success' => true,
+            'data' => $planos
+        ]);
     }
 
     public function dadosPlano($id = null)

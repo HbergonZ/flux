@@ -55,4 +55,18 @@ class PlanosModel extends Model
             ->get()
             ->getResultArray();
     }
+    public function getPlanosFiltrados($nome = null, $sigla = null)
+    {
+        $builder = $this->builder();
+
+        if (!empty($nome)) {
+            $builder->like('nome', $nome);
+        }
+
+        if (!empty($sigla)) {
+            $builder->like('sigla', $sigla);
+        }
+
+        return $builder->orderBy('nome', 'ASC')->get()->getResultArray();
+    }
 }

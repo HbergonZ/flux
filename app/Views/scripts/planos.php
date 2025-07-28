@@ -233,72 +233,100 @@
 
         // Aplicar filtros na tabela
         function applyFilters() {
-            const hasFilters = $('#formFiltros').find('input, select').toArray().some(el => $(el).val() !== '' && $(el).val() !== null);
+            const nome = $('#filterName').val().trim();
+            const sigla = $('#filterSigla').val().trim();
 
-            if (!hasFilters) {
-                location.reload();
-                return;
-            }
+            // Mostrar loading
+            $('#dataTable').css('opacity', '0.5');
 
             $.ajax({
                 type: "POST",
                 url: '<?= site_url('planos/filtrar') ?>',
-                data: $('#formFiltros').serialize(),
-                dataType: "json",
-                beforeSend: function() {
-                    $('#dataTable').css('opacity', '0.5');
+                data: {
+                    nome: nome,
+                    sigla: sigla,
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
                 },
+                dataType: "json",
                 success: function(response) {
                     if (response.success) {
-                        dataTable.destroy();
+                        // Destruir a tabela existente
+                        if ($.fn.DataTable.isDataTable('#dataTable')) {
+                            dataTable.destroy();
+                        }
+
+                        // Limpar o corpo da tabela
                         $('#dataTable tbody').empty();
 
-                        $.each(response.data, function(index, plano) {
-                            var id = plano.id + '-' + plano.nome.toLowerCase().replace(/\s+/g, '-');
+                        // Preencher com novos dados
+                        if (response.data && response.data.length > 0) {
+                            $.each(response.data, function(index, plano) {
+                                var id = plano.id + '-' + plano.nome.toLowerCase().replace(/\s+/g, '-');
+                                var progressoClass = '';
+                                var progressoText = '';
 
-                            var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
-                            var actionButtons = '';
+                                // Determinar classe e texto do progresso (mantenha sua lógica atual)
+                                if (plano.progresso) {
+                                    progressoClass = plano.progresso.class;
+                                    progressoText = plano.progresso.texto;
+                                }
 
-                            if (isAdmin) {
-                                actionButtons = `
+                                var isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
+                                var actionButtons = '';
+
+                                if (isAdmin) {
+                                    actionButtons = `
                                 <div class="d-inline-flex">
-                                    <a href="<?= site_url('planos/') ?>${plano.id}/projetos" class="btn btn-info btn-sm mx-1" title="Visualizar Projetos">
+                                    <a href="<?= site_url('planos/') ?>${plano.id}/projetos" class="btn btn-info btn-sm mx-1 d-flex justify-content-center align-items-center" style="width: 32px; height: 32px;" title="Visualizar Projetos">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <button type="button" class="btn btn-primary btn-sm mx-1" data-id="${id}" title="Editar">
+                                    <button type="button" class="btn btn-primary btn-sm mx-1 d-flex justify-content-center align-items-center" style="width: 32px; height: 32px;" data-id="${id}" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <button type="button" class="btn btn-danger btn-sm mx-1" data-id="${id}" title="Excluir">
+                                    <button type="button" class="btn btn-danger btn-sm mx-1 d-flex justify-content-center align-items-center" style="width: 32px; height: 32px;" data-id="${id}" title="Excluir">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </div>`;
-                            } else {
-                                actionButtons = `
+                                } else {
+                                    actionButtons = `
                                 <div class="d-inline-flex">
-                                    <a href="<?= site_url('planos/') ?>${plano.id}/projetos" class="btn btn-info btn-sm mx-1" title="Visualizar Projetos">
+                                    <a href="<?= site_url('planos/') ?>${plano.id}/projetos" class="btn btn-info btn-sm mx-1 d-flex justify-content-center align-items-center" style="width: 32px; height: 32px;" title="Visualizar Projetos">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <button type="button" class="btn btn-primary btn-sm mx-1" data-id="${id}" title="Solicitar Edição">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-danger btn-sm mx-1" data-id="${id}" title="Solicitar Exclusão">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
                                 </div>`;
-                            }
+                                }
 
-                            var row = `
-                            <tr>
-                                <td class="text-wrap align-middle">${plano.nome}</td>
-                                <td class="text-center align-middle">${plano.sigla}</td>
-                                <td class="text-wrap align-middle">${plano.descricao || ''}</td>
-                                <td class="text-center align-middle">${actionButtons}</td>
-                            </tr>`;
+                                var row = `
+                        <tr>
+                            <td class="text-wrap align-middle">${plano.nome}</td>
+                            <td class="text-center align-middle">${plano.sigla}</td>
+                            <td class="text-wrap align-middle">${plano.descricao || ''}</td>
+                            <td class="text-center align-middle">
+                                <div class="progress-container" title="${progressoText}">
+                                    <div class="progress progress-sm">
+                                        <div class="progress-bar progress-bar-striped ${progressoClass}"
+                                            role="progressbar" style="width: ${plano.progresso.percentual}%"
+                                            aria-valuenow="${plano.progresso.percentual}"
+                                            aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                    <small class="progress-text">${plano.progresso.percentual}%</small>
+                                </div>
+                            </td>
+                            <td class="text-center align-middle">
+                                ${actionButtons}
+                            </td>
+                        </tr>`;
 
-                            $('#dataTable tbody').append(row);
-                        });
+                                $('#dataTable tbody').append(row);
+                            });
+                        } else {
+                            $('#dataTable tbody').append('<tr><td colspan="5" class="text-center">Nenhum plano encontrado</td></tr>');
+                        }
 
+                        // Re-inicializar DataTable
                         dataTable = $('#dataTable').DataTable({
+                            // Suas configurações atuais do DataTable
                             "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
                             "language": {
                                 "emptyTable": "Nenhum dado disponível na tabela",
@@ -328,7 +356,7 @@
                             "pageLength": 10
                         });
                     } else {
-                        showErrorAlert('Erro ao filtrar planos: ' + response.message);
+                        showErrorAlert('Erro ao filtrar planos: ' + (response.message || 'Erro desconhecido'));
                     }
                 },
                 error: function(xhr, status, error) {
