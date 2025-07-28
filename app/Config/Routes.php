@@ -143,9 +143,9 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
 
 
     // Solicitações
-    $routes->get('solicitacoes', 'Solicitacoes::index');
-    $routes->get('solicitacoes/avaliar/(:num)', 'Solicitacoes::avaliar/$1');
-    $routes->post('solicitacoes/processar', 'Solicitacoes::processar');
+    $routes->get('solicitacoes', 'SolicitacoesController::index');
+    $routes->get('solicitacoes/avaliar/(:num)', 'SolicitacoesController::avaliar/$1');
+    $routes->post('solicitacoes/processar', 'SolicitacoesController::processar');
 
     // Histórico
     $routes->group('historico-solicitacoes', function ($routes) {

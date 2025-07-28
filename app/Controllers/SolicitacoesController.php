@@ -11,7 +11,7 @@ use App\Models\EixosModel;
 use CodeIgniter\Shield\Models\UserModel;
 use App\Controllers\LogController;
 
-class Solicitacoes extends BaseController
+class SolicitacoesController extends BaseController
 {
     protected $solicitacoesModel;
     protected $etapasModel;
