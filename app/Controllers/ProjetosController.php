@@ -10,7 +10,7 @@ use App\Models\EtapasModel;
 use App\Models\AcoesModel;
 use App\Controllers\LogController;
 
-class Projetos extends BaseController
+class ProjetosController extends BaseController
 {
     protected $projetosModel;
     protected $planosModel;

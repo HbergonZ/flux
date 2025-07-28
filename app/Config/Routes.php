@@ -32,8 +32,8 @@ $routes->group('', function ($routes) {
     $routes->post('planos/filtrar', 'PlanosController::filtrar');
 
     // Projetos
-    $routes->get('planos/(:num)/projetos', 'Projetos::index/$1');
-    $routes->post('projetos/filtrar/(:num)', 'Projetos::filtrar/$1');
+    $routes->get('planos/(:num)/projetos', 'ProjetosController::index/$1');
+    $routes->post('projetos/filtrar/(:num)', 'ProjetosController::filtrar/$1');
 
     // Etapas
     $routes->get('planos/(:num)/projetos/(:num)/etapas', 'EtapasController::index/$1/$2');
@@ -55,7 +55,7 @@ $routes->group('', function ($routes) {
     // Dados para solicitações
     $routes->get('acoes/dados-acao/(:num)', 'AcoesController::dadosAcao/$1');
     $routes->get('etapas/dados-etapa/(:num)', 'EtapasController::dadosEtapa/$1');
-    $routes->get('projetos/dados-projeto/(:num)', 'Projetos::dadosProjeto/$1');
+    $routes->get('projetos/dados-projeto/(:num)', 'ProjetosController::dadosProjeto/$1');
     $routes->get('planos/dados-plano/(:num)', 'PlanosController::dadosPlano/$1');
 
     // Solicitações de edição
@@ -65,14 +65,14 @@ $routes->group('', function ($routes) {
     $routes->get('etapas/carregar-etapas/(:num)', 'EtapasController::carregarEtapas/$1');
     $routes->get('etapas/progresso/(:num)', 'EtapasController::progresso/$1');
 
-    $routes->post('projetos/solicitar-edicao', 'Projetos::solicitarEdicao');
-    $routes->post('projetos/solicitar-exclusao', 'Projetos::solicitarExclusao');
-    $routes->post('projetos/solicitar-inclusao', 'Projetos::solicitarInclusao');
-    $routes->get('projetos/listar-evidencias/(:num)', 'Projetos::listarEvidencias/$1');
-    $routes->get('projetos/progresso/(:num)', 'Projetos::progresso/$1');
-    $routes->get('projetos/responsaveis/(:num)', 'Projetos::getResponsaveis/$1');
-    $routes->get('projetos/usuarios-disponiveis/(:num)', 'Projetos::getUsuariosDisponiveis/$1');
-    $routes->get('projetos/listar-indicadores/(:num)', 'Projetos::listarIndicadores/$1');
+    $routes->post('projetos/solicitar-edicao', 'ProjetosController::solicitarEdicao');
+    $routes->post('projetos/solicitar-exclusao', 'ProjetosController::solicitarExclusao');
+    $routes->post('projetos/solicitar-inclusao', 'ProjetosController::solicitarInclusao');
+    $routes->get('projetos/listar-evidencias/(:num)', 'ProjetosController::listarEvidencias/$1');
+    $routes->get('projetos/progresso/(:num)', 'ProjetosController::progresso/$1');
+    $routes->get('projetos/responsaveis/(:num)', 'ProjetosController::getResponsaveis/$1');
+    $routes->get('projetos/usuarios-disponiveis/(:num)', 'ProjetosController::getUsuariosDisponiveis/$1');
+    $routes->get('projetos/listar-indicadores/(:num)', 'ProjetosController::listarIndicadores/$1');
 
 
     $routes->post('planos/solicitar-edicao', 'PlanosController::solicitarEdicao');
@@ -104,16 +104,16 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
     $routes->get('planos/verificar-relacionamentos/(:num)', 'PlanosController::verificarRelacionamentos/$1');
 
     // Projetos
-    $routes->post('projetos/cadastrar/(:num)', 'Projetos::cadastrar/$1');
-    $routes->get('projetos/editar/(:num)', 'Projetos::editar/$1');
-    $routes->post('projetos/atualizar/(:num)', 'Projetos::atualizar/$1');
-    $routes->post('projetos/excluir/(:num)', 'Projetos::excluir/$1');
-    $routes->post('projetos/cadastrar-acao-direta/(:num)', 'Projetos::cadastrarAcaoDireta/$1');
-    $routes->post('projetos/editar/(:num)', 'Projetos::editar/$1');
-    $routes->post('projetos/adicionar-responsavel/(:num)', 'Projetos::adicionarResponsavel/$1');
-    $routes->post('projetos/remover-responsavel/(:num)', 'Projetos::removerResponsavel/$1');
-    $routes->post('projetos/adicionar-indicador/(:num)', 'Projetos::adicionarIndicador/$1');
-    $routes->post('projetos/remover-indicador/(:num)/(:num)', 'Projetos::removerIndicador/$1/$2');
+    $routes->post('projetos/cadastrar/(:num)', 'ProjetosController::cadastrar/$1');
+    $routes->get('projetos/editar/(:num)', 'ProjetosController::editar/$1');
+    $routes->post('projetos/atualizar/(:num)', 'ProjetosController::atualizar/$1');
+    $routes->post('projetos/excluir/(:num)', 'ProjetosController::excluir/$1');
+    $routes->post('projetos/cadastrar-acao-direta/(:num)', 'ProjetosController::cadastrarAcaoDireta/$1');
+    $routes->post('projetos/editar/(:num)', 'ProjetosController::editar/$1');
+    $routes->post('projetos/adicionar-responsavel/(:num)', 'ProjetosController::adicionarResponsavel/$1');
+    $routes->post('projetos/remover-responsavel/(:num)', 'ProjetosController::removerResponsavel/$1');
+    $routes->post('projetos/adicionar-indicador/(:num)', 'ProjetosController::adicionarIndicador/$1');
+    $routes->post('projetos/remover-indicador/(:num)/(:num)', 'ProjetosController::removerIndicador/$1/$2');
 
 
     // Etapas
