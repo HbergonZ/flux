@@ -25,8 +25,8 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="filterName">Nome</label>
-                            <input type="text" class="form-control" id="filterName" name="nome" placeholder="Filtrar por nome">
+                            <label for="filterName">Plano</label>
+                            <input type="text" class="form-control" id="filterName" name="nome" placeholder="Filtrar por plano">
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -75,7 +75,7 @@
                 <table class="table table-bordered align-middle" id="dataTable" cellspacing="0">
                     <thead>
                         <tr class="text-center">
-                            <th>Nome</th>
+                            <th>Plano</th>
                             <th>Sigla</th>
                             <th>Descrição</th>
                             <th>Progresso</th>
