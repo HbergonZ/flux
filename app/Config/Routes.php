@@ -40,20 +40,20 @@ $routes->group('', function ($routes) {
     $routes->post('etapas/filtrar/(:num)', 'Etapas::filtrar/$1');
 
     // Ações
-    $routes->get('planos/(:num)/projetos/(:num)/acoes', 'Acoes::index/$2/projeto');
-    $routes->get('planos/(:num)/projetos/(:num)/etapas/(:num)/acoes', 'Acoes::index/$3/etapa');
+    $routes->get('planos/(:num)/projetos/(:num)/acoes', 'AcoesController::index/$2/projeto');
+    $routes->get('planos/(:num)/projetos/(:num)/etapas/(:num)/acoes', 'AcoesController::index/$3/etapa');
 
     // Rotas alternativas para compatibilidade
     $routes->get('projetos/(:num)/etapas', 'Etapas::index/$1');
-    $routes->get('projetos/(:num)/acoes', 'Acoes::index/$1/projeto');
-    $routes->get('etapas/(:num)/acoes', 'Acoes::index/$1/etapa');
+    $routes->get('projetos/(:num)/acoes', 'AcoesController::index/$1/projeto');
+    $routes->get('etapas/(:num)/acoes', 'AcoesController::index/$1/etapa');
 
     // Solicitações
     $routes->get('minhas-solicitacoes', 'MinhasSolicitacoes::index');
     $routes->get('minhas-solicitacoes/detalhes/(:num)', 'MinhasSolicitacoes::detalhes/$1');
 
     // Dados para solicitações
-    $routes->get('acoes/dados-acao/(:num)', 'Acoes::dadosAcao/$1');
+    $routes->get('acoes/dados-acao/(:num)', 'AcoesController::dadosAcao/$1');
     $routes->get('etapas/dados-etapa/(:num)', 'Etapas::dadosEtapa/$1');
     $routes->get('projetos/dados-projeto/(:num)', 'Projetos::dadosProjeto/$1');
     $routes->get('planos/dados-plano/(:num)', 'Planos::dadosPlano/$1');
@@ -79,19 +79,19 @@ $routes->group('', function ($routes) {
     $routes->post('planos/solicitar-exclusao', 'Planos::solicitarExclusao');
     $routes->post('planos/solicitar-inclusao', 'Planos::solicitarInclusao');
 
-    $routes->post('acoes/solicitar-edicao', 'Acoes::solicitarEdicao');
-    $routes->post('acoes/solicitar-exclusao', 'Acoes::solicitarExclusao');
-    $routes->post('acoes/solicitar-inclusao', 'Acoes::solicitarInclusao');
-    $routes->get('acoes/listar-evidencias/(:num)', 'Acoes::listarEvidencias/$1');
-    $routes->post('acoes/filtrar/(:num)/(:segment)', 'Acoes::filtrar/$1/$2');
-    $routes->get('acoes/get-acoes/(:num)/(:segment)', 'Acoes::getAcoes/$1/$2');
-    $routes->get('acoes/acoes-atrasadas-usuario', 'Acoes::getAcoesAtrasadasUsuario');
-    $routes->get('acoes/get-responsaveis/(:num)', 'Acoes::getResponsaveis/$1');
-    $routes->get('acoes/responsaveis/(:num)', 'Acoes::getResponsaveis/$1');
-    $routes->get('acoes/usuarios-disponiveis/(:num)', 'Acoes::buscarUsuariosDisponiveis/$1');
-    $routes->get('acoes/usuarios-disponiveis/(:num)', 'Acoes::getUsuariosDisponiveis/$1');
-    $routes->get('acoes/buscar-usuarios', 'Acoes::buscarUsuariosParaResponsaveis');
-    $routes->get('acoes/get-usuarios-disponiveis/(:num)', 'Acoes::getUsuariosDisponiveis/$1');
+    $routes->post('acoes/solicitar-edicao', 'AcoesController::solicitarEdicao');
+    $routes->post('acoes/solicitar-exclusao', 'AcoesController::solicitarExclusao');
+    $routes->post('acoes/solicitar-inclusao', 'AcoesController::solicitarInclusao');
+    $routes->get('acoes/listar-evidencias/(:num)', 'AcoesController::listarEvidencias/$1');
+    $routes->post('acoes/filtrar/(:num)/(:segment)', 'AcoesController::filtrar/$1/$2');
+    $routes->get('acoes/get-acoes/(:num)/(:segment)', 'AcoesController::getAcoes/$1/$2');
+    $routes->get('acoes/acoes-atrasadas-usuario', 'AcoesController::getAcoesAtrasadasUsuario');
+    $routes->get('acoes/get-responsaveis/(:num)', 'AcoesController::getResponsaveis/$1');
+    $routes->get('acoes/responsaveis/(:num)', 'AcoesController::getResponsaveis/$1');
+    $routes->get('acoes/usuarios-disponiveis/(:num)', 'AcoesController::buscarUsuariosDisponiveis/$1');
+    $routes->get('acoes/usuarios-disponiveis/(:num)', 'AcoesController::getUsuariosDisponiveis/$1');
+    $routes->get('acoes/buscar-usuarios', 'AcoesController::buscarUsuariosParaResponsaveis');
+    $routes->get('acoes/get-usuarios-disponiveis/(:num)', 'AcoesController::getUsuariosDisponiveis/$1');
 });
 
 // Rotas administrativas
@@ -126,18 +126,18 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
     $routes->get('etapas/verificar-relacionamentos/(:num)', 'Etapas::verificarRelacionamentos/$1');
 
     // Ações
-    $routes->post('acoes/cadastrar/(:num)/(:segment)', 'Acoes::cadastrar/$1/$2');
-    $routes->get('acoes/proxima-ordem/(:num)/(:segment)', 'Acoes::proximaOrdem/$1/$2');
-    $routes->post('acoes/salvar-ordem/(:num)/(:segment)', 'Acoes::salvarOrdem/$1/$2');
-    $routes->get('acoes/editar/(:num)', 'Acoes::editar/$1');
-    $routes->post('acoes/atualizar/(:num)/(:segment)', 'Acoes::atualizar/$1/$2');
-    $routes->post('acoes/excluir/(:num)/(:segment)', 'Acoes::excluir/$1/$2');
-    $routes->post('acoes/adicionar-evidencia/(:num)', 'Acoes::adicionarEvidencia/$1');
-    $routes->post('acoes/remover-evidencia/(:num)', 'Acoes::removerEvidencia/$1');
-    $routes->get('acoes/gerenciar-evidencias/(:num)', 'Acoes::gerenciarEvidencias/$1');
-    $routes->get('acoes/carregar-para-ordenacao/(:num)/(:segment)', 'Acoes::carregarAcoesParaOrdenacao/$1/$2');
-    $routes->post('acoes/adicionar-responsavel', 'Acoes::adicionarResponsavel');
-    $routes->post('acoes/remover-responsavel', 'Acoes::removerResponsavel');
+    $routes->post('acoes/cadastrar/(:num)/(:segment)', 'AcoesController::cadastrar/$1/$2');
+    $routes->get('acoes/proxima-ordem/(:num)/(:segment)', 'AcoesController::proximaOrdem/$1/$2');
+    $routes->post('acoes/salvar-ordem/(:num)/(:segment)', 'AcoesController::salvarOrdem/$1/$2');
+    $routes->get('acoes/editar/(:num)', 'AcoesController::editar/$1');
+    $routes->post('acoes/atualizar/(:num)/(:segment)', 'AcoesController::atualizar/$1/$2');
+    $routes->post('acoes/excluir/(:num)/(:segment)', 'AcoesController::excluir/$1/$2');
+    $routes->post('acoes/adicionar-evidencia/(:num)', 'AcoesController::adicionarEvidencia/$1');
+    $routes->post('acoes/remover-evidencia/(:num)', 'AcoesController::removerEvidencia/$1');
+    $routes->get('acoes/gerenciar-evidencias/(:num)', 'AcoesController::gerenciarEvidencias/$1');
+    $routes->get('acoes/carregar-para-ordenacao/(:num)/(:segment)', 'AcoesController::carregarAcoesParaOrdenacao/$1/$2');
+    $routes->post('acoes/adicionar-responsavel', 'AcoesController::adicionarResponsavel');
+    $routes->post('acoes/remover-responsavel', 'AcoesController::removerResponsavel');
 
 
 

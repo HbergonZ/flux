@@ -10,7 +10,7 @@ use App\Models\SolicitacoesModel;
 use App\Controllers\LogController;
 use App\Models\EvidenciasModel;
 
-class Acoes extends BaseController
+class AcoesController extends BaseController
 {
     protected $logController;
     protected $acoesModel;
