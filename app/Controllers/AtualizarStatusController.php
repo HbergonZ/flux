@@ -4,7 +4,7 @@ namespace App\Controllers;
 
 use App\Models\AcoesModel;
 
-class AtualizarStatus extends BaseController
+class AtualizarStatusController extends BaseController
 {
     // Constante com o tempo mínimo entre execuções (5 minutos em segundos)
     const MIN_INTERVAL = 2; // 5 * 60

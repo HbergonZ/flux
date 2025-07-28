@@ -73,7 +73,7 @@ class AcoesController extends BaseController
     public function index($idOrigem = null, $tipoOrigem = 'etapa')
     {
         // Chamar a atualização de status (será executada apenas se passaram 5 minutos)
-        $statusUpdater = new AtualizarStatus();
+        $statusUpdater = new AtualizarStatusController();
         $statusUpdater->index(); // Isso agora tem a verificação de tempo
 
         if (empty($idOrigem)) {

@@ -25,7 +25,7 @@ $routes->group('', function ($routes) {
     // Visão Geral
     $routes->get('visao-geral', 'VisaoGeral::index');
     $routes->post('visao-geral/filtrar', 'VisaoGeral::filtrar');
-    $routes->get('teste', 'AtualizarStatus::index');
+    $routes->get('teste', 'AtualizarStatusController::index');
 
     // Planos
     $routes->get('planos', 'Planos::index');

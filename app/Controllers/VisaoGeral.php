@@ -15,7 +15,7 @@ class VisaoGeral extends BaseController
 
     public function index(): string
     {
-        $statusUpdater = new AtualizarStatus();
+        $statusUpdater = new AtualizarStatusController();
         $statusUpdater->index(); // Isso agora tem a verificação de tempo
 
         // Busca todos os registros
