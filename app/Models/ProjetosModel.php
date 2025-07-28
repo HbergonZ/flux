@@ -90,7 +90,6 @@ class ProjetosModel extends Model
             return true;
         } catch (\Exception $e) {
             $this->db->transRollback();
-            log_message('error', 'Erro ao atualizar status do projeto: ' . $e->getMessage());
             return false;
         }
     }

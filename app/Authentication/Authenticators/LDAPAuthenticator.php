@@ -27,7 +27,6 @@ class LDAPAuthenticator extends Session
         $ldapResult = $this->validateLDAPCredentials($username, $password);
 
         if (!$ldapResult['success']) {
-            log_message('error', 'Falha LDAP: ' . ($ldapResult['error'] ?? 'Erro desconhecido'));
             return new Result([
                 'success' => false,
                 'reason' => $ldapResult['error'] ?? lang('Auth.invalidCredential')
@@ -73,7 +72,6 @@ class LDAPAuthenticator extends Session
                 'extraInfo' => $user
             ]);
         } catch (\Exception $e) {
-            log_message('error', 'Erro LDAP: ' . $e->getMessage());
             return new Result([
                 'success' => false,
                 'reason' => 'Erro durante a autenticação. Tente novamente.'
@@ -112,7 +110,6 @@ class LDAPAuthenticator extends Session
         $ldapConn = ldap_connect("ldap://{$config['host']}:{$config['port']}");
 
         if (!$ldapConn) {
-            log_message('error', 'Falha ao conectar ao servidor LDAP: ' . $config['host']);
             return ['success' => false, 'error' => 'Erro de conexão com o servidor'];
         }
 
@@ -122,7 +119,6 @@ class LDAPAuthenticator extends Session
         try {
             $bind = @ldap_bind($ldapConn, $config['bindUser'], $config['bindPassword']);
             if (!$bind) {
-                log_message('error', 'Falha no bind LDAP: ' . ldap_error($ldapConn));
                 return ['success' => false, 'error' => 'Erro de autenticação'];
             }
 

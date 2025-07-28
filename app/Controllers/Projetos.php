@@ -33,30 +33,24 @@ class Projetos extends BaseController
 
     public function index($idPlano = null)
     {
-        log_message('debug', 'Acessando método index do controller Projetos com idPlano: ' . $idPlano);
 
         // Redirecionamento para URL canônica se acessado pela rota antiga
         if (strpos(current_url(), 'projetos/') !== false && strpos(current_url(), '/etapas') === false) {
-            log_message('debug', 'Redirecionando para URL canônica');
             return redirect()->to(site_url("planos/$idPlano/projetos"));
         }
 
         if (empty($idPlano)) {
-            log_message('debug', 'Redirecionando para /planos - idPlano vazio');
             return redirect()->to('/planos');
         }
 
         $plano = $this->planosModel->find($idPlano);
         if (!$plano) {
-            log_message('debug', 'Plano não encontrado, redirecionando para /planos');
             return redirect()->to('/planos');
         }
 
         $projetos = $this->projetosModel->getProjetosByPlano($idPlano);
         $eixos = $this->eixosModel->findAll();
 
-        log_message('debug', 'Número de projetos encontrados: ' . count($projetos));
-        log_message('debug', 'Número de eixos encontrados: ' . count($eixos));
 
         $data = [
             'plano' => $plano,
@@ -71,22 +65,18 @@ class Projetos extends BaseController
 
     public function cadastrar($idPlano)
     {
-        log_message('debug', 'Iniciando cadastro de projeto para o plano: ' . $idPlano);
 
         if (!$this->request->isAJAX()) {
-            log_message('debug', 'Requisição não é AJAX, redirecionando');
             return redirect()->to("/planos/$idPlano/projetos");
         }
 
         $response = ['success' => false, 'message' => ''];
 
         try {
-            log_message('debug', 'Verificando permissões do usuário');
             if (!auth()->user()->inGroup('admin')) {
                 throw new \Exception('Você não tem permissão para esta ação');
             }
 
-            log_message('debug', 'Validando dados do formulário');
 
             $rules = [
                 'identificador' => 'required|max_length[10]|alpha_numeric',
@@ -101,11 +91,9 @@ class Projetos extends BaseController
 
             if (!$this->validate($rules)) {
                 $errors = $this->validator->getErrors();
-                log_message('debug', 'Erros de validação: ' . print_r($errors, true));
                 throw new \Exception(implode("\n", $errors));
             }
 
-            log_message('debug', 'Verificando identificador único');
             $identificadorExistente = $this->projetosModel
                 ->where('identificador', $this->request->getPost('identificador'))
                 ->where('id_plano', $idPlano)
@@ -127,14 +115,12 @@ class Projetos extends BaseController
                 'id_eixo' => $this->request->getPost('id_eixo') ?: null
             ];
 
-            log_message('debug', 'Dados preparados para inserção: ' . print_r($data, true));
 
             $this->projetosModel->transStart();
             $insertId = $this->projetosModel->insert($data);
 
             if ($this->projetosModel->errors()) {
                 $errors = $this->projetosModel->errors();
-                log_message('error', 'Erros ao inserir projeto: ' . print_r($errors, true));
                 throw new \Exception(implode("\n", $errors));
             }
 
@@ -147,16 +133,12 @@ class Projetos extends BaseController
 
             $this->projetosModel->transComplete();
 
-            log_message('debug', 'Projeto inserido com ID: ' . $insertId);
 
             $response['success'] = true;
             $response['message'] = 'Projeto cadastrado com sucesso!';
             $response['data'] = $projetoInserido;
-
-            log_message('debug', 'Resposta JSON preparada: ' . print_r($response, true));
         } catch (\Exception $e) {
             $this->projetosModel->transRollback();
-            log_message('error', 'Erro ao cadastrar projeto: ' . $e->getMessage());
             $response['message'] = $e->getMessage();
         }
 
@@ -197,10 +179,8 @@ class Projetos extends BaseController
 
     public function atualizar($idPlano)
     {
-        log_message('debug', 'Iniciando atualização de projeto no plano: ' . $idPlano);
 
         if (!$this->request->isAJAX()) {
-            log_message('debug', 'Requisição não é AJAX, redirecionando');
             return redirect()->to("/planos/$idPlano/projetos");
         }
 
@@ -208,7 +188,6 @@ class Projetos extends BaseController
 
         // Verificar permissões
         if (!auth()->user()->inGroup('admin')) {
-            log_message('debug', 'Usuário não tem permissão para esta ação');
             $response['message'] = 'Você não tem permissão para esta ação';
             return $this->response->setJSON($response);
         }
@@ -227,7 +206,6 @@ class Projetos extends BaseController
 
         if (!$this->validate($rules)) {
             $errors = $this->validator->getErrors();
-            log_message('debug', 'Erros de validação: ' . print_r($errors, true));
             $response['message'] = implode('<br>', $errors);
             return $this->response->setJSON($response);
         }
@@ -241,7 +219,6 @@ class Projetos extends BaseController
 
             // Verificar existência do projeto
             if (!$projetoAntigo || $projetoAntigo['id_plano'] != $idPlano) {
-                log_message('debug', 'Projeto não encontrado ou não pertence ao plano');
                 throw new \Exception('Projeto não encontrado ou não pertence a este plano');
             }
 
@@ -261,7 +238,6 @@ class Projetos extends BaseController
                 'status' => $novoStatus
             ];
 
-            log_message('debug', 'Dados preparados para atualização: ' . print_r($data, true));
 
             // 1. Atualizar dados básicos do projeto
             if (!$this->projetosModel->save($data)) {
@@ -349,8 +325,6 @@ class Projetos extends BaseController
             $responsaveisAdicionar = json_decode($this->request->getPost('responsaveis_adicionar'), true) ?? [];
             $responsaveisRemover = json_decode($this->request->getPost('responsaveis_remover'), true) ?? [];
 
-            log_message('debug', 'Responsáveis a adicionar: ' . print_r($responsaveisAdicionar, true));
-            log_message('debug', 'Responsáveis a remover: ' . print_r($responsaveisRemover, true));
 
             // Obter responsáveis atuais do banco de dados
             $responsaveisAtuais = $this->projetosModel->getResponsaveis($id);
@@ -386,7 +360,6 @@ class Projetos extends BaseController
 
             // 5. Atualizar status das ações se necessário
             if ($statusAlterado) {
-                log_message('debug', 'Atualizando status das ações para: ' . $novoStatus);
                 $acoesModel = new \App\Models\AcoesModel();
                 if (!$acoesModel->atualizarStatusAcoesProjeto($id, $novoStatus, $db)) {
                     throw new \Exception('Falha ao atualizar status das ações');
@@ -437,11 +410,8 @@ class Projetos extends BaseController
                     'responsaveis' => $responsaveisAtuais
                 ]
             ];
-
-            log_message('debug', 'Projeto atualizado com sucesso');
         } catch (\Exception $e) {
             $db->transRollback();
-            log_message('error', 'Erro ao atualizar projeto: ' . $e->getMessage());
             $response['message'] = 'Erro ao atualizar projeto: ' . $e->getMessage();
         }
 
@@ -450,17 +420,14 @@ class Projetos extends BaseController
 
     public function excluir($idPlano)
     {
-        log_message('debug', 'Iniciando exclusão de projeto no plano: ' . $idPlano);
 
         if (!$this->request->isAJAX()) {
-            log_message('debug', 'Requisição não é AJAX, redirecionando');
             return redirect()->to("/planos/$idPlano/projetos");
         }
 
         $response = ['success' => false, 'message' => ''];
 
         if (!auth()->user()->inGroup('admin')) {
-            log_message('debug', 'Usuário não tem permissão para esta ação');
             $response['message'] = 'Você não tem permissão para esta ação';
             return $this->response->setJSON($response);
         }
@@ -468,7 +435,6 @@ class Projetos extends BaseController
         $idProjeto = $this->request->getPost('id');
 
         if (empty($idProjeto)) {
-            log_message('debug', 'ID do projeto não fornecido');
             $response['message'] = 'ID do projeto não fornecido';
             return $this->response->setJSON($response);
         }
@@ -476,12 +442,10 @@ class Projetos extends BaseController
         try {
             $projeto = $this->projetosModel->find($idProjeto);
             if (!$projeto || $projeto['id_plano'] != $idPlano) {
-                log_message('debug', 'Projeto não encontrado ou não pertence ao plano');
                 $response['message'] = 'Projeto não encontrado ou não pertence a este plano';
                 return $this->response->setJSON($response);
             }
 
-            log_message('debug', 'Verificando dependências do projeto');
             $contagem = [
                 'etapas' => 0,
                 'acoes' => 0
@@ -550,11 +514,8 @@ class Projetos extends BaseController
             $response['success'] = true;
             $response['message'] = 'Projeto excluído com sucesso!';
             $response['contagem'] = $contagem;
-
-            log_message('debug', 'Projeto excluído com sucesso');
         } catch (\Exception $e) {
             $this->projetosModel->transRollback();
-            log_message('error', 'Erro ao excluir projeto: ' . $e->getMessage());
             $response['message'] = 'Erro ao excluir projeto: ' . $e->getMessage();
         }
 
@@ -596,7 +557,6 @@ class Projetos extends BaseController
 
             $response['success'] = true;
         } catch (\Exception $e) {
-            log_message('error', 'Erro ao verificar relacionamentos: ' . $e->getMessage());
             $response['message'] = 'Erro ao verificar relacionamentos: ' . $e->getMessage();
         }
 
@@ -707,10 +667,8 @@ class Projetos extends BaseController
 
     public function dadosProjeto($idProjeto = null)
     {
-        log_message('debug', 'Obtendo dados do projeto ID: ' . $idProjeto);
 
         if (!$this->request->isAJAX()) {
-            log_message('debug', 'Requisição não é AJAX, redirecionando');
             return redirect()->back();
         }
 
@@ -718,11 +676,9 @@ class Projetos extends BaseController
         $projeto = $this->projetosModel->find($idProjeto);
 
         if ($projeto) {
-            log_message('debug', 'Projeto encontrado');
             $response['success'] = true;
             $response['data'] = $projeto;
         } else {
-            log_message('debug', 'Projeto não encontrado');
             $response['message'] = 'Projeto não encontrado';
         }
 
@@ -732,7 +688,6 @@ class Projetos extends BaseController
     public function solicitarEdicao()
     {
         $response = ['success' => false, 'message' => ''];
-        log_message('debug', 'Iniciando solicitarEdicao - Método acessado');
 
         if (!$this->request->isAJAX()) {
             return $this->response->setStatusCode(405)->setJSON([
@@ -751,7 +706,6 @@ class Projetos extends BaseController
                 $postData = $this->request->getPost();
             }
 
-            log_message('debug', 'Dados recebidos: ' . print_r($postData, true));
 
             // Validações básicas
             $rules = [
@@ -931,7 +885,6 @@ class Projetos extends BaseController
             ];
         } catch (\Exception $e) {
             $db->transRollback();
-            log_message('error', 'Erro em solicitarEdicao: ' . $e->getMessage());
             $response['message'] = $e->getMessage();
         }
 
@@ -940,10 +893,8 @@ class Projetos extends BaseController
 
     public function solicitarExclusao()
     {
-        log_message('debug', 'Processando solicitação de exclusão de projeto');
 
         if (!$this->request->isAJAX()) {
-            log_message('debug', 'Requisição não é AJAX, redirecionando');
             return redirect()->back();
         }
 
@@ -959,7 +910,6 @@ class Projetos extends BaseController
             try {
                 $projeto = $this->projetosModel->find($postData['id_projeto']);
                 if (!$projeto) {
-                    log_message('debug', 'Projeto não encontrado para solicitação de exclusão');
                     $response['message'] = 'Projeto não encontrado';
                     return $this->response->setJSON($response);
                 }
@@ -988,20 +938,15 @@ class Projetos extends BaseController
                     'data_solicitacao' => date('Y-m-d H:i:s')
                 ];
 
-                log_message('debug', 'Dados da solicitação de exclusão: ' . print_r($data, true));
 
                 $this->solicitacoesModel->insert($data);
                 $response['success'] = true;
                 $response['message'] = 'Solicitação de exclusão enviada com sucesso!';
-
-                log_message('debug', 'Solicitação de exclusão registrada com sucesso');
             } catch (\Exception $e) {
-                log_message('error', 'Erro em solicitarExclusao: ' . $e->getMessage());
                 $response['message'] = 'Erro ao processar solicitação: ' . $e->getMessage();
             }
         } else {
             $errors = $this->validator->getErrors();
-            log_message('debug', 'Erros de validação na solicitação de exclusão: ' . print_r($errors, true));
             $response['message'] = implode('<br>', $errors);
         }
 
@@ -1010,10 +955,8 @@ class Projetos extends BaseController
 
     public function solicitarInclusao()
     {
-        log_message('debug', 'Processando solicitação de inclusão de projeto');
 
         if (!$this->request->isAJAX()) {
-            log_message('debug', 'Requisição não é AJAX, redirecionando');
             return redirect()->back();
         }
 
@@ -1050,20 +993,15 @@ class Projetos extends BaseController
                     'data_solicitacao' => date('Y-m-d H:i:s')
                 ];
 
-                log_message('debug', 'Dados da solicitação de inclusão: ' . print_r($data, true));
 
                 $this->solicitacoesModel->insert($data);
                 $response['success'] = true;
                 $response['message'] = 'Solicitação de inclusão enviada com sucesso!';
-
-                log_message('debug', 'Solicitação de inclusão registrada com sucesso');
             } catch (\Exception $e) {
-                log_message('error', 'Erro em solicitarInclusao: ' . $e->getMessage());
                 $response['message'] = 'Erro ao processar solicitação: ' . $e->getMessage();
             }
         } else {
             $errors = $this->validator->getErrors();
-            log_message('debug', 'Erros de validação na solicitação de inclusão: ' . print_r($errors, true));
             $response['message'] = implode('<br>', $errors);
         }
 
@@ -1072,17 +1010,14 @@ class Projetos extends BaseController
 
     public function etapas($idProjeto)
     {
-        log_message('debug', 'Acessando etapas do projeto ID: ' . $idProjeto);
 
         $projeto = $this->projetosModel->find($idProjeto);
         if (!$projeto) {
-            log_message('debug', 'Projeto não encontrado, redirecionando');
             return redirect()->back()->with('error', 'Projeto não encontrado');
         }
 
         $etapas = $this->etapasModel->where('id_projeto', $idProjeto)->findAll();
 
-        log_message('debug', 'Número de etapas encontradas: ' . count($etapas));
 
         $data = [
             'projeto' => $projeto,
@@ -1097,11 +1032,9 @@ class Projetos extends BaseController
 
     public function acoes($idProjeto)
     {
-        log_message('debug', 'Acessando ações diretas do projeto ID: ' . $idProjeto);
 
         $projeto = $this->projetosModel->find($idProjeto);
         if (!$projeto) {
-            log_message('debug', 'Projeto não encontrado, redirecionando');
             return redirect()->back()->with('error', 'Projeto não encontrado');
         }
 
@@ -1110,7 +1043,6 @@ class Projetos extends BaseController
             ->orderBy('ordem', 'ASC')
             ->findAll();
 
-        log_message('debug', 'Número de ações diretas encontradas: ' . count($acoes));
 
         $data = [
             'projeto' => $projeto,
@@ -1126,10 +1058,8 @@ class Projetos extends BaseController
 
     public function cadastrarAcaoDireta($idProjeto)
     {
-        log_message('debug', 'Cadastrando ação direta para o projeto ID: ' . $idProjeto);
 
         if (!$this->request->isAJAX()) {
-            log_message('debug', 'Requisição não é AJAX, redirecionando');
             return redirect()->to("/projetos/$idProjeto/acoes");
         }
 
@@ -1152,7 +1082,6 @@ class Projetos extends BaseController
             try {
                 $projeto = $this->projetosModel->find($idProjeto);
                 if (!$projeto) {
-                    log_message('debug', 'Projeto não encontrado para cadastrar ação');
                     $response['message'] = 'Projeto não encontrado';
                     return $this->response->setJSON($response);
                 }
@@ -1172,7 +1101,6 @@ class Projetos extends BaseController
                     'id_etapa' => null
                 ];
 
-                log_message('debug', 'Dados da ação direta: ' . print_r($data, true));
 
                 $this->acoesModel->transStart();
 
@@ -1194,16 +1122,12 @@ class Projetos extends BaseController
                 $response['success'] = true;
                 $response['message'] = 'Ação cadastrada com sucesso!';
                 $response['data'] = $acaoInserida;
-
-                log_message('debug', 'Ação direta cadastrada com sucesso');
             } catch (\Exception $e) {
                 $this->acoesModel->transRollback();
-                log_message('error', 'Erro ao cadastrar ação direta: ' . $e->getMessage());
                 $response['message'] = 'Erro ao cadastrar ação: ' . $e->getMessage();
             }
         } else {
             $errors = $this->validator->getErrors();
-            log_message('debug', 'Erros de validação ao cadastrar ação: ' . print_r($errors, true));
             $response['message'] = implode('<br>', $errors);
         }
 
@@ -1212,10 +1136,8 @@ class Projetos extends BaseController
 
     public function editarAcaoDireta($idProjeto, $idAcao)
     {
-        log_message('debug', "Editando ação direta ID: $idAcao do projeto ID: $idProjeto");
 
         if (!$this->request->isAJAX()) {
-            log_message('debug', 'Requisição não é AJAX, redirecionando');
             return redirect()->to("/projetos/$idProjeto/acoes");
         }
 
@@ -1288,7 +1210,6 @@ class Projetos extends BaseController
             $response['data'] = $acaoAtualizada;
         } catch (\Exception $e) {
             $this->acoesModel->transRollback();
-            log_message('error', 'Erro ao editar ação direta: ' . $e->getMessage());
             $response['message'] = $e->getMessage();
         }
 
@@ -1297,10 +1218,8 @@ class Projetos extends BaseController
 
     public function excluirAcaoDireta($idProjeto, $idAcao)
     {
-        log_message('debug', "Excluindo ação direta ID: $idAcao do projeto ID: $idProjeto");
 
         if (!$this->request->isAJAX()) {
-            log_message('debug', 'Requisição não é AJAX, redirecionando');
             return redirect()->to("/projetos/$idProjeto/acoes");
         }
 
@@ -1338,7 +1257,6 @@ class Projetos extends BaseController
             $response['message'] = 'Ação excluída com sucesso!';
         } catch (\Exception $e) {
             $this->acoesModel->transRollback();
-            log_message('error', 'Erro ao excluir ação direta: ' . $e->getMessage());
             $response['message'] = $e->getMessage();
         }
 
@@ -1347,10 +1265,8 @@ class Projetos extends BaseController
 
     public function reordenarAcoesDiretas($idProjeto)
     {
-        log_message('debug', "Reordenando ações diretas do projeto ID: $idProjeto");
 
         if (!$this->request->isAJAX()) {
-            log_message('debug', 'Requisição não é AJAX, redirecionando');
             return redirect()->to("/projetos/$idProjeto/acoes");
         }
 
@@ -1379,7 +1295,6 @@ class Projetos extends BaseController
             $response['message'] = 'Ordem das ações atualizada com sucesso!';
         } catch (\Exception $e) {
             $this->acoesModel->transRollback();
-            log_message('error', 'Erro ao reordenar ações diretas: ' . $e->getMessage());
             $response['message'] = $e->getMessage();
         }
 
@@ -1425,7 +1340,6 @@ class Projetos extends BaseController
             $response['success'] = true;
             $response['data'] = $evidenciasFormatadas;
         } catch (\Exception $e) {
-            log_message('error', 'Erro em listarEvidencias: ' . $e->getMessage());
             $response['message'] = 'Erro ao carregar evidências: ' . $e->getMessage();
         }
 
@@ -1460,7 +1374,6 @@ class Projetos extends BaseController
                     : "Nenhuma ação registrada"
             ];
         } catch (\Exception $e) {
-            log_message('error', 'Erro ao calcular progresso: ' . $e->getMessage());
             $response['message'] = 'Erro ao calcular progresso';
         }
 
@@ -1585,7 +1498,6 @@ class Projetos extends BaseController
             $response['success'] = true;
             $response['data'] = $indicadores;
         } catch (\Exception $e) {
-            log_message('error', 'Erro em listarIndicadores: ' . $e->getMessage());
             $response['message'] = 'Erro ao carregar indicadores: ' . $e->getMessage();
         }
 
@@ -1632,7 +1544,6 @@ class Projetos extends BaseController
             $response['message'] = 'Indicador adicionado com sucesso!';
             $response['data'] = array_merge(['id' => $insertId], $data);
         } catch (\Exception $e) {
-            log_message('error', 'Erro em adicionarIndicador: ' . $e->getMessage());
             $response['message'] = $e->getMessage();
         }
 
@@ -1669,7 +1580,6 @@ class Projetos extends BaseController
             $response['success'] = true;
             $response['message'] = 'Indicador removido com sucesso!';
         } catch (\Exception $e) {
-            log_message('error', 'Erro em removerIndicador: ' . $e->getMessage());
             $response['message'] = $e->getMessage();
         }
 

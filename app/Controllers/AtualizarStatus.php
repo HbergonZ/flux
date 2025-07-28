@@ -28,12 +28,9 @@ class AtualizarStatus extends BaseController
 
         foreach ($projetos as $projeto) {
             // Atualizar status de todas as ações do projeto
-            log_message('debug', 'Atualizando ações do projeto ID: ' . $projeto['id']);
             $acoesModel->atualizarStatusTodasAcoesProjeto($projeto['id']);
         }
 
-        // Registrar no log
-        log_message('info', 'Status das ações atualizado automaticamente via cron job');
 
         // Atualizar o touch file com o timestamp atual
         $this->updateLastExecutionTime();

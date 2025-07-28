@@ -80,7 +80,6 @@ class LoginController extends ShieldLoginController
                     ->with('error', $result->reason() ?? 'Credenciais inválidas');
             }
         } catch (\Exception $e) {
-            log_message('error', 'Erro login: ' . $e->getMessage());
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Ocorreu um erro inesperado. Tente novamente.');

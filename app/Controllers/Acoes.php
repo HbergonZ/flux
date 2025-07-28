@@ -62,7 +62,6 @@ class Acoes extends BaseController
                 'proximaOrdem' => $proximaOrdem
             ]);
         } catch (\Exception $e) {
-            log_message('error', 'Erro ao calcular próxima ordem: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Erro ao calcular próxima ordem'
@@ -275,7 +274,6 @@ class Acoes extends BaseController
             } catch (\Exception $e) {
                 $this->acoesModel->transRollback();
                 $response['message'] = 'Erro ao cadastrar ação: ' . $e->getMessage();
-                log_message('error', 'Erro no cadastro de ação: ' . $e->getMessage());
             }
         } else {
             $response['message'] = implode('<br>', $this->validator->getErrors());
@@ -326,7 +324,6 @@ class Acoes extends BaseController
                 'data' => $usuarios
             ]);
         } catch (\Exception $e) {
-            log_message('error', 'Erro ao buscar usuários: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Erro ao buscar usuários'
@@ -586,7 +583,6 @@ class Acoes extends BaseController
         } catch (\Exception $e) {
             $this->acoesModel->transRollback();
             $response['message'] = 'Erro ao excluir ação: ' . $e->getMessage();
-            log_message('error', 'Erro na exclusão de ação: ' . $e->getMessage());
         }
 
         return $this->response->setJSON($response);
@@ -686,8 +682,6 @@ class Acoes extends BaseController
         $response = ['success' => false, 'message' => ''];
         $postData = $this->request->getPost();
 
-        // Log inicial dos dados brutos recebidos
-        log_message('info', 'Dados brutos recebidos: ' . print_r($this->request->getPost(), true));
 
         $rules = [
             'id' => 'required',
@@ -708,7 +702,6 @@ class Acoes extends BaseController
                     }
                 }
 
-                log_message('info', 'Dados alterados decodificados: ' . print_r($dadosAlteradosArray, true));
 
                 $acaoAtual = $this->acoesModel->find($postData['id']);
                 if (!$acaoAtual) {
@@ -760,7 +753,6 @@ class Acoes extends BaseController
                 $temAlteracoes = $temAlteracoesCampos || $temAlteracoesResponsaveis || $temAlteracoesEvidencias;
 
                 if (!$temAlteracoes) {
-                    log_message('info', 'Nenhuma alteração válida detectada nos dados enviados');
                     $response['message'] = 'Nenhuma alteração foi feita nos campos editáveis';
                     return $this->response->setJSON($response);
                 }
@@ -796,25 +788,17 @@ class Acoes extends BaseController
                     'evidencias_removidas' => !empty($evidenciasRemovidas) ? json_encode($evidenciasRemovidas, JSON_UNESCAPED_UNICODE) : null
                 ];
 
-                log_message('info', 'Dados completos para inserção no banco: ' . print_r([
-                    'data' => $data,
-                    'dados_atuais_decoded' => $dadosAtuais,
-                    'dados_alterados_decoded' => $dadosAlteradosArray
-                ], true));
 
                 $insertId = $this->solicitacoesModel->insert($data);
 
-                log_message('info', 'Solicitação inserida com ID: ' . $insertId);
 
                 $response['success'] = true;
                 $response['message'] = 'Solicitação de edição enviada com sucesso!';
             } catch (\Exception $e) {
-                log_message('error', 'Erro em solicitarEdicao: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
                 $response['message'] = 'Erro ao processar solicitação: ' . $e->getMessage();
             }
         } else {
             $errorMessages = $this->validator->getErrors();
-            log_message('error', 'Erros de validação: ' . print_r($errorMessages, true));
             $response['message'] = implode('<br>', $errorMessages);
         }
 
@@ -879,7 +863,6 @@ class Acoes extends BaseController
                 $response['success'] = true;
                 $response['message'] = 'Solicitação de exclusão enviada com sucesso!';
             } catch (\Exception $e) {
-                log_message('error', 'Erro em solicitarExclusao: ' . $e->getMessage());
                 $response['message'] = 'Erro ao processar solicitação: ' . $e->getMessage();
             }
         } else {
@@ -998,10 +981,8 @@ class Acoes extends BaseController
                 $response['message'] = 'Solicitação de inclusão enviada com sucesso!';
             } catch (\RuntimeException $e) {
                 $response['message'] = $e->getMessage();
-                log_message('error', 'Erro de validação em solicitarInclusao: ' . $e->getMessage());
             } catch (\Exception $e) {
                 $response['message'] = 'Erro ao processar solicitação';
-                log_message('error', 'Erro em solicitarInclusao: ' . $e->getMessage());
             }
         } else {
             $response['message'] = implode('<br>', $this->validator->getErrors());
@@ -1067,7 +1048,6 @@ class Acoes extends BaseController
             $response['message'] = 'Ordem das ações atualizada com sucesso!';
         } catch (\Exception $e) {
             $this->acoesModel->transRollback();
-            log_message('error', 'Erro ao salvar ordem: ' . $e->getMessage());
             $response['message'] = 'Erro ao salvar ordem: ' . $e->getMessage();
         }
 
@@ -1117,7 +1097,6 @@ class Acoes extends BaseController
                     'evidencia' => $novaEvidencia
                 ]);
             } catch (\Exception $e) {
-                log_message('error', 'Erro ao adicionar evidência: ' . $e->getMessage());
                 return $this->response->setJSON([
                     'success' => false,
                     'message' => 'Erro ao adicionar evidência: ' . $e->getMessage()
@@ -1179,7 +1158,6 @@ class Acoes extends BaseController
                 'equipeOriginal' => array_column($equipeAtual, 'id') // IDs dos membros originais
             ]);
         } catch (\Exception $e) {
-            log_message('error', 'Erro ao carregar equipe: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Erro ao carregar equipe'
@@ -1203,7 +1181,6 @@ class Acoes extends BaseController
                 'evidencias' => $evidencias
             ]);
         } catch (\Exception $e) {
-            log_message('error', 'Erro ao listar evidências: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Erro ao listar evidências'
@@ -1262,7 +1239,6 @@ class Acoes extends BaseController
                 'html' => $html
             ]);
         } catch (\Exception $e) {
-            log_message('error', 'Erro ao carregar ações para ordenação: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Erro ao carregar ações para ordenação',
@@ -1301,7 +1277,6 @@ class Acoes extends BaseController
                 'data' => $acoesAtrasadas
             ]);
         } catch (\Exception $e) {
-            log_message('error', 'Erro ao buscar ações atrasadas: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Erro ao buscar ações atrasadas'
@@ -1347,7 +1322,6 @@ class Acoes extends BaseController
                 'data' => $usuarios
             ]);
         } catch (\Exception $e) {
-            log_message('error', 'Erro ao buscar usuários disponíveis: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Erro ao buscar usuários disponíveis'
@@ -1370,7 +1344,6 @@ class Acoes extends BaseController
                 'data' => $responsaveis
             ]);
         } catch (\Exception $e) {
-            log_message('error', 'Erro ao buscar responsáveis: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Erro ao buscar responsáveis'

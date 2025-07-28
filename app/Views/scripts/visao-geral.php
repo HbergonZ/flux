@@ -63,7 +63,6 @@
         var dataTable = $('#dataTable').DataTable({
             "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.20/i18n/Portuguese-Brasil.json",
                 "lengthMenu": "Mostrar _MENU_ registros por página",
                 "zeroRecords": "Nenhum registro encontrado",
                 "info": "Mostrando página _PAGE_ de _PAGES_",

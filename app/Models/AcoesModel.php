@@ -241,7 +241,6 @@ class AcoesModel extends Model
             return $db->transStatus();
         } catch (\Exception $e) {
             $db->transRollback();
-            log_message('error', 'Erro ao processar solicitação de edição: ' . $e->getMessage());
             return false;
         }
     }

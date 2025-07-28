@@ -541,7 +541,6 @@
                 data: form.serialize(),
                 dataType: "json",
                 success: function(response) {
-                    console.log('Resposta recebida:', response);
                     if (response.success) {
                         if (modalId) {
                             $(modalId).modal('hide');

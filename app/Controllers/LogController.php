@@ -42,7 +42,6 @@ class LogController extends BaseController
 
             return $this->logModel->insert($logData) !== false;
         } catch (\Exception $e) {
-            log_message('error', 'Erro ao registrar log: ' . $e->getMessage());
             return false;
         }
     }

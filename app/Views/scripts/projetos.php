@@ -7,7 +7,6 @@
 
 <script>
     $(document).ready(function() {
-        console.log('Documento pronto, inicializando DataTable');
 
         // Configuração do AJAX
         $.ajaxSetup({
@@ -19,7 +18,6 @@
 
         // Funções auxiliares
         function showSuccessAlert(message) {
-            console.log('Exibindo alerta de sucesso:', message);
             Swal.fire({
                 icon: 'success',
                 title: 'Sucesso',
@@ -41,7 +39,6 @@
 
         function submitForm(form, modalId, successMessage = null, reloadTable = false) {
             return new Promise((resolve, reject) => {
-                console.log('Executando submitForm para:', form.attr('id'));
                 const submitBtn = form.find('button[type="submit"]');
                 const originalBtnText = submitBtn.html();
 
@@ -53,7 +50,6 @@
                     data: form.serialize(),
                     dataType: "json",
                     success: function(response) {
-                        console.log('Resposta recebida:', response);
                         if (response.success) {
                             if (modalId) {
                                 $(modalId).modal('hide');
@@ -62,7 +58,6 @@
                             showSuccessAlert(successMessage || response.message || 'Operação realizada com sucesso!');
 
                             if (reloadTable) {
-                                console.log('Recarregando tabela...');
                                 dataTable.ajax.reload();
                             }
                             resolve(response);
@@ -696,14 +691,12 @@
 
         // Função para carregar responsáveis atualizados
         function carregarResponsaveis(projetoId) {
-            console.log('Carregando responsáveis para o projeto:', projetoId);
 
             $.ajax({
                 url: `<?= site_url('projetos/responsaveis/') ?>${projetoId}`,
                 type: 'GET',
                 dataType: 'json',
                 success: function(response) {
-                    console.log('Resposta de responsáveis:', response);
                     const $container = $('#responsaveisAtuaisList');
                     $container.empty();
 
@@ -744,14 +737,12 @@
         }
 
         function carregarUsuariosDisponiveis(projetoId) {
-            console.log('Carregando usuários disponíveis para o projeto:', projetoId);
 
             $.ajax({
                 url: `<?= site_url('projetos/usuarios-disponiveis/') ?>${projetoId}`,
                 type: 'GET',
                 dataType: 'json',
                 success: function(response) {
-                    console.log('Resposta de usuários disponíveis:', response);
                     const $container = $('#usuariosDisponiveisList');
                     $container.empty();
 
@@ -789,14 +780,12 @@
 
         // Função para carregar usuários disponíveis
         function carregarUsuariosDisponiveis(projetoId) {
-            console.log('Carregando usuários disponíveis para o projeto:', projetoId);
 
             $.ajax({
                 url: `<?= site_url('projetos/usuarios-disponiveis/') ?>${projetoId}`,
                 type: 'GET',
                 dataType: 'json',
                 success: function(response) {
-                    console.log('Resposta de usuários disponíveis:', response);
                     const $container = $('#usuariosDisponiveisList');
                     $container.empty();
 

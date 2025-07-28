@@ -256,7 +256,6 @@ class Solicitacoes extends BaseController
             ];
             $model = $modelMap[$solicitacao['nivel']] ?? null;
             $modelErrors = $model ? $model->errors() : [];
-            log_message('error', 'Falha ao processar solicitação: ' . $post['id'] . ' - Erros: ' . print_r($modelErrors, true));
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Erro ao processar alterações',
@@ -284,7 +283,6 @@ class Solicitacoes extends BaseController
             'acao' => 'id_acao'
         ];
         if (!isset($modelMap[$solicitacao['nivel']])) {
-            log_message('error', 'Nível inválido: ' . $solicitacao['nivel']);
             return false;
         }
         return $this->processarRegistro(
@@ -315,7 +313,6 @@ class Solicitacoes extends BaseController
             return $result;
         } catch (\Exception $e) {
             $this->solicitacoesModel->transRollback();
-            log_message('error', 'Erro ao processar registro: ' . $e->getMessage());
             return false;
         }
     }
@@ -419,7 +416,6 @@ class Solicitacoes extends BaseController
         if (!empty($alteracoesEvidencias['remover'])) {
             foreach ($alteracoesEvidencias['remover'] as $evidenciaId) {
                 if (!$evidenciasModel->delete($evidenciaId)) {
-                    log_message('error', "Falha ao remover evidência ID: {$evidenciaId}");
                     throw new \Exception("Falha ao remover evidência ID: {$evidenciaId}");
                 }
             }
@@ -439,7 +435,6 @@ class Solicitacoes extends BaseController
                 ];
 
                 if (!$evidenciasModel->insert($dadosEvidencia)) {
-                    log_message('error', "Falha ao adicionar evidência: " . print_r($evidenciasModel->errors(), true));
                     throw new \Exception("Falha ao adicionar evidência");
                 }
             }
@@ -456,7 +451,6 @@ class Solicitacoes extends BaseController
         if (!empty($alteracoesIndicadores['remover'])) {
             foreach ($alteracoesIndicadores['remover'] as $indicadorId) {
                 if (!$indicadoresModel->delete($indicadorId)) {
-                    log_message('error', "Falha ao remover indicador ID: {$indicadorId}");
                     throw new \Exception("Falha ao remover indicador ID: {$indicadorId}");
                 }
             }
@@ -474,7 +468,6 @@ class Solicitacoes extends BaseController
                 ];
 
                 if (!$indicadoresModel->insert($dadosIndicador)) {
-                    log_message('error', "Falha ao adicionar indicador: " . print_r($indicadoresModel->errors(), true));
                     throw new \Exception("Falha ao adicionar indicador");
                 }
             }

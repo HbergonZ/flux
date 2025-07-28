@@ -171,7 +171,6 @@ class Usuarios extends BaseController
                 'message' => 'Usuário atualizado com sucesso!'
             ]);
         } catch (\Exception $e) {
-            log_message('error', 'Erro ao atualizar usuário: ' . $e->getMessage());
             return $this->response->setStatusCode(500)->setJSON([
                 'success' => false,
                 'message' => 'Erro ao atualizar usuário. Por favor, tente novamente.'
@@ -248,7 +247,6 @@ class Usuarios extends BaseController
                 'message' => 'Grupo do usuário alterado com sucesso!'
             ]);
         } catch (\Exception $e) {
-            log_message('error', 'Erro ao alterar grupo do usuário: ' . $e->getMessage());
             return $this->response->setStatusCode(500)->setJSON([
                 'success' => false,
                 'message' => 'Erro ao alterar grupo do usuário. Por favor, tente novamente.'
@@ -313,7 +311,6 @@ class Usuarios extends BaseController
                 'message' => 'Usuário excluído com sucesso!'
             ]);
         } catch (\Exception $e) {
-            log_message('error', 'Erro ao excluir usuário: ' . $e->getMessage());
             return $this->response->setStatusCode(500)->setJSON([
                 'success' => false,
                 'message' => 'Erro ao excluir usuário. Por favor, tente novamente.'
@@ -337,7 +334,6 @@ class Usuarios extends BaseController
         try {
             $logModel->insert($dadosLog);
         } catch (\Exception $e) {
-            log_message('error', 'Falha ao registrar log: ' . $e->getMessage());
         }
     }
 

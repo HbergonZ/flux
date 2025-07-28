@@ -73,7 +73,6 @@ class Planos extends BaseController
 
             $response['success'] = true;
         } catch (\Exception $e) {
-            log_message('error', 'Erro ao verificar relacionamentos: ' . $e->getMessage());
             $response['message'] = 'Erro ao verificar relacionamentos: ' . $e->getMessage();
         }
 
@@ -123,7 +122,6 @@ class Planos extends BaseController
             } catch (\Exception $e) {
                 $this->planoModel->transRollback();
                 $response['message'] = 'Erro ao cadastrar plano: ' . $e->getMessage();
-                log_message('error', 'Erro no cadastro de plano: ' . $e->getMessage());
             }
         } else {
             $response['message'] = implode('<br>', $this->validator->getErrors());
@@ -215,7 +213,6 @@ class Planos extends BaseController
                 $response['message'] = 'Plano atualizado com sucesso!';
             } catch (\Exception $e) {
                 $this->planoModel->transRollback();
-                log_message('error', 'Erro ao atualizar plano: ' . $e->getMessage());
                 $response['message'] = 'Erro ao atualizar plano: ' . $e->getMessage();
             }
         } else {
@@ -331,7 +328,6 @@ class Planos extends BaseController
             $response['contagem'] = $contagem;
         } catch (\Exception $e) {
             $db->transRollback();
-            log_message('error', 'Erro ao excluir plano: ' . $e->getMessage());
             $response['message'] = 'Erro ao excluir plano: ' . $e->getMessage();
         }
 

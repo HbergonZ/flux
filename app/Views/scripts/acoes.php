@@ -823,7 +823,7 @@
         let evidenciasAdicionadasAcao = [];
         let evidenciasRemovidasAcao = [];
 
-        $(document).on('click', '#btnEnviarSolicitacaoEdicao', function() {
+        /* $(document).on('click', '#btnEnviarSolicitacaoEdicao', function() {
             console.log('Valores atuais:', {
                 nome: $('#solicitarEdicaoNome').val(),
                 entrega_estimada: $('#solicitarEdicaoEntregaEstimada').val(),
@@ -839,7 +839,7 @@
                 data_fim: $('#solicitarEdicaoModal').data('original_data_fim'),
                 ordem: $('#solicitarEdicaoModal').data('original_ordem')
             });
-        });
+        }); */
 
         // Função auxiliar para formatar data para input date
         function formatDateForInput(dateString) {
