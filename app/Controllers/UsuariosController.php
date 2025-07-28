@@ -6,7 +6,7 @@ use CodeIgniter\Controller;
 use CodeIgniter\Shield\Entities\User;
 use CodeIgniter\Shield\Models\UserModel;
 
-class Usuarios extends BaseController
+class UsuariosController extends BaseController
 {
     protected $userModel;
     protected $authGroups;

@@ -156,13 +156,13 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
     // Usuários e Grupos
     $routes->get('atribuir-grupos', 'AtribuirGrupos::index');
     $routes->post('atribuir-grupos/atribuir', 'AtribuirGrupos::atribuir');
-    $routes->get('gerenciar-usuarios', 'Usuarios::index');
-    $routes->post('gerenciar-usuarios/filtrar', 'Usuarios::filtrar');
-    $routes->get('gerenciar-usuarios/editar/(:num)', 'Usuarios::editar/$1');
-    $routes->post('gerenciar-usuarios/atualizar', 'Usuarios::atualizar');
-    $routes->post('gerenciar-usuarios/alterar-grupo', 'Usuarios::alterarGrupo');
-    $routes->post('gerenciar-usuarios/excluir', 'Usuarios::excluir');
+    $routes->get('gerenciar-usuarios', 'UsuariosController::index');
+    $routes->post('gerenciar-usuarios/filtrar', 'UsuariosController::filtrar');
+    $routes->get('gerenciar-usuarios/editar/(:num)', 'UsuariosController::editar/$1');
+    $routes->post('gerenciar-usuarios/atualizar', 'UsuariosController::atualizar');
+    $routes->post('gerenciar-usuarios/alterar-grupo', 'UsuariosController::alterarGrupo');
+    $routes->post('gerenciar-usuarios/excluir', 'UsuariosController::excluir');
 
-    $routes->post('gerenciar-usuarios/toggle-registro', 'Usuarios::toggleRegistro');
-    $routes->get('gerenciar-usuarios/status-registro', 'Usuarios::statusRegistro');
+    $routes->post('gerenciar-usuarios/toggle-registro', 'UsuariosController::toggleRegistro');
+    $routes->get('gerenciar-usuarios/status-registro', 'UsuariosController::statusRegistro');
 });
