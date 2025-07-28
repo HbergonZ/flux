@@ -149,8 +149,8 @@ $routes->group('', ['filter' => 'group:admin,superadmin'], function ($routes) {
 
     // Histórico
     $routes->group('historico-solicitacoes', function ($routes) {
-        $routes->get('/', 'HistoricoSolicitacoes::index');
-        $routes->get('detalhes/(:num)', 'HistoricoSolicitacoes::detalhes/$1');
+        $routes->get('/', 'HistoricoSolicitacoesController::index');
+        $routes->get('detalhes/(:num)', 'HistoricoSolicitacoesController::detalhes/$1');
     });
 
     // Usuários e Grupos

@@ -10,7 +10,7 @@ use App\Models\PlanosModel;
 use App\Models\EixosModel;
 use CodeIgniter\Shield\Models\UserModel;
 
-class HistoricoSolicitacoes extends BaseController
+class HistoricoSolicitacoesController extends BaseController
 {
     protected $solicitacoesModel;
     protected $etapasModel;
