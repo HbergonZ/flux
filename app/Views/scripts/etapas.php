@@ -36,7 +36,21 @@
                 "url": `<?= site_url("etapas/carregar-etapas/{$idProjeto}") ?>`,
                 "type": "GET",
                 "dataSrc": function(json) {
+                    if (json.error) {
+                        console.error("Erro no servidor:", json.error);
+                        return [];
+                    }
                     return json.data || [];
+                },
+                "error": function(xhr, error, thrown) {
+                    console.error("Erro na requisição AJAX:", error, thrown);
+                    // Mostrar mensagem de erro para o usuário
+                    $('#dataTable').DataTable().clear().draw();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro ao carregar dados',
+                        text: 'Ocorreu um erro ao carregar as etapas. Por favor, tente novamente.'
+                    });
                 }
             },
             "columns": [{
@@ -67,15 +81,15 @@
                     "orderable": false,
                     "render": function(data, type, row) {
                         return `
-                            <div class="progress-container" data-etapa-id="${row.id}" title="Carregando progresso...">
-                                <div class="progress progress-sm">
-                                    <div class="progress-bar progress-bar-striped bg-secondary"
-                                        role="progressbar" style="width: 0%"
-                                        aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                                    </div>
-                                </div>
-                                <small class="progress-text">0%</small>
-                            </div>`;
+                    <div class="progress-container" data-etapa-id="${row.id}" title="Carregando progresso...">
+                        <div class="progress progress-sm">
+                            <div class="progress-bar progress-bar-striped bg-secondary"
+                                role="progressbar" style="width: 0%"
+                                aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                        </div>
+                        <small class="progress-text">0%</small>
+                    </div>`;
                     }
                 },
                 {
@@ -85,27 +99,27 @@
                     "render": function(data, type, row) {
                         const isAdmin = <?= auth()->user()->inGroup('admin') ? 'true' : 'false' ?>;
                         let buttons = `
-                            <div class="d-inline-flex">
-                                <a href="<?= site_url('etapas/') ?>${row.id}/acoes" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Ações">
-                                    <i class="fas fa-th-list"></i>
-                                </a>`;
+                    <div class="d-inline-flex">
+                        <a href="<?= site_url('etapas/') ?>${row.id}/acoes" class="btn btn-info btn-sm mx-1" style="width: 32px; height: 32px;" title="Visualizar Ações">
+                            <i class="fas fa-th-list"></i>
+                        </a>`;
 
                         if (isAdmin) {
                             buttons += `
-                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${row.id_slug}" title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${row.id_slug}" title="Excluir">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>`;
+                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${row.id_slug}" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${row.id_slug}" title="Excluir">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>`;
                         } else {
                             buttons += `
-                                <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${row.id_slug}" title="Solicitar Edição">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${row.id_slug}" title="Solicitar Exclusão">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>`;
+                        <button type="button" class="btn btn-primary btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${row.id_slug}" title="Solicitar Edição">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm mx-1" style="width: 32px; height: 32px;" data-id="${row.id_slug}" title="Solicitar Exclusão">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>`;
                         }
 
                         buttons += `</div>`;
@@ -117,6 +131,14 @@
                 carregarProgressoEtapas();
                 // Reatribui os eventos dos botões após o desenho da tabela
                 atribuirEventosBotoes();
+            },
+            "initComplete": function(settings, json) {
+                // Adiciona classe para estilização após inicialização completa
+                $('#dataTable_wrapper').addClass('mt-3');
+            },
+            "createdRow": function(row, data, dataIndex) {
+                // Adiciona atributo de ID para facilitar seleção
+                $(row).attr('data-etapa-id', data.id);
             }
         });
 
@@ -519,13 +541,18 @@
         // Aplicar filtros
         $('#formFiltros').off('submit').on('submit', function(e) {
             e.preventDefault();
-            applyFilters();
+
+            // Obter os parâmetros do formulário
+            const params = $(this).serialize();
+
+            // Atualizar a URL do DataTables
+            dataTable.ajax.url(`<?= site_url("etapas/filtrar/{$idProjeto}") ?>?${params}`).load();
         });
 
         // Limpar filtros
         $('#btnLimparFiltros').off('click').on('click', function() {
             $('#formFiltros')[0].reset();
-            applyFilters();
+            dataTable.ajax.url(`<?= site_url("etapas/carregar-etapas/{$idProjeto}") ?>`).load();
         });
 
         // Função genérica para enviar formulários

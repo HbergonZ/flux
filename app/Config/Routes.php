@@ -37,7 +37,7 @@ $routes->group('', function ($routes) {
 
     // Etapas
     $routes->get('planos/(:num)/projetos/(:num)/etapas', 'EtapasController::index/$1/$2');
-    $routes->post('etapas/filtrar/(:num)', 'EtapasController::filtrar/$1');
+    $routes->match(['get', 'post'], 'etapas/filtrar/(:num)', 'EtapasController::filtrar/$1');
 
     // Ações
     $routes->get('planos/(:num)/projetos/(:num)/acoes', 'AcoesController::index/$2/projeto');

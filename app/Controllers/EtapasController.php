@@ -251,22 +251,50 @@ class EtapasController extends BaseController
         return $this->response->setJSON($response);
     }
 
+    // app/Controllers/EtapasController.php
+
     public function filtrar($idProjeto)
     {
+        // Verificar se é uma requisição AJAX
         if (!$this->request->isAJAX()) {
-            return redirect()->to("/projetos/$idProjeto/etapas");
+            return $this->response->setStatusCode(403)->setJSON([
+                'error' => 'Acesso não permitido'
+            ]);
         }
 
-        $filtro = $this->request->getPost('nome');
+        // Obter parâmetros de filtro
+        $nome = $this->request->getGet('nome') ?? '';
 
-        $builder = $this->etapasModel->where('id_projeto', $idProjeto);
+        // Carregar modelo
+        $etapasModel = new \App\Models\EtapasModel();
 
-        if (!empty($filtro)) {
-            $builder->like('nome', $filtro);
+        // Aplicar filtros
+        $query = $etapasModel->where('id_projeto', $idProjeto);
+
+        if (!empty($nome)) {
+            $query->like('nome', $nome);
         }
 
-        $etapas = $builder->orderBy('data_criacao', 'ASC')->findAll();
-        return $this->response->setJSON(['success' => true, 'data' => $etapas]);
+        // Ordenar e obter resultados
+        $etapas = $query->orderBy('ordem', 'ASC')->findAll();
+
+        // Formatar dados para o DataTables
+        $data = [];
+        foreach ($etapas as $etapa) {
+            $data[] = [
+                'id' => $etapa['id'],
+                'id_slug' => $etapa['id'] . '-' . url_title($etapa['nome'], '-', true),
+                'ordem' => $etapa['ordem'],
+                'nome' => $etapa['nome'],
+                'data_criacao' => $etapa['data_criacao'],
+                'data_atualizacao' => $etapa['data_atualizacao'],
+                // Adicione outros campos conforme necessário
+            ];
+        }
+
+        return $this->response->setJSON([
+            'data' => $data
+        ]);
     }
 
     public function dadosEtapa($idEtapa = null)
@@ -601,37 +629,13 @@ class EtapasController extends BaseController
     }
     public function carregarEtapas($idProjeto)
     {
-        if (!$this->request->isAJAX()) {
-            return redirect()->back();
-        }
+        $etapasModel = new EtapasModel();
+        $etapas = $etapasModel->where('id_projeto', $idProjeto)
+            ->orderBy('ordem', 'ASC')
+            ->findAll();
 
-        try {
-            $etapas = $this->etapasModel->getEtapasByProjeto($idProjeto);
-
-            // Formatar os dados para a tabela
-            $data = [];
-            foreach ($etapas as $etapa) {
-                $data[] = [
-                    'ordem' => $etapa['ordem'] ?? '-',
-                    'nome' => $etapa['nome'],
-                    'data_criacao' => $etapa['data_criacao'],
-                    'data_atualizacao' => $etapa['data_atualizacao'],
-                    'progresso' => '', // Será preenchido pelo JavaScript
-                    'opcoes' => '', // Será preenchido pelo JavaScript
-                    'id' => $etapa['id'],
-                    'id_slug' => $etapa['id'] . '-' . str_replace(' ', '-', strtolower($etapa['nome']))
-                ];
-            }
-
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $data
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Erro ao carregar etapas: ' . $e->getMessage()
-            ]);
-        }
+        return $this->response->setJSON([
+            'data' => $etapas
+        ]);
     }
 }
