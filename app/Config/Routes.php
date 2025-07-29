@@ -92,6 +92,8 @@ $routes->group('', function ($routes) {
     $routes->get('acoes/usuarios-disponiveis/(:num)', 'AcoesController::getUsuariosDisponiveis/$1');
     $routes->get('acoes/buscar-usuarios', 'AcoesController::buscarUsuariosParaResponsaveis');
     $routes->get('acoes/get-usuarios-disponiveis/(:num)', 'AcoesController::getUsuariosDisponiveis/$1');
+
+    $routes->get('atualizacoes', 'AtualizacoesController::index');
 });
 
 // Rotas administrativas

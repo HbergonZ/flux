@@ -112,6 +112,22 @@
             <!-- Divider -->
             <hr class="sidebar-divider d-none d-md-block">
 
+            <!-- Sistema -->
+            <div class="sidebar-heading">
+                Sistema
+            </div>
+
+            <!-- Atualizações -->
+            <li class="nav-item">
+                <a class="nav-link" href="<?php echo base_url('/atualizacoes'); ?>">
+                    <i class="fas fa-sync-alt"></i>
+                    <span>Atualizações</span>
+                </a>
+            </li>
+
+            <!-- Divider -->
+            <hr class="sidebar-divider d-none d-md-block">
+
             <!-- Sidebar Toggler (Sidebar) -->
             <div class="text-center d-none d-md-inline">
                 <button class="rounded-circle border-0" id="sidebarToggle"></button>
