@@ -191,7 +191,7 @@
                     [0, 'asc']
                 ],
                 ajax: {
-                    url: `<?= site_url("acoes/get-acoes/{$idOrigem}/{$tipoOrigem}") ?>`,
+                    url: `<?= site_url("acoes/GET-acoes/{$idOrigem}/{$tipoOrigem}") ?>`,
                     dataSrc: 'data'
                 }
             });

@@ -32,10 +32,8 @@ class ProjetosModel extends Model
     protected $updatedField = 'data_atualizacao';
     protected $returnType = 'array';
 
-    // Adicione esta propriedade
     protected $responsaveisModel;
 
-    // Adicione o construtor
     public function __construct()
     {
         parent::__construct();
@@ -45,7 +43,7 @@ class ProjetosModel extends Model
     public function getProjetosByPlano($idPlano)
     {
         $subquery = $this->db->table('acoes')
-            ->select('id_projeto, COUNT(*) as total_acoes, SUM(CASE WHEN status IN ("Finalizado", "Finalizado com atraso") THEN 1 ELSE 0 END) as acoes_finalizadas')
+            ->select('id_projeto, COUNT(*) as total_acoes, SUM(CASE WHEN status IN (\'Finalizado\', \'Finalizado com atraso\') THEN 1 ELSE 0 END) as acoes_finalizadas')
             ->where('id_projeto IS NOT NULL')
             ->groupBy('id_projeto')
             ->getCompiledSelect();
@@ -74,14 +72,11 @@ class ProjetosModel extends Model
 
     public function atualizarStatus(int $idProjeto, string $novoStatus)
     {
-        // Inicia transação para garantir consistência
         $this->db->transStart();
 
         try {
-            // Atualiza o status do projeto
             $this->update($idProjeto, ['status' => $novoStatus]);
 
-            // Dispara atualização em cascata para as ações
             $acoesModel = new \App\Models\AcoesModel();
             $acoesModel->atualizarStatusAcoesProjeto($idProjeto, $novoStatus);
 
@@ -111,7 +106,6 @@ class ProjetosModel extends Model
             $builder->where('id_eixo', $filtros['id_eixo']);
         }
 
-        // Busca global
         if (!empty($filtros['search']['value'])) {
             $searchValue = $filtros['search']['value'];
             $builder->groupStart()
@@ -127,54 +121,52 @@ class ProjetosModel extends Model
 
     public function getProjetosFiltrados($idPlano, $filtros = [])
     {
-        // Subquery para cálculo do progresso e data fim
+        // Subquery para progresso das ações
         $subqueryAcoes = $this->db->table('acoes')
             ->select('id_projeto,
-             COUNT(*) as total_acoes,
-             SUM(CASE WHEN status IN ("Finalizado", "Finalizado com atraso") THEN 1 ELSE 0 END) as acoes_finalizadas,
-             CASE
-                WHEN COUNT(*) = 0 THEN 0
-                ELSE (SUM(CASE WHEN status = "Finalizado" THEN 1 ELSE 0 END) / COUNT(*)) * 100
-             END as percentual_progresso,
-             CASE
-                WHEN SUM(CASE WHEN data_fim IS NULL THEN 1 ELSE 0 END) > 0 THEN NULL
-                ELSE MAX(data_fim)
-             END as data_fim_projeto')
+                COUNT(*) as total_acoes,
+                SUM(CASE WHEN status IN (\'Finalizado\', \'Finalizado com atraso\') THEN 1 ELSE 0 END) as acoes_finalizadas,
+                CASE
+                    WHEN COUNT(*) = 0 THEN 0
+                    ELSE (SUM(CASE WHEN status = \'Finalizado\' THEN 1 ELSE 0 END) / COUNT(*)) * 100
+                END as percentual_progresso,
+                CASE
+                    WHEN SUM(CASE WHEN data_fim IS NULL THEN 1 ELSE 0 END) > 0 THEN NULL
+                    ELSE MAX(data_fim)
+                END as data_fim_projeto')
             ->where('id_projeto IS NOT NULL')
             ->groupBy('id_projeto')
             ->getCompiledSelect();
 
-        // Subquery para obter responsáveis formatados como JSON
+        // Subquery para responsáveis - versão compatível com ambos bancos
         $subqueryResponsaveis = $this->db->table('responsaveis')
             ->select('nivel_id,
-             JSON_ARRAYAGG(
-                JSON_OBJECT(
-                    "usuario_id", usuario_id,
-                    "username", users.username,
-                    "name", users.name,
-                    "email", auth_identities.secret
-                )
-             ) as responsaveis_json')
-            ->join('users', 'users.id = responsaveis.usuario_id')
-            ->join('auth_identities', 'auth_identities.user_id = users.id AND auth_identities.type = "email_password"', 'left')
+                (SELECT json_agg(json_build_object(
+                    \'usuario_id\', r.usuario_id,
+                    \'username\', u.username,
+                    \'name\', u.name,
+                    \'email\', ai.secret
+                )) FROM responsaveis r
+                JOIN users u ON u.id = r.usuario_id
+                LEFT JOIN auth_identities ai ON ai.user_id = u.id AND ai.type = \'email_password\'
+                WHERE r.nivel = \'projeto\' AND r.nivel_id = responsaveis.nivel_id) as responsaveis_json')
             ->where('nivel', 'projeto')
             ->groupBy('nivel_id')
             ->getCompiledSelect();
 
         $builder = $this->db->table('projetos')
             ->select('projetos.*,
-             eixos.nome as nome_eixo,
-             COALESCE(progresso.total_acoes, 0) as total_acoes,
-             COALESCE(progresso.acoes_finalizadas, 0) as acoes_finalizadas,
-             COALESCE(progresso.percentual_progresso, 0) as percentual_progresso,
-             progresso.data_fim_projeto,
-             COALESCE(responsaveis.responsaveis_json, "[]") as responsaveis')
+                eixos.nome as nome_eixo,
+                COALESCE(progresso.total_acoes, 0) as total_acoes,
+                COALESCE(progresso.acoes_finalizadas, 0) as acoes_finalizadas,
+                COALESCE(progresso.percentual_progresso, 0) as percentual_progresso,
+                progresso.data_fim_projeto,
+                COALESCE(responsaveis.responsaveis_json, \'[]\') as responsaveis')
             ->join('eixos', 'eixos.id = projetos.id_eixo', 'left')
             ->join("($subqueryAcoes) as progresso", 'progresso.id_projeto = projetos.id', 'left')
             ->join("($subqueryResponsaveis) as responsaveis", 'responsaveis.nivel_id = projetos.id', 'left')
             ->where('projetos.id_plano', $idPlano);
 
-        // Aplicar filtros
         if (!empty($filtros['nome'])) {
             $builder->like('projetos.nome', $filtros['nome']);
         }
@@ -191,7 +183,6 @@ class ProjetosModel extends Model
             }
         }
 
-        // Busca global
         if (!empty($filtros['search']['value'])) {
             $searchValue = $filtros['search']['value'];
             $builder->groupStart()
@@ -202,7 +193,6 @@ class ProjetosModel extends Model
                 ->groupEnd();
         }
 
-        // Ordenação
         if (!empty($filtros['order'])) {
             $columnIndex = $filtros['order'][0]['column'];
             $direction = $filtros['order'][0]['dir'];
@@ -213,7 +203,7 @@ class ProjetosModel extends Model
                 2 => 'projetos.descricao',
                 3 => 'projetos.projeto_vinculado',
                 4 => 'responsaveis.responsaveis_json',
-                5 => 'progresso.data_fim_projeto', // Nova coluna para ordenação
+                5 => 'progresso.data_fim_projeto',
                 6 => 'progresso.percentual_progresso'
             ];
 
@@ -222,14 +212,12 @@ class ProjetosModel extends Model
             }
         }
 
-        // Paginação
         if (isset($filtros['start']) && $filtros['length'] != -1) {
             $builder->limit($filtros['length'], $filtros['start']);
         }
 
         $result = $builder->get()->getResultArray();
 
-        // Decodificar JSON de responsáveis
         return array_map(function ($projeto) {
             $projeto['responsaveis'] = json_decode($projeto['responsaveis'], true) ?: [];
             return $projeto;
