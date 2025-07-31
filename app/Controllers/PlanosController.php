@@ -82,49 +82,65 @@ class PlanosController extends BaseController
     public function cadastrar()
     {
         if (!$this->request->isAJAX()) {
-            return redirect()->to('/planos');
+            return $this->response->setStatusCode(405)->setJSON([
+                'success' => false,
+                'message' => 'Método não permitido'
+            ]);
+        }
+
+        // Verificar permissão
+        if (!auth()->user()->inGroup('admin')) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Você não tem permissão para esta ação'
+            ]);
         }
 
         $response = ['success' => false, 'message' => ''];
 
-        $rules = [
-            'nome' => 'required|min_length[3]|max_length[255]',
-            'sigla' => 'required|max_length[50]',
-            'descricao' => 'permit_empty'
-        ];
+        try {
+            $rules = [
+                'nome' => 'required|min_length[3]|max_length[255]',
+                'sigla' => 'required|max_length[50]|is_unique[planos.sigla]',
+                'descricao' => 'permit_empty|max_length[500]'
+            ];
 
-        if ($this->validate($rules)) {
-            try {
-                $data = [
-                    'nome' => $this->request->getPost('nome'),
-                    'sigla' => $this->request->getPost('sigla'),
-                    'descricao' => $this->request->getPost('descricao')
-                ];
-
-                $this->planoModel->transStart();
-                $insertId = $this->planoModel->insert($data);
-
-                if (!$insertId) {
-                    throw new \Exception('Falha ao inserir plano no banco de dados');
-                }
-
-                $planoCompleto = array_merge(['id' => $insertId], $data);
-
-                if (!$this->logController->registrarCriacao('plano', $planoCompleto, 'Cadastro inicial do plano')) {
-                    throw new \Exception('Falha ao registrar log de criação');
-                }
-
-                $this->planoModel->transComplete();
-
-                $response['success'] = true;
-                $response['message'] = 'Plano cadastrado com sucesso!';
-                $response['id'] = $insertId;
-            } catch (\Exception $e) {
-                $this->planoModel->transRollback();
-                $response['message'] = 'Erro ao cadastrar plano: ' . $e->getMessage();
+            if (!$this->validate($rules)) {
+                throw new \Exception(implode('<br>', $this->validator->getErrors()));
             }
-        } else {
-            $response['message'] = implode('<br>', $this->validator->getErrors());
+
+            $data = [
+                'nome' => $this->request->getPost('nome'),
+                'sigla' => strtoupper($this->request->getPost('sigla')), // Converter para maiúsculas
+                'descricao' => $this->request->getPost('descricao')
+            ];
+
+            $this->planoModel->transStart();
+
+            $insertId = $this->planoModel->insert($data);
+
+            if (!$insertId) {
+                throw new \Exception('Falha ao inserir no banco de dados');
+            }
+
+            // Registrar log
+            $this->logController->registrarCriacao(
+                'plano',
+                $data,
+                'Cadastro via interface'
+            );
+
+            $this->planoModel->transComplete();
+
+            $response = [
+                'success' => true,
+                'message' => 'Plano cadastrado com sucesso!',
+                'id' => $insertId
+            ];
+        } catch (\Exception $e) {
+            $this->planoModel->transRollback();
+            $response['message'] = $e->getMessage();
+            log_message('error', 'Erro no cadastro de plano: ' . $e->getMessage());
         }
 
         return $this->response->setJSON($response);
@@ -399,5 +415,26 @@ class PlanosController extends BaseController
         if ($percentual >= 80) return 'bg-success';
         if ($percentual >= 50) return 'bg-warning';
         return 'bg-danger';
+    }
+
+    public function carregarDados()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->to('/planos');
+        }
+
+        $nome = $this->request->getPost('nome');
+        $sigla = $this->request->getPost('sigla');
+
+        $planos = $this->planoModel->getPlanosFiltrados($nome, $sigla);
+
+        // Adiciona progresso aos planos
+        foreach ($planos as &$plano) {
+            $plano['progresso'] = $this->calcularProgressoPlano($plano);
+        }
+
+        return $this->response->setJSON([
+            'data' => $planos
+        ]);
     }
 }

@@ -1257,20 +1257,24 @@ class AcoesController extends BaseController
         try {
             $db = db_connect();
 
-            $builder = $db->table('acoes as a')
+            $builder = $db->table('acoes a')
                 ->select('a.id, a.nome,
-                DATE_FORMAT(a.entrega_estimada, "%d/%m/%Y") as entrega_estimada_formatada,
-                DATEDIFF(CURDATE(), a.entrega_estimada) as dias_atraso,
+                TO_CHAR(a.entrega_estimada, \'DD/MM/YYYY\') as entrega_estimada_formatada,
+                (CURRENT_DATE - a.entrega_estimada) as dias_atraso,
                 p.nome as projeto_nome')
-                ->join('responsaveis as r', 'r.nivel_id = a.id AND r.nivel = "acao"')
-                ->join('projetos as p', 'p.id = a.id_projeto')
+                ->join('responsaveis r', "r.nivel_id = a.id AND r.nivel = 'acao'", 'left')
+                ->join('projetos p', 'p.id = a.id_projeto')
                 ->where('r.usuario_id', $userId)
                 ->where('a.status', 'Atrasado')
                 ->where('a.data_fim IS NULL')
-                ->orderBy('a.entrega_estimada', 'ASC')
-                ->get();
+                ->orderBy('a.entrega_estimada', 'ASC');
 
-            $acoesAtrasadas = $builder->getResultArray();
+            $acoesAtrasadas = $builder->get()->getResultArray();
+
+            // Converter para inteiro (PostgreSQL já retorna como string)
+            foreach ($acoesAtrasadas as &$acao) {
+                $acao['dias_atraso'] = (int)$acao['dias_atraso'];
+            }
 
             return $this->response->setJSON([
                 'success' => true,
@@ -1279,7 +1283,7 @@ class AcoesController extends BaseController
         } catch (\Exception $e) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Erro ao buscar ações atrasadas'
+                'message' => 'Erro ao buscar ações atrasadas: ' . $e->getMessage()
             ]);
         }
     }

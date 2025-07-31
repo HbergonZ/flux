@@ -117,7 +117,7 @@ class Auth extends ShieldAuth
         'tokens'  => AccessTokens::class,
         'session' => Session::class,
         'hmac'    => HmacSha256::class,
-        'ldap' => \App\Authentication\Authenticators\LDAPAuthenticator::class,
+
         // 'jwt'     => JWT::class,
     ];
 
